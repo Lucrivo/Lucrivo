@@ -8,4 +8,15 @@ export default defineConfig([
   ...nextTypeScript,
   prettierConfig,
   globalIgnores([".next/**", "coverage/**", "next-env.d.ts"]),
+  globalIgnores([
+    ".next/**",
+    "node_modules/**",
+    "coverage/**",
+    "dist/**",
+    "build/**",
+
+    // Supabase local/generated
+    "supabase/.temp/**",
+    "src/infrastructure/database/supabase/database.types.ts",
+  ]),
 ]);
