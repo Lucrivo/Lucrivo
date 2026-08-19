@@ -1,53 +1,26 @@
-import Link from "next/link";
+import { LoginForm } from "@/components/login/login-form";
+import { LoginHero } from "@/components/login/login-hero";
 
 import { login } from "./actions";
 
 type LoginPageProps = {
-  searchParams: Promise<{
-    error?: string;
-  }>;
+  searchParams: Promise<{ error?: string }>;
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const { error } = await searchParams;
 
   return (
-    <main>
-      <h1>Entrar</h1>
-
-      <form action={login}>
-        <div>
-          <label htmlFor="email">E-mail</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
+    <main className="flex min-h-svh items-center justify-center p-3 sm:p-6 lg:p-8">
+      <div className="bg-card grid w-full max-w-7xl overflow-hidden rounded-2xl border shadow-lg lg:min-h-[760px] lg:grid-cols-[1.04fr_0.96fr]">
+        <LoginHero />
+        <section className="flex items-center px-6 py-10 sm:px-12 sm:py-14 lg:px-16 xl:px-20">
+          <LoginForm
+            action={login}
+            hasInvalidCredentials={error === "invalid_credentials"}
           />
-        </div>
-
-        <div>
-          <label htmlFor="password">Senha</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-          />
-        </div>
-
-        {error === "invalid_credentials" && (
-          <p role="alert">E-mail ou senha inválidos.</p>
-        )}
-
-        <button type="submit">Entrar</button>
-      </form>
-
-      <p>
-        Ainda não tem uma conta? <Link href="/register">Cadastre-se</Link>
-      </p>
+        </section>
+      </div>
     </main>
   );
 }

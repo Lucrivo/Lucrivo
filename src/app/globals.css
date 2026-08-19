@@ -59,6 +59,11 @@
   --animate-fade-up: fade-up 300ms var(--ease-out-app) both;
   --animate-scale-in: scale-in 200ms var(--ease-out-app) both;
   --animate-shimmer: shimmer 1.8s ease-in-out infinite;
+  --animate-chart-bar: chart-bar 500ms var(--ease-out-app) both;
+  --animate-chart-line: chart-line 1.2s var(--ease-out-app) both;
+  --animate-chart-point: chart-point 250ms var(--ease-out-app) both;
+  --animate-float-in: float-in 500ms var(--ease-out-app) both;
+  --animate-drift: drift 5s ease-in-out infinite;
 }
 
 :root {
@@ -262,6 +267,53 @@
   }
   100% {
     background-position: -200% 0;
+  }
+}
+@keyframes chart-bar {
+  from {
+    opacity: 0;
+    transform: scaleY(0);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+@keyframes chart-line {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes chart-point {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes float-in {
+  from {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.35rem);
   }
 }
 
