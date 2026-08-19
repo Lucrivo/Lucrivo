@@ -16,9 +16,7 @@ export async function login(formData: FormData) {
   });
 
   if (error) {
-    return {
-      error: "E-mail ou senha inválidos.",
-    };
+    redirect("/login?error=invalid_credentials");
   }
 
   redirect("/dashboard");
