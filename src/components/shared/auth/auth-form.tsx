@@ -117,7 +117,7 @@ function AuthPasswordField({
           autoComplete={autoComplete}
           placeholder={placeholder}
           required
-          minLength={6}
+          minLength={8}
           className="h-12 pr-12 pl-11"
           aria-invalid={invalid || undefined}
         />
@@ -125,7 +125,7 @@ function AuthPasswordField({
           type="button"
           variant="ghost"
           size="icon-sm"
-          className="text-muted-foreground absolute top-1/2 right-2 -translate-y-1/2 shadow-none hover:translate-y-[-50%]"
+          className="text-muted-foreground absolute top-1/2 right-2 -translate-y-1/2 shadow-none hover:-translate-y-1/2 active:-translate-y-1/2 active:scale-100"
           onClick={() => setShowPassword((visible) => !visible)}
           aria-label={`${showPassword ? "Ocultar" : "Mostrar"} ${label.toLocaleLowerCase("pt-BR")}`}
         >

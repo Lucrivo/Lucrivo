@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 
+import type { RegisterActionState } from "@/actions/auth/register.action";
 import {
   AuthEmailField,
   AuthFeedback,
@@ -11,28 +12,27 @@ import {
   AuthSubmitButton,
 } from "@/components/shared/auth/auth-form";
 
-type RegisterResult = { error?: string; success?: boolean };
+const errorMessages = {
+  invalid_fields: "Preencha todos os campos corretamente.",
+  password_mismatch: "As senhas não coincidem. Verifique e tente novamente.",
+  weak_password: "Use uma senha mais forte, com pelo menos 8 caracteres.",
+  signup_disabled: "Novos cadastros estão temporariamente indisponíveis.",
+  rate_limit:
+    "Muitas tentativas de cadastro. Aguarde um momento e tente novamente.",
+  signup_failed:
+    "Não foi possível criar sua conta agora. Tente novamente em instantes.",
+} as const;
 
 type RegisterFormProps = {
-  action: (formData: FormData) => Promise<RegisterResult>;
+  action: (
+    previousState: RegisterActionState,
+    formData: FormData,
+  ) => Promise<RegisterActionState>;
 };
 
 function RegisterForm({ action }: RegisterFormProps) {
-  const [state, formAction] = useActionState<RegisterResult | null, FormData>(
-    async (_previousState, formData) => {
-      if (formData.get("password") !== formData.get("confirmPassword")) {
-        return { error: "password_mismatch" };
-      }
-      return action(formData);
-    },
-    null,
-  );
-
-  const hasError = Boolean(state?.error);
-  const errorMessage =
-    state?.error === "password_mismatch"
-      ? "As senhas não coincidem. Verifique e tente novamente."
-      : state?.error;
+  const [state, formAction] = useActionState(action, null);
+  const hasError = state?.status === "error";
 
   return (
     <AuthFormShell
@@ -40,7 +40,7 @@ function RegisterForm({ action }: RegisterFormProps) {
       subtitle="Comece agora com o Lucrivo"
       providerLabel="Cadastrar com Google"
     >
-      <form action={formAction} className="space-y-5">
+      <form action={formAction} className="space-y-5" noValidate>
         <AuthEmailField invalid={hasError} />
         <AuthPasswordField autoComplete="new-password" invalid={hasError} />
         <AuthPasswordField
@@ -52,8 +52,8 @@ function RegisterForm({ action }: RegisterFormProps) {
           invalid={hasError}
         />
 
-        {errorMessage && <AuthFeedback>{errorMessage}</AuthFeedback>}
-        {state?.success && (
+        {hasError && <AuthFeedback>{errorMessages[state.error]}</AuthFeedback>}
+        {state?.status === "success" && (
           <AuthFeedback variant="success">
             Cadastro realizado. Verifique seu e-mail para confirmar sua conta.
           </AuthFeedback>
@@ -69,4 +69,4 @@ function RegisterForm({ action }: RegisterFormProps) {
   );
 }
 
-export { RegisterForm, type RegisterResult };
+export { RegisterForm };

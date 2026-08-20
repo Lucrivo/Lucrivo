@@ -107,9 +107,7 @@ function LoginAnalyticsIllustration() {
       </svg>
 
       <div className="animate-float-in bg-card/94 transition-interactive absolute right-4 bottom-[23%] z-20 w-64 rounded-xl border p-4 shadow-md backdrop-blur-md [animation-delay:1200ms] hover:-translate-y-1 hover:shadow-lg xl:right-8">
-        <p className="text-muted-foreground text-xs font-medium">
-          Margem de contribuição
-        </p>
+        <p className="text-muted-foreground text-xs font-medium">Lucro</p>
         <div className="mt-2 flex items-center justify-between gap-4">
           <div>
             <p className="text-primary animate-fade-in text-3xl font-semibold tracking-tight tabular-nums [animation-delay:1450ms]">

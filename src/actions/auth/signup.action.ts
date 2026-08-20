@@ -1,7 +1,9 @@
 "use server";
 
 import { createClient } from "@/infrastructure/database/supabase/clients/server.client";
-import { signupSchema, type SignupInput } from "@/schemas/auth/signup.schema";
+import type { RegisterInput } from "@/schemas/auth/register.schema";
+
+type SignupCredentials = Pick<RegisterInput, "email" | "password">;
 
 type SignupActionResult =
   | { status: "authenticated" }
@@ -9,20 +11,15 @@ type SignupActionResult =
   | {
       status: "error";
       error:
-        | "invalid_fields"
-        | "weak_password"
-        | "signup_disabled"
-        | "rate_limit"
-        | "signup_failed";
+        "weak_password" | "signup_disabled" | "rate_limit" | "signup_failed";
     };
 
-async function signup(credentials: SignupInput): Promise<SignupActionResult> {
-  const parsed = signupSchema.safeParse(credentials);
-  if (!parsed.success) return { status: "error", error: "invalid_fields" };
-
+async function signup(
+  credentials: SignupCredentials,
+): Promise<SignupActionResult> {
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase.auth.signUp(parsed.data);
+    const { data, error } = await supabase.auth.signUp(credentials);
 
     if (error) {
       if (error.code === "weak_password")

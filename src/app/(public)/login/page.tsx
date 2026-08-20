@@ -1,21 +1,11 @@
 import { LoginForm } from "@/components/login/login-form";
 import { AuthPage } from "@/components/shared/auth/auth-page";
+import { login } from "@/actions/auth/login.action";
 
-import { login } from "./actions";
-
-type LoginPageProps = {
-  searchParams: Promise<{ error?: string }>;
-};
-
-export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { error } = await searchParams;
-
+export default function LoginPage() {
   return (
     <AuthPage>
-      <LoginForm
-        action={login}
-        hasInvalidCredentials={error === "invalid_credentials"}
-      />
+      <LoginForm action={login} />
     </AuthPage>
   );
 }

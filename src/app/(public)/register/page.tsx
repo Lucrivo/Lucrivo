@@ -1,7 +1,6 @@
 import { RegisterForm } from "@/components/register/register-form";
 import { AuthPage } from "@/components/shared/auth/auth-page";
-
-import { register } from "./actions";
+import { register } from "@/actions/auth/register.action";
 
 export default function RegisterPage() {
   return (
