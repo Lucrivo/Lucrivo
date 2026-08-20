@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 
 import type { LoginActionState } from "@/modules/auth/actions/login.action";
@@ -40,7 +41,17 @@ function LoginForm({ action }: LoginFormProps) {
     >
       <form action={formAction} className="space-y-5" noValidate>
         <AuthEmailField invalid={hasError} />
-        <AuthPasswordField invalid={hasError} />
+        <div className="space-y-2.5">
+          <AuthPasswordField invalid={hasError} />
+          <div className="text-right">
+            <Link
+              href="/forgot-password"
+              className="text-primary focus-visible:outline-ring rounded-sm text-sm font-medium underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
+            >
+              Esqueci minha senha
+            </Link>
+          </div>
+        </div>
         {hasError && <AuthFeedback>{errorMessages[state.error]}</AuthFeedback>}
         <AuthSubmitButton idleLabel="Entrar" pendingLabel="Entrando…" />
       </form>

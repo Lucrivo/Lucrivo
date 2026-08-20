@@ -21,7 +21,7 @@ import { Spinner } from "@/components/ui/spinner";
 type AuthFormShellProps = {
   title: string;
   subtitle: string;
-  providerLabel: string;
+  providerLabel?: string;
   children: React.ReactNode;
 };
 
@@ -39,21 +39,25 @@ function AuthFormShell({
           {subtitle}
         </p>
       </div>
-      <Button
-        type="button"
-        variant="outline"
-        size="lg"
-        className="w-full"
-        title={providerLabel}
-      >
-        <GlobeIcon className="text-primary" />
-        {providerLabel}
-      </Button>
-      <div className="my-8 flex items-center gap-4" aria-hidden="true">
-        <div className="bg-border h-px flex-1" />
-        <span className="text-muted-foreground text-sm">ou</span>
-        <div className="bg-border h-px flex-1" />
-      </div>
+      {providerLabel && (
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="w-full"
+            title={providerLabel}
+          >
+            <GlobeIcon className="text-primary" />
+            {providerLabel}
+          </Button>
+          <div className="my-8 flex items-center gap-4" aria-hidden="true">
+            <div className="bg-border h-px flex-1" />
+            <span className="text-muted-foreground text-sm">ou</span>
+            <div className="bg-border h-px flex-1" />
+          </div>
+        </>
+      )}
       {children}
     </div>
   );

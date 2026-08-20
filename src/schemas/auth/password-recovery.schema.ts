@@ -3,7 +3,11 @@ import { z } from "zod";
 import { passwordSchema } from "./password.schema";
 
 const passwordRecoveryRequestSchema = z.object({
-  email: z.email("Informe um e-mail válido.").trim(),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .pipe(z.email("Informe um e-mail válido.")),
 });
 
 const passwordUpdateSchema = z

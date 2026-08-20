@@ -7,6 +7,16 @@ import type { LoginActionState } from "@/modules/auth/actions/login.action";
 import { LoginForm } from "./login-form";
 
 describe("LoginForm", () => {
+  it("links to password recovery", () => {
+    const action = vi.fn(async (): Promise<LoginActionState> => null);
+
+    render(<LoginForm action={action} />);
+
+    expect(
+      screen.getByRole("link", { name: "Esqueci minha senha" }),
+    ).toHaveAttribute("href", "/forgot-password");
+  });
+
   it("shows authentication feedback and toggles password visibility", async () => {
     const user = userEvent.setup();
     const action = vi.fn(async (): Promise<LoginActionState> => ({
