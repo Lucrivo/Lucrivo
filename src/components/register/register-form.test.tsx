@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import type { RegisterActionState } from "@/actions/auth/register.action";
+import type { RegisterActionState } from "@/modules/auth/actions/register.action";
 
 import { RegisterForm } from "./register-form";
 

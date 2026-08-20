@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 
-import type { LoginActionState } from "@/actions/auth/login.action";
+import type { LoginActionState } from "@/modules/auth/actions/login.action";
 import {
   AuthEmailField,
   AuthFeedback,

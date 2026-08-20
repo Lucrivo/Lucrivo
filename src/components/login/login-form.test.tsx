@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import type { LoginActionState } from "@/actions/auth/login.action";
+import type { LoginActionState } from "@/modules/auth/actions/login.action";
 
 import { LoginForm } from "./login-form";
 

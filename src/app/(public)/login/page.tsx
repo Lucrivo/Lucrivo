@@ -1,6 +1,6 @@
 import { LoginForm } from "@/components/login/login-form";
 import { AuthPage } from "@/components/shared/auth/auth-page";
-import { login } from "@/actions/auth/login.action";
+import { login } from "@/modules/auth/actions/login.action";
 
 export default function LoginPage() {
   return (
