@@ -117,7 +117,7 @@ function AuthPasswordField({
           autoComplete={autoComplete}
           placeholder={placeholder}
           required
-          minLength={8}
+          minLength={10}
           className="h-12 pr-12 pl-11"
           aria-invalid={invalid || undefined}
         />

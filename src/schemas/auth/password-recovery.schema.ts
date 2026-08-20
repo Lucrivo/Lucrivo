@@ -2,9 +2,12 @@ import { z } from "zod";
 
 import { passwordSchema } from "./password.schema";
 
-const registerSchema = z
+const passwordRecoveryRequestSchema = z.object({
+  email: z.email("Informe um e-mail válido.").trim(),
+});
+
+const passwordUpdateSchema = z
   .object({
-    email: z.email("Informe um e-mail válido."),
     password: passwordSchema,
     confirmPassword: z.string().min(1, "Confirme sua senha."),
   })
@@ -18,6 +21,14 @@ const registerSchema = z
     }
   });
 
-type RegisterInput = z.infer<typeof registerSchema>;
+type PasswordRecoveryRequestInput = z.infer<
+  typeof passwordRecoveryRequestSchema
+>;
+type PasswordUpdateInput = z.infer<typeof passwordUpdateSchema>;
 
-export { registerSchema, type RegisterInput };
+export {
+  passwordRecoveryRequestSchema,
+  passwordUpdateSchema,
+  type PasswordRecoveryRequestInput,
+  type PasswordUpdateInput,
+};

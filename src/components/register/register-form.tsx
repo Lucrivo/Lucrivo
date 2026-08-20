@@ -15,7 +15,8 @@ import {
 const errorMessages = {
   invalid_fields: "Preencha todos os campos corretamente.",
   password_mismatch: "As senhas não coincidem. Verifique e tente novamente.",
-  weak_password: "Use uma senha mais forte, com pelo menos 8 caracteres.",
+  weak_password:
+    "Use uma senha mais forte, com pelo menos 10 caracteres, uma letra e um número.",
   signup_disabled: "Novos cadastros estão temporariamente indisponíveis.",
   rate_limit:
     "Muitas tentativas de cadastro. Aguarde um momento e tente novamente.",
