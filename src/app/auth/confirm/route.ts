@@ -2,11 +2,30 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { createClient } from "@/infrastructure/database/supabase/clients/server.client";
 
-function confirmationFailedRedirect(request: NextRequest) {
+const otpFlows = {
+  email: {
+    successPath: "/dashboard",
+    failurePath: "/login",
+    failureCode: "confirmation_failed",
+  },
+  recovery: {
+    successPath: "/update-password",
+    failurePath: "/forgot-password",
+    failureCode: "invalid_or_expired_link",
+  },
+} as const;
+
+type SupportedOtpType = keyof typeof otpFlows;
+
+function isSupportedOtpType(type: string | null): type is SupportedOtpType {
+  return type === "email" || type === "recovery";
+}
+
+function safeRedirect(request: NextRequest, pathname: string, error?: string) {
   const redirectTo = request.nextUrl.clone();
-  redirectTo.pathname = "/login";
+  redirectTo.pathname = pathname;
   redirectTo.search = "";
-  redirectTo.searchParams.set("error", "confirmation_failed");
+  if (error) redirectTo.searchParams.set("error", error);
 
   return NextResponse.redirect(redirectTo);
 }
@@ -15,9 +34,16 @@ export async function GET(request: NextRequest) {
   const tokenHash = request.nextUrl.searchParams.get("token_hash");
   const type = request.nextUrl.searchParams.get("type");
 
-  if (!tokenHash || type !== "email") {
-    return confirmationFailedRedirect(request);
+  if (!isSupportedOtpType(type)) {
+    const fallback = otpFlows.email;
+    return safeRedirect(request, fallback.failurePath, fallback.failureCode);
   }
+
+  const flow = otpFlows[type];
+  const failureRedirect = () =>
+    safeRedirect(request, flow.failurePath, flow.failureCode);
+
+  if (!tokenHash) return failureRedirect();
 
   try {
     const supabase = await createClient();
@@ -26,14 +52,10 @@ export async function GET(request: NextRequest) {
       type,
     });
 
-    if (error) return confirmationFailedRedirect(request);
+    if (error) return failureRedirect();
   } catch {
-    return confirmationFailedRedirect(request);
+    return failureRedirect();
   }
 
-  const redirectTo = request.nextUrl.clone();
-  redirectTo.pathname = "/dashboard";
-  redirectTo.search = "";
-
-  return NextResponse.redirect(redirectTo);
+  return safeRedirect(request, flow.successPath);
 }
