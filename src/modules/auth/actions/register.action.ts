@@ -4,10 +4,13 @@ import { redirect } from "next/navigation";
 
 import { registerSchema } from "@/schemas/auth/register.schema";
 
-import { signup, type SignupActionResult } from "./signup.action";
+import {
+  signup,
+  type SignupServiceResult,
+} from "@/modules/auth/services/signup.service";
 
 type SignupActionError = Extract<
-  SignupActionResult,
+  SignupServiceResult,
   { status: "error" }
 >["error"];
 

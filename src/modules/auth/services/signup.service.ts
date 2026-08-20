@@ -1,11 +1,11 @@
-"use server";
+import "server-only";
 
 import { createClient } from "@/infrastructure/database/supabase/clients/server.client";
 import type { RegisterInput } from "@/schemas/auth/register.schema";
 
 type SignupCredentials = Pick<RegisterInput, "email" | "password">;
 
-type SignupActionResult =
+type SignupServiceResult =
   | { status: "authenticated" }
   | { status: "confirmation_required" }
   | {
@@ -16,7 +16,7 @@ type SignupActionResult =
 
 async function signup(
   credentials: SignupCredentials,
-): Promise<SignupActionResult> {
+): Promise<SignupServiceResult> {
   try {
     const supabase = await createClient();
     const { data, error } = await supabase.auth.signUp(credentials);
@@ -43,4 +43,4 @@ async function signup(
   }
 }
 
-export { signup, type SignupActionResult };
+export { signup, type SignupServiceResult };
