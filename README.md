@@ -61,3 +61,21 @@ pnpm supabase:lint
 pnpm supabase:advisors
 pnpm build
 ```
+
+## Integração contínua
+
+Pull Requests destinados a `staging` ou `main` executam dois jobs independentes
+no GitHub Actions:
+
+- `Application`: instala as dependências com lockfile congelado e executa testes,
+  typecheck, lint, verificação de formato e build.
+- `Database`: inicia uma stack Supabase local descartável, reconstrói o banco,
+  verifica se os tipos gerados estão atualizados e executa o lint do schema.
+
+O workflow também pode ser iniciado manualmente por `workflow_dispatch`. Ele
+possui apenas permissão de leitura do repositório e não recebe secrets em Pull
+Requests.
+
+No plano gratuito do GitHub, enquanto este repositório permanecer privado, o
+resultado da CI não impede tecnicamente um merge. Mesclar somente com ambos os
+jobs verdes é uma convenção obrigatória do projeto.
