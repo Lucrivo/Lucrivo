@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const guestOnlyPaths = new Set(["/login", "/register", "/forgot-password"]);
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
     request,
@@ -32,7 +34,21 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
+
+  if (data?.claims?.sub && guestOnlyPaths.has(request.nextUrl.pathname)) {
+    const destination = request.nextUrl.clone();
+    destination.pathname = "/dashboard";
+    destination.search = "";
+
+    const redirectResponse = NextResponse.redirect(destination);
+
+    response.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie);
+    });
+
+    return redirectResponse;
+  }
 
   return response;
 }
