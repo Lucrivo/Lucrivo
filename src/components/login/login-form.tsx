@@ -27,18 +27,15 @@ type LoginFormProps = {
     previousState: LoginActionState,
     formData: FormData,
   ) => Promise<LoginActionState>;
+  signupEnabled: boolean;
 };
 
-function LoginForm({ action }: LoginFormProps) {
+function LoginForm({ action, signupEnabled }: LoginFormProps) {
   const [state, formAction] = useActionState(action, null);
   const hasError = state?.status === "error";
 
   return (
-    <AuthFormShell
-      title="Bem-vindo de volta"
-      subtitle="Entre na sua conta"
-      providerLabel="Entrar com Google"
-    >
+    <AuthFormShell title="Bem-vindo de volta" subtitle="Entre na sua conta">
       <form action={formAction} className="space-y-5" noValidate>
         <AuthEmailField invalid={hasError} />
         <div className="space-y-2.5">
@@ -55,9 +52,11 @@ function LoginForm({ action }: LoginFormProps) {
         {hasError && <AuthFeedback>{errorMessages[state.error]}</AuthFeedback>}
         <AuthSubmitButton idleLabel="Entrar" pendingLabel="Entrando…" />
       </form>
-      <AuthFooterLink href="/register">
-        Não possui conta? Cadastre-se
-      </AuthFooterLink>
+      {signupEnabled && (
+        <AuthFooterLink href="/register">
+          Não possui conta? Cadastre-se
+        </AuthFooterLink>
+      )}
     </AuthFormShell>
   );
 }

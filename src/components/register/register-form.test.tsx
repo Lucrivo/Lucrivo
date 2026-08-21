@@ -13,6 +13,16 @@ async function fillRegisterForm(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe("RegisterForm", () => {
+  it("does not show an inoperable Google registration", () => {
+    const action = vi.fn(async (): Promise<RegisterActionState> => null);
+
+    render(<RegisterForm action={action} />);
+
+    expect(
+      screen.queryByRole("button", { name: /google/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it("uses the password length required by Supabase", () => {
     const action = vi.fn(async (): Promise<RegisterActionState> => null);
 

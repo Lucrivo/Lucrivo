@@ -36,11 +36,7 @@ function RegisterForm({ action }: RegisterFormProps) {
   const hasError = state?.status === "error";
 
   return (
-    <AuthFormShell
-      title="Crie sua conta"
-      subtitle="Comece agora com o Lucrivo"
-      providerLabel="Cadastrar com Google"
-    >
+    <AuthFormShell title="Crie sua conta" subtitle="Comece agora com o Lucrivo">
       <form action={formAction} className="space-y-5" noValidate>
         <AuthEmailField invalid={hasError} />
         <AuthPasswordField autoComplete="new-password" invalid={hasError} />

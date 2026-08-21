@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 
+import { isAuthFeatureEnabled } from "@/config/auth-environment";
 import { registerSchema } from "@/schemas/auth/register.schema";
 
 import {
@@ -26,6 +27,10 @@ async function register(
   _previousState: RegisterActionState,
   formData: FormData,
 ): Promise<RegisterActionState> {
+  if (!isAuthFeatureEnabled(process.env.AUTH_SIGNUP_ENABLED)) {
+    return { status: "error", error: "signup_disabled" };
+  }
+
   const input = {
     email: formData.get("email"),
     password: formData.get("password"),
