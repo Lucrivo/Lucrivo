@@ -8,6 +8,7 @@
     "start": "next start",
     "check": "pnpm test && pnpm typecheck && pnpm lint && pnpm format:check",
     "lint": "eslint .",
+    "smoke:test": "node scripts/smoke-test.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",

@@ -29,6 +29,16 @@ describe("updateSession", () => {
     getClaims.mockResolvedValue({ data: { claims: null }, error: null });
   });
 
+  it("bypasses Supabase for the application health check", async () => {
+    const response = await updateSession(
+      new NextRequest("http://localhost:3000/api/health"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(createServerClient).not.toHaveBeenCalled();
+    expect(getClaims).not.toHaveBeenCalled();
+  });
+
   it.each(["/login", "/register", "/forgot-password"])(
     "redireciona uma sessão ativa de %s para o dashboard",
     async (pathname) => {
