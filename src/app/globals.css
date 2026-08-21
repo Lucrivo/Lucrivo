@@ -327,3 +327,39 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+@keyframes growth-arrow-enter {
+  0% {
+    opacity: 0;
+    transform: translate(-14px, 18px) scale(0.96);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes growth-arrow-draw {
+  0% {
+    stroke-dashoffset: 1;
+  }
+
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.growth-arrow {
+  opacity: 0;
+  transform-origin: bottom left;
+  animation: growth-arrow-enter 800ms cubic-bezier(0.22, 1, 0.36, 1) 500ms
+    forwards;
+}
+
+.growth-arrow-path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: growth-arrow-draw 950ms cubic-bezier(0.22, 1, 0.36, 1) 550ms
+    forwards;
+}

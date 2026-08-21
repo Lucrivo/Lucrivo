@@ -268,7 +268,7 @@ export default function DesignSystemPage() {
             />
             <Card className="hover:border-primary/25 hover:-translate-y-1 hover:shadow-md">
               <CardHeader>
-                <CardDescription>Margem de contribuição</CardDescription>
+                <CardDescription>Lucro</CardDescription>
                 <CardTitle className="flex items-center justify-between text-2xl">
                   <span>32,8%</span>
                   <span className="bg-success/10 text-success rounded-lg p-2">

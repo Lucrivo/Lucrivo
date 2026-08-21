@@ -23,18 +23,48 @@ function LoginAnalyticsIllustration() {
     <div className="absolute inset-x-0 bottom-0 h-[55%]" aria-hidden="true">
       <DotGrid className="top-2 -left-6" />
       <svg
-        viewBox="0 0 250 380"
-        className="animate-float-in text-primary/16 absolute -top-20 right-1 h-[115%] w-[48%] drop-shadow-[0_0_22px_color-mix(in_oklch,var(--primary),transparent_72%)] [animation-delay:400ms]"
+        viewBox="0 0 240 300"
+        className="growth-arrow absolute top-[-2%] right-[1%] z-[2] h-[68%] w-[32%] overflow-visible"
       >
+        <defs>
+          <linearGradient
+            id="growth-arrow-gradient"
+            x1="30"
+            y1="280"
+            x2="200"
+            y2="30"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.02" />
+            <stop offset="55%" stopColor="var(--primary)" stopOpacity="0.08" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.16" />
+          </linearGradient>
+        </defs>
+
         <path
-          fill="currentColor"
+          d="
+      M42 270
+      L82 270
+      L150 160
+      L126 160
+      L198 76
+      L194 174
+      L172 153
+      L103 282
+      L42 282
+      Z
+    "
+          fill="url(#growth-arrow-gradient)"
           stroke="var(--primary)"
-          strokeWidth="1.5"
-          d="M37 91 157 4v51h56v218h-56V105L71 168 37 91Zm88 121 32-23v84l-32 23v-84Z"
+          strokeWidth="1.25"
+          strokeOpacity="0.22"
+          strokeLinejoin="round"
+          pathLength="1"
+          className="growth-arrow-path"
         />
       </svg>
 
-      <div className="absolute inset-x-4 bottom-0 flex h-[72%] items-end gap-3 px-4 xl:gap-4">
+      <div className="absolute inset-x-4 bottom-0 z-[1] flex h-[72%] items-end gap-3 px-4 xl:gap-4">
         {bars.map((height, index) => (
           <div
             key={height}
@@ -77,9 +107,7 @@ function LoginAnalyticsIllustration() {
       </svg>
 
       <div className="animate-float-in bg-card/94 transition-interactive absolute right-4 bottom-[23%] z-20 w-64 rounded-xl border p-4 shadow-md backdrop-blur-md [animation-delay:1200ms] hover:-translate-y-1 hover:shadow-lg xl:right-8">
-        <p className="text-muted-foreground text-xs font-medium">
-          Margem de contribuição
-        </p>
+        <p className="text-muted-foreground text-xs font-medium">Lucro</p>
         <div className="mt-2 flex items-center justify-between gap-4">
           <div>
             <p className="text-primary animate-fade-in text-3xl font-semibold tracking-tight tabular-nums [animation-delay:1450ms]">

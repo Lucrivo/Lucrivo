@@ -31,13 +31,11 @@ function LoginHero() {
         </div>
         <div className="animate-fade-up mt-8 max-w-md [animation-delay:150ms] lg:mt-14">
           <h2 className="text-2xl leading-tight font-semibold sm:text-3xl lg:text-4xl">
-            Inteligência de preços.
-            <br />
-            Mais margem. <span className="text-primary">Crescimento real.</span>
+            Não precifique no {""}
+            <span className="text-primary">achismo.</span>
           </h2>
           <p className="text-muted-foreground mt-5 max-w-sm text-sm leading-relaxed sm:text-base lg:mt-7">
-            Transformamos dados em decisões lucrativas para aumentar sua
-            rentabilidade e impulsionar o crescimento do seu negócio.
+            Preço, custo e quanto sobra pra você. Sem planilha, sem contabilês.
           </p>
         </div>
       </div>
