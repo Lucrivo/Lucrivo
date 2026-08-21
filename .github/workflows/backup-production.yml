@@ -1,0 +1,118 @@
+name: Backup production
+
+on:
+  schedule:
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Encrypted logical backup
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      deployment: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Link production database
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+          SUPABASE_PROJECT_ID: ${{ secrets.PRODUCTION_PROJECT_ID }}
+        run: pnpm exec supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Create logical dumps
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+        run: |
+          umask 077
+          backup_directory="${RUNNER_TEMP}/lucrivo-production-backup"
+          mkdir -p -- "$backup_directory"
+
+          pnpm exec supabase db dump --linked --file "$backup_directory/roles.sql" --role-only
+          pnpm exec supabase db dump --linked --file "$backup_directory/schema.sql"
+          pnpm exec supabase db dump --linked --file "$backup_directory/data.sql" --data-only --use-copy \
+            --exclude "storage.buckets_vectors" --exclude "storage.vector_indexes"
+          pnpm exec supabase db dump --linked --file "$backup_directory/history-schema.sql" \
+            --schema supabase_migrations
+          pnpm exec supabase db dump --linked --file "$backup_directory/history-data.sql" \
+            --schema supabase_migrations --data-only --use-copy
+
+      - name: Encrypt logical backup
+        env:
+          BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+        run: |
+          if [ -z "$BACKUP_ENCRYPTION_PASSPHRASE" ]; then
+            echo "BACKUP_ENCRYPTION_PASSPHRASE is required." >&2
+            exit 1
+          fi
+
+          umask 077
+          tar -czf "${RUNNER_TEMP}/lucrivo-production-backup.tar.gz" \
+            -C "${RUNNER_TEMP}/lucrivo-production-backup" .
+          openssl enc -aes-256-cbc -salt -pbkdf2 -iter 200000 -md sha256 \
+            -pass env:BACKUP_ENCRYPTION_PASSPHRASE \
+            -in "${RUNNER_TEMP}/lucrivo-production-backup.tar.gz" \
+            -out "${RUNNER_TEMP}/lucrivo-production-backup.tar.gz.enc"
+
+      - name: Verify encrypted archive
+        env:
+          BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+        run: |
+          if [ -z "$BACKUP_ENCRYPTION_PASSPHRASE" ]; then
+            echo "BACKUP_ENCRYPTION_PASSPHRASE is required." >&2
+            exit 1
+          fi
+
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -md sha256 \
+            -pass env:BACKUP_ENCRYPTION_PASSPHRASE \
+            -in "${RUNNER_TEMP}/lucrivo-production-backup.tar.gz.enc" |
+            tar -tzf -
+
+      - name: Remove plaintext files
+        if: always()
+        run: |
+          rm -rf -- "${RUNNER_TEMP}/lucrivo-production-backup"
+          rm -f -- "${RUNNER_TEMP}/lucrivo-production-backup.tar.gz"
+
+      - name: Upload encrypted backup
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: lucrivo-production-backup-${{ github.run_id }}
+          path: ${{ runner.temp }}/lucrivo-production-backup.tar.gz.enc
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+      - name: Remove encrypted runner file
+        if: always()
+        run: rm -f -- "${RUNNER_TEMP}/lucrivo-production-backup.tar.gz.enc"

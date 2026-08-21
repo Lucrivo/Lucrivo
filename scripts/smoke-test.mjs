@@ -35,8 +35,8 @@ function smokeConfiguration() {
     options["--expect-signup"] ?? process.env.SMOKE_EXPECT_SIGNUP;
 
   if (!rawBaseUrl) throw new Error("base URL is required");
-  if (!["enabled", "disabled"].includes(signupExpectation)) {
-    throw new Error("signup expectation must be enabled or disabled");
+  if (!["enabled", "disabled", "skip"].includes(signupExpectation)) {
+    throw new Error("signup expectation must be enabled, disabled, or skip");
   }
 
   const baseUrl = new URL(rawBaseUrl);
@@ -116,11 +116,13 @@ async function runSmokeTest() {
   const updatePassword = await request(baseUrl, "/update-password", timeoutMs);
   expectStatus(updatePassword, "/update-password", [200]);
 
-  const register = await request(baseUrl, "/register", timeoutMs);
-  if (signupExpectation === "enabled") {
-    expectStatus(register, "/register", [200]);
-  } else {
-    expectRedirect(register, "/register", "/login?status=signup_disabled");
+  if (signupExpectation !== "skip") {
+    const register = await request(baseUrl, "/register", timeoutMs);
+    if (signupExpectation === "enabled") {
+      expectStatus(register, "/register", [200]);
+    } else {
+      expectRedirect(register, "/register", "/login?status=signup_disabled");
+    }
   }
 
   console.log("[smoke] passed " + baseUrl.origin);
