@@ -1,4 +1,7 @@
-.next
-coverage
-node_modules
+.agents/**
+.codex/**
+.next/**
+coverage/**
+node_modules/**
 pnpm-lock.yaml
+supabase/.temp/**

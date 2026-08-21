@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "check": "pnpm test && pnpm typecheck && pnpm lint && pnpm format:check",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

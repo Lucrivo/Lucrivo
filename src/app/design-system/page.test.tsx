@@ -32,7 +32,7 @@ describe("DesignSystemPage", () => {
     render(
       <ThemeProvider>
         <DesignSystemPage />
-      </ThemeProvider>
+      </ThemeProvider>,
     );
 
     await user.click(screen.getByRole("button", { name: "Ações" }));

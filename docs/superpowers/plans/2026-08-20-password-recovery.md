@@ -45,6 +45,7 @@ Implement the approved Supabase password recovery flow in small TDD checkpoints.
    ```
 
    Confirm the new expectations fail for the current eight-character registration rule and missing recovery schemas.
+
 3. Add a reusable password schema with the exact Supabase policy: 10–72 characters, at least one letter, and at least one digit.
 4. Refactor `registerSchema` to use the shared password schema without changing its public input type.
 5. Add:

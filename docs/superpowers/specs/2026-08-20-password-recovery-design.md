@@ -63,10 +63,10 @@ The request service calls `resetPasswordForEmail` with an application-owned call
 
 The existing `/auth/confirm` handler becomes an explicit mapping:
 
-| OTP type | Success destination | Failure destination |
-| --- | --- | --- |
-| `email` | `/dashboard` | `/login?error=confirmation_failed` |
-| `recovery` | `/update-password` | `/forgot-password?error=invalid_or_expired_link` |
+| OTP type   | Success destination | Failure destination                              |
+| ---------- | ------------------- | ------------------------------------------------ |
+| `email`    | `/dashboard`        | `/login?error=confirmation_failed`               |
+| `recovery` | `/update-password`  | `/forgot-password?error=invalid_or_expired_link` |
 
 Missing tokens, unsupported types, verification errors, and thrown exceptions use the matching safe failure path. The handler does not accept a caller-provided `next` destination, which avoids an open redirect.
 
