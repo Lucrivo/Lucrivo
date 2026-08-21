@@ -94,6 +94,7 @@ type AuthPasswordFieldProps = {
   placeholder?: string;
   autoComplete?: "current-password" | "new-password";
   invalid?: boolean;
+  describedBy?: string;
 };
 
 function AuthPasswordField({
@@ -103,6 +104,7 @@ function AuthPasswordField({
   placeholder = "Digite sua senha",
   autoComplete = "current-password",
   invalid = false,
+  describedBy,
 }: AuthPasswordFieldProps) {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -124,6 +126,7 @@ function AuthPasswordField({
           minLength={10}
           className="h-12 pr-12 pl-11"
           aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
         />
         <Button
           type="button"
