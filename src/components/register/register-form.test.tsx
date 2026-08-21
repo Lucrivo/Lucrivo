@@ -2,6 +2,12 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("@/components/shared/auth/turnstile-field", () => ({
+  TurnstileField: () => (
+    <input type="hidden" name="captchaToken" value="captcha-token" readOnly />
+  ),
+}));
+
 import type { RegisterActionState } from "@/modules/auth/actions/register.action";
 
 import { RegisterForm } from "./register-form";

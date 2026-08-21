@@ -2,7 +2,10 @@
 
 import { redirect } from "next/navigation";
 
-import { isAuthFeatureEnabled } from "@/config/auth-environment";
+import {
+  isAuthFeatureEnabled,
+  normalizeCaptchaToken,
+} from "@/config/auth-environment";
 import { registerSchema } from "@/schemas/auth/register.schema";
 
 import {
@@ -19,7 +22,11 @@ type RegisterActionState =
   | { status: "success"; outcome: "confirmation_required" }
   | {
       status: "error";
-      error: "invalid_fields" | "password_mismatch" | SignupActionError;
+      error:
+        | "invalid_fields"
+        | "password_mismatch"
+        | "captcha_required"
+        | SignupActionError;
     }
   | null;
 
@@ -29,6 +36,11 @@ async function register(
 ): Promise<RegisterActionState> {
   if (!isAuthFeatureEnabled(process.env.AUTH_SIGNUP_ENABLED)) {
     return { status: "error", error: "signup_disabled" };
+  }
+
+  const captchaToken = normalizeCaptchaToken(formData.get("captchaToken"));
+  if (isAuthFeatureEnabled(process.env.AUTH_CAPTCHA_ENABLED) && !captchaToken) {
+    return { status: "error", error: "captcha_required" };
   }
 
   const input = {
@@ -48,10 +60,13 @@ async function register(
     };
   }
 
-  const result = await signup({
-    email: parsed.data.email,
-    password: parsed.data.password,
-  });
+  const result = await signup(
+    {
+      email: parsed.data.email,
+      password: parsed.data.password,
+    },
+    captchaToken,
+  );
   if (result.status === "error") return result;
   if (result.status === "confirmation_required") {
     return { status: "success", outcome: "confirmation_required" };
