@@ -102,4 +102,4 @@ jobs:
         env:
           DEPLOYMENT_URL: ${{ secrets.PRODUCTION_APP_URL }}
           SIGNUP_EXPECTATION: ${{ vars.PRODUCTION_EXPECT_SIGNUP || 'skip' }}
-        run: pnpm smoke:test -- --base-url "$DEPLOYMENT_URL" --expect-signup "$SIGNUP_EXPECTATION"
+        run: pnpm smoke:test --base-url "$DEPLOYMENT_URL" --expect-signup "$SIGNUP_EXPECTATION"

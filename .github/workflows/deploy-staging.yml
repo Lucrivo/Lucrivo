@@ -92,4 +92,4 @@ jobs:
       - name: Run staging smoke tests
         env:
           DEPLOYMENT_URL: ${{ secrets.STAGING_APP_URL }}
-        run: pnpm smoke:test -- --base-url "$DEPLOYMENT_URL" --expect-signup enabled
+        run: pnpm smoke:test --base-url "$DEPLOYMENT_URL" --expect-signup enabled
