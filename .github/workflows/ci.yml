@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - staging
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  application:
+    name: Application
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      APP_URL: http://localhost:3000
+      AUTH_SIGNUP_ENABLED: "true"
+      NEXT_PUBLIC_AUTH_SIGNUP_ENABLED: "true"
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-public-key
+      NEXT_PUBLIC_SUPABASE_URL: https://ci.example.invalid
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ci-turnstile-site-key
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Check types
+        run: pnpm typecheck
+
+      - name: Lint application
+        run: pnpm lint
+
+      - name: Check formatting
+        run: pnpm format:check
+
+      - name: Build application
+        run: pnpm build
+
+  database:
+    name: Database
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Start local Supabase stack
+        run: pnpm supabase:start
+
+      - name: Rebuild local database
+        run: pnpm supabase:reset
+
+      - name: Verify generated database types
+        run: |
+          pnpm supabase:types
+          git diff --exit-code -- src/infrastructure/database/supabase/database.types.ts
+
+      - name: Lint database
+        run: pnpm supabase:lint
+
+      - name: Stop local Supabase stack
+        if: always()
+        run: pnpm supabase:stop

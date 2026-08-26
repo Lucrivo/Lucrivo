@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 
 import type { RegisterActionState } from "@/modules/auth/actions/register.action";
+import { getTurnstileSiteKey } from "@/config/auth-environment";
 import {
   AuthEmailField,
   AuthFeedback,
@@ -11,10 +12,12 @@ import {
   AuthPasswordField,
   AuthSubmitButton,
 } from "@/components/shared/auth/auth-form";
+import { TurnstileField } from "@/components/shared/auth/turnstile-field";
 
 const errorMessages = {
   invalid_fields: "Preencha todos os campos corretamente.",
   password_mismatch: "As senhas não coincidem. Verifique e tente novamente.",
+  captcha_required: "Conclua a verificação de segurança para continuar.",
   weak_password:
     "Use uma senha mais forte, com pelo menos 10 caracteres, uma letra e um número.",
   signup_disabled: "Novos cadastros estão temporariamente indisponíveis.",
@@ -23,6 +26,11 @@ const errorMessages = {
   signup_failed:
     "Não foi possível criar sua conta agora. Tente novamente em instantes.",
 } as const;
+
+const turnstileSiteKey = getTurnstileSiteKey(
+  process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+  process.env.NODE_ENV,
+);
 
 type RegisterFormProps = {
   action: (
@@ -36,11 +44,7 @@ function RegisterForm({ action }: RegisterFormProps) {
   const hasError = state?.status === "error";
 
   return (
-    <AuthFormShell
-      title="Crie sua conta"
-      subtitle="Comece agora com o Lucrivo"
-      providerLabel="Cadastrar com Google"
-    >
+    <AuthFormShell title="Crie sua conta" subtitle="Comece agora com o Lucrivo">
       <form action={formAction} className="space-y-5" noValidate>
         <AuthEmailField invalid={hasError} />
         <AuthPasswordField autoComplete="new-password" invalid={hasError} />
@@ -52,6 +56,8 @@ function RegisterForm({ action }: RegisterFormProps) {
           autoComplete="new-password"
           invalid={hasError}
         />
+
+        <TurnstileField siteKey={turnstileSiteKey} resetSignal={state} />
 
         {hasError && <AuthFeedback>{errorMessages[state.error]}</AuthFeedback>}
         {state?.status === "success" && (

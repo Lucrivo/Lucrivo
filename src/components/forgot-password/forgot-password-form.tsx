@@ -9,13 +9,21 @@ import {
   AuthFormShell,
   AuthSubmitButton,
 } from "@/components/shared/auth/auth-form";
+import { TurnstileField } from "@/components/shared/auth/turnstile-field";
+import { getTurnstileSiteKey } from "@/config/auth-environment";
 import type { PasswordRecoveryActionState } from "@/modules/auth/actions/request-password-recovery.action";
 
 const errorMessages = {
+  captcha_required: "Conclua a verificação de segurança para continuar.",
   invalid_email: "Informe um e-mail válido para continuar.",
   request_failed:
     "Não foi possível processar sua solicitação agora. Tente novamente em instantes.",
 } as const;
+
+const turnstileSiteKey = getTurnstileSiteKey(
+  process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+  process.env.NODE_ENV,
+);
 
 type ForgotPasswordFormProps = {
   action: (
@@ -35,6 +43,7 @@ function ForgotPasswordForm({ action }: ForgotPasswordFormProps) {
     >
       <form action={formAction} className="space-y-5" noValidate>
         <AuthEmailField invalid={hasError} />
+        <TurnstileField siteKey={turnstileSiteKey} resetSignal={state} />
 
         {hasError && <AuthFeedback>{errorMessages[state.error]}</AuthFeedback>}
         {state?.status === "success" && (

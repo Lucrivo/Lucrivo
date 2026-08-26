@@ -4,6 +4,10 @@ import { NextResponse, type NextRequest } from "next/server";
 const guestOnlyPaths = new Set(["/login", "/register", "/forgot-password"]);
 
 export async function updateSession(request: NextRequest) {
+  if (request.nextUrl.pathname === "/api/health") {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({
     request,
   });

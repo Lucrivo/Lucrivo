@@ -1,0 +1,105 @@
+name: Deploy production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Migrate and verify production
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Link production database
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+          SUPABASE_PROJECT_ID: ${{ secrets.PRODUCTION_PROJECT_ID }}
+        run: pnpm exec supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Preview pending migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+        run: pnpm exec supabase db push --linked --dry-run --skip-vault
+
+      - name: Apply pending migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+        run: pnpm exec supabase db push --linked --skip-vault --yes
+
+      - name: Wait for Vercel revision
+        env:
+          DEPLOYMENT_URL: ${{ secrets.PRODUCTION_APP_URL }}
+          EXPECTED_REVISION: ${{ github.sha }}
+        run: |
+          if [ -z "$DEPLOYMENT_URL" ]; then
+            echo "PRODUCTION_APP_URL is required." >&2
+            exit 1
+          fi
+
+          expected_revision="${EXPECTED_REVISION:0:12}"
+          deployment_url="${DEPLOYMENT_URL%/}"
+
+          for attempt in {1..60}; do
+            if response="$(curl --fail --silent --show-error --max-time 10 "${deployment_url}/api/health")"; then
+              revision="$(jq -r 'select(.status == "ok" and .service == "lucrivo") | .revision // empty' <<<"$response")"
+              if [ "$revision" = "$expected_revision" ]; then
+                echo "Vercel revision is available."
+                exit 0
+              fi
+            fi
+
+            echo "Waiting for Vercel revision (attempt ${attempt}/60)."
+            sleep 10
+          done
+
+          echo "Expected Vercel revision was not available in time." >&2
+          exit 1
+
+      - name: Validate production signup expectation
+        env:
+          SIGNUP_EXPECTATION: ${{ vars.PRODUCTION_EXPECT_SIGNUP || 'skip' }}
+        run: |
+          if [ "$SIGNUP_EXPECTATION" != "skip" ] && [ "$SIGNUP_EXPECTATION" != "disabled" ]; then
+            echo "PRODUCTION_EXPECT_SIGNUP must be unset, skip, or disabled." >&2
+            exit 1
+          fi
+
+      - name: Run production smoke tests
+        env:
+          DEPLOYMENT_URL: ${{ secrets.PRODUCTION_APP_URL }}
+          SIGNUP_EXPECTATION: ${{ vars.PRODUCTION_EXPECT_SIGNUP || 'skip' }}
+        run: pnpm smoke:test --base-url "$DEPLOYMENT_URL" --expect-signup "$SIGNUP_EXPECTATION"

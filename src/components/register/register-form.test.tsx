@@ -2,6 +2,12 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("@/components/shared/auth/turnstile-field", () => ({
+  TurnstileField: () => (
+    <input type="hidden" name="captchaToken" value="captcha-token" readOnly />
+  ),
+}));
+
 import type { RegisterActionState } from "@/modules/auth/actions/register.action";
 
 import { RegisterForm } from "./register-form";
@@ -13,6 +19,16 @@ async function fillRegisterForm(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe("RegisterForm", () => {
+  it("does not show an inoperable Google registration", () => {
+    const action = vi.fn(async (): Promise<RegisterActionState> => null);
+
+    render(<RegisterForm action={action} />);
+
+    expect(
+      screen.queryByRole("button", { name: /google/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it("uses the password length required by Supabase", () => {
     const action = vi.fn(async (): Promise<RegisterActionState> => null);
 

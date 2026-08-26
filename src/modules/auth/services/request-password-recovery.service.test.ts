@@ -26,10 +26,14 @@ describe("requestPasswordRecoveryEmail", () => {
   });
 
   it("requests the email with the fixed application callback", async () => {
-    const result = await requestPasswordRecoveryEmail("usuario@lucrivo.com");
+    const result = await requestPasswordRecoveryEmail(
+      "usuario@lucrivo.com",
+      "captcha-token",
+    );
 
     expect(resetPasswordForEmail).toHaveBeenCalledWith("usuario@lucrivo.com", {
       redirectTo: "http://localhost:3000/auth/confirm",
+      captchaToken: "captcha-token",
     });
     expect(result).toEqual({ status: "accepted" });
   });

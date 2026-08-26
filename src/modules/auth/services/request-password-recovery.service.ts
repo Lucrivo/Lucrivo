@@ -21,6 +21,7 @@ function recoveryRedirectUrl() {
 
 async function requestPasswordRecoveryEmail(
   email: string,
+  captchaToken?: string,
 ): Promise<RequestPasswordRecoveryServiceResult> {
   const redirectTo = recoveryRedirectUrl();
   if (!redirectTo) {
@@ -32,6 +33,7 @@ async function requestPasswordRecoveryEmail(
     const supabase = await createClient();
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo,
+      captchaToken,
     });
 
     if (error) {

@@ -16,10 +16,14 @@ type SignupServiceResult =
 
 async function signup(
   credentials: SignupCredentials,
+  captchaToken?: string,
 ): Promise<SignupServiceResult> {
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase.auth.signUp(credentials);
+    const { data, error } = await supabase.auth.signUp({
+      ...credentials,
+      options: { captchaToken },
+    });
 
     if (error) {
       if (error.code === "weak_password")
