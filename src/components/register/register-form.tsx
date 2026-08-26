@@ -62,7 +62,8 @@ function RegisterForm({ action }: RegisterFormProps) {
         {hasError && <AuthFeedback>{errorMessages[state.error]}</AuthFeedback>}
         {state?.status === "success" && (
           <AuthFeedback variant="success">
-            Cadastro realizado. Verifique seu e-mail para confirmar sua conta.
+            Se o cadastro puder ser concluído, enviaremos uma confirmação para o
+            e-mail informado.
           </AuthFeedback>
         )}
 
