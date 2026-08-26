@@ -74,7 +74,7 @@ describe("RegisterForm", () => {
     expect(action).toHaveBeenCalledOnce();
   });
 
-  it("shows the email confirmation state after a successful registration", async () => {
+  it("shows a neutral email confirmation state after a registration request", async () => {
     const user = userEvent.setup();
     const action = vi.fn(async (): Promise<RegisterActionState> => ({
       status: "success",
@@ -86,7 +86,7 @@ describe("RegisterForm", () => {
     await user.click(screen.getByRole("button", { name: "Criar conta" }));
 
     expect(await screen.findByRole("status")).toHaveTextContent(
-      "Cadastro realizado",
+      "Se o cadastro puder ser concluído, enviaremos uma confirmação para o e-mail informado.",
     );
     expect(action).toHaveBeenCalledOnce();
   });
