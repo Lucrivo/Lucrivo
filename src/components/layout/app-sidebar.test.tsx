@@ -7,6 +7,10 @@ const { usePathname } = vi.hoisted(() => ({
 
 vi.mock("next/navigation", () => ({ usePathname }));
 
+vi.mock("@/components/theme-toggle", () => ({
+  ThemeToggle: () => <div aria-label="Selecionar tema">Tema</div>,
+}));
+
 vi.mock("@/components/ui/sidebar", () => ({
   Sidebar: ({ children }: { children: React.ReactNode }) => (
     <aside>{children}</aside>
@@ -73,8 +77,8 @@ vi.mock("@/components/ui/sidebar", () => ({
 import { AppSidebar } from "./app-sidebar";
 
 describe("AppSidebar", () => {
-  it("exibe a navegação principal e a conta autenticada", () => {
-    render(<AppSidebar email="pessoa@lucrivo.local" logoutAction={vi.fn()} />);
+  it("exibe a marca, a navegação principal e o controle de tema", () => {
+    render(<AppSidebar />);
 
     expect(screen.getByText("Lucrivo")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /dashboard/i })).toHaveAttribute(
@@ -85,19 +89,16 @@ describe("AppSidebar", () => {
       "data-active",
       "true",
     );
-    expect(screen.getByText("pessoa@lucrivo.local")).toBeInTheDocument();
+    expect(screen.getByText("Aparência")).toBeInTheDocument();
+    expect(screen.getByLabelText("Selecionar tema")).toBeInTheDocument();
   });
 
-  it("disponibiliza o logout como ação de formulário", () => {
-    const logoutAction = vi.fn();
+  it("não mistura informações da conta com a navegação", () => {
+    render(<AppSidebar />);
 
-    render(
-      <AppSidebar email="pessoa@lucrivo.local" logoutAction={logoutAction} />,
-    );
-
-    expect(screen.getByRole("button", { name: /sair/i })).toHaveAttribute(
-      "type",
-      "submit",
-    );
+    expect(screen.queryByText(/@lucrivo\.local/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /sair/i }),
+    ).not.toBeInTheDocument();
   });
 });
