@@ -118,3 +118,29 @@ Mudanças destrutivas usam expand/contract em releases distintas. Nunca execute
 Ao trocar `BACKUP_ENCRYPTION_PASSPHRASE`, preserve a senha anterior enquanto
 existirem artifacts cifrados com ela. Senhas, tokens e chaves nunca devem ser
 copiados para issues, PRs, logs ou este runbook.
+
+## Limitações operacionais aceitas
+
+Estas limitações foram aceitas para a fase atual, restrita ao proprietário e a
+poucos testadores:
+
+- O fluxo de branches depende da convenção de PRs e da revisão manual; não há
+  enforcement de branch que impeça tecnicamente um push ou merge indevido.
+- A Vercel usa o plano Hobby somente enquanto a aplicação permanecer pessoal e
+  não comercial. Reavaliar o plano antes de monetizar ou abrir o produto ao
+  público.
+- Os projetos Supabase Free podem pausar por inatividade. Antes de uma
+  demonstração ou janela de testes, confirmar que staging e produção estão
+  ativos.
+- Não há PITR nem backup gerenciado contratado. A recuperação depende do
+  workflow de backup lógico, da retenção do artifact cifrado e dos drills
+  descritos no runbook de backup e restauração.
+- O Gmail SMTP é temporário e adequado apenas ao baixo volume atual. Antes de
+  receber usuários reais, migrar para um provedor transacional com domínio
+  próprio, SPF, DKIM e DMARC.
+- Feature previews compartilham o projeto Supabase de staging. Dados, contas e
+  mudanças compatíveis com schema feitas por um preview podem afetar os demais;
+  previews não são ambientes isolados.
+
+Revise esta seção ao mudar de plano, iniciar uso comercial, aumentar o número de
+usuários, exigir menor RPO/RTO ou adotar ambientes efêmeros isolados.
