@@ -99,3 +99,45 @@ Uma restauração considerada válida precisa terminar sem erros, apresentar o
 histórico de migrations esperado e passar os smoke tests. A decisão de restaurar
 produção exige um plano separado de indisponibilidade, perda de dados e
 comunicação; este workflow nunca toma essa decisão.
+
+### Drill em Supabase local descartável
+
+Inicie o stack local completo, não somente o container do Postgres. Os serviços
+de Auth e Storage aplicam migrations dos schemas gerenciados que podem ser
+necessárias para aceitar o dump de produção.
+
+Mantenha os SQL extraídos fora do repositório e preserve os arquivos originais.
+Se uma adaptação for necessária, crie uma cópia temporária exclusiva para o
+drill. Durante a execução de 2026-08-26, foram observados estes casos:
+
+- `roles.sql` continha um `GRANT SET` de `log_min_messages` para
+  `supabase_realtime_admin`. O Postgres local rejeitou o grant. Ele foi omitido
+  apenas na cópia temporária porque a role e seu grant são provisionados pela
+  infraestrutura do destino gerenciado.
+- O dump referenciava `storage.buckets.versioning_status`, ausente no runtime
+  local usado pelo drill. Antes de adaptar, foi confirmado que todos os blocos
+  `COPY storage.*` tinham zero linhas. Somente esses blocos vazios foram
+  omitidos da cópia temporária de `data.sql`. Se qualquer bloco de Storage tiver
+  dados, interrompa o drill e use um destino com schema compatível; não descarte
+  essas linhas.
+
+Depois da validação, execute `supabase stop` para o identificador exato do
+projeto com `--no-backup`, confirme que os containers foram removidos e apague o
+diretório temporário com os SQL em claro. Preserve apenas o artifact cifrado.
+
+### Registro do drill de 2026-08-26
+
+- Artifact de origem: workflow run `33027690139`.
+- Revisão de produção: `8a3e983625ee`.
+- Destino: stack Supabase local descartável, Postgres 17.6.
+- Ponto de recuperação: backup lógico produzido pelo run informado acima.
+- Resultado: roles compatíveis, schema, dados Auth e histórico de migrations
+  restaurados com sucesso após as duas adaptações locais documentadas.
+- Validações agregadas: um usuário, uma identidade, migration
+  `20260824183442`, zero tabelas em `public` e execução de
+  `public.rls_auto_enable()` negada a `anon` e `authenticated`.
+- Advisors locais: nenhum problema de segurança ou performance.
+- Duração: não cronometrada nesta primeira execução; registrar início e fim nos
+  próximos drills.
+- Limpeza: volume, containers e arquivos SQL temporários removidos; artifact
+  cifrado preservado.
