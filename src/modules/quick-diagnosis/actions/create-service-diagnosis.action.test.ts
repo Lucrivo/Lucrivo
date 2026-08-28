@@ -1,27 +1,45 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ServiceDiagnosisInput } from "../types";
+import type { ServiceDiagnosisCommand, ServiceDiagnosisInput } from "../types";
 
-const { AuthRequiredError, createServiceDiagnosisService, requireUser } =
-  vi.hoisted(() => ({
-    AuthRequiredError: class AuthRequiredError extends Error {
-      constructor() {
-        super("Authentication required");
-        this.name = "AuthRequiredError";
-      }
-    },
-    createServiceDiagnosisService: vi.fn(),
-    requireUser: vi.fn(),
-  }));
+const {
+  AuthRequiredError,
+  buildServiceReportSnapshot,
+  calculateServiceReport,
+  createServiceReport,
+  requireUser,
+  safeParse,
+} = vi.hoisted(() => ({
+  AuthRequiredError: class AuthRequiredError extends Error {
+    constructor() {
+      super("Authentication required");
+      this.name = "AuthRequiredError";
+    }
+  },
+  buildServiceReportSnapshot: vi.fn(),
+  calculateServiceReport: vi.fn(),
+  createServiceReport: vi.fn(),
+  requireUser: vi.fn(),
+  safeParse: vi.fn(),
+}));
 
 vi.mock("@/modules/auth/services/require-user", () => ({
   AuthRequiredError,
   requireUser,
 }));
-vi.mock(
-  "@/modules/quick-diagnosis/services/create-service-diagnosis.service",
-  () => ({ createServiceDiagnosisService }),
-);
+vi.mock("server-only", () => ({}));
+vi.mock("@/modules/reports/domain/calculate-service-report", () => ({
+  calculateServiceReport,
+}));
+vi.mock("@/modules/reports/domain/build-service-report-snapshot", () => ({
+  buildServiceReportSnapshot,
+}));
+vi.mock("@/modules/reports/services/create-service-report.service", () => ({
+  createServiceReport,
+}));
+vi.mock("../schemas/service-diagnosis.schema", () => ({
+  serviceDiagnosisSchema: { safeParse },
+}));
 
 import { createServiceDiagnosis } from "./create-service-diagnosis.action";
 
@@ -40,6 +58,24 @@ const validInput: ServiceDiagnosisInput = {
   cardFeeRate: "3.50",
 };
 
+const command: ServiceDiagnosisCommand = {
+  submissionId: validInput.submissionId,
+  pricingMethod: "hour",
+  desiredMonthlyIncomeCents: 500025,
+  fixedMonthlyExpensesCents: 123456,
+  monthlyWorkMinutes: 9630,
+  weeklyWorkDays: 5,
+  hourlyRateCents: 12590,
+  minuteRateCents: 0,
+  appointmentRateCents: 0,
+  appointmentDurationMinutes: 0,
+  taxRateBasisPoints: 625,
+  cardFeeRateBasisPoints: 350,
+};
+
+const calculation = { calculation: "service-result" };
+const snapshot = { schemaVersion: 1, category: "service" };
+
 function expectNoTechnicalDetails(result: unknown) {
   const serialized = JSON.stringify(result);
 
@@ -54,18 +90,32 @@ function expectNoTechnicalDetails(result: unknown) {
 }
 
 describe("createServiceDiagnosis", () => {
-  const supabase = { from: vi.fn() };
+  const supabase = { rpc: vi.fn() };
 
   beforeEach(() => {
     vi.clearAllMocks();
+    safeParse.mockReturnValue({ success: true, data: command });
     requireUser.mockResolvedValue({ userId: "trusted-user", supabase });
-    createServiceDiagnosisService.mockResolvedValue({
+    calculateServiceReport.mockReturnValue(calculation);
+    buildServiceReportSnapshot.mockReturnValue(snapshot);
+    createServiceReport.mockResolvedValue({
       status: "success",
       diagnosisId: 42,
     });
   });
 
   it("returns field errors before authentication for invalid input", async () => {
+    safeParse.mockReturnValue({
+      success: false,
+      error: {
+        flatten: () => ({
+          fieldErrors: {
+            hourlyRate: ["Informe um valor por hora maior que zero."],
+          },
+        }),
+      },
+    });
+
     const result = await createServiceDiagnosis({
       ...validInput,
       hourlyRate: "",
@@ -79,8 +129,11 @@ describe("createServiceDiagnosis", () => {
       },
     });
     expectNoTechnicalDetails(result);
+    expect(safeParse).toHaveBeenCalledOnce();
     expect(requireUser).not.toHaveBeenCalled();
-    expect(createServiceDiagnosisService).not.toHaveBeenCalled();
+    expect(calculateServiceReport).not.toHaveBeenCalled();
+    expect(buildServiceReportSnapshot).not.toHaveBeenCalled();
+    expect(createServiceReport).not.toHaveBeenCalled();
   });
 
   it("maps a missing authenticated user to unauthorized", async () => {
@@ -88,58 +141,71 @@ describe("createServiceDiagnosis", () => {
 
     const result = await createServiceDiagnosis(validInput);
 
-    expect(result).toEqual({
-      status: "error",
-      error: "unauthorized",
-    });
+    expect(result).toEqual({ status: "error", error: "unauthorized" });
     expectNoTechnicalDetails(result);
-    expect(createServiceDiagnosisService).not.toHaveBeenCalled();
+    expect(calculateServiceReport).not.toHaveBeenCalled();
+    expect(buildServiceReportSnapshot).not.toHaveBeenCalled();
+    expect(createServiceReport).not.toHaveBeenCalled();
   });
 
-  it("passes normalized data and the trusted identity to persistence", async () => {
+  it("orchestrates parse, auth, calculation, snapshot, and persistence in order", async () => {
     const result = await createServiceDiagnosis(validInput);
 
-    expect(result).toEqual({
-      status: "success",
-      diagnosisId: 42,
-    });
+    expect(result).toEqual({ status: "success", diagnosisId: 42 });
     expectNoTechnicalDetails(result);
-    expect(requireUser).toHaveBeenCalledOnce();
-    expect(createServiceDiagnosisService).toHaveBeenCalledWith({
-      userId: "trusted-user",
-      supabase,
-      command: {
-        submissionId: validInput.submissionId,
-        pricingMethod: "hour",
-        desiredMonthlyIncomeCents: 500025,
-        fixedMonthlyExpensesCents: 123456,
-        monthlyWorkMinutes: 9630,
-        weeklyWorkDays: 5,
-        hourlyRateCents: 12590,
-        minuteRateCents: 0,
-        appointmentRateCents: 0,
-        appointmentDurationMinutes: 0,
-        taxRateBasisPoints: 625,
-        cardFeeRateBasisPoints: 350,
-      },
-    });
-    expect(requireUser.mock.invocationCallOrder[0]).toBeLessThan(
-      createServiceDiagnosisService.mock.invocationCallOrder[0],
+    expect(safeParse).toHaveBeenCalledWith(validInput);
+    expect(calculateServiceReport).toHaveBeenCalledWith(command);
+    expect(buildServiceReportSnapshot).toHaveBeenCalledWith(
+      command,
+      calculation,
     );
+    expect(createServiceReport).toHaveBeenCalledWith({
+      supabase,
+      command,
+      snapshot,
+    });
+
+    const order = [
+      safeParse,
+      requireUser,
+      calculateServiceReport,
+      buildServiceReportSnapshot,
+      createServiceReport,
+    ].map((mock) => mock.mock.invocationCallOrder[0]);
+    expect(order).toEqual([...order].sort((left, right) => left - right));
   });
+
+  it.each(["calculation", "snapshot"])(
+    "sanitizes a %s construction failure",
+    async (boundary) => {
+      const failure = new Error("private domain detail");
+      if (boundary === "calculation") {
+        calculateServiceReport.mockImplementation(() => {
+          throw failure;
+        });
+      } else {
+        buildServiceReportSnapshot.mockImplementation(() => {
+          throw failure;
+        });
+      }
+
+      const result = await createServiceDiagnosis(validInput);
+
+      expect(result).toEqual({ status: "error", error: "create_failed" });
+      expectNoTechnicalDetails(result);
+      expect(createServiceReport).not.toHaveBeenCalled();
+    },
+  );
 
   it("returns the safe persistence error", async () => {
-    createServiceDiagnosisService.mockResolvedValue({
+    createServiceReport.mockResolvedValue({
       status: "error",
       error: "create_failed",
     });
 
     const result = await createServiceDiagnosis(validInput);
 
-    expect(result).toEqual({
-      status: "error",
-      error: "create_failed",
-    });
+    expect(result).toEqual({ status: "error", error: "create_failed" });
     expectNoTechnicalDetails(result);
   });
 
@@ -156,7 +222,7 @@ describe("createServiceDiagnosis", () => {
       if (boundary === "authentication") {
         requireUser.mockRejectedValue(providerFailure);
       } else {
-        createServiceDiagnosisService.mockRejectedValue(providerFailure);
+        createServiceReport.mockRejectedValue(providerFailure);
       }
 
       const result = await createServiceDiagnosis(validInput);
