@@ -117,9 +117,8 @@ describe("AppSidebar", () => {
     expect(
       screen.getByRole("link", { name: /diagnóstico rápido/i }),
     ).toHaveAttribute("data-active", "true");
-    expect(screen.getByRole("link", { name: /dashboard/i })).not.toHaveAttribute(
-      "data-active",
-      "true",
-    );
+    expect(
+      screen.getByRole("link", { name: /dashboard/i }),
+    ).not.toHaveAttribute("data-active", "true");
   });
 });
