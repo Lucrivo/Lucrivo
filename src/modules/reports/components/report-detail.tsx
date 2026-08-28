@@ -6,6 +6,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import type { ReportViewModel } from "../presenters/to-report-view-model";
+import { DiscountSimulator } from "./discount-simulator";
 import { ReportSectionCard } from "./report-section-card";
 import { ReportSummary } from "./report-summary";
 
@@ -72,9 +73,16 @@ function ReportDetail({ viewModel }: { viewModel: ReportViewModel }) {
               volume.
             </p>
           </div>
-          {viewModel.sections.map((section) => (
-            <ReportSectionCard key={section.key} section={section} />
-          ))}
+          {viewModel.sections.map((section) =>
+            section.key === "discount_simulator" ? (
+              <DiscountSimulator
+                key={section.key}
+                base={viewModel.discountSimulationBase}
+              />
+            ) : (
+              <ReportSectionCard key={section.key} section={section} />
+            ),
+          )}
         </section>
       </div>
     </main>
