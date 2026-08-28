@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboardIcon, TrendingUpIcon } from "lucide-react";
+import {
+  ClipboardCheckIcon,
+  LayoutDashboardIcon,
+  TrendingUpIcon,
+} from "lucide-react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
@@ -69,6 +73,17 @@ function AppSidebar() {
                 >
                   <LayoutDashboardIcon aria-hidden="true" />
                   <span>Dashboard</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  tooltip="Diagnóstico rápido"
+                  isActive={pathname === "/quick-diagnosis"}
+                  render={<Link href="/quick-diagnosis" />}
+                  className="transition-interactive data-active:bg-primary data-active:text-primary-foreground h-10 rounded-xl px-3 font-medium group-data-[collapsible=icon]:justify-center hover:translate-x-0.5 data-active:shadow-sm"
+                >
+                  <ClipboardCheckIcon aria-hidden="true" />
+                  <span>Diagnóstico rápido</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { usePathname } = vi.hoisted(() => ({
   usePathname: vi.fn(() => "/dashboard"),
@@ -77,6 +77,10 @@ vi.mock("@/components/ui/sidebar", () => ({
 import { AppSidebar } from "./app-sidebar";
 
 describe("AppSidebar", () => {
+  beforeEach(() => {
+    usePathname.mockReturnValue("/dashboard");
+  });
+
   it("exibe a marca, a navegação principal e o controle de tema", () => {
     render(<AppSidebar />);
 
@@ -100,5 +104,22 @@ describe("AppSidebar", () => {
     expect(
       screen.queryByRole("button", { name: /sair/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("marca somente o diagnóstico rápido em sua rota exata", () => {
+    usePathname.mockReturnValue("/quick-diagnosis");
+
+    render(<AppSidebar />);
+
+    expect(
+      screen.getByRole("link", { name: /diagnóstico rápido/i }),
+    ).toHaveAttribute("href", "/quick-diagnosis");
+    expect(
+      screen.getByRole("link", { name: /diagnóstico rápido/i }),
+    ).toHaveAttribute("data-active", "true");
+    expect(screen.getByRole("link", { name: /dashboard/i })).not.toHaveAttribute(
+      "data-active",
+      "true",
+    );
   });
 });
