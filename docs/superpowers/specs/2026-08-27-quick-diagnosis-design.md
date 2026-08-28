@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-27
 
-**Status:** Design approved; awaiting specification review
+**Status:** Approved
 
 ## 1. Context
 
