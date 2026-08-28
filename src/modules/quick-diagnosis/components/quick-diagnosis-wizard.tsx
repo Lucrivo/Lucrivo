@@ -16,13 +16,16 @@ import { validateServiceDiagnosisFields } from "../schemas/service-diagnosis.sch
 import type {
   CreateServiceDiagnosisActionResult,
   ServiceDiagnosisField,
+  ServiceDiagnosisFieldErrors,
   ServiceDiagnosisInput,
 } from "../types";
+import { DiagnosisSuccess } from "./diagnosis-success";
 import { CurrentPriceStep } from "./steps/current-price-step";
 import { FeesStep } from "./steps/fees-step";
 import { FixedExpensesStep } from "./steps/fixed-expenses-step";
 import { MonthlyGoalStep } from "./steps/monthly-goal-step";
 import { PricingMethodStep } from "./steps/pricing-method-step";
+import { ReviewStep } from "./steps/review-step";
 import { WorkRoutineStep } from "./steps/work-routine-step";
 import {
   createInitialWizardState,
@@ -67,12 +70,43 @@ const stepFields = {
   readonly ServiceDiagnosisField[]
 >;
 
+const fieldStep: Record<ServiceDiagnosisField, WizardStep> = {
+  submissionId: "pricingMethod",
+  pricingMethod: "pricingMethod",
+  desiredMonthlyIncome: "monthlyGoal",
+  fixedMonthlyExpenses: "fixedExpenses",
+  monthlyWorkHours: "workRoutine",
+  weeklyWorkDays: "workRoutine",
+  hourlyRate: "currentPrice",
+  minuteRate: "currentPrice",
+  appointmentRate: "currentPrice",
+  appointmentDurationMinutes: "currentPrice",
+  taxRate: "fees",
+  cardFeeRate: "fees",
+};
+
+const fieldOrder = Object.keys(fieldStep) as ServiceDiagnosisField[];
+
+function firstInvalidField(
+  fieldErrors: ServiceDiagnosisFieldErrors,
+): ServiceDiagnosisField | undefined {
+  return fieldOrder
+    .filter((field) => fieldErrors[field]?.length)
+    .sort((left, right) => {
+      const stepDifference =
+        wizardSteps.indexOf(fieldStep[left]) -
+        wizardSteps.indexOf(fieldStep[right]);
+
+      return (
+        stepDifference || fieldOrder.indexOf(left) - fieldOrder.indexOf(right)
+      );
+    })[0];
+}
+
 function QuickDiagnosisWizard({
   createDiagnosis,
   createSubmissionId = () => crypto.randomUUID(),
 }: QuickDiagnosisWizardProps) {
-  void createDiagnosis;
-
   const [initialSubmissionId] = useState(createSubmissionId);
 
   const [state, dispatch] = useReducer(
@@ -81,12 +115,27 @@ function QuickDiagnosisWizard({
     createInitialWizardState,
   );
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const submittingRef = useRef(false);
+  const invalidFieldToFocusRef = useRef<ServiceDiagnosisField | null>(null);
   const stepIndex = wizardSteps.indexOf(state.step);
   const stepNumber = stepIndex + 1;
 
   useEffect(() => {
     headingRef.current?.focus({ preventScroll: true });
   }, [state.step]);
+
+  useEffect(() => {
+    const field = invalidFieldToFocusRef.current;
+    if (!field) return;
+
+    const target =
+      field === "pricingMethod"
+        ? document.querySelector<HTMLElement>("[role='radio']")
+        : document.getElementById(field);
+
+    target?.focus({ preventScroll: true });
+    invalidFieldToFocusRef.current = null;
+  }, [state.fieldErrors, state.step]);
 
   const stepProps = {
     values: state.values,
@@ -119,9 +168,14 @@ function QuickDiagnosisWizard({
         return <FeesStep {...stepProps} />;
       case "review":
         return (
-          <p className="text-muted-foreground">
-            Suas respostas estão prontas para revisão.
-          </p>
+          <ReviewStep
+            values={state.values}
+            errors={state.fieldErrors}
+            pending={state.status === "submitting"}
+            submitError={state.submitError}
+            onEdit={(step) => dispatch({ type: "edit", step })}
+            onSubmit={submitDiagnosis}
+          />
         );
     }
   }
@@ -138,6 +192,61 @@ function QuickDiagnosisWizard({
     if (Object.keys(fieldErrors).length === 0) {
       dispatch({ type: "next" });
     }
+  }
+
+  async function submitDiagnosis() {
+    if (submittingRef.current || state.status === "submitting") return;
+
+    submittingRef.current = true;
+    dispatch({ type: "submitting" });
+
+    try {
+      const result = await createDiagnosis(state.values);
+
+      if (result.status === "success") {
+        dispatch({ type: "success", diagnosisId: result.diagnosisId });
+        return;
+      }
+
+      if (result.error === "invalid_input") {
+        const fieldErrors = { ...result.fieldErrors };
+
+        if (fieldErrors.submissionId?.length) {
+          dispatch({
+            type: "setField",
+            field: "submissionId",
+            value: createSubmissionId(),
+          });
+          delete fieldErrors.submissionId;
+        }
+
+        const invalidField = firstInvalidField(fieldErrors);
+        invalidFieldToFocusRef.current = invalidField ?? null;
+        dispatch({ type: "setFieldErrors", fieldErrors });
+        dispatch({
+          type: "edit",
+          step: invalidField ? fieldStep[invalidField] : "pricingMethod",
+        });
+        return;
+      }
+
+      dispatch({ type: "submitError", error: result.error });
+    } catch {
+      dispatch({ type: "submitError", error: "create_failed" });
+    } finally {
+      submittingRef.current = false;
+    }
+  }
+
+  if (state.status === "success" && state.diagnosisId !== null) {
+    return (
+      <DiagnosisSuccess
+        diagnosisId={state.diagnosisId}
+        onStartAnother={() =>
+          dispatch({ type: "reset", submissionId: createSubmissionId() })
+        }
+      />
+    );
   }
 
   return (
@@ -189,18 +298,23 @@ function QuickDiagnosisWizard({
             variant="outline"
             disabled={stepIndex === 0}
             onClick={() => dispatch({ type: "back" })}
+            className="motion-reduce:transition-none"
           >
             <ArrowLeftIcon aria-hidden="true" />
             Voltar
           </Button>
-          <Button
-            type="button"
-            disabled={stepIndex === wizardSteps.length - 1}
-            onClick={continueToNextStep}
-          >
-            Continuar
-            <ArrowRightIcon aria-hidden="true" />
-          </Button>
+          {state.step !== "review" ? (
+            <Button
+              type="button"
+              onClick={continueToNextStep}
+              className="motion-reduce:transition-none"
+            >
+              Continuar
+              <ArrowRightIcon aria-hidden="true" />
+            </Button>
+          ) : (
+            <span aria-hidden="true" />
+          )}
         </CardFooter>
       </Card>
     </div>

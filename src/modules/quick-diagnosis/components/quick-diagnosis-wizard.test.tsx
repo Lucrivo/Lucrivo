@@ -5,15 +5,36 @@ import { describe, expect, it, vi } from "vitest";
 import { QuickDiagnosisWizard } from "./quick-diagnosis-wizard";
 
 describe("QuickDiagnosisWizard", () => {
-  function renderWizard() {
-    const createDiagnosis = vi.fn();
+  function renderWizard(
+    createDiagnosis = vi.fn(),
+    createSubmissionId = vi.fn(() => "550e8400-e29b-41d4-a716-446655440000"),
+  ) {
     render(
       <QuickDiagnosisWizard
         createDiagnosis={createDiagnosis}
-        createSubmissionId={() => "550e8400-e29b-41d4-a716-446655440000"}
+        createSubmissionId={createSubmissionId}
       />,
     );
-    return { createDiagnosis };
+    return { createDiagnosis, createSubmissionId };
+  }
+
+  async function completeValidDiagnosis() {
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("radio", { name: "Por hora" }));
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.type(screen.getByLabelText("Renda mensal desejada"), "5000");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.type(screen.getByLabelText("Despesas fixas mensais"), "1200");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.type(screen.getByLabelText("Horas de trabalho por mês"), "160");
+    await user.type(screen.getByLabelText("Dias de trabalho por semana"), "5");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.type(screen.getByLabelText("Valor por hora"), "125,90");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.type(screen.getByLabelText("Impostos"), "6,25");
+    await user.type(screen.getByLabelText("Taxa do cartão"), "3,50");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    return user;
   }
 
   it("renders one focused step with deterministic progress", () => {
@@ -259,5 +280,184 @@ describe("QuickDiagnosisWizard", () => {
 
     expect(screen.getByLabelText("Valor por minuto")).toHaveValue("");
     expect(screen.queryByLabelText("Valor por hora")).not.toBeInTheDocument();
+  });
+
+  it("reviews grouped, formatted answers and edits each source step", async () => {
+    const { createDiagnosis } = renderWizard();
+    const user = await completeValidDiagnosis();
+
+    expect(screen.getByText("7 de 7")).toBeInTheDocument();
+    expect(screen.getByText("Por hora")).toBeInTheDocument();
+    expect(screen.getByText("R$ 5.000,00")).toBeInTheDocument();
+    expect(screen.getByText("160 horas por mês")).toBeInTheDocument();
+    expect(screen.getByText("6,25%")).toBeInTheDocument();
+    expect(createDiagnosis).not.toHaveBeenCalled();
+
+    const edits = [
+      ["Editar forma de cobrança", "Como você cobra hoje?"],
+      ["Editar meta mensal", "Qual é sua meta mensal?"],
+      ["Editar despesas fixas", "Quais são suas despesas fixas?"],
+      ["Editar rotina", "Como é sua rotina de trabalho?"],
+      ["Editar preço atual", "Qual é seu preço atual?"],
+      ["Editar taxas", "Quais taxas incidem nas vendas?"],
+    ] as const;
+
+    for (const [buttonName, heading] of edits) {
+      await user.click(screen.getByRole("button", { name: buttonName }));
+      expect(
+        screen.getByRole("heading", { name: heading }),
+      ).toBeInTheDocument();
+      while (!screen.queryByText("7 de 7")) {
+        await user.click(screen.getByRole("button", { name: "Continuar" }));
+      }
+    }
+
+    await user.click(
+      screen.getByRole("button", { name: "Editar meta mensal" }),
+    );
+    expect(screen.getByLabelText("Renda mensal desejada")).toHaveValue("5000");
+  });
+
+  it("locks submission and renders success with a clean new diagnosis", async () => {
+    let resolveDiagnosis: (result: {
+      status: "success";
+      diagnosisId: number;
+    }) => void = () => undefined;
+    const createDiagnosis = vi.fn(
+      () =>
+        new Promise<{ status: "success"; diagnosisId: number }>((resolve) => {
+          resolveDiagnosis = resolve;
+        }),
+    );
+    const createSubmissionId = vi
+      .fn()
+      .mockReturnValueOnce("550e8400-e29b-41d4-a716-446655440000")
+      .mockReturnValueOnce("550e8400-e29b-41d4-a716-446655440001");
+    renderWizard(createDiagnosis, createSubmissionId);
+    const user = await completeValidDiagnosis();
+
+    const confirm = screen.getByRole("button", {
+      name: "Confirmar diagnóstico",
+    });
+    await user.dblClick(confirm);
+
+    expect(createDiagnosis).toHaveBeenCalledOnce();
+    expect(screen.getByRole("button", { name: "Enviando..." })).toBeDisabled();
+    expect(createDiagnosis).toHaveBeenCalledWith(
+      expect.objectContaining({
+        submissionId: "550e8400-e29b-41d4-a716-446655440000",
+      }),
+    );
+
+    resolveDiagnosis({ status: "success", diagnosisId: 42 });
+    expect(
+      await screen.findByRole("heading", { name: "Diagnóstico salvo" }),
+    ).toHaveFocus();
+    expect(
+      screen.getByRole("link", { name: "Ir para o dashboard" }),
+    ).toHaveAttribute("href", "/dashboard");
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Iniciar outro diagnóstico" }),
+    );
+    expect(screen.getByText("1 de 7")).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Por hora" })).not.toBeChecked();
+    expect(createSubmissionId).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    [
+      "create_failed",
+      "Não foi possível salvar o diagnóstico. Tente novamente.",
+    ],
+    ["unauthorized", "Sua sessão expirou. Entre novamente para continuar."],
+  ] as const)("preserves the review after %s", async (error, message) => {
+    const createDiagnosis = vi
+      .fn()
+      .mockResolvedValue({ status: "error", error });
+    renderWizard(createDiagnosis);
+    const user = await completeValidDiagnosis();
+
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(message);
+    expect(screen.getByText("7 de 7")).toBeInTheDocument();
+    expect(screen.getByText("R$ 5.000,00")).toBeInTheDocument();
+    if (error === "unauthorized") {
+      expect(
+        screen.getByRole("link", { name: "Entrar novamente" }),
+      ).toHaveAttribute("href", "/login");
+    }
+
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+    expect(createDiagnosis).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        submissionId: "550e8400-e29b-41d4-a716-446655440000",
+      }),
+    );
+  });
+
+  it("routes invalid server fields to the earliest step and focuses the input", async () => {
+    const createDiagnosis = vi.fn().mockResolvedValue({
+      status: "error",
+      error: "invalid_input",
+      fieldErrors: {
+        taxRate: ["Taxa inválida."],
+        desiredMonthlyIncome: ["Meta inválida."],
+      },
+    });
+    renderWizard(createDiagnosis);
+    const user = await completeValidDiagnosis();
+
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+
+    expect(await screen.findByLabelText("Renda mensal desejada")).toHaveFocus();
+    expect(screen.getByRole("alert")).toHaveTextContent("Meta inválida.");
+  });
+
+  it("regenerates an invalid uneditable submission id", async () => {
+    const createDiagnosis = vi
+      .fn()
+      .mockResolvedValueOnce({
+        status: "error",
+        error: "invalid_input",
+        fieldErrors: { submissionId: ["Identificador inválido."] },
+      })
+      .mockResolvedValueOnce({ status: "success", diagnosisId: 42 });
+    const createSubmissionId = vi
+      .fn()
+      .mockReturnValueOnce("550e8400-e29b-41d4-a716-446655440000")
+      .mockReturnValueOnce("550e8400-e29b-41d4-a716-446655440001");
+    renderWizard(createDiagnosis, createSubmissionId);
+    const user = await completeValidDiagnosis();
+
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Como você cobra hoje?" }),
+    ).toBeInTheDocument();
+
+    for (let step = 0; step < 6; step += 1) {
+      await user.click(screen.getByRole("button", { name: "Continuar" }));
+    }
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+
+    expect(createDiagnosis).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        submissionId: "550e8400-e29b-41d4-a716-446655440001",
+      }),
+    );
   });
 });
