@@ -3,6 +3,8 @@ import { z } from "zod";
 import {
   pricingMethods,
   type ServiceDiagnosisCommand,
+  type ServiceDiagnosisField,
+  type ServiceDiagnosisFieldErrors,
   type ServiceDiagnosisInput,
   type ServicePricingMethod,
 } from "../types";
@@ -181,4 +183,27 @@ const serviceDiagnosisSchema: z.ZodType<
     }
   });
 
-export { serviceDiagnosisSchema };
+function validateServiceDiagnosisFields(
+  fields: readonly ServiceDiagnosisField[],
+  values: ServiceDiagnosisInput,
+): ServiceDiagnosisFieldErrors {
+  const parsed = serviceDiagnosisSchema.safeParse(values);
+  if (parsed.success) return {};
+
+  const fieldErrors: ServiceDiagnosisFieldErrors = {};
+  for (const issue of parsed.error.issues) {
+    const field = issue.path[0];
+    if (typeof field !== "string") continue;
+    if (!fields.includes(field as ServiceDiagnosisField)) continue;
+
+    const diagnosisField = field as ServiceDiagnosisField;
+    fieldErrors[diagnosisField] = [
+      ...(fieldErrors[diagnosisField] ?? []),
+      issue.message,
+    ];
+  }
+
+  return fieldErrors;
+}
+
+export { serviceDiagnosisSchema, validateServiceDiagnosisFields };

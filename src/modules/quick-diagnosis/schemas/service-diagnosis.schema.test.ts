@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import type { ServiceDiagnosisInput } from "../types";
-import { serviceDiagnosisSchema } from "./service-diagnosis.schema";
+import {
+  serviceDiagnosisSchema,
+  validateServiceDiagnosisFields,
+} from "./service-diagnosis.schema";
 
 const validHour: ServiceDiagnosisInput = {
   submissionId: "550e8400-e29b-41d4-a716-446655440000",
@@ -26,6 +29,20 @@ function issuePaths(input: ServiceDiagnosisInput): string[] {
 }
 
 describe("serviceDiagnosisSchema", () => {
+  it("returns only errors requested by progressive validation", () => {
+    expect(
+      validateServiceDiagnosisFields(["monthlyWorkHours", "weeklyWorkDays"], {
+        ...validHour,
+        hourlyRate: "",
+        monthlyWorkHours: "744,01",
+        weeklyWorkDays: "8",
+      }),
+    ).toEqual({
+      monthlyWorkHours: ["Informe uma carga mensal entre 0 e 744 horas."],
+      weeklyWorkDays: ["Informe no máximo 7 dias de trabalho por semana."],
+    });
+  });
+
   it("normalizes a valid hourly diagnosis without floating-point drift", () => {
     expect(serviceDiagnosisSchema.parse(validHour)).toEqual({
       submissionId: validHour.submissionId,

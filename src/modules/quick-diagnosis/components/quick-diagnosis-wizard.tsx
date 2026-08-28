@@ -12,10 +12,18 @@ import {
 } from "@/components/ui/card";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
 
+import { validateServiceDiagnosisFields } from "../schemas/service-diagnosis.schema";
 import type {
   CreateServiceDiagnosisActionResult,
+  ServiceDiagnosisField,
   ServiceDiagnosisInput,
 } from "../types";
+import { CurrentPriceStep } from "./steps/current-price-step";
+import { FeesStep } from "./steps/fees-step";
+import { FixedExpensesStep } from "./steps/fixed-expenses-step";
+import { MonthlyGoalStep } from "./steps/monthly-goal-step";
+import { PricingMethodStep } from "./steps/pricing-method-step";
+import { WorkRoutineStep } from "./steps/work-routine-step";
 import {
   createInitialWizardState,
   wizardReducer,
@@ -42,6 +50,23 @@ const stepTitles: Record<WizardStep, string> = {
   review: "Revise suas respostas",
 };
 
+const stepFields = {
+  pricingMethod: ["pricingMethod"],
+  monthlyGoal: ["desiredMonthlyIncome"],
+  fixedExpenses: ["fixedMonthlyExpenses"],
+  workRoutine: ["monthlyWorkHours", "weeklyWorkDays"],
+  currentPrice: [
+    "hourlyRate",
+    "minuteRate",
+    "appointmentRate",
+    "appointmentDurationMinutes",
+  ],
+  fees: ["taxRate", "cardFeeRate"],
+} as const satisfies Record<
+  Exclude<WizardStep, "review">,
+  readonly ServiceDiagnosisField[]
+>;
+
 function QuickDiagnosisWizard({
   createDiagnosis,
   createSubmissionId = () => crypto.randomUUID(),
@@ -62,6 +87,58 @@ function QuickDiagnosisWizard({
   useEffect(() => {
     headingRef.current?.focus({ preventScroll: true });
   }, [state.step]);
+
+  const stepProps = {
+    values: state.values,
+    errors: state.fieldErrors,
+    onChange: (field: ServiceDiagnosisField, value: string) =>
+      dispatch({ type: "setField", field, value }),
+  };
+
+  function renderStep() {
+    switch (state.step) {
+      case "pricingMethod":
+        return (
+          <PricingMethodStep
+            values={state.values}
+            errors={state.fieldErrors}
+            onPricingMethodChange={(value) =>
+              dispatch({ type: "setPricingMethod", value })
+            }
+          />
+        );
+      case "monthlyGoal":
+        return <MonthlyGoalStep {...stepProps} />;
+      case "fixedExpenses":
+        return <FixedExpensesStep {...stepProps} />;
+      case "workRoutine":
+        return <WorkRoutineStep {...stepProps} />;
+      case "currentPrice":
+        return <CurrentPriceStep {...stepProps} />;
+      case "fees":
+        return <FeesStep {...stepProps} />;
+      case "review":
+        return (
+          <p className="text-muted-foreground">
+            Suas respostas estão prontas para revisão.
+          </p>
+        );
+    }
+  }
+
+  function continueToNextStep() {
+    if (state.step === "review") return;
+
+    const fieldErrors = validateServiceDiagnosisFields(
+      stepFields[state.step],
+      state.values,
+    );
+    dispatch({ type: "setFieldErrors", fieldErrors });
+
+    if (Object.keys(fieldErrors).length === 0) {
+      dispatch({ type: "next" });
+    }
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center py-6 sm:py-10">
@@ -88,6 +165,7 @@ function QuickDiagnosisWizard({
             Etapa {stepNumber}
           </p>
           <h2
+            id="wizard-step-title"
             ref={headingRef}
             tabIndex={-1}
             className="max-w-2xl text-2xl leading-tight font-semibold tracking-tight outline-none sm:text-3xl"
@@ -101,9 +179,7 @@ function QuickDiagnosisWizard({
             data-testid="wizard-step"
             aria-labelledby="wizard-step-title"
           >
-            <span id="wizard-step-title" className="sr-only">
-              {stepTitles[state.step]}
-            </span>
+            {renderStep()}
           </section>
         </CardContent>
 
@@ -120,7 +196,7 @@ function QuickDiagnosisWizard({
           <Button
             type="button"
             disabled={stepIndex === wizardSteps.length - 1}
-            onClick={() => dispatch({ type: "next" })}
+            onClick={continueToNextStep}
           >
             Continuar
             <ArrowRightIcon aria-hidden="true" />
