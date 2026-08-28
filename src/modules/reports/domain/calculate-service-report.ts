@@ -17,6 +17,7 @@ const WEEKLY_DIVISOR_HUNDREDTHS = 433;
 type ServiceReportCalculation = ReportResults & {
   unit: ReportUnit;
   totalFeeBasisPoints: number;
+  monthlyWorkMinutes: number;
 };
 
 function classifyServiceMargin(
@@ -161,6 +162,7 @@ function calculateServiceReport(
   return {
     unit,
     totalFeeBasisPoints,
+    monthlyWorkMinutes: command.monthlyWorkMinutes,
     monthlyCostCents,
     hourCostCents,
     unitCostCents,
