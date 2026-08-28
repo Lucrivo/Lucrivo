@@ -142,7 +142,9 @@ const serviceDiagnosisSchema: z.ZodType<
       appointmentRateCents:
         pricingMethod === "appointment" ? appointmentRate : 0,
       appointmentDurationMinutes:
-        pricingMethod === "appointment" ? appointmentDurationMinutes : 0,
+        pricingMethod === "minute" || pricingMethod === "appointment"
+          ? appointmentDurationMinutes
+          : 0,
       taxRateBasisPoints: taxRate,
       cardFeeRateBasisPoints: cardFeeRate,
     }),
@@ -164,22 +166,27 @@ const serviceDiagnosisSchema: z.ZodType<
       });
     }
 
-    if (command.pricingMethod === "appointment") {
-      if (command.appointmentRateCents <= 0) {
-        context.addIssue({
-          code: "custom",
-          path: ["appointmentRate"],
-          message: "Informe um valor por atendimento maior que zero.",
-        });
-      }
+    if (
+      command.pricingMethod === "appointment" &&
+      command.appointmentRateCents <= 0
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["appointmentRate"],
+        message: "Informe um valor por atendimento maior que zero.",
+      });
+    }
 
-      if (command.appointmentDurationMinutes <= 0) {
-        context.addIssue({
-          code: "custom",
-          path: ["appointmentDurationMinutes"],
-          message: "Informe uma duração maior que zero.",
-        });
-      }
+    if (
+      (command.pricingMethod === "minute" ||
+        command.pricingMethod === "appointment") &&
+      command.appointmentDurationMinutes <= 0
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["appointmentDurationMinutes"],
+        message: "Informe uma duração maior que zero.",
+      });
     }
   });
 

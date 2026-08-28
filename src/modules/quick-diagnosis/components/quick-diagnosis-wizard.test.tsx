@@ -154,7 +154,7 @@ describe("QuickDiagnosisWizard", () => {
 
     expect(screen.getByLabelText(priceLabel)).toBeInTheDocument();
     expect(screen.getAllByTestId("wizard-step")).toHaveLength(1);
-    if (method === "Por atendimento") {
+    if (method === "Por minuto" || method === "Por atendimento") {
       expect(
         screen.getByLabelText("Duração média do atendimento"),
       ).toBeInTheDocument();
@@ -165,10 +165,10 @@ describe("QuickDiagnosisWizard", () => {
     }
 
     await user.type(screen.getByLabelText(priceLabel), "125");
-    if (method === "Por atendimento") {
+    if (method === "Por minuto" || method === "Por atendimento") {
       await user.type(
         screen.getByLabelText("Duração média do atendimento"),
-        "45",
+        "40",
       );
     }
     await user.click(screen.getByRole("button", { name: "Continuar" }));
@@ -178,6 +178,9 @@ describe("QuickDiagnosisWizard", () => {
 
     expect(screen.getByText("8 de 8")).toBeInTheDocument();
     expect(screen.getAllByTestId("wizard-step")).toHaveLength(1);
+    if (method === "Por minuto") {
+      expect(screen.getByText("40 minutos")).toBeInTheDocument();
+    }
     expect(createDiagnosis).not.toHaveBeenCalled();
   });
 

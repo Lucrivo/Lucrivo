@@ -101,6 +101,8 @@ function ReviewStep({
       : values.pricingMethod === "minute"
         ? ["Valor por minuto", values.minuteRate]
         : ["Valor por atendimento", values.appointmentRate];
+  const requiresDuration =
+    values.pricingMethod === "minute" || values.pricingMethod === "appointment";
 
   return (
     <div className="grid gap-5">
@@ -177,7 +179,7 @@ function ReviewStep({
             label={currentPrice[0]}
             value={formatMoney(currentPrice[1])}
           />
-          {values.pricingMethod === "appointment" ? (
+          {requiresDuration ? (
             <ReviewItem
               label="Duração média"
               value={`${values.appointmentDurationMinutes} minutos`}

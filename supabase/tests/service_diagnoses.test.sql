@@ -357,16 +357,23 @@ select results_eq(
 select lives_ok(
   $sql$
     insert into public.service_diagnoses
-      (submission_id, user_id, pricing_method, minute_rate_cents)
+      (
+        submission_id,
+        user_id,
+        pricing_method,
+        minute_rate_cents,
+        appointment_duration_minutes
+      )
     values
       (
         'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2',
         '11111111-1111-4111-8111-111111111111',
         'minute',
-        10
+        10,
+        40
       )
   $sql$,
-  'minute accepts only a positive minute rate'
+  'minute accepts a positive rate and average appointment duration'
 );
 select lives_ok(
   $sql$
@@ -519,12 +526,12 @@ select throws_ok(
         '11111111-1111-4111-8111-111111111111',
         'minute',
         10,
-        1
+        0
       )
   $sql$,
   '23514',
   null,
-  'minute rejects an appointment duration'
+  'minute requires a positive average appointment duration'
 );
 select throws_ok(
   $sql$
