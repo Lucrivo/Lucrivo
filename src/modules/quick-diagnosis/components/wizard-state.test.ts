@@ -29,7 +29,9 @@ function withHourlyValues(): WizardState {
 describe("wizard state", () => {
   it("starts on the first step with an injected submission id", () => {
     expect(createInitialWizardState(firstSubmissionId)).toEqual({
-      step: "pricingMethod",
+      step: "diagnosisType",
+      diagnosisType: "",
+      diagnosisTypeError: null,
       values: {
         submissionId: firstSubmissionId,
         pricingMethod: "",
@@ -49,7 +51,26 @@ describe("wizard state", () => {
       diagnosisId: null,
       submitError: null,
     });
-    expect(wizardSteps).toHaveLength(7);
+    expect(wizardSteps).toHaveLength(8);
+  });
+
+  it("selects a diagnosis type and clears its validation error", () => {
+    const state = wizardReducer(createInitialWizardState(firstSubmissionId), {
+      type: "setDiagnosisTypeError",
+      error: "Selecione uma opção.",
+    });
+
+    expect(
+      wizardReducer(state, {
+        type: "setDiagnosisType",
+        value: "service",
+      }),
+    ).toEqual(
+      expect.objectContaining({
+        diagnosisType: "service",
+        diagnosisTypeError: null,
+      }),
+    );
   });
 
   it("sets a field without changing the other answers", () => {
@@ -110,7 +131,7 @@ describe("wizard state", () => {
     const initial = createInitialWizardState(firstSubmissionId);
     const review = { ...initial, step: "review" } satisfies WizardState;
 
-    expect(wizardReducer(initial, { type: "back" }).step).toBe("pricingMethod");
+    expect(wizardReducer(initial, { type: "back" }).step).toBe("diagnosisType");
     expect(wizardReducer(review, { type: "next" }).step).toBe("review");
   });
 

@@ -7,10 +7,11 @@ import type {
   ServiceDiagnosisFieldErrors,
   ServiceDiagnosisInput,
 } from "../../types";
-import type { WizardStep } from "../wizard-state";
+import type { DiagnosisType, WizardStep } from "../wizard-state";
 
 type ReviewStepProps = {
   values: ServiceDiagnosisInput;
+  diagnosisType: DiagnosisType | "";
   errors: ServiceDiagnosisFieldErrors;
   pending: boolean;
   submitError: "unauthorized" | "create_failed" | null;
@@ -88,6 +89,7 @@ function ReviewGroup({
 
 function ReviewStep({
   values,
+  diagnosisType,
   pending,
   submitError,
   onEdit,
@@ -103,6 +105,17 @@ function ReviewStep({
   return (
     <div className="grid gap-5">
       <div className="grid gap-3 sm:grid-cols-2">
+        <ReviewGroup
+          title="Tipo de diagnóstico"
+          editName="Editar tipo de diagnóstico"
+          onEdit={() => onEdit("diagnosisType")}
+        >
+          <ReviewItem
+            label="O que será analisado"
+            value={diagnosisType === "service" ? "Serviço" : ""}
+          />
+        </ReviewGroup>
+
         <ReviewGroup
           title="Forma de cobrança"
           editName="Editar forma de cobrança"

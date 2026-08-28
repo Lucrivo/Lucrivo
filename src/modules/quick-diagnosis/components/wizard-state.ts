@@ -6,19 +6,23 @@ import type {
 } from "../types";
 
 const wizardSteps = [
-  "pricingMethod",
+  "diagnosisType",
   "monthlyGoal",
   "fixedExpenses",
   "workRoutine",
+  "pricingMethod",
   "currentPrice",
   "fees",
   "review",
 ] as const;
 
 type WizardStep = (typeof wizardSteps)[number];
+type DiagnosisType = "service" | "product" | "production";
 
 type WizardState = {
   step: WizardStep;
+  diagnosisType: DiagnosisType | "";
+  diagnosisTypeError: string | null;
   values: ServiceDiagnosisInput;
   fieldErrors: ServiceDiagnosisFieldErrors;
   status: "editing" | "submitting" | "success";
@@ -33,6 +37,8 @@ type WizardAction =
       value: string;
     }
   | { type: "setPricingMethod"; value: ServicePricingMethod }
+  | { type: "setDiagnosisType"; value: DiagnosisType }
+  | { type: "setDiagnosisTypeError"; error: string | null }
   | {
       type: "setFieldErrors";
       fieldErrors: ServiceDiagnosisFieldErrors;
@@ -57,7 +63,9 @@ const methodDependentFields = [
 
 function createInitialWizardState(submissionId: string): WizardState {
   return {
-    step: "pricingMethod",
+    step: "diagnosisType",
+    diagnosisType: "",
+    diagnosisTypeError: null,
     values: {
       submissionId,
       pricingMethod: "",
@@ -119,6 +127,14 @@ function wizardReducer(state: WizardState, action: WizardAction): WizardState {
         fieldErrors,
       };
     }
+    case "setDiagnosisType":
+      return {
+        ...state,
+        diagnosisType: action.value,
+        diagnosisTypeError: null,
+      };
+    case "setDiagnosisTypeError":
+      return { ...state, diagnosisTypeError: action.error };
     case "setFieldErrors":
       return { ...state, fieldErrors: action.fieldErrors };
     case "next":
@@ -152,6 +168,7 @@ export {
   wizardReducer,
   wizardSteps,
   type WizardAction,
+  type DiagnosisType,
   type WizardState,
   type WizardStep,
 };
