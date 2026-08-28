@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "check": "pnpm test && pnpm typecheck && pnpm lint && pnpm format:check",
     "supabase:start": "supabase start",

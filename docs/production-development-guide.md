@@ -882,21 +882,21 @@ verificação do signup + validação pós-deploy
 
 ## 26. Referências rápidas
 
-| Assunto | Referência |
-|---|---|
-| Produção | https://lucrivo-sigma.vercel.app |
-| Staging | https://lucrivo-git-staging-lucrivo-team.vercel.app |
-| CI | `.github/workflows/ci.yml` |
-| Deploy staging | `.github/workflows/deploy-staging.yml` |
-| Deploy produção | `.github/workflows/deploy-production.yml` |
-| Backup produção | `.github/workflows/backup-production.yml` |
-| Dependabot | `.github/dependabot.yml` |
-| Smoke tests | `scripts/smoke-test.mjs` |
-| Tipos do banco | `scripts/generate-database-types.mjs` |
-| Health check | `/api/health` |
-| Deploy e rollback | `docs/operations/deployment-runbook.md` |
-| Backup e restauração | `docs/operations/backup-restore-runbook.md` |
-| Operação do Auth | `docs/operations/auth-runbook.md` |
+| Assunto              | Referência                                          |
+| -------------------- | --------------------------------------------------- |
+| Produção             | https://lucrivo-sigma.vercel.app                    |
+| Staging              | https://lucrivo-git-staging-lucrivo-team.vercel.app |
+| CI                   | `.github/workflows/ci.yml`                          |
+| Deploy staging       | `.github/workflows/deploy-staging.yml`              |
+| Deploy produção      | `.github/workflows/deploy-production.yml`           |
+| Backup produção      | `.github/workflows/backup-production.yml`           |
+| Dependabot           | `.github/dependabot.yml`                            |
+| Smoke tests          | `scripts/smoke-test.mjs`                            |
+| Tipos do banco       | `scripts/generate-database-types.mjs`               |
+| Health check         | `/api/health`                                       |
+| Deploy e rollback    | `docs/operations/deployment-runbook.md`             |
+| Backup e restauração | `docs/operations/backup-restore-runbook.md`         |
+| Operação do Auth     | `docs/operations/auth-runbook.md`                   |
 
 ---
 

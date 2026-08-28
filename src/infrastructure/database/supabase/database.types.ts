@@ -9,7 +9,63 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never;
+      service_diagnoses: {
+        Row: {
+          appointment_duration_minutes: number;
+          appointment_rate_cents: number;
+          business_category: Database["public"]["Enums"]["business_category"];
+          card_fee_rate_basis_points: number;
+          created_at: string;
+          desired_monthly_income_cents: number;
+          fixed_monthly_expenses_cents: number;
+          hourly_rate_cents: number;
+          id: number;
+          minute_rate_cents: number;
+          monthly_work_minutes: number;
+          pricing_method: Database["public"]["Enums"]["service_pricing_method"];
+          submission_id: string;
+          tax_rate_basis_points: number;
+          user_id: string;
+          weekly_work_days: number;
+        };
+        Insert: {
+          appointment_duration_minutes?: number;
+          appointment_rate_cents?: number;
+          business_category?: Database["public"]["Enums"]["business_category"];
+          card_fee_rate_basis_points?: number;
+          created_at?: string;
+          desired_monthly_income_cents?: number;
+          fixed_monthly_expenses_cents?: number;
+          hourly_rate_cents?: number;
+          id?: never;
+          minute_rate_cents?: number;
+          monthly_work_minutes?: number;
+          pricing_method: Database["public"]["Enums"]["service_pricing_method"];
+          submission_id: string;
+          tax_rate_basis_points?: number;
+          user_id: string;
+          weekly_work_days?: number;
+        };
+        Update: {
+          appointment_duration_minutes?: number;
+          appointment_rate_cents?: number;
+          business_category?: Database["public"]["Enums"]["business_category"];
+          card_fee_rate_basis_points?: number;
+          created_at?: string;
+          desired_monthly_income_cents?: number;
+          fixed_monthly_expenses_cents?: number;
+          hourly_rate_cents?: number;
+          id?: never;
+          minute_rate_cents?: number;
+          monthly_work_minutes?: number;
+          pricing_method?: Database["public"]["Enums"]["service_pricing_method"];
+          submission_id?: string;
+          tax_rate_basis_points?: number;
+          user_id?: string;
+          weekly_work_days?: number;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -18,7 +74,8 @@ export type Database = {
       [_ in never]: never;
     };
     Enums: {
-      [_ in never]: never;
+      business_category: "service";
+      service_pricing_method: "hour" | "minute" | "appointment";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -145,6 +202,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      business_category: ["service"],
+      service_pricing_method: ["hour", "minute", "appointment"],
+    },
   },
 } as const;

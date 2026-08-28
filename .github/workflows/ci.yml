@@ -85,6 +85,9 @@ jobs:
       - name: Rebuild local database
         run: pnpm supabase:reset
 
+      - name: Test database policies and constraints
+        run: pnpm exec supabase test db
+
       - name: Verify generated database types
         run: |
           pnpm supabase:types
