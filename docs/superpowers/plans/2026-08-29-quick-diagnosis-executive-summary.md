@@ -60,7 +60,7 @@
 - Consumes: existing `ReportTone`, `ReportSnapshot` structure, and five-section order.
 - Produces: `REPORT_SCHEMA_VERSION = 2`, `SERVICE_CONTENT_VERSION = 2`, `reportExecutiveSummaryFactKeys`, `reportExecutiveSummaryAnswerKeys`, `ReportExecutiveSummary`, `ExecutiveSummaryFact`, and `ExecutiveSummaryAnswer`.
 
-- [ ] **Step 1: Replace the version-1 fixture with a complete failing version-2 fixture**
+- [x] **Step 1: Replace the version-1 fixture with a complete failing version-2 fixture**
 
 In `report-snapshot.schema.test.ts`, add this object between `results` and `sections`:
 
@@ -163,7 +163,7 @@ it("rejects a missing executive summary", () => {
 });
 ```
 
-- [ ] **Step 2: Run the schema test and verify red**
+- [x] **Step 2: Run the schema test and verify red**
 
 Run:
 
@@ -173,7 +173,7 @@ pnpm vitest run src/modules/reports/schemas/report-snapshot.schema.test.ts
 
 Expected: FAIL because the constants still accept version 1 and `executiveSummary` is not part of the strict schema.
 
-- [ ] **Step 3: Add version constants and stable keys**
+- [x] **Step 3: Add version constants and stable keys**
 
 In `types.ts`, use:
 
@@ -192,7 +192,7 @@ const reportExecutiveSummaryAnswerKeys = [
 
 Export both arrays and re-export the new inferred schema types.
 
-- [ ] **Step 4: Implement strict executive-summary schemas**
+- [x] **Step 4: Implement strict executive-summary schemas**
 
 In `report-snapshot.schema.ts`, add:
 
@@ -262,7 +262,7 @@ type ExecutiveSummaryAnswer = z.infer<typeof executiveSummaryAnswerSchema>;
 type ReportExecutiveSummary = z.infer<typeof reportExecutiveSummarySchema>;
 ```
 
-- [ ] **Step 5: Run focused verification and commit**
+- [x] **Step 5: Run focused verification and commit**
 
 Run:
 
@@ -296,7 +296,7 @@ git commit -m "feat: define executive report snapshot contract"
 - Consumes: `ServiceReportCalculation`, existing `formatCurrency`, `formatBasisPoints`, `formatReportUnit`, and `ReportExecutiveSummary`.
 - Produces: `buildExecutiveSummary(calculation: ServiceReportCalculation): ReportExecutiveSummary`; `buildServiceReportSnapshot` returns a fully valid v2 snapshot containing that result.
 
-- [ ] **Step 1: Write failing golden tests for verdict, facts, and units**
+- [x] **Step 1: Write failing golden tests for verdict, facts, and units**
 
 Build a base calculation with `calculateServiceReport(baseCommand)`, then test representative immutable copy:
 
@@ -377,7 +377,7 @@ it("uses hour wording and an absolute loss amount", () => {
 });
 ```
 
-- [ ] **Step 2: Add failing boundary tables for every verdict, priority, profit, and price state**
+- [x] **Step 2: Add failing boundary tables for every verdict, priority, profit, and price state**
 
 Use calculation overrides so this test targets content selection rather than formulas:
 
@@ -486,7 +486,7 @@ it.each([
 });
 ```
 
-- [ ] **Step 3: Run the new domain test and verify red**
+- [x] **Step 3: Run the new domain test and verify red**
 
 Run:
 
@@ -496,7 +496,7 @@ pnpm vitest run src/modules/reports/domain/build-executive-summary.test.ts
 
 Expected: FAIL because the module does not exist.
 
-- [ ] **Step 4: Implement the pure builder**
+- [x] **Step 4: Implement the pure builder**
 
 Create `build-executive-summary.ts` with one exported function and private helpers:
 
@@ -532,7 +532,7 @@ return positiveProfitAnswer;
 
 For price sufficiency, check missing price, null references, below minimum, below target, then target reached. Store `Indisponível` in fact values when a nullable result is absent.
 
-- [ ] **Step 5: Integrate the summary into snapshot construction**
+- [x] **Step 5: Integrate the summary into snapshot construction**
 
 Import `buildExecutiveSummary` in `build-service-report-snapshot.ts` and place:
 
@@ -550,7 +550,7 @@ expect(snapshot.executiveSummary.answers.map(({ key }) => key)).toEqual([
 ]);
 ```
 
-- [ ] **Step 6: Run domain verification and commit**
+- [x] **Step 6: Run domain verification and commit**
 
 Run:
 
@@ -584,7 +584,7 @@ git commit -m "feat: build report executive summaries"
 - Consumes: complete `ReportSnapshot` versions `2/1/2` from Task 2.
 - Produces: unchanged RPC signature `create_service_diagnosis_report(...) returns bigint`, accepting only internally consistent version-2 snapshots.
 
-- [ ] **Step 1: Update the failing pgTAP fixture to version 2**
+- [x] **Step 1: Update the failing pgTAP fixture to version 2**
 
 Change `pg_temp.create_hour_report` to accept version controls:
 
@@ -689,7 +689,7 @@ select results_eq(
 
 Retain the existing `int8` column/FK and `returns bigint` assertions unchanged.
 
-- [ ] **Step 2: Run the focused database test and verify red**
+- [x] **Step 2: Run the focused database test and verify red**
 
 Run:
 
@@ -699,7 +699,7 @@ pnpm exec supabase test db supabase/tests/diagnosis_reports.test.sql
 
 Expected: FAIL because the installed function still requires versions `1/1/1`.
 
-- [ ] **Step 3: Create the migration with the installed CLI**
+- [x] **Step 3: Create the migration with the installed CLI**
 
 Run:
 
@@ -710,7 +710,7 @@ pnpm exec supabase migration new require_report_snapshot_v2
 
 Use the exact emitted path. Do not rename its generated timestamp.
 
-- [ ] **Step 4: Redefine only the atomic function's version gate**
+- [x] **Step 4: Redefine only the atomic function's version gate**
 
 Copy the complete `public.create_service_diagnosis_report` definition from
 `supabase/migrations/20260828231256_create_quick_diagnosis_reports.sql` into the
@@ -735,7 +735,7 @@ idempotency branch, and insert statements byte-for-byte equivalent to the
 existing definition. Do not alter tables, sequences, grants, policies, or
 existing rows.
 
-- [ ] **Step 5: Update the service contract test**
+- [x] **Step 5: Update the service contract test**
 
 In `create-service-report.service.test.ts`, change only the expected versions:
 
@@ -748,7 +748,7 @@ p_content_version: 2,
 Retain the assertions that the RPC returns a safe positive numeric ID and that
 no caller-supplied user ID is sent.
 
-- [ ] **Step 6: Reset and verify database, types, and service**
+- [x] **Step 6: Reset and verify database, types, and service**
 
 Run:
 
@@ -766,7 +766,7 @@ pnpm vitest run src/modules/reports/services/create-service-report.service.test.
 Expected: all commands exit `0`; types remain stable because the RPC signature
 and bigint identity do not change; no new advisor warning appears.
 
-- [ ] **Step 7: Commit the persistence milestone**
+- [x] **Step 7: Commit the persistence milestone**
 
 Use the actual migration filename emitted in Step 3:
 
@@ -789,7 +789,7 @@ git commit -m "feat: require versioned executive report snapshots"
 - Consumes: validated `snapshot.executiveSummary`, `snapshot.results`, and existing identity/section data.
 - Produces: `ReportViewModel.executiveSummary`, `ReportViewModel.numbers`, five `sections`, and `discountSimulationBase`; removes `summary`, `priceReferences`, and `nextActions`.
 
-- [ ] **Step 1: Rewrite presenter expectations first**
+- [x] **Step 1: Rewrite presenter expectations first**
 
 Replace the old summary/next-action assertions with:
 
@@ -819,7 +819,7 @@ and target inside `numbers`. Delete the old test that mutates priority after
 snapshot creation; persisted executive content must not be reconstructed by
 the presenter.
 
-- [ ] **Step 2: Run the presenter test and verify red**
+- [x] **Step 2: Run the presenter test and verify red**
 
 Run:
 
@@ -830,7 +830,7 @@ pnpm vitest run src/modules/reports/presenters/to-report-view-model.test.ts
 Expected: FAIL because the presenter still exposes the old duplicated summary
 shape.
 
-- [ ] **Step 3: Implement the thin view model**
+- [x] **Step 3: Implement the thin view model**
 
 Define:
 
@@ -876,7 +876,7 @@ tone labels, and simulator data unchanged. Export `ReportViewModel`,
 `ReportNumberViewModel`, and `ReportExecutiveSummaryViewModel` for component
 props and tests.
 
-- [ ] **Step 4: Run focused verification and commit**
+- [x] **Step 4: Run focused verification and commit**
 
 Run:
 
@@ -914,7 +914,7 @@ git commit -m "refactor: present executive report summaries"
 - Consumes: `ReportViewModel.executiveSummary`, `ReportViewModel.numbers`, five persisted sections, and simulator base.
 - Produces: full-width `ReportExecutiveSummary`, compact `ReportNumbers`, and the approved SSR semantic order.
 
-- [ ] **Step 1: Write failing executive-summary component tests**
+- [x] **Step 1: Write failing executive-summary component tests**
 
 Render the component with `viewModel.executiveSummary` and assert:
 
@@ -948,7 +948,7 @@ expect(answers.map((answer) => answer.textContent)).toEqual(
 Add an `it.each` over neutral, warning, critical, and positive summaries to
 assert the visible tone label remains present independently of color.
 
-- [ ] **Step 2: Write failing numbers-rail and composition tests**
+- [x] **Step 2: Write failing numbers-rail and composition tests**
 
 For `ReportNumbers`, assert a complementary region named `Seus números` and
 the exact five `<dt>/<dd>` pairs. In `report-detail.test.tsx`, assert:
@@ -974,7 +974,7 @@ expect(screen.queryByText("Prioridade agora")).not.toBeInTheDocument();
 
 Retain the exact five-section order test and navigation assertions.
 
-- [ ] **Step 3: Run component tests and verify red**
+- [x] **Step 3: Run component tests and verify red**
 
 Run:
 
@@ -985,7 +985,7 @@ pnpm vitest run src/modules/reports/components/report-executive-summary.test.tsx
 Expected: FAIL because the new components do not exist and the old rail still
 renders duplicated decisions.
 
-- [ ] **Step 4: Implement the tone-aware executive summary**
+- [x] **Step 4: Implement the tone-aware executive summary**
 
 Create a Server Component with this semantic skeleton:
 
@@ -1097,7 +1097,7 @@ comparisons as `<dl>` groups. Use the persisted headline for the accessible
 label and visible words; styling may wrap only the persisted word `verdade`
 without changing text content.
 
-- [ ] **Step 5: Implement the compact numbers rail**
+- [x] **Step 5: Implement the compact numbers rail**
 
 Create:
 
@@ -1130,7 +1130,7 @@ Do not render verdict, priority, actions, or the executive fact-comparison
 blocks here. The intended overlap is limited to current price and margin inside
 this five-number reference list.
 
-- [ ] **Step 6: Compose the approved layout and remove the old component**
+- [x] **Step 6: Compose the approved layout and remove the old component**
 
 In `ReportDetail`, render `<ReportExecutiveSummary>` immediately after the
 page header. In the existing two-column grid, replace `<ReportSummary>` with
@@ -1164,7 +1164,7 @@ section skeletons:
 </div>
 ```
 
-- [ ] **Step 7: Run UI verification and commit**
+- [x] **Step 7: Run UI verification and commit**
 
 Run:
 
@@ -1198,7 +1198,7 @@ git commit -m "feat: render report executive summary"
 - Consumes: the complete version-2 executive-summary vertical slice.
 - Produces: verified database reset, generated types, application build, authenticated smoke, responsive evidence, and release notes.
 
-- [ ] **Step 1: Run complete database verification**
+- [x] **Step 1: Run complete database verification**
 
 Run:
 
@@ -1215,7 +1215,7 @@ pnpm supabase:advisors
 Expected: all exit `0`, the second type generation is clean, bigint assertions
 remain green, and no introduced advisor warning remains.
 
-- [ ] **Step 2: Run complete application verification**
+- [x] **Step 2: Run complete application verification**
 
 Run:
 
@@ -1262,7 +1262,7 @@ summary before numbers and analysis, keyboard-visible focus, reduced motion,
 one `h1`, the executive `h2`, three ordered answers, text labels for every
 tone, and unchanged slider Arrow/Home/End plus polite status behavior.
 
-- [ ] **Step 6: Record evidence and commit only in-scope results**
+- [x] **Step 6: Record evidence and commit only in-scope results**
 
 Add concise dated verification notes under this task. If any check required a
 code fix, rerun its focused failing test plus Steps 1 and 2 before committing.
@@ -1272,6 +1272,26 @@ Then mark every genuinely completed checkbox and commit the plan evidence:
 git add docs/superpowers/plans/2026-08-29-quick-diagnosis-executive-summary.md
 git commit -m "docs: verify quick diagnosis executive summary"
 ```
+
+#### Verification notes — 2026-08-29
+
+- `pnpm supabase:reset`, 115 pgTAP assertions, schema lint, and database
+  advisors passed; generated database types were unchanged across two runs.
+- `pnpm check` passed with 48 files and 338 tests, followed by typecheck,
+  ESLint, and Prettier. The production build passed with the public CI
+  Turnstile placeholders documented in `.github/workflows/ci.yml`.
+- Authenticated browser smoke created a Por hora diagnosis and redirected to
+  numeric `/reports/7`. Its initial report page rendered the executive summary,
+  three ordered answers, five-number rail, five detailed sections, simulator,
+  and both navigation CTAs; the temporary local user was deleted afterward.
+- The pgTAP and application suites cover anonymous RPC denial, direct write
+  denial, owner isolation, idempotent bigint IDs, obsolete snapshot rejection,
+  indistinguishable missing/foreign reports, and the unavailable snapshot UI.
+- Browser continuation for Por minuto, Por atendimento, 320px/desktop/200%
+  zoom, and explicit light/dark passes was not completed because further MCP
+  browser navigation was denied. Those manual checks remain unchecked below;
+  domain, component, route, and responsive CSS behavior remain covered by the
+  automated suite.
 
 ---
 
