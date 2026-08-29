@@ -78,9 +78,9 @@ describe("buildServiceReportSnapshot", () => {
 
       expect(snapshot).toEqual(
         expect.objectContaining({
-          schemaVersion: 1,
+          schemaVersion: 2,
           calculationVersion: 1,
-          contentVersion: 1,
+          contentVersion: 2,
           category: "service",
           scenario: command.pricingMethod,
           currency: "BRL",
@@ -94,6 +94,13 @@ describe("buildServiceReportSnapshot", () => {
         "discount_simulator",
       ]);
       expect(snapshot.sections.map(({ body }) => body)).toEqual(expectedBodies);
+      expect(
+        snapshot.executiveSummary.answers.map(({ key }) => key),
+      ).toEqual([
+        "profitability",
+        "price_sufficiency",
+        "immediate_action",
+      ]);
       expect(snapshot.sections[4]).toEqual(
         expect.objectContaining({
           title: "Quanto de desconto eu consigo dar sem destruir minha margem?",
