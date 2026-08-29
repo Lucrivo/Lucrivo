@@ -429,12 +429,15 @@ values
 create function pg_temp.create_hour_report(
   p_submission_id uuid,
   p_hourly_rate_cents bigint default 10000,
+  p_schema_version smallint default 2,
+  p_content_version smallint default 2,
   p_report_snapshot jsonb default '{
-    "schemaVersion": 1,
+    "schemaVersion": 2,
     "calculationVersion": 1,
-    "contentVersion": 1,
+    "contentVersion": 2,
     "category": "service",
     "scenario": "hour",
+    "executiveSummary": {"headline": "A verdade por trás do preço."},
     "marker": "first"
   }'::jsonb
 )
@@ -454,9 +457,9 @@ as $$
     0,
     600,
     200,
+    p_schema_version,
     1::smallint,
-    1::smallint,
-    1::smallint,
+    p_content_version,
     'hour',
     p_hourly_rate_cents,
     1700,
@@ -522,6 +525,51 @@ select results_eq(
   array[1::bigint],
   'valid function call inserts one registry and one linked Service input'
 );
+select throws_ok(
+  $$ select pg_temp.create_hour_report(
+    '30000000-0000-4000-8000-000000000010',
+    10000,
+    1::smallint,
+    1::smallint,
+    '{
+      "schemaVersion": 1,
+      "calculationVersion": 1,
+      "contentVersion": 1,
+      "category": "service",
+      "scenario": "hour"
+    }'::jsonb
+  ) $$,
+  '22023',
+  'invalid report snapshot',
+  'atomic function rejects obsolete version 1 snapshots'
+);
+select throws_ok(
+  $$ select pg_temp.create_hour_report(
+    '30000000-0000-4000-8000-000000000011',
+    10000,
+    2::smallint,
+    2::smallint,
+    '{
+      "schemaVersion": 2,
+      "calculationVersion": 1,
+      "contentVersion": 2,
+      "category": "service",
+      "scenario": "hour"
+    }'::jsonb
+  ) $$,
+  '22023',
+  'invalid report snapshot',
+  'atomic function rejects version 2 without an executive summary object'
+);
+select results_eq(
+  $$
+    select report_snapshot -> 'executiveSummary' ->> 'headline'
+    from public.diagnoses
+    where submission_id = '30000000-0000-4000-8000-000000000003'
+  $$,
+  array['A verdade por trás do preço.'],
+  'atomic function preserves resolved executive-summary content'
+);
 
 select throws_ok(
   $$ select pg_temp.create_hour_report(
@@ -553,12 +601,15 @@ select results_eq(
     select pg_temp.create_hour_report(
       '30000000-0000-4000-8000-000000000005',
       12000,
+      2::smallint,
+      2::smallint,
       '{
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "calculationVersion": 1,
-        "contentVersion": 1,
+        "contentVersion": 2,
         "category": "service",
         "scenario": "hour",
+        "executiveSummary": {"headline": "A verdade por trás do preço."},
         "marker": "second"
       }'::jsonb
     )
