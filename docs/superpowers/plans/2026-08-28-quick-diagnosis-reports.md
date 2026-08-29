@@ -88,7 +88,7 @@
 - Consumes: existing `ServiceDiagnosisInput.appointmentDurationMinutes` and `ServiceDiagnosisCommand.appointmentDurationMinutes`.
 - Produces: Minute commands with positive `appointmentDurationMinutes`; no new raw field or database column.
 
-- [ ] **Step 1: Add failing schema tests for Minute duration**
+- [x] **Step 1: Add failing schema tests for Minute duration**
 
 Add tests proving a valid Minute command retains duration and zero/missing duration is attached to `appointmentDurationMinutes`:
 
@@ -113,13 +113,13 @@ it("requires and preserves duration for minute pricing", () => {
 });
 ```
 
-- [ ] **Step 2: Run the focused schema test and verify red**
+- [x] **Step 2: Run the focused schema test and verify red**
 
 Run: `pnpm vitest run src/modules/quick-diagnosis/schemas/service-diagnosis.schema.test.ts`
 
 Expected: FAIL because the current transform clears Minute duration.
 
-- [ ] **Step 3: Update normalization and conditional validation**
+- [x] **Step 3: Update normalization and conditional validation**
 
 Change the transform to retain duration for both non-hour methods and change the refinement:
 
@@ -144,17 +144,17 @@ if (
 }
 ```
 
-- [ ] **Step 4: Add failing wizard tests for the Minute field and review**
+- [x] **Step 4: Add failing wizard tests for the Minute field and review**
 
 Extend the existing parameterized method test to expect “Duração média do atendimento” for Minute and Appointment. Add a review assertion for `40 minutos` after completing Minute.
 
-- [ ] **Step 5: Run the wizard test and verify red**
+- [x] **Step 5: Run the wizard test and verify red**
 
 Run: `pnpm vitest run src/modules/quick-diagnosis/components/quick-diagnosis-wizard.test.tsx`
 
 Expected: FAIL because `CurrentPriceStep` only shows duration for Appointment.
 
-- [ ] **Step 6: Render and review duration for both non-hour methods**
+- [x] **Step 6: Render and review duration for both non-hour methods**
 
 Use this condition in `CurrentPriceStep` and `ReviewStep`:
 
@@ -164,7 +164,7 @@ const requiresDuration = method === "minute" || method === "appointment";
 
 Keep the visible label “Duração média do atendimento”. Do not rename the persisted field in this task.
 
-- [ ] **Step 7: Run focused application tests**
+- [x] **Step 7: Run focused application tests**
 
 Run:
 
@@ -174,11 +174,11 @@ pnpm vitest run src/modules/quick-diagnosis/schemas/service-diagnosis.schema.tes
 
 Expected: PASS.
 
-- [ ] **Step 8: Add failing pgTAP cases for the new Minute shape**
+- [x] **Step 8: Add failing pgTAP cases for the new Minute shape**
 
 Add one valid Minute insert with positive duration and two invalid inserts: zero duration and positive duration on Hour. Keep the existing Appointment cases.
 
-- [ ] **Step 9: Verify the database test is red**
+- [x] **Step 9: Verify the database test is red**
 
 Run:
 
@@ -189,7 +189,7 @@ pnpm exec supabase test db supabase/tests/service_diagnoses.test.sql
 
 Expected: FAIL because the current constraint requires Minute duration to equal zero.
 
-- [ ] **Step 10: Create and implement the constraint migration**
+- [x] **Step 10: Create and implement the constraint migration**
 
 Run `pnpm exec supabase migration new --help`, then `pnpm exec supabase migration new require_minute_service_duration`. In the emitted file, drop and recreate only `service_diagnoses_pricing_shape_check`; the Minute branch must contain:
 
@@ -201,7 +201,7 @@ and hourly_rate_cents = 0
 and appointment_rate_cents = 0
 ```
 
-- [ ] **Step 11: Verify Task 1 and commit**
+- [x] **Step 11: Verify Task 1 and commit**
 
 Run:
 
@@ -230,7 +230,7 @@ Commit: `fix: require duration for minute service pricing`
 - Consumes: `ServicePricingMethod` from `src/modules/quick-diagnosis/types.ts`.
 - Produces: `ReportSnapshot`, `ReportSection`, `ReportTone`, `ReportVerdict`, `ReportPriority`, `ReportUnit`, and `parseReportSnapshot(value)`.
 
-- [ ] **Step 1: Write failing schema tests**
+- [x] **Step 1: Write failing schema tests**
 
 Cover a complete version-1 Service snapshot, wrong `schemaVersion`, missing fifth section, wrong category, and noninteger cents. Use a local `validSnapshot` fixture with the exact five keys:
 
@@ -244,13 +244,13 @@ const sectionKeys = [
 ] as const;
 ```
 
-- [ ] **Step 2: Run the schema test and verify red**
+- [x] **Step 2: Run the schema test and verify red**
 
 Run: `pnpm vitest run src/modules/reports/schemas/report-snapshot.schema.test.ts`
 
 Expected: FAIL because the module does not exist.
 
-- [ ] **Step 3: Implement discriminants and the Zod schema**
+- [x] **Step 3: Implement discriminants and the Zod schema**
 
 Use exact constants:
 
@@ -348,7 +348,7 @@ type ReportSection = {
 Require exactly five sections and add a `superRefine` that compares their keys
 by index with `sectionKeys`; duplicate or reordered sections are invalid.
 
-- [ ] **Step 4: Implement a strict parser**
+- [x] **Step 4: Implement a strict parser**
 
 ```ts
 function parseReportSnapshot(value: unknown): ReportSnapshot {
@@ -358,7 +358,7 @@ function parseReportSnapshot(value: unknown): ReportSnapshot {
 
 Reject unsupported versions rather than coercing or recalculating them.
 
-- [ ] **Step 5: Run tests, typecheck, and commit**
+- [x] **Step 5: Run tests, typecheck, and commit**
 
 Run:
 
@@ -387,7 +387,7 @@ Commit: `feat: define versioned report snapshot contract`
 - Consumes: `ServiceDiagnosisCommand`.
 - Produces: `calculateServiceReport(command): ServiceReportCalculation` and BigInt-backed `roundDivide`, `ceilDivide`, and `multiplyDivideRound` helpers.
 
-- [ ] **Step 1: Write failing integer-math tests**
+- [x] **Step 1: Write failing integer-math tests**
 
 Test exact half-up rounding, ceiling division, negative profit rounding, and denominators that reject zero:
 
@@ -398,17 +398,17 @@ expect(multiplyDivideRound(1001, 9250, 10000)).toBe(926);
 expect(() => ceilDivide(1n, 0n)).toThrow("invalid_denominator");
 ```
 
-- [ ] **Step 2: Run integer-math tests and verify red**
+- [x] **Step 2: Run integer-math tests and verify red**
 
 Run: `pnpm vitest run src/modules/reports/domain/integer-math.test.ts`
 
 Expected: FAIL because the module does not exist.
 
-- [ ] **Step 3: Implement BigInt-backed helpers**
+- [x] **Step 3: Implement BigInt-backed helpers**
 
 Convert safe input integers to BigInt before multiplication. Convert back only after checking `Number.MIN_SAFE_INTEGER` through `Number.MAX_SAFE_INTEGER`. Keep rounding behavior documented beside each helper.
 
-- [ ] **Step 4: Write failing calculator golden tests**
+- [x] **Step 4: Write failing calculator golden tests**
 
 Add table-driven cases for:
 
@@ -421,13 +421,13 @@ Add table-driven cases for:
 - a loss prioritizing price and suppressing sales goals;
 - adequate/above-target prioritizing volume.
 
-- [ ] **Step 5: Run calculator tests and verify red**
+- [x] **Step 5: Run calculator tests and verify red**
 
 Run: `pnpm vitest run src/modules/reports/domain/calculate-service-report.test.ts`
 
 Expected: FAIL because `calculateServiceReport` does not exist.
 
-- [ ] **Step 6: Implement method normalization and core formulas**
+- [x] **Step 6: Implement method normalization and core formulas**
 
 Use these authoritative denominators:
 
@@ -440,11 +440,11 @@ const targetRateBps = netRateBps - SERVICE_TARGET_MARGIN_BPS;
 
 Use ceiling division for minimum/target price and displayed monthly/weekly/daily volume. Use rounded division for unit cost, net revenue, and real margin. Return `null` for results with a nonpositive denominator.
 
-- [ ] **Step 7: Implement verdict and priority as pure functions**
+- [x] **Step 7: Implement verdict and priority as pure functions**
 
 Keep `classifyServiceMargin` and `selectServicePriority` exported for direct boundary tests. Above target means strictly more than `1800` basis points; adequate includes `1450` through `1800`; positive below `1450` is tight.
 
-- [ ] **Step 8: Run all domain tests and commit**
+- [x] **Step 8: Run all domain tests and commit**
 
 Run:
 
@@ -473,15 +473,15 @@ Commit: `feat: calculate service diagnosis reports`
 - Consumes: `ServiceDiagnosisCommand` and `ServiceReportCalculation`.
 - Produces: `buildServiceReportSnapshot(command, calculation): ReportSnapshot`.
 
-- [ ] **Step 1: Write failing formatter tests**
+- [x] **Step 1: Write failing formatter tests**
 
 Lock BRL, percentage, integer volume, scenario, unit, and São Paulo date formatting. Currency examples must include negative and zero values.
 
-- [ ] **Step 2: Implement explicit `pt-BR` formatters**
+- [x] **Step 2: Implement explicit `pt-BR` formatters**
 
 Create module-level `Intl.NumberFormat` instances. Accept integer cents/basis points; do not accept raw floating money.
 
-- [ ] **Step 3: Write failing snapshot-content tests**
+- [x] **Step 3: Write failing snapshot-content tests**
 
 For Hour, Minute, and Appointment fixtures, assert:
 
@@ -492,13 +492,13 @@ For Hour, Minute, and Appointment fixtures, assert:
 - sales goal tells a loss-making user to fix price and never recommends more volume;
 - simulator section keeps the exact approved title and instruction.
 
-- [ ] **Step 4: Run content tests and verify red**
+- [x] **Step 4: Run content tests and verify red**
 
 Run: `pnpm vitest run src/modules/reports/domain/build-service-report-snapshot.test.ts`
 
 Expected: FAIL because the builder does not exist.
 
-- [ ] **Step 5: Implement five focused section builders**
+- [x] **Step 5: Implement five focused section builders**
 
 Keep each builder private and deterministic:
 
@@ -512,7 +512,7 @@ buildDiscountSimulatorSection(calculation);
 
 Assemble them in the fixed order and validate the final object with `parseReportSnapshot` before returning it.
 
-- [ ] **Step 6: Run report-domain tests and commit**
+- [x] **Step 6: Run report-domain tests and commit**
 
 Run:
 
@@ -541,11 +541,11 @@ Commit: `feat: build service report snapshots`
 - Consumes: normalized Service values, version-1 JSON snapshot, and denormalized snapshot summary.
 - Produces: RPC `create_service_diagnosis_report(...) returns bigint`, table `public.diagnoses`, and `service_diagnoses.diagnosis_id`.
 
-- [ ] **Step 1: Write the failing pgTAP contract**
+- [x] **Step 1: Write the failing pgTAP contract**
 
 Test exact registry columns and types, constraints, unique `(user_id, submission_id)`, nullable legacy `service_diagnoses.diagnosis_id`, indexed foreign key, and the composite list index `(user_id, created_at desc, id desc)`.
 
-- [ ] **Step 2: Add privilege, RLS, and function tests**
+- [x] **Step 2: Add privilege, RLS, and function tests**
 
 Assert:
 
@@ -559,13 +559,13 @@ Assert:
 - repeated `(user_id, submission_id)` returns the first ID and preserves the first snapshot;
 - a second user cannot read the first user's report.
 
-- [ ] **Step 3: Run pgTAP and verify red**
+- [x] **Step 3: Run pgTAP and verify red**
 
 Run: `pnpm exec supabase test db supabase/tests/diagnosis_reports.test.sql`
 
 Expected: FAIL because the registry and function do not exist.
 
-- [ ] **Step 4: Create the migration with the installed CLI**
+- [x] **Step 4: Create the migration with the installed CLI**
 
 Run:
 
@@ -576,7 +576,7 @@ pnpm exec supabase migration new create_quick_diagnosis_reports
 
 Use the exact emitted filename.
 
-- [ ] **Step 5: Create `public.diagnoses` and indexes**
+- [x] **Step 5: Create `public.diagnoses` and indexes**
 
 Implement the spec's common columns with `bigint identity`, `timestamptz`, checked lowercase text, integer summary units, and `jsonb`. Add:
 
@@ -593,11 +593,11 @@ create index diagnoses_user_created_id_idx
 on public.diagnoses (user_id, created_at desc, id desc);
 ```
 
-- [ ] **Step 6: Link Service inputs without fabricating legacy reports**
+- [x] **Step 6: Link Service inputs without fabricating legacy reports**
 
 Add nullable `diagnosis_id bigint`, a unique constraint, and an indexed foreign key with `on delete restrict`. Existing rows remain null and do not appear in `/reports`; new function writes always set it.
 
-- [ ] **Step 7: Implement the narrow atomic function**
+- [x] **Step 7: Implement the narrow atomic function**
 
 The function accepts no user ID. Start with:
 
@@ -693,11 +693,11 @@ $$;
 
 Write every relation as `public.<name>` and every parameter with a `p_` prefix. Validate category/version/JSON consistency before inserting.
 
-- [ ] **Step 8: Apply least privilege and RLS**
+- [x] **Step 8: Apply least privilege and RLS**
 
 Revoke direct writes and sequence use from `anon` and `authenticated`; grant only owned SELECT and authenticated function execution. Revoke function execution from `public` and `anon`. Add `diagnoses_select_own` using `((select auth.uid()) = user_id)`. Retain Service select ownership and remove its direct insert grant/policy because all new writes use the function.
 
-- [ ] **Step 9: Reset, test, lint, and run advisors**
+- [x] **Step 9: Reset, test, lint, and run advisors**
 
 Run:
 
@@ -710,11 +710,11 @@ pnpm supabase:advisors
 
 Expected: all tests pass and no introduced security/performance warning remains.
 
-- [ ] **Step 10: Regenerate and verify types**
+- [x] **Step 10: Regenerate and verify types**
 
 Run `pnpm supabase:types` twice and verify the second run produces no diff.
 
-- [ ] **Step 11: Commit the database milestone**
+- [x] **Step 11: Commit the database milestone**
 
 Commit: `feat: persist versioned diagnosis reports`
 
@@ -736,27 +736,27 @@ Commit: `feat: persist versioned diagnosis reports`
 - Consumes: authenticated typed Supabase client, normalized command, and `ReportSnapshot`.
 - Produces: `{ status: "success"; diagnosisId: number } | { status: "error"; error: "create_failed" }`.
 
-- [ ] **Step 1: Write failing RPC service tests**
+- [x] **Step 1: Write failing RPC service tests**
 
 Mock `.rpc("create_service_diagnosis_report", expectedArgs)` and cover success ID, PostgREST error, null/invalid returned ID, and thrown exception. Assert the RPC args contain normalized inputs, snapshot versions, and denormalized summary but no `user_id`.
 
-- [ ] **Step 2: Implement the RPC service**
+- [x] **Step 2: Implement the RPC service**
 
 Call the generated typed RPC once. Translate every technical failure to `create_failed`; never inspect or expose Postgres messages in UI output.
 
-- [ ] **Step 3: Write failing Server Action orchestration tests**
+- [x] **Step 3: Write failing Server Action orchestration tests**
 
 Assert this exact order by mocks: schema parse → `requireUser` → calculator → snapshot builder → persistence. Cover invalid input short-circuit, unauthenticated, domain construction failure, persistence failure, and success ID.
 
-- [ ] **Step 4: Update the action orchestration**
+- [x] **Step 4: Update the action orchestration**
 
 Keep the raw action result contract stable. Do not redirect inside the Server Action; returning the common ID keeps navigation testable in the wizard.
 
-- [ ] **Step 5: Remove the obsolete direct-insert service**
+- [x] **Step 5: Remove the obsolete direct-insert service**
 
 Delete it only after `rg "createServiceDiagnosisService" src` shows the action tests are the final old references. Confirm no browser role needs direct insert after Task 5.
 
-- [ ] **Step 6: Run focused and full application tests**
+- [x] **Step 6: Run focused and full application tests**
 
 Run:
 
@@ -767,7 +767,7 @@ pnpm check
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 Commit: `feat: create calculated service reports`
 
@@ -795,15 +795,15 @@ Commit: `feat: create calculated service reports`
 - Consumes: owned common report row and `parseReportSnapshot`.
 - Produces: `getOwnedReport({ supabase, userId, diagnosisId })` with `found`, `not_found`, `unavailable`, and `read_failed` outcomes; `toReportViewModel({ id, createdAt, snapshot })`; SSR guided dashboard.
 
-- [ ] **Step 1: Write failing detail-service tests**
+- [x] **Step 1: Write failing detail-service tests**
 
 Assert the query selects `id, business_category, scenario, created_at, report_snapshot`, filters both `id` and `user_id`, and calls `.maybeSingle()`. Cover missing, foreign-as-missing, technical failure, valid snapshot, and malformed snapshot.
 
-- [ ] **Step 2: Implement safe owned detail loading**
+- [x] **Step 2: Implement safe owned detail loading**
 
 Parse path IDs as positive safe integers before querying. Return `unavailable` only when an owned row exists but snapshot validation fails; do not recalculate.
 
-- [ ] **Step 3: Write failing component tests for layout B**
+- [x] **Step 3: Write failing component tests for layout B**
 
 First write presenter tests that lock category/scenario labels, creation date,
 summary metrics, nullable-value display as `Indisponível`, price references,
@@ -819,7 +819,7 @@ Assert:
 - “Novo diagnóstico” links to `/quick-diagnosis`;
 - tone is exposed by text/icon and not color alone.
 
-- [ ] **Step 4: Implement focused server components**
+- [x] **Step 4: Implement focused server components**
 
 Implement `toReportViewModel` as the only formatter between persisted snapshot
 and UI. Its return shape contains `identity`, `summary`, `priceReferences`,
@@ -829,15 +829,15 @@ view model. Use existing Card, Badge, Separator, and Button primitives. Keep
 desktop two-column ordering and mobile semantic ordering in the DOM; CSS
 changes layout without duplicating content.
 
-- [ ] **Step 5: Write failing page composition tests**
+- [x] **Step 5: Write failing page composition tests**
 
 Mock `requireUser`, `getOwnedReport`, `notFound`, and `ReportDetail`. Assert valid composition, `notFound()` for malformed/missing/foreign IDs, unavailable panel for invalid owned snapshot, and thrown read error reaching the route boundary.
 
-- [ ] **Step 6: Implement the SSR route and boundaries**
+- [x] **Step 6: Implement the SSR route and boundaries**
 
 Make `params` asynchronous per Next.js 16 route typing. `error.tsx` is a Client Component with retry, `/reports`, and `/quick-diagnosis` actions. `loading.tsx` mirrors summary rail plus five cards and uses accessible loading copy.
 
-- [ ] **Step 7: Run detail tests and commit**
+- [x] **Step 7: Run detail tests and commit**
 
 Run:
 
@@ -866,11 +866,11 @@ Commit: `feat: render owned diagnosis report details`
 - Consumes: immutable `discountSimulationBase` from `ReportSnapshot`.
 - Produces: client-only 0–50% simulation with no request or persistence callback.
 
-- [ ] **Step 1: Write failing interaction tests**
+- [x] **Step 1: Write failing interaction tests**
 
 Use `fireEvent.change` or keyboard events to assert 0%, 10%, 50%, exact break-even, below-target warning, and loss warning. Assert range label, `aria-valuetext`, live status, and formatted price/profit/margin.
 
-- [ ] **Step 2: Implement a pure simulation helper**
+- [x] **Step 2: Implement a pure simulation helper**
 
 Keep authoritative temporary calculations in integer cents/basis points using Task 3 helpers:
 
@@ -880,15 +880,15 @@ simulateDiscount(base, discountPercent): DiscountSimulation
 
 Clamp input to integers 0 through 50. Return an unavailable state when original or minimum price is null/nonpositive.
 
-- [ ] **Step 3: Implement the Client Component**
+- [x] **Step 3: Implement the Client Component**
 
 Add `"use client"` only to this file. Render the approved title and instruction, native range input, visible percent, current/discounted price, new margin/profit, and an `aria-live="polite"` safety message.
 
-- [ ] **Step 4: Integrate without converting the report to a Client Component**
+- [x] **Step 4: Integrate without converting the report to a Client Component**
 
 Pass the serializable simulator base from `ReportDetail`. Verify no parent report component gains `"use client"`.
 
-- [ ] **Step 5: Run tests and commit**
+- [x] **Step 5: Run tests and commit**
 
 Run:
 
@@ -916,7 +916,7 @@ Commit: `feat: add report discount simulator`
 - Consumes: successful common `diagnosisId` from the existing action result.
 - Produces: `router.replace(`/reports/${diagnosisId}`)` after one successful submission.
 
-- [ ] **Step 1: Write failing navigation tests**
+- [x] **Step 1: Write failing navigation tests**
 
 Mock `next/navigation` and assert:
 
@@ -926,21 +926,21 @@ Mock `next/navigation` and assert:
 - invalid/input/retryable failures do not navigate and preserve answers;
 - a successful idempotent retry navigates to the original ID.
 
-- [ ] **Step 2: Run the wizard test and verify red**
+- [x] **Step 2: Run the wizard test and verify red**
 
 Run: `pnpm vitest run src/modules/quick-diagnosis/components/quick-diagnosis-wizard.test.tsx`
 
 Expected: FAIL because the wizard renders `DiagnosisSuccess`.
 
-- [ ] **Step 3: Replace success state with navigation**
+- [x] **Step 3: Replace success state with navigation**
 
 Use `useRouter`. On action success, keep the submission lock active and call `router.replace`. Do not reset state before navigation and do not call `router.refresh()`.
 
-- [ ] **Step 4: Remove the obsolete success component**
+- [x] **Step 4: Remove the obsolete success component**
 
 Delete its file and tests/references only after `rg "DiagnosisSuccess" src` shows no remaining consumer.
 
-- [ ] **Step 5: Run focused/full tests and commit**
+- [x] **Step 5: Run focused/full tests and commit**
 
 Run:
 
@@ -976,15 +976,15 @@ Commit: `feat: redirect completed diagnoses to reports`
 - Consumes: common diagnosis summary columns and optional opaque cursor.
 - Produces: `listOwnedReports({ supabase, userId, cursor, pageSize })`, encoded next cursor, SSR cards, empty state, and `/reports` sidebar entry.
 
-- [ ] **Step 1: Write failing cursor and list-service tests**
+- [x] **Step 1: Write failing cursor and list-service tests**
 
 Use page size `12`. Assert selection excludes `report_snapshot`, filters `user_id`, orders `created_at` then `id` descending, fetches `13`, and applies tuple-equivalent keyset filters. Test stable cursor round-trip, malformed cursor falling back to first page, and `nextCursor` only when 13 rows arrive.
 
-- [ ] **Step 2: Implement opaque cursor helpers**
+- [x] **Step 2: Implement opaque cursor helpers**
 
 Encode a JSON tuple `{ createdAt: string, id: number }` with base64url and validate it with Zod before use. Do not accept arbitrary query fragments.
 
-- [ ] **Step 3: Implement summary-only selection**
+- [x] **Step 3: Implement summary-only selection**
 
 Select exactly:
 
@@ -995,23 +995,23 @@ real_margin_basis_points, unit_profit_cents, verdict, priority, unit
 
 Return safe `read_failed` without exposing PostgREST details.
 
-- [ ] **Step 4: Write failing library component tests**
+- [x] **Step 4: Write failing library component tests**
 
 Assert category/scenario/date, price/margin/verdict, `/reports/{id}`, empty state, new-diagnosis CTA, and next-page link preserving the opaque cursor.
 
-- [ ] **Step 5: Implement cards and empty state**
+- [x] **Step 5: Implement cards and empty state**
 
 Use semantic list markup, existing design primitives, and visible verdict text. Do not add delete or AI buttons.
 
-- [ ] **Step 6: Write failing page and sidebar tests**
+- [x] **Step 6: Write failing page and sidebar tests**
 
 Mock auth/list service and cover populated, empty, next cursor, malformed cursor, and read failure. Add sidebar expectations for label “Relatórios”, href `/reports`, and active state for both `/reports` and `/reports/42`.
 
-- [ ] **Step 7: Implement SSR page, boundaries, and sidebar entry**
+- [x] **Step 7: Implement SSR page, boundaries, and sidebar entry**
 
 Use `searchParams` asynchronously. Add a `FileChartColumnIcon` sidebar item. Keep “Diagnóstico rápido” unchanged and use `pathname.startsWith("/reports")` for active report routes.
 
-- [ ] **Step 8: Run focused tests and commit**
+- [x] **Step 8: Run focused tests and commit**
 
 Run:
 
@@ -1038,7 +1038,7 @@ Commit: `feat: add saved diagnosis report library`
 - Consumes: the complete Service report vertical slice.
 - Produces: verified migration, database types, production build, and manual smoke evidence.
 
-- [ ] **Step 1: Run complete database verification**
+- [x] **Step 1: Run complete database verification**
 
 Run:
 
@@ -1054,7 +1054,7 @@ pnpm supabase:advisors
 
 Expected: all exit `0`, the second type generation is clean, and no introduced advisor warning remains.
 
-- [ ] **Step 2: Run complete application verification**
+- [x] **Step 2: Run complete application verification**
 
 Run:
 
@@ -1065,23 +1065,35 @@ pnpm build
 
 Expected: 100% pass and production build exit `0`.
 
-- [ ] **Step 3: Perform authenticated functional smoke checks**
+- [x] **Step 3: Perform authenticated functional smoke checks**
 
 Using the local stack and app, complete Hour, Minute, and Appointment diagnoses. For each, verify redirect, immediate SSR content, refresh persistence, exact section order, back-to-library navigation, and card appearance.
 
-- [ ] **Step 4: Perform security smoke checks**
+- [x] **Step 4: Perform security smoke checks**
 
 Verify user A cannot open user B's ID, direct authenticated inserts/updates/deletes fail, anonymous function execution fails, and an idempotent retry returns the original ID.
 
-- [ ] **Step 5: Perform responsive and accessibility checks**
+- [x] **Step 5: Perform responsive and accessibility checks**
 
 Check 320px, 768px, and desktop widths; 200% browser zoom; keyboard-only flow; visible focus; slider arrows/Home/End; reduced motion; dark and light themes; and screen-reader headings/status announcements.
 
-- [ ] **Step 6: Record evidence and commit only in-scope fixes**
+- [x] **Step 6: Record evidence and commit only in-scope fixes**
 
 Add concise verification notes beneath this task. If checks required code fixes, rerun the failed focused test and both full verification sequences before committing.
 
 Final commit when needed: `fix: harden quick diagnosis reports`
+
+#### Verification Notes — 2026-08-28
+
+- Database: a clean local reset applied all four migrations; both pgTAP files passed all 112 assertions; generated types were idempotent and clean; schema lint and database advisors reported no issues.
+- Application: all 44 Vitest files and 300 tests passed, followed by typecheck, ESLint, Prettier, and a complete production build using the CI environment. The repository's local Cloudflare Turnstile test key is intentionally rejected in production; replacing only that key with the CI placeholder produced a successful build.
+- Authenticated smoke: Hour, Minute, and Appointment diagnoses were created through the RPC, appeared immediately in the server-rendered library and detail routes, retained their content after refresh, preserved the exact five-section order, and exposed the back-to-library action.
+- Security smoke: idempotent retries returned the original diagnosis ID; anonymous RPC execution and direct authenticated insert, update, and delete operations were denied; RLS hid one user's diagnosis from another user and the detail page followed its `notFound()` path without rendering foreign snapshot content.
+- HTTP smoke: health, login, registration, password update, and private-route redirect behavior passed against the production server.
+- Browser accessibility and responsive smoke: Chrome rendered both `/reports` and `/reports/[id]` without horizontal overflow at 320px, 768px, and 1440px; a 200% page-scale check also remained within the viewport. Mobile and desktop screenshots were visually inspected in light and dark themes.
+- Keyboard and assistive semantics: all product controls encountered in the tab sequence had accessible names and visible focus. The range responded to Home, End, and Arrow Left, synchronizing its value, output, `aria-valuetext`, derived metrics, and polite live status. The page exposed one `h1`, a descriptive `h2`, five ordered section headings, a named slider, and one polite live region.
+- Reduced motion: Chrome's `prefers-reduced-motion: reduce` emulation reduced report animation and transition durations to `0.01ms`, matching the global motion policy.
+- Browser fixtures: the authenticated user, diagnosis rows, and Chrome profile were temporary and removed after each run; no browser-test dependency or repository file was added.
 
 ---
 
