@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useReducer, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,6 @@ import type {
   ServiceDiagnosisFieldErrors,
   ServiceDiagnosisInput,
 } from "../types";
-import { DiagnosisSuccess } from "./diagnosis-success";
 import { CurrentPriceStep } from "./steps/current-price-step";
 import { DiagnosisTypeStep } from "./steps/diagnosis-type-step";
 import { FeesStep } from "./steps/fees-step";
@@ -109,6 +109,7 @@ function QuickDiagnosisWizard({
   createDiagnosis,
   createSubmissionId = () => crypto.randomUUID(),
 }: QuickDiagnosisWizardProps) {
+  const router = useRouter();
   const [initialSubmissionId] = useState(createSubmissionId);
 
   const [state, dispatch] = useReducer(
@@ -223,12 +224,14 @@ function QuickDiagnosisWizard({
 
     submittingRef.current = true;
     dispatch({ type: "submitting" });
+    let keepSubmissionLocked = false;
 
     try {
       const result = await createDiagnosis(state.values);
 
       if (result.status === "success") {
-        dispatch({ type: "success", diagnosisId: result.diagnosisId });
+        router.replace(`/reports/${result.diagnosisId}`);
+        keepSubmissionLocked = true;
         return;
       }
 
@@ -258,19 +261,8 @@ function QuickDiagnosisWizard({
     } catch {
       dispatch({ type: "submitError", error: "create_failed" });
     } finally {
-      submittingRef.current = false;
+      if (!keepSubmissionLocked) submittingRef.current = false;
     }
-  }
-
-  if (state.status === "success" && state.diagnosisId !== null) {
-    return (
-      <DiagnosisSuccess
-        diagnosisId={state.diagnosisId}
-        onStartAnother={() =>
-          dispatch({ type: "reset", submissionId: createSubmissionId() })
-        }
-      />
-    );
   }
 
   return (

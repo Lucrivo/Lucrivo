@@ -1,10 +1,20 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const replace = vi.hoisted(() => vi.fn());
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace }),
+}));
 
 import { QuickDiagnosisWizard } from "./quick-diagnosis-wizard";
 
 describe("QuickDiagnosisWizard", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   function renderWizard(
     createDiagnosis = vi.fn(),
     createSubmissionId = vi.fn(() => "550e8400-e29b-41d4-a716-446655440000"),
@@ -351,7 +361,7 @@ describe("QuickDiagnosisWizard", () => {
     expect(screen.getByLabelText("Renda mensal desejada")).toHaveValue("5000");
   });
 
-  it("locks submission and renders success with a clean new diagnosis", async () => {
+  it("locks a double submission and redirects to the prepared report", async () => {
     let resolveDiagnosis: (result: {
       status: "success";
       diagnosisId: number;
@@ -375,7 +385,9 @@ describe("QuickDiagnosisWizard", () => {
     await user.dblClick(confirm);
 
     expect(createDiagnosis).toHaveBeenCalledOnce();
-    expect(screen.getByRole("button", { name: "Enviando..." })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Preparando relatório..." }),
+    ).toBeDisabled();
     expect(createDiagnosis).toHaveBeenCalledWith(
       expect.objectContaining({
         submissionId: "550e8400-e29b-41d4-a716-446655440000",
@@ -383,20 +395,14 @@ describe("QuickDiagnosisWizard", () => {
     );
 
     resolveDiagnosis({ status: "success", diagnosisId: 42 });
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/reports/42"));
+    expect(replace).toHaveBeenCalledOnce();
+    expect(createDiagnosis).toHaveBeenCalledOnce();
     expect(
-      await screen.findByRole("heading", { name: "Diagnóstico salvo" }),
-    ).toHaveFocus();
-    expect(
-      screen.getByRole("link", { name: "Ir para o dashboard" }),
-    ).toHaveAttribute("href", "/dashboard");
-    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
-
-    await user.click(
-      screen.getByRole("button", { name: "Iniciar outro diagnóstico" }),
-    );
-    expect(screen.getByText("1 de 8")).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: "Serviço" })).not.toBeChecked();
-    expect(createSubmissionId).toHaveBeenCalledTimes(2);
+      screen.getByRole("button", { name: "Preparando relatório..." }),
+    ).toBeDisabled();
+    expect(screen.getByText("8 de 8")).toBeInTheDocument();
+    expect(createSubmissionId).toHaveBeenCalledOnce();
   });
 
   it.each([
@@ -434,6 +440,30 @@ describe("QuickDiagnosisWizard", () => {
         submissionId: "550e8400-e29b-41d4-a716-446655440000",
       }),
     );
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("navigates to the original report after an idempotent retry", async () => {
+    const createDiagnosis = vi
+      .fn()
+      .mockResolvedValueOnce({ status: "error", error: "create_failed" })
+      .mockResolvedValueOnce({ status: "success", diagnosisId: 42 });
+    renderWizard(createDiagnosis);
+    const user = await completeValidDiagnosis();
+
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/reports/42"));
+    expect(createDiagnosis).toHaveBeenCalledTimes(2);
+    expect(createDiagnosis.mock.calls[0]?.[0].submissionId).toBe(
+      createDiagnosis.mock.calls[1]?.[0].submissionId,
+    );
   });
 
   it("routes invalid server fields to the earliest step and focuses the input", async () => {
@@ -454,6 +484,7 @@ describe("QuickDiagnosisWizard", () => {
 
     expect(await screen.findByLabelText("Renda mensal desejada")).toHaveFocus();
     expect(screen.getByRole("alert")).toHaveTextContent("Meta inválida.");
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it("regenerates an invalid uneditable submission id", async () => {
@@ -494,5 +525,6 @@ describe("QuickDiagnosisWizard", () => {
         submissionId: "550e8400-e29b-41d4-a716-446655440001",
       }),
     );
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/reports/42"));
   });
 });

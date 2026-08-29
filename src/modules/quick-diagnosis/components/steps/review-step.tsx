@@ -226,7 +226,7 @@ function ReviewStep({
         className="w-full motion-reduce:transition-none"
       >
         {pending ? (
-          "Enviando..."
+          "Preparando relatório..."
         ) : (
           <>
             <CheckIcon aria-hidden="true" />
