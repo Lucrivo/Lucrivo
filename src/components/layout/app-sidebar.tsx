@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ClipboardCheckIcon,
+  FileChartColumnIcon,
   LayoutDashboardIcon,
   TrendingUpIcon,
 } from "lucide-react";
@@ -84,6 +85,17 @@ function AppSidebar() {
                 >
                   <ClipboardCheckIcon aria-hidden="true" />
                   <span>Diagnóstico rápido</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  tooltip="Relatórios"
+                  isActive={pathname.startsWith("/reports")}
+                  render={<Link href="/reports" />}
+                  className="transition-interactive data-active:bg-primary data-active:text-primary-foreground h-10 rounded-xl px-3 font-medium group-data-[collapsible=icon]:justify-center hover:translate-x-0.5 data-active:shadow-sm"
+                >
+                  <FileChartColumnIcon aria-hidden="true" />
+                  <span>Relatórios</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
