@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-29
 
-**Status:** Approved in discussion; awaiting written-spec review
+**Status:** Approved for implementation planning
 
 **Related business rules:** `docs/QUICK-DIAGNOSIS.md`
 
