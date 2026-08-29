@@ -7,8 +7,9 @@ import { cn } from "@/lib/utils";
 
 import type { ReportViewModel } from "../presenters/to-report-view-model";
 import { DiscountSimulator } from "./discount-simulator";
+import { ReportExecutiveSummary } from "./report-executive-summary";
+import { ReportNumbers } from "./report-numbers";
 import { ReportSectionCard } from "./report-section-card";
-import { ReportSummary } from "./report-summary";
 
 function ReportDetail({ viewModel }: { viewModel: ReportViewModel }) {
   return (
@@ -60,8 +61,10 @@ function ReportDetail({ viewModel }: { viewModel: ReportViewModel }) {
         </div>
       </header>
 
+      <ReportExecutiveSummary summary={viewModel.executiveSummary} />
+
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)]">
-        <ReportSummary viewModel={viewModel} />
+        <ReportNumbers numbers={viewModel.numbers} />
         <section aria-label="Análise detalhada" className="grid gap-4">
           <div className="mb-1 grid gap-1 px-1">
             <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">

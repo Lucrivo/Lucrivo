@@ -94,9 +94,7 @@ describe("buildServiceReportSnapshot", () => {
         "discount_simulator",
       ]);
       expect(snapshot.sections.map(({ body }) => body)).toEqual(expectedBodies);
-      expect(
-        snapshot.executiveSummary.answers.map(({ key }) => key),
-      ).toEqual([
+      expect(snapshot.executiveSummary.answers.map(({ key }) => key)).toEqual([
         "profitability",
         "price_sufficiency",
         "immediate_action",

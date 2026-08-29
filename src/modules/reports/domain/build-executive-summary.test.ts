@@ -103,11 +103,14 @@ describe("buildExecutiveSummary", () => {
     ["tight_margin", "Margem apertada", "warning"],
     ["adequate_margin", "Margem adequada", "positive"],
     ["above_target", "Acima da meta", "positive"],
-  ] as const)("maps %s to persisted verdict content", (verdict, label, tone) => {
-    expect(buildExecutiveSummary({ ...baseCalculation, verdict }).verdict).toEqual(
-      expect.objectContaining({ label, tone }),
-    );
-  });
+  ] as const)(
+    "maps %s to persisted verdict content",
+    (verdict, label, tone) => {
+      expect(
+        buildExecutiveSummary({ ...baseCalculation, verdict }).verdict,
+      ).toEqual(expect.objectContaining({ label, tone }));
+    },
+  );
 
   it.each([
     ["cost", "Custo", "Revise os custos antes de acelerar as vendas."],
@@ -158,19 +161,35 @@ describe("buildExecutiveSummary", () => {
       "Ainda não é possível calcular uma referência financeira segura com os dados informados.",
     ],
     [
-      { currentPriceCents: 4000, minimumPriceCents: 5435, targetPriceCents: 6494 },
+      {
+        currentPriceCents: 4000,
+        minimumPriceCents: 5435,
+        targetPriceCents: 6494,
+      },
       "Não — está abaixo do mínimo financeiro de R$ 54,35.",
     ],
     [
-      { currentPriceCents: 6000, minimumPriceCents: 5435, targetPriceCents: 6494 },
+      {
+        currentPriceCents: 6000,
+        minimumPriceCents: 5435,
+        targetPriceCents: 6494,
+      },
       "Parcialmente — cobre os custos, mas ainda não alcança a meta de 15%.",
     ],
     [
-      { currentPriceCents: 6494, minimumPriceCents: 5435, targetPriceCents: 6494 },
+      {
+        currentPriceCents: 6494,
+        minimumPriceCents: 5435,
+        targetPriceCents: 6494,
+      },
       "Sim — alcança a referência financeira para a meta de 15%.",
     ],
     [
-      { currentPriceCents: 8000, minimumPriceCents: 5435, targetPriceCents: 6494 },
+      {
+        currentPriceCents: 8000,
+        minimumPriceCents: 5435,
+        targetPriceCents: 6494,
+      },
       "Sim — alcança a referência financeira para a meta de 15%.",
     ],
   ] as const)("builds price answer %#", (override, answer) => {

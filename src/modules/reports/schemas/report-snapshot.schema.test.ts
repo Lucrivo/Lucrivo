@@ -162,7 +162,8 @@ describe("parseReportSnapshot", () => {
   });
 
   it("rejects a missing executive summary", () => {
-    const { executiveSummary: _removed, ...withoutSummary } = validSnapshot;
+    const withoutSummary: Partial<typeof validSnapshot> = { ...validSnapshot };
+    delete withoutSummary.executiveSummary;
     expect(() => parseReportSnapshot(withoutSummary)).toThrow();
   });
 

@@ -22,10 +22,7 @@ const command: ServiceDiagnosisCommand = {
 };
 
 function present(input: ServiceDiagnosisCommand = command) {
-  const snapshot = buildServiceReportSnapshot(
-    input,
-    calculateServiceReport(input),
-  );
+  const snapshot = buildSnapshot(input);
   return toReportViewModel({
     id: 42,
     createdAt: "2026-08-28T22:30:00.000Z",
@@ -33,8 +30,13 @@ function present(input: ServiceDiagnosisCommand = command) {
   });
 }
 
+function buildSnapshot(input: ServiceDiagnosisCommand = command) {
+  return buildServiceReportSnapshot(input, calculateServiceReport(input));
+}
+
 describe("toReportViewModel", () => {
-  it("formats identity, summary, references, and next actions", () => {
+  it("formats identity, persisted summary, and five report numbers", () => {
+    const snapshot = buildSnapshot();
     const viewModel = present();
 
     expect(viewModel.identity).toEqual({
@@ -45,51 +47,43 @@ describe("toReportViewModel", () => {
       createdAtLabel: "28/08/2026, 19:30",
       unitLabel: "hora",
     });
-    expect(viewModel.summary).toEqual({
+    expect(viewModel.executiveSummary).toEqual({
+      ...snapshot.executiveSummary,
       verdict: {
-        label: "Margem adequada",
-        description: "O preço é suficiente para alcançar a meta.",
-        tone: "positive",
+        ...snapshot.executiveSummary.verdict,
         toneLabel: "Situação positiva",
       },
-      priority: {
-        label: "Volume",
-        description:
-          "Seu preço se sustenta. Agora transforme a meta em rotina comercial.",
-      },
-      metrics: [
-        { key: "price", label: "Preço atual", value: "R$ 80,00" },
-        { key: "margin", label: "Margem real", value: "17%" },
-        { key: "profit", label: "Lucro por hora", value: "R$ 13,60" },
-      ],
     });
-    expect(viewModel.priceReferences).toEqual([
+    expect(viewModel.numbers).toEqual([
+      { key: "price", label: "Preço atual", value: "R$ 80,00" },
+      { key: "margin", label: "Margem real", value: "17%" },
+      { key: "profit", label: "Lucro por hora", value: "R$ 13,60" },
       { key: "minimum", label: "Preço mínimo", value: "R$ 65,22" },
       { key: "target", label: "Preço-alvo (15%)", value: "R$ 77,93" },
     ]);
-    expect(viewModel.nextActions).toEqual([
-      "Use a meta mensal como referência para sua agenda.",
-      "Acompanhe ocupação e recorrência antes de conceder descontos.",
-    ]);
+    expect(viewModel).not.toHaveProperty("summary");
+    expect(viewModel).not.toHaveProperty("nextActions");
   });
 
   it("renders nullable financial references as unavailable", () => {
     const viewModel = present({ ...command, monthlyWorkMinutes: 0 });
 
-    expect(viewModel.summary.metrics).toContainEqual({
+    expect(viewModel.numbers).toContainEqual({
       key: "margin",
       label: "Margem real",
       value: "Indisponível",
     });
-    expect(viewModel.summary.metrics).toContainEqual({
+    expect(viewModel.numbers).toContainEqual({
       key: "profit",
       label: "Lucro por hora",
       value: "Indisponível",
     });
-    expect(viewModel.priceReferences).toEqual([
-      { key: "minimum", label: "Preço mínimo", value: "Indisponível" },
-      { key: "target", label: "Preço-alvo (15%)", value: "Indisponível" },
-    ]);
+    expect(viewModel.numbers).toEqual(
+      expect.arrayContaining([
+        { key: "minimum", label: "Preço mínimo", value: "Indisponível" },
+        { key: "target", label: "Preço-alvo (15%)", value: "Indisponível" },
+      ]),
+    );
   });
 
   it("preserves all five resolved snapshot sections and semantic tone labels", () => {
@@ -112,35 +106,4 @@ describe("toReportViewModel", () => {
       }),
     );
   });
-
-  it.each([
-    ["price", "Preço", "Corrija o preço antes de buscar mais volume."],
-    ["margin", "Margem", "Aproxime seu preço da margem-alvo de 15%."],
-    ["volume", "Volume", "Use a meta mensal como referência para sua agenda."],
-  ] as const)(
-    "maps %s priority to user-facing guidance",
-    (priority, label, firstAction) => {
-      const viewModel = present();
-      const changed = toReportViewModel({
-        id: viewModel.identity.id,
-        createdAt: "2026-08-28T22:30:00.000Z",
-        snapshot: {
-          ...buildServiceReportSnapshot(
-            command,
-            calculateServiceReport(command),
-          ),
-          results: {
-            ...buildServiceReportSnapshot(
-              command,
-              calculateServiceReport(command),
-            ).results,
-            priority,
-          },
-        },
-      });
-
-      expect(changed.summary.priority.label).toBe(label);
-      expect(changed.nextActions[0]).toBe(firstAction);
-    },
-  );
 });

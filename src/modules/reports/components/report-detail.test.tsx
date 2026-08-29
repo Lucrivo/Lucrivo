@@ -49,19 +49,24 @@ describe("ReportDetail", () => {
     ).toHaveAttribute("href", "/quick-diagnosis");
   });
 
-  it("shows verdict, priority, metrics, and price references in the summary rail", () => {
+  it("renders the executive summary before numbers and detailed analysis", () => {
     render(<ReportDetail viewModel={viewModel} />);
-    const summary = screen.getByRole("complementary", {
-      name: "Resumo da decisão",
+    const executiveSummary = screen.getByRole("region", {
+      name: "A verdade por trás do preço.",
     });
+    const numbers = screen.getByRole("complementary", { name: "Seus números" });
+    const analysis = screen.getByRole("region", { name: "Análise detalhada" });
 
-    expect(within(summary).getByText("Margem adequada")).toBeInTheDocument();
-    expect(within(summary).getByText("Volume")).toBeInTheDocument();
-    expect(within(summary).getByText("R$ 80,00")).toBeInTheDocument();
-    expect(within(summary).getByText("17%")).toBeInTheDocument();
-    expect(within(summary).getByText("R$ 13,60")).toBeInTheDocument();
-    expect(within(summary).getByText("R$ 65,22")).toBeInTheDocument();
-    expect(within(summary).getByText("R$ 77,93")).toBeInTheDocument();
+    expect(
+      executiveSummary.compareDocumentPosition(numbers) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      executiveSummary.compareDocumentPosition(analysis) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.queryByText("Leitura principal")).not.toBeInTheDocument();
+    expect(screen.queryByText("Prioridade agora")).not.toBeInTheDocument();
   });
 
   it("renders exactly five persisted sections in snapshot order", () => {
