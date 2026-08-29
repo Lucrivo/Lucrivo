@@ -1,6 +1,6 @@
-const REPORT_SCHEMA_VERSION = 1;
+const REPORT_SCHEMA_VERSION = 2;
 const SERVICE_CALCULATION_VERSION = 1;
-const SERVICE_CONTENT_VERSION = 1;
+const SERVICE_CONTENT_VERSION = 2;
 
 const reportTones = ["neutral", "positive", "warning", "critical"] as const;
 const reportVerdicts = [
@@ -19,6 +19,12 @@ const reportSectionKeys = [
   "sales_goal",
   "discount_simulator",
 ] as const;
+const reportExecutiveSummaryFactKeys = ["margin", "price"] as const;
+const reportExecutiveSummaryAnswerKeys = [
+  "profitability",
+  "price_sufficiency",
+  "immediate_action",
+] as const;
 
 type ReportTone = (typeof reportTones)[number];
 type ReportVerdict = (typeof reportVerdicts)[number];
@@ -30,6 +36,8 @@ export {
   REPORT_SCHEMA_VERSION,
   SERVICE_CALCULATION_VERSION,
   SERVICE_CONTENT_VERSION,
+  reportExecutiveSummaryAnswerKeys,
+  reportExecutiveSummaryFactKeys,
   reportPriorities,
   reportSectionKeys,
   reportTones,
@@ -43,7 +51,10 @@ export {
 };
 
 export type {
+  ExecutiveSummaryAnswer,
+  ExecutiveSummaryFact,
   ReportDiscountSimulationBase,
+  ReportExecutiveSummary,
   ReportInputs,
   ReportPolicy,
   ReportResults,

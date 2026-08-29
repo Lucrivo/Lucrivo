@@ -6,6 +6,8 @@ import {
   REPORT_SCHEMA_VERSION,
   SERVICE_CALCULATION_VERSION,
   SERVICE_CONTENT_VERSION,
+  reportExecutiveSummaryAnswerKeys,
+  reportExecutiveSummaryFactKeys,
   reportPriorities,
   reportSectionKeys,
   reportTones,
@@ -68,6 +70,40 @@ const reportSectionSchema = z.strictObject({
   tone: z.enum(reportTones),
 });
 
+const executiveSummaryFactSchema = z.strictObject({
+  key: z.enum(reportExecutiveSummaryFactKeys),
+  currentLabel: z.string().min(1),
+  currentValue: z.string().min(1),
+  referenceLabel: z.string().min(1),
+  referenceValue: z.string().min(1),
+});
+
+const executiveSummaryAnswerSchema = z.strictObject({
+  key: z.enum(reportExecutiveSummaryAnswerKeys),
+  question: z.string().min(1),
+  answer: z.string().min(1),
+});
+
+const reportExecutiveSummarySchema = z.strictObject({
+  headline: z.string().min(1),
+  introduction: z.string().min(1),
+  verdict: z.strictObject({
+    label: z.string().min(1),
+    body: z.string().min(1),
+    tone: z.enum(reportTones),
+  }),
+  facts: z
+    .array(executiveSummaryFactSchema)
+    .length(reportExecutiveSummaryFactKeys.length),
+  priority: z.strictObject({
+    label: z.string().min(1),
+    body: z.string().min(1),
+  }),
+  answers: z
+    .array(executiveSummaryAnswerSchema)
+    .length(reportExecutiveSummaryAnswerKeys.length),
+});
+
 const reportDiscountSimulationBaseSchema = z.strictObject({
   originalPriceCents: nonNegativeIntegerSchema,
   unitCostCents: nullableNonNegativeIntegerSchema,
@@ -88,10 +124,38 @@ const reportSnapshotSchema = z
     policy: reportPolicySchema,
     inputs: reportInputsSchema,
     results: reportResultsSchema,
+    executiveSummary: reportExecutiveSummarySchema,
     sections: z.array(reportSectionSchema).length(reportSectionKeys.length),
     discountSimulationBase: reportDiscountSimulationBaseSchema,
   })
   .superRefine((snapshot, context) => {
+    for (const [
+      index,
+      expectedKey,
+    ] of reportExecutiveSummaryFactKeys.entries()) {
+      if (snapshot.executiveSummary.facts[index]?.key === expectedKey) continue;
+
+      context.addIssue({
+        code: "custom",
+        path: ["executiveSummary", "facts", index, "key"],
+        message: `O fato ${index + 1} deve usar a chave ${expectedKey}.`,
+      });
+    }
+
+    for (const [
+      index,
+      expectedKey,
+    ] of reportExecutiveSummaryAnswerKeys.entries()) {
+      if (snapshot.executiveSummary.answers[index]?.key === expectedKey)
+        continue;
+
+      context.addIssue({
+        code: "custom",
+        path: ["executiveSummary", "answers", index, "key"],
+        message: `A resposta ${index + 1} deve usar a chave ${expectedKey}.`,
+      });
+    }
+
     for (const [index, expectedKey] of reportSectionKeys.entries()) {
       if (snapshot.sections[index]?.key === expectedKey) continue;
 
@@ -106,6 +170,9 @@ const reportSnapshotSchema = z
 type ReportPolicy = z.infer<typeof reportPolicySchema>;
 type ReportInputs = z.infer<typeof reportInputsSchema>;
 type ReportResults = z.infer<typeof reportResultsSchema>;
+type ExecutiveSummaryFact = z.infer<typeof executiveSummaryFactSchema>;
+type ExecutiveSummaryAnswer = z.infer<typeof executiveSummaryAnswerSchema>;
+type ReportExecutiveSummary = z.infer<typeof reportExecutiveSummarySchema>;
 type ReportSection = z.infer<typeof reportSectionSchema>;
 type ReportDiscountSimulationBase = z.infer<
   typeof reportDiscountSimulationBaseSchema
@@ -117,14 +184,20 @@ function parseReportSnapshot(value: unknown): ReportSnapshot {
 }
 
 export {
+  executiveSummaryAnswerSchema,
+  executiveSummaryFactSchema,
   parseReportSnapshot,
   reportDiscountSimulationBaseSchema,
+  reportExecutiveSummarySchema,
   reportInputsSchema,
   reportPolicySchema,
   reportResultsSchema,
   reportSectionSchema,
   reportSnapshotSchema,
+  type ExecutiveSummaryAnswer,
+  type ExecutiveSummaryFact,
   type ReportDiscountSimulationBase,
+  type ReportExecutiveSummary,
   type ReportInputs,
   type ReportPolicy,
   type ReportResults,
