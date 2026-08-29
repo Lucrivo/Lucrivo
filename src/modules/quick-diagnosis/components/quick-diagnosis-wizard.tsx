@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useReducer, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -19,8 +20,8 @@ import type {
   ServiceDiagnosisFieldErrors,
   ServiceDiagnosisInput,
 } from "../types";
-import { DiagnosisSuccess } from "./diagnosis-success";
 import { CurrentPriceStep } from "./steps/current-price-step";
+import { DiagnosisTypeStep } from "./steps/diagnosis-type-step";
 import { FeesStep } from "./steps/fees-step";
 import { FixedExpensesStep } from "./steps/fixed-expenses-step";
 import { MonthlyGoalStep } from "./steps/monthly-goal-step";
@@ -44,20 +45,21 @@ type QuickDiagnosisWizardProps = {
 };
 
 const stepTitles: Record<WizardStep, string> = {
-  pricingMethod: "Como você cobra hoje?",
-  monthlyGoal: "Qual é sua meta mensal?",
+  diagnosisType: "O que você quer analisar?",
+  monthlyGoal: "Quanto você quer tirar por mês pra você?",
   fixedExpenses: "Quais são suas despesas fixas?",
   workRoutine: "Como é sua rotina de trabalho?",
+  pricingMethod: "Como você vende seu tempo?",
   currentPrice: "Qual é seu preço atual?",
   fees: "Quais taxas incidem nas vendas?",
   review: "Revise suas respostas",
 };
 
 const stepFields = {
-  pricingMethod: ["pricingMethod"],
   monthlyGoal: ["desiredMonthlyIncome"],
   fixedExpenses: ["fixedMonthlyExpenses"],
   workRoutine: ["monthlyWorkHours", "weeklyWorkDays"],
+  pricingMethod: ["pricingMethod"],
   currentPrice: [
     "hourlyRate",
     "minuteRate",
@@ -66,12 +68,12 @@ const stepFields = {
   ],
   fees: ["taxRate", "cardFeeRate"],
 } as const satisfies Record<
-  Exclude<WizardStep, "review">,
+  Exclude<WizardStep, "diagnosisType" | "review">,
   readonly ServiceDiagnosisField[]
 >;
 
 const fieldStep: Record<ServiceDiagnosisField, WizardStep> = {
-  submissionId: "pricingMethod",
+  submissionId: "diagnosisType",
   pricingMethod: "pricingMethod",
   desiredMonthlyIncome: "monthlyGoal",
   fixedMonthlyExpenses: "fixedExpenses",
@@ -107,6 +109,7 @@ function QuickDiagnosisWizard({
   createDiagnosis,
   createSubmissionId = () => crypto.randomUUID(),
 }: QuickDiagnosisWizardProps) {
+  const router = useRouter();
   const [initialSubmissionId] = useState(createSubmissionId);
 
   const [state, dispatch] = useReducer(
@@ -146,6 +149,14 @@ function QuickDiagnosisWizard({
 
   function renderStep() {
     switch (state.step) {
+      case "diagnosisType":
+        return (
+          <DiagnosisTypeStep
+            value={state.diagnosisType}
+            error={state.diagnosisTypeError}
+            onChange={(value) => dispatch({ type: "setDiagnosisType", value })}
+          />
+        );
       case "pricingMethod":
         return (
           <PricingMethodStep
@@ -170,6 +181,7 @@ function QuickDiagnosisWizard({
         return (
           <ReviewStep
             values={state.values}
+            diagnosisType={state.diagnosisType}
             errors={state.fieldErrors}
             pending={state.status === "submitting"}
             submitError={state.submitError}
@@ -182,6 +194,19 @@ function QuickDiagnosisWizard({
 
   function continueToNextStep() {
     if (state.step === "review") return;
+
+    if (state.step === "diagnosisType") {
+      if (!state.diagnosisType) {
+        dispatch({
+          type: "setDiagnosisTypeError",
+          error: "Selecione o que você quer analisar.",
+        });
+        return;
+      }
+
+      dispatch({ type: "next" });
+      return;
+    }
 
     const fieldErrors = validateServiceDiagnosisFields(
       stepFields[state.step],
@@ -199,12 +224,14 @@ function QuickDiagnosisWizard({
 
     submittingRef.current = true;
     dispatch({ type: "submitting" });
+    let keepSubmissionLocked = false;
 
     try {
       const result = await createDiagnosis(state.values);
 
       if (result.status === "success") {
-        dispatch({ type: "success", diagnosisId: result.diagnosisId });
+        router.replace(`/reports/${result.diagnosisId}`);
+        keepSubmissionLocked = true;
         return;
       }
 
@@ -234,19 +261,8 @@ function QuickDiagnosisWizard({
     } catch {
       dispatch({ type: "submitError", error: "create_failed" });
     } finally {
-      submittingRef.current = false;
+      if (!keepSubmissionLocked) submittingRef.current = false;
     }
-  }
-
-  if (state.status === "success" && state.diagnosisId !== null) {
-    return (
-      <DiagnosisSuccess
-        diagnosisId={state.diagnosisId}
-        onStartAnother={() =>
-          dispatch({ type: "reset", submissionId: createSubmissionId() })
-        }
-      />
-    );
   }
 
   return (
@@ -263,7 +279,7 @@ function QuickDiagnosisWizard({
         >
           <ProgressLabel>Seu ponto de partida</ProgressLabel>
           <span className="text-muted-foreground ml-auto text-sm tabular-nums">
-            {stepNumber} de 7
+            {stepNumber} de {wizardSteps.length}
           </span>
         </Progress>
       </div>

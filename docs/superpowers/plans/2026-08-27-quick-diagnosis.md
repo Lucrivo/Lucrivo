@@ -1015,14 +1015,14 @@ git commit -m "feat: add quick diagnosis wizard shell"
 
 Use `userEvent` to select each pricing method, fill all inputs, Continue/Back, and assert exactly one step. Required accessible labels are:
 
-| Step | Heading                           | Fields                                                     |
-| ---- | --------------------------------- | ---------------------------------------------------------- |
-| 1    | `Como você cobra hoje?`           | `Por hora`, `Por minuto`, `Por atendimento`                |
-| 2    | `Qual é sua meta mensal?`         | `Renda mensal desejada`                                    |
-| 3    | `Quais são suas despesas fixas?`  | `Despesas fixas mensais`                                   |
-| 4    | `Como é sua rotina de trabalho?`  | `Horas de trabalho por mês`, `Dias de trabalho por semana` |
-| 5    | `Qual é seu preço atual?`         | selected price; appointment also has duration              |
-| 6    | `Quais taxas incidem nas vendas?` | `Impostos`, `Taxa do cartão`                               |
+| Step | Heading                                    | Fields                                                     |
+| ---- | ------------------------------------------ | ---------------------------------------------------------- |
+| 1    | `Como você vende seu tempo?`               | `Por hora`, `Por minuto`, `Por atendimento`                |
+| 2    | `Quanto você quer tirar por mês pra você?` | `Renda mensal desejada`                                    |
+| 3    | `Quais são suas despesas fixas?`           | `Despesas fixas mensais`                                   |
+| 4    | `Como é sua rotina de trabalho?`           | `Horas de trabalho por mês`, `Dias de trabalho por semana` |
+| 5    | `Qual é seu preço atual?`                  | selected price; appointment also has duration              |
+| 6    | `Quais taxas incidem nas vendas?`          | `Impostos`, `Taxa do cartão`                               |
 
 Prove hour/minute/appointment render only relevant fields and method switching clears the old value.
 

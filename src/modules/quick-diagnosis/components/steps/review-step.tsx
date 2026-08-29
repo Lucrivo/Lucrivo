@@ -7,10 +7,11 @@ import type {
   ServiceDiagnosisFieldErrors,
   ServiceDiagnosisInput,
 } from "../../types";
-import type { WizardStep } from "../wizard-state";
+import type { DiagnosisType, WizardStep } from "../wizard-state";
 
 type ReviewStepProps = {
   values: ServiceDiagnosisInput;
+  diagnosisType: DiagnosisType | "";
   errors: ServiceDiagnosisFieldErrors;
   pending: boolean;
   submitError: "unauthorized" | "create_failed" | null;
@@ -88,6 +89,7 @@ function ReviewGroup({
 
 function ReviewStep({
   values,
+  diagnosisType,
   pending,
   submitError,
   onEdit,
@@ -99,10 +101,23 @@ function ReviewStep({
       : values.pricingMethod === "minute"
         ? ["Valor por minuto", values.minuteRate]
         : ["Valor por atendimento", values.appointmentRate];
+  const requiresDuration =
+    values.pricingMethod === "minute" || values.pricingMethod === "appointment";
 
   return (
     <div className="grid gap-5">
       <div className="grid gap-3 sm:grid-cols-2">
+        <ReviewGroup
+          title="Tipo de diagnóstico"
+          editName="Editar tipo de diagnóstico"
+          onEdit={() => onEdit("diagnosisType")}
+        >
+          <ReviewItem
+            label="O que será analisado"
+            value={diagnosisType === "service" ? "Serviço" : ""}
+          />
+        </ReviewGroup>
+
         <ReviewGroup
           title="Forma de cobrança"
           editName="Editar forma de cobrança"
@@ -164,7 +179,7 @@ function ReviewStep({
             label={currentPrice[0]}
             value={formatMoney(currentPrice[1])}
           />
-          {values.pricingMethod === "appointment" ? (
+          {requiresDuration ? (
             <ReviewItem
               label="Duração média"
               value={`${values.appointmentDurationMinutes} minutos`}
@@ -211,7 +226,7 @@ function ReviewStep({
         className="w-full motion-reduce:transition-none"
       >
         {pending ? (
-          "Enviando..."
+          "Preparando relatório..."
         ) : (
           <>
             <CheckIcon aria-hidden="true" />

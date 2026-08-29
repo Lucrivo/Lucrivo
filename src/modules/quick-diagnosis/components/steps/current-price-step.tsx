@@ -17,6 +17,7 @@ function CurrentPriceStep(props: StepProps) {
   }
 
   const price = priceFields[method];
+  const requiresDuration = method === "minute" || method === "appointment";
 
   return (
     <div className="grid gap-5 sm:grid-cols-2">
@@ -27,7 +28,7 @@ function CurrentPriceStep(props: StepProps) {
         value={props.values[price.field]}
         prefix="R$"
       />
-      {method === "appointment" ? (
+      {requiresDuration ? (
         <StepField
           {...props}
           field="appointmentDurationMinutes"

@@ -1,10 +1,20 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const replace = vi.hoisted(() => vi.fn());
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace }),
+}));
 
 import { QuickDiagnosisWizard } from "./quick-diagnosis-wizard";
 
 describe("QuickDiagnosisWizard", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   function renderWizard(
     createDiagnosis = vi.fn(),
     createSubmissionId = vi.fn(() => "550e8400-e29b-41d4-a716-446655440000"),
@@ -18,16 +28,22 @@ describe("QuickDiagnosisWizard", () => {
     return { createDiagnosis, createSubmissionId };
   }
 
+  async function selectService(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole("radio", { name: "Serviço" }));
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+  }
+
   async function completeValidDiagnosis() {
     const user = userEvent.setup();
-    await user.click(screen.getByRole("radio", { name: "Por hora" }));
-    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await selectService(user);
     await user.type(screen.getByLabelText("Renda mensal desejada"), "5000");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(screen.getByLabelText("Despesas fixas mensais"), "1200");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(screen.getByLabelText("Horas de trabalho por mês"), "160");
     await user.type(screen.getByLabelText("Dias de trabalho por semana"), "5");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(screen.getByRole("radio", { name: "Por hora" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(screen.getByLabelText("Valor por hora"), "125,90");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
@@ -50,19 +66,42 @@ describe("QuickDiagnosisWizard", () => {
       />,
     );
 
-    expect(screen.getByText("1 de 7")).toBeInTheDocument();
+    expect(screen.getByText("1 de 8")).toBeInTheDocument();
     expect(screen.getByRole("progressbar")).toHaveAttribute(
       "aria-valuenow",
       "1",
     );
     expect(screen.getByRole("progressbar")).toHaveAttribute(
       "aria-valuemax",
-      "7",
+      "8",
     );
     expect(screen.getByRole("heading", { level: 2 })).toHaveFocus();
     expect(screen.getAllByTestId("wizard-step")).toHaveLength(1);
+    expect(screen.getByRole("radio", { name: "Serviço" })).toBeEnabled();
+    expect(screen.getByRole("radio", { name: "Produto" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    expect(screen.getByRole("radio", { name: "Produção" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
     expect(createSubmissionId).toHaveBeenCalledOnce();
     expect(createDiagnosis).not.toHaveBeenCalled();
+  });
+
+  it("requires an available diagnosis type before continuing", async () => {
+    const user = userEvent.setup();
+    renderWizard();
+
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Selecione o que você quer analisar.",
+    );
+    expect(
+      screen.getByRole("heading", { name: "O que você quer analisar?" }),
+    ).toBeInTheDocument();
   });
 
   it("moves forward and back while keeping one focused section", async () => {
@@ -79,25 +118,24 @@ describe("QuickDiagnosisWizard", () => {
       />,
     );
 
-    await user.click(screen.getByRole("radio", { name: "Por hora" }));
-    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await selectService(user);
 
-    expect(screen.getByText("2 de 7")).toBeInTheDocument();
+    expect(screen.getByText("2 de 8")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
         level: 2,
-        name: "Qual é sua meta mensal?",
+        name: "Quanto você quer tirar por mês pra você?",
       }),
     ).toHaveFocus();
     expect(screen.getAllByTestId("wizard-step")).toHaveLength(1);
 
     await user.click(screen.getByRole("button", { name: "Voltar" }));
 
-    expect(screen.getByText("1 de 7")).toBeInTheDocument();
+    expect(screen.getByText("1 de 8")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
         level: 2,
-        name: "Como você cobra hoje?",
+        name: "O que você quer analisar?",
       }),
     ).toHaveFocus();
     expect(screen.getAllByTestId("wizard-step")).toHaveLength(1);
@@ -113,8 +151,7 @@ describe("QuickDiagnosisWizard", () => {
     const user = userEvent.setup();
     const { createDiagnosis } = renderWizard();
 
-    await user.click(screen.getByRole("radio", { name: method }));
-    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await selectService(user);
     await user.type(screen.getByLabelText("Renda mensal desejada"), "5000");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(screen.getByLabelText("Despesas fixas mensais"), "1200");
@@ -122,10 +159,12 @@ describe("QuickDiagnosisWizard", () => {
     await user.type(screen.getByLabelText("Horas de trabalho por mês"), "160");
     await user.type(screen.getByLabelText("Dias de trabalho por semana"), "5");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(screen.getByRole("radio", { name: method }));
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
 
     expect(screen.getByLabelText(priceLabel)).toBeInTheDocument();
     expect(screen.getAllByTestId("wizard-step")).toHaveLength(1);
-    if (method === "Por atendimento") {
+    if (method === "Por minuto" || method === "Por atendimento") {
       expect(
         screen.getByLabelText("Duração média do atendimento"),
       ).toBeInTheDocument();
@@ -136,10 +175,10 @@ describe("QuickDiagnosisWizard", () => {
     }
 
     await user.type(screen.getByLabelText(priceLabel), "125");
-    if (method === "Por atendimento") {
+    if (method === "Por minuto" || method === "Por atendimento") {
       await user.type(
         screen.getByLabelText("Duração média do atendimento"),
-        "45",
+        "40",
       );
     }
     await user.click(screen.getByRole("button", { name: "Continuar" }));
@@ -147,17 +186,19 @@ describe("QuickDiagnosisWizard", () => {
     await user.type(screen.getByLabelText("Taxa do cartão"), "3");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
-    expect(screen.getByText("7 de 7")).toBeInTheDocument();
+    expect(screen.getByText("8 de 8")).toBeInTheDocument();
     expect(screen.getAllByTestId("wizard-step")).toHaveLength(1);
+    if (method === "Por minuto") {
+      expect(screen.getByText("40 minutos")).toBeInTheDocument();
+    }
     expect(createDiagnosis).not.toHaveBeenCalled();
   });
 
-  it("completes all six input steps and preserves values when going back", async () => {
+  it("completes all seven input steps and preserves values when going back", async () => {
     const user = userEvent.setup();
     const { createDiagnosis } = renderWizard();
 
-    await user.click(screen.getByRole("radio", { name: "Por hora" }));
-    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await selectService(user);
     await user.type(screen.getByLabelText("Renda mensal desejada"), "5000");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(screen.getByLabelText("Despesas fixas mensais"), "1200");
@@ -165,13 +206,15 @@ describe("QuickDiagnosisWizard", () => {
     await user.type(screen.getByLabelText("Horas de trabalho por mês"), "160");
     await user.type(screen.getByLabelText("Dias de trabalho por semana"), "5");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(screen.getByRole("radio", { name: "Por hora" }));
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(screen.getByLabelText("Valor por hora"), "125,90");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(screen.getByLabelText("Impostos"), "6,25");
     await user.type(screen.getByLabelText("Taxa do cartão"), "3,50");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
-    expect(screen.getByText("7 de 7")).toBeInTheDocument();
+    expect(screen.getByText("8 de 8")).toBeInTheDocument();
     expect(screen.getAllByTestId("wizard-step")).toHaveLength(1);
     expect(createDiagnosis).not.toHaveBeenCalled();
 
@@ -184,8 +227,7 @@ describe("QuickDiagnosisWizard", () => {
     const user = userEvent.setup();
     renderWizard();
 
-    await user.click(screen.getByRole("radio", { name: "Por hora" }));
-    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await selectService(user);
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(
@@ -211,10 +253,12 @@ describe("QuickDiagnosisWizard", () => {
     const user = userEvent.setup();
     renderWizard();
 
-    await user.click(screen.getByRole("radio", { name: "Por atendimento" }));
-    for (let step = 0; step < 4; step += 1) {
+    await selectService(user);
+    for (let step = 0; step < 3; step += 1) {
       await user.click(screen.getByRole("button", { name: "Continuar" }));
     }
+    await user.click(screen.getByRole("radio", { name: "Por atendimento" }));
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(screen.getByLabelText("Valor por atendimento"), "0");
     await user.type(
       screen.getByLabelText("Duração média do atendimento"),
@@ -259,6 +303,10 @@ describe("QuickDiagnosisWizard", () => {
     const user = userEvent.setup();
     renderWizard();
 
+    await selectService(user);
+    for (let step = 0; step < 3; step += 1) {
+      await user.click(screen.getByRole("button", { name: "Continuar" }));
+    }
     const hour = screen.getByRole("radio", { name: "Por hora" });
     hour.focus();
     await user.keyboard("{ArrowRight}");
@@ -266,17 +314,10 @@ describe("QuickDiagnosisWizard", () => {
     await user.click(hour);
 
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(screen.getByLabelText("Valor por hora"), "125");
-    for (let step = 0; step < 4; step += 1) {
-      await user.click(screen.getByRole("button", { name: "Voltar" }));
-    }
+    await user.click(screen.getByRole("button", { name: "Voltar" }));
     await user.click(screen.getByRole("radio", { name: "Por minuto" }));
-    for (let step = 0; step < 4; step += 1) {
-      await user.click(screen.getByRole("button", { name: "Continuar" }));
-    }
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
 
     expect(screen.getByLabelText("Valor por minuto")).toHaveValue("");
     expect(screen.queryByLabelText("Valor por hora")).not.toBeInTheDocument();
@@ -286,7 +327,8 @@ describe("QuickDiagnosisWizard", () => {
     const { createDiagnosis } = renderWizard();
     const user = await completeValidDiagnosis();
 
-    expect(screen.getByText("7 de 7")).toBeInTheDocument();
+    expect(screen.getByText("8 de 8")).toBeInTheDocument();
+    expect(screen.getByText("Serviço")).toBeInTheDocument();
     expect(screen.getByText("Por hora")).toBeInTheDocument();
     expect(screen.getByText("R$ 5.000,00")).toBeInTheDocument();
     expect(screen.getByText("160 horas por mês")).toBeInTheDocument();
@@ -294,8 +336,9 @@ describe("QuickDiagnosisWizard", () => {
     expect(createDiagnosis).not.toHaveBeenCalled();
 
     const edits = [
-      ["Editar forma de cobrança", "Como você cobra hoje?"],
-      ["Editar meta mensal", "Qual é sua meta mensal?"],
+      ["Editar tipo de diagnóstico", "O que você quer analisar?"],
+      ["Editar forma de cobrança", "Como você vende seu tempo?"],
+      ["Editar meta mensal", "Quanto você quer tirar por mês pra você?"],
       ["Editar despesas fixas", "Quais são suas despesas fixas?"],
       ["Editar rotina", "Como é sua rotina de trabalho?"],
       ["Editar preço atual", "Qual é seu preço atual?"],
@@ -307,7 +350,7 @@ describe("QuickDiagnosisWizard", () => {
       expect(
         screen.getByRole("heading", { name: heading }),
       ).toBeInTheDocument();
-      while (!screen.queryByText("7 de 7")) {
+      while (!screen.queryByText("8 de 8")) {
         await user.click(screen.getByRole("button", { name: "Continuar" }));
       }
     }
@@ -318,7 +361,7 @@ describe("QuickDiagnosisWizard", () => {
     expect(screen.getByLabelText("Renda mensal desejada")).toHaveValue("5000");
   });
 
-  it("locks submission and renders success with a clean new diagnosis", async () => {
+  it("locks a double submission and redirects to the prepared report", async () => {
     let resolveDiagnosis: (result: {
       status: "success";
       diagnosisId: number;
@@ -342,7 +385,9 @@ describe("QuickDiagnosisWizard", () => {
     await user.dblClick(confirm);
 
     expect(createDiagnosis).toHaveBeenCalledOnce();
-    expect(screen.getByRole("button", { name: "Enviando..." })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Preparando relatório..." }),
+    ).toBeDisabled();
     expect(createDiagnosis).toHaveBeenCalledWith(
       expect.objectContaining({
         submissionId: "550e8400-e29b-41d4-a716-446655440000",
@@ -350,20 +395,14 @@ describe("QuickDiagnosisWizard", () => {
     );
 
     resolveDiagnosis({ status: "success", diagnosisId: 42 });
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/reports/42"));
+    expect(replace).toHaveBeenCalledOnce();
+    expect(createDiagnosis).toHaveBeenCalledOnce();
     expect(
-      await screen.findByRole("heading", { name: "Diagnóstico salvo" }),
-    ).toHaveFocus();
-    expect(
-      screen.getByRole("link", { name: "Ir para o dashboard" }),
-    ).toHaveAttribute("href", "/dashboard");
-    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
-
-    await user.click(
-      screen.getByRole("button", { name: "Iniciar outro diagnóstico" }),
-    );
-    expect(screen.getByText("1 de 7")).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: "Por hora" })).not.toBeChecked();
-    expect(createSubmissionId).toHaveBeenCalledTimes(2);
+      screen.getByRole("button", { name: "Preparando relatório..." }),
+    ).toBeDisabled();
+    expect(screen.getByText("8 de 8")).toBeInTheDocument();
+    expect(createSubmissionId).toHaveBeenCalledOnce();
   });
 
   it.each([
@@ -384,7 +423,7 @@ describe("QuickDiagnosisWizard", () => {
     );
 
     expect(await screen.findByRole("alert")).toHaveTextContent(message);
-    expect(screen.getByText("7 de 7")).toBeInTheDocument();
+    expect(screen.getByText("8 de 8")).toBeInTheDocument();
     expect(screen.getByText("R$ 5.000,00")).toBeInTheDocument();
     if (error === "unauthorized") {
       expect(
@@ -400,6 +439,30 @@ describe("QuickDiagnosisWizard", () => {
       expect.objectContaining({
         submissionId: "550e8400-e29b-41d4-a716-446655440000",
       }),
+    );
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("navigates to the original report after an idempotent retry", async () => {
+    const createDiagnosis = vi
+      .fn()
+      .mockResolvedValueOnce({ status: "error", error: "create_failed" })
+      .mockResolvedValueOnce({ status: "success", diagnosisId: 42 });
+    renderWizard(createDiagnosis);
+    const user = await completeValidDiagnosis();
+
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/reports/42"));
+    expect(createDiagnosis).toHaveBeenCalledTimes(2);
+    expect(createDiagnosis.mock.calls[0]?.[0].submissionId).toBe(
+      createDiagnosis.mock.calls[1]?.[0].submissionId,
     );
   });
 
@@ -421,6 +484,7 @@ describe("QuickDiagnosisWizard", () => {
 
     expect(await screen.findByLabelText("Renda mensal desejada")).toHaveFocus();
     expect(screen.getByRole("alert")).toHaveTextContent("Meta inválida.");
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it("regenerates an invalid uneditable submission id", async () => {
@@ -443,10 +507,12 @@ describe("QuickDiagnosisWizard", () => {
       screen.getByRole("button", { name: "Confirmar diagnóstico" }),
     );
     expect(
-      await screen.findByRole("heading", { name: "Como você cobra hoje?" }),
+      await screen.findByRole("heading", {
+        name: "Como você vende seu tempo?",
+      }),
     ).toBeInTheDocument();
 
-    for (let step = 0; step < 6; step += 1) {
+    for (let step = 0; step < 3; step += 1) {
       await user.click(screen.getByRole("button", { name: "Continuar" }));
     }
     await user.click(
@@ -459,5 +525,6 @@ describe("QuickDiagnosisWizard", () => {
         submissionId: "550e8400-e29b-41d4-a716-446655440001",
       }),
     );
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/reports/42"));
   });
 });

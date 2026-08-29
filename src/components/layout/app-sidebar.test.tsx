@@ -121,4 +121,25 @@ describe("AppSidebar", () => {
       screen.getByRole("link", { name: /dashboard/i }),
     ).not.toHaveAttribute("data-active", "true");
   });
+
+  it.each(["/reports", "/reports/42"])(
+    "marca Relatórios como ativo em %s",
+    (pathname) => {
+      usePathname.mockReturnValue(pathname);
+
+      render(<AppSidebar />);
+
+      expect(screen.getByRole("link", { name: "Relatórios" })).toHaveAttribute(
+        "href",
+        "/reports",
+      );
+      expect(screen.getByRole("link", { name: "Relatórios" })).toHaveAttribute(
+        "data-active",
+        "true",
+      );
+      expect(
+        screen.getByRole("link", { name: /diagnóstico rápido/i }),
+      ).not.toHaveAttribute("data-active", "true");
+    },
+  );
 });

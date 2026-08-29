@@ -47,7 +47,8 @@ select columns_are(
     'appointment_duration_minutes',
     'tax_rate_basis_points',
     'card_fee_rate_basis_points',
-    'created_at'
+    'created_at',
+    'diagnosis_id'
   ],
   'service diagnoses exposes only the approved columns'
 );
@@ -95,7 +96,8 @@ select ok(
       ["appointment_duration_minutes", "pg_catalog", "int4"],
       ["tax_rate_basis_points", "pg_catalog", "int4"],
       ["card_fee_rate_basis_points", "pg_catalog", "int4"],
-      ["created_at", "pg_catalog", "timestamptz"]
+      ["created_at", "pg_catalog", "timestamptz"],
+      ["diagnosis_id", "pg_catalog", "int8"]
     ]
   $json$::jsonb,
   'every service diagnosis column has the approved database type'
@@ -109,7 +111,7 @@ select results_eq(
       and is_nullable = 'NO'
   $$,
   array[16::bigint],
-  'all service diagnosis columns are required'
+  'legacy Service columns remain required while report link is nullable'
 );
 select ok(
   (
@@ -229,11 +231,8 @@ select ok(
     from pg_policies
     where schemaname = 'public'
       and tablename = 'service_diagnoses'
-  ) = array[
-    'service_diagnoses_insert_own',
-    'service_diagnoses_select_own'
-  ]::text[],
-  'only select-own and insert-own policies exist'
+  ) = array['service_diagnoses_select_own']::text[],
+  'only select-own policy exists'
 );
 
 select ok(
@@ -261,12 +260,12 @@ select ok(
   'authenticated can select through RLS'
 );
 select ok(
-  has_table_privilege(
+  not has_table_privilege(
     'authenticated',
     'public.service_diagnoses',
     'insert'
   ),
-  'authenticated can insert through RLS'
+  'authenticated cannot insert Service inputs directly'
 );
 select ok(
   not has_table_privilege(
@@ -285,12 +284,12 @@ select ok(
   'authenticated cannot delete diagnoses'
 );
 select ok(
-  has_sequence_privilege(
+  not has_sequence_privilege(
     'authenticated',
     'public.service_diagnoses_id_seq',
     'usage'
   ),
-  'authenticated can use the diagnosis identity sequence'
+  'authenticated cannot use the diagnosis identity sequence'
 );
 
 insert into auth.users (id, aud, role, email)
@@ -357,16 +356,23 @@ select results_eq(
 select lives_ok(
   $sql$
     insert into public.service_diagnoses
-      (submission_id, user_id, pricing_method, minute_rate_cents)
+      (
+        submission_id,
+        user_id,
+        pricing_method,
+        minute_rate_cents,
+        appointment_duration_minutes
+      )
     values
       (
         'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2',
         '11111111-1111-4111-8111-111111111111',
         'minute',
-        10
+        10,
+        40
       )
   $sql$,
-  'minute accepts only a positive minute rate'
+  'minute accepts a positive rate and average appointment duration'
 );
 select lives_ok(
   $sql$
@@ -519,12 +525,12 @@ select throws_ok(
         '11111111-1111-4111-8111-111111111111',
         'minute',
         10,
-        1
+        0
       )
   $sql$,
   '23514',
   null,
-  'minute rejects an appointment duration'
+  'minute requires a positive average appointment duration'
 );
 select throws_ok(
   $sql$
@@ -986,7 +992,7 @@ select results_eq(
   array['ffffffff-ffff-4fff-8fff-fffffffffff1'::uuid],
   'an authenticated user selects only their own diagnosis'
 );
-select lives_ok(
+select throws_ok(
   $sql$
     insert into public.service_diagnoses
       (submission_id, user_id, pricing_method, hourly_rate_cents)
@@ -998,7 +1004,9 @@ select lives_ok(
         100
       )
   $sql$,
-  'an authenticated user inserts their own diagnosis'
+  '42501',
+  null,
+  'an authenticated user cannot insert their own Service input directly'
 );
 select throws_ok(
   $sql$

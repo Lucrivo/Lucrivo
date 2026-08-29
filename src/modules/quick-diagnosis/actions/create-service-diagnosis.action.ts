@@ -4,9 +4,11 @@ import {
   AuthRequiredError,
   requireUser,
 } from "@/modules/auth/services/require-user";
+import { buildServiceReportSnapshot } from "@/modules/reports/domain/build-service-report-snapshot";
+import { calculateServiceReport } from "@/modules/reports/domain/calculate-service-report";
+import { createServiceReport } from "@/modules/reports/services/create-service-report.service";
 
 import { serviceDiagnosisSchema } from "../schemas/service-diagnosis.schema";
-import { createServiceDiagnosisService } from "../services/create-service-diagnosis.service";
 import type {
   CreateServiceDiagnosisActionResult,
   ServiceDiagnosisInput,
@@ -26,12 +28,14 @@ async function createServiceDiagnosis(
   }
 
   try {
-    const { userId, supabase } = await requireUser();
+    const { supabase } = await requireUser();
+    const calculation = calculateServiceReport(parsed.data);
+    const snapshot = buildServiceReportSnapshot(parsed.data, calculation);
 
-    return await createServiceDiagnosisService({
-      userId,
+    return await createServiceReport({
       supabase,
       command: parsed.data,
+      snapshot,
     });
   } catch (error) {
     if (error instanceof AuthRequiredError) {

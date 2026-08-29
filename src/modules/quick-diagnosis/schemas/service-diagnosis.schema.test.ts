@@ -140,14 +140,14 @@ describe("serviceDiagnosisSchema", () => {
     );
   });
 
-  it("keeps only the selected minute price", () => {
+  it("requires and preserves duration for minute pricing", () => {
     expect(
       serviceDiagnosisSchema.parse({
         ...validHour,
         pricingMethod: "minute",
         minuteRate: "2,50",
         appointmentRate: "800",
-        appointmentDurationMinutes: "45",
+        appointmentDurationMinutes: "40",
       }),
     ).toEqual(
       expect.objectContaining({
@@ -155,10 +155,24 @@ describe("serviceDiagnosisSchema", () => {
         hourlyRateCents: 0,
         minuteRateCents: 250,
         appointmentRateCents: 0,
-        appointmentDurationMinutes: 0,
+        appointmentDurationMinutes: 40,
       }),
     );
   });
+
+  it.each(["", "0"])(
+    "attaches invalid minute duration %s to appointmentDurationMinutes",
+    (appointmentDurationMinutes) => {
+      expect(
+        issuePaths({
+          ...validHour,
+          pricingMethod: "minute",
+          minuteRate: "2,50",
+          appointmentDurationMinutes,
+        }),
+      ).toContain("appointmentDurationMinutes");
+    },
+  );
 
   it("requires a positive minute rate for minute pricing", () => {
     expect(
