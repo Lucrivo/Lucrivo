@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { ServiceDiagnosisCommand } from "@/modules/quick-diagnosis/types";
 
-import { buildExecutiveSummary } from "./build-executive-summary";
+import { buildServiceExecutiveSummary } from "./build-service-executive-summary";
 import { calculateServiceReport } from "./calculate-service-report";
 
 const baseCommand: ServiceDiagnosisCommand = {
@@ -22,9 +22,9 @@ const baseCommand: ServiceDiagnosisCommand = {
 
 const baseCalculation = calculateServiceReport(baseCommand);
 
-describe("buildExecutiveSummary", () => {
+describe("buildServiceExecutiveSummary", () => {
   it("builds the approved above-target appointment summary", () => {
-    expect(buildExecutiveSummary(baseCalculation)).toEqual({
+    expect(buildServiceExecutiveSummary(baseCalculation)).toEqual({
       headline: "A verdade por trás do preço.",
       introduction:
         "O Lucrivo revela o que está escondido nos seus números e mostra exatamente o que fazer a respeito.",
@@ -75,7 +75,7 @@ describe("buildExecutiveSummary", () => {
   });
 
   it("uses hour wording and an absolute loss amount", () => {
-    const summary = buildExecutiveSummary({
+    const summary = buildServiceExecutiveSummary({
       ...baseCalculation,
       unit: "hour",
       verdict: "operational_loss",
@@ -107,7 +107,7 @@ describe("buildExecutiveSummary", () => {
     "maps %s to persisted verdict content",
     (verdict, label, tone) => {
       expect(
-        buildExecutiveSummary({ ...baseCalculation, verdict }).verdict,
+        buildServiceExecutiveSummary({ ...baseCalculation, verdict }).verdict,
       ).toEqual(expect.objectContaining({ label, tone }));
     },
   );
@@ -118,7 +118,10 @@ describe("buildExecutiveSummary", () => {
     ["margin", "Margem", "Aproxime a operação da meta financeira de 15%."],
     ["volume", "Volume", "Trabalhe para alcançar a meta de vendas calculada."],
   ] as const)("maps %s to one correction", (priority, label, answer) => {
-    const summary = buildExecutiveSummary({ ...baseCalculation, priority });
+    const summary = buildServiceExecutiveSummary({
+      ...baseCalculation,
+      priority,
+    });
     expect(summary.priority.label).toBe(label);
     expect(summary.answers[2].answer).toBe(answer);
   });
@@ -146,8 +149,8 @@ describe("buildExecutiveSummary", () => {
     ],
   ] as const)("builds profitability answer %#", (override, answer) => {
     expect(
-      buildExecutiveSummary({ ...baseCalculation, ...override }).answers[0]
-        .answer,
+      buildServiceExecutiveSummary({ ...baseCalculation, ...override })
+        .answers[0].answer,
     ).toBe(answer);
   });
 
@@ -194,8 +197,8 @@ describe("buildExecutiveSummary", () => {
     ],
   ] as const)("builds price answer %#", (override, answer) => {
     expect(
-      buildExecutiveSummary({ ...baseCalculation, ...override }).answers[1]
-        .answer,
+      buildServiceExecutiveSummary({ ...baseCalculation, ...override })
+        .answers[1].answer,
     ).toBe(answer);
   });
 });

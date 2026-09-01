@@ -22,7 +22,7 @@ import {
   SERVICE_TARGET_MARGIN_BPS,
   type ServiceReportCalculation,
 } from "./calculate-service-report";
-import { buildExecutiveSummary } from "./build-executive-summary";
+import { buildServiceExecutiveSummary } from "./build-service-executive-summary";
 
 const verdictContent: Record<
   ServiceReportVerdict,
@@ -258,7 +258,7 @@ function buildServiceReportSnapshot(
       cardFeeRateBasisPoints: command.cardFeeRateBasisPoints,
     },
     results,
-    executiveSummary: buildExecutiveSummary(calculation),
+    executiveSummary: buildServiceExecutiveSummary(calculation),
     sections: [
       buildBreakEvenSection(calculation),
       buildHiddenCostSection(calculation),

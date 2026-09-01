@@ -182,7 +182,7 @@ function buildImmediateActionAnswer(
   };
 }
 
-function buildExecutiveSummary(
+function buildServiceExecutiveSummary(
   calculation: ServiceReportCalculation,
 ): ReportExecutiveSummary {
   return {
@@ -200,4 +200,4 @@ function buildExecutiveSummary(
   };
 }
 
-export { buildExecutiveSummary };
+export { buildServiceExecutiveSummary };
