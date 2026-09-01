@@ -1,6 +1,7 @@
-import { StepField, type StepProps } from "./step-field";
+import { StepField } from "../../shared/step-field";
+import type { ServiceStepProps } from "./types";
 
-function WorkRoutineStep(props: StepProps) {
+function WorkRoutineStep(props: ServiceStepProps) {
   return (
     <div className="grid gap-5 sm:grid-cols-2">
       <StepField

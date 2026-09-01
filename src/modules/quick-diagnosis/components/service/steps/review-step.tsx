@@ -6,16 +6,16 @@ import { Button } from "@/components/ui/button";
 import type {
   ServiceDiagnosisFieldErrors,
   ServiceDiagnosisInput,
-} from "../../types";
-import type { DiagnosisType, WizardStep } from "../wizard-state";
+} from "../../../types";
+import type { ServiceWizardStep } from "../service-wizard-state";
 
 type ReviewStepProps = {
   values: ServiceDiagnosisInput;
-  diagnosisType: DiagnosisType | "";
   errors: ServiceDiagnosisFieldErrors;
   pending: boolean;
   submitError: "unauthorized" | "create_failed" | null;
-  onEdit: (step: WizardStep) => void;
+  onEdit: (step: ServiceWizardStep) => void;
+  onBackToType: () => void;
   onSubmit: () => void;
 };
 
@@ -89,10 +89,10 @@ function ReviewGroup({
 
 function ReviewStep({
   values,
-  diagnosisType,
   pending,
   submitError,
   onEdit,
+  onBackToType,
   onSubmit,
 }: ReviewStepProps) {
   const currentPrice =
@@ -110,12 +110,9 @@ function ReviewStep({
         <ReviewGroup
           title="Tipo de diagnóstico"
           editName="Editar tipo de diagnóstico"
-          onEdit={() => onEdit("diagnosisType")}
+          onEdit={onBackToType}
         >
-          <ReviewItem
-            label="O que será analisado"
-            value={diagnosisType === "service" ? "Serviço" : ""}
-          />
+          <ReviewItem label="O que será analisado" value="Serviço" />
         </ReviewGroup>
 
         <ReviewGroup

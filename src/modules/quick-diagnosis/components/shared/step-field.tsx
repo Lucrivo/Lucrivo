@@ -6,30 +6,18 @@ import {
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 
-import type {
-  ServiceDiagnosisField,
-  ServiceDiagnosisFieldErrors,
-  ServiceDiagnosisInput,
-} from "../../types";
-
-type StepProps = {
-  values: ServiceDiagnosisInput;
-  errors: ServiceDiagnosisFieldErrors;
-  onChange: (field: ServiceDiagnosisField, value: string) => void;
-};
-
-type StepFieldProps = {
-  field: ServiceDiagnosisField;
+type StepFieldProps<Field extends string> = {
+  field: Field;
   label: string;
   value: string;
-  errors: ServiceDiagnosisFieldErrors;
-  onChange: StepProps["onChange"];
+  errors: Partial<Record<Field, string[]>>;
+  onChange: (field: Field, value: string) => void;
   prefix?: string;
   suffix?: string;
   inputMode?: "decimal" | "numeric";
 };
 
-function StepField({
+function StepField<Field extends string>({
   field,
   label,
   value,
@@ -38,7 +26,7 @@ function StepField({
   prefix,
   suffix,
   inputMode = "decimal",
-}: StepFieldProps) {
+}: StepFieldProps<Field>) {
   const error = errors[field]?.[0];
   const errorId = `${field}-error`;
 
@@ -76,4 +64,4 @@ function StepField({
   );
 }
 
-export { StepField, type StepProps };
+export { StepField, type StepFieldProps };

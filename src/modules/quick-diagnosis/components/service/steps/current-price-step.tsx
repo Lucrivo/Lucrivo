@@ -1,5 +1,6 @@
-import type { ServiceDiagnosisField } from "../../types";
-import { StepField, type StepProps } from "./step-field";
+import { StepField } from "../../shared/step-field";
+import type { ServiceDiagnosisField } from "../../../types";
+import type { ServiceStepProps } from "./types";
 
 const priceFields = {
   hour: { field: "hourlyRate", label: "Valor por hora" },
@@ -10,7 +11,7 @@ const priceFields = {
   { field: ServiceDiagnosisField; label: string }
 >;
 
-function CurrentPriceStep(props: StepProps) {
+function CurrentPriceStep(props: ServiceStepProps) {
   const method = props.values.pricingMethod;
   if (method !== "hour" && method !== "minute" && method !== "appointment") {
     return null;

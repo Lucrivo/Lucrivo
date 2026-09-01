@@ -1,21 +1,21 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  createInitialWizardState,
-  wizardReducer,
-  wizardSteps,
-  type WizardState,
-} from "./wizard-state";
+  createInitialServiceWizardState,
+  serviceWizardReducer,
+  serviceWizardSteps,
+  type ServiceWizardState,
+} from "./service-wizard-state";
 
 const firstSubmissionId = "550e8400-e29b-41d4-a716-446655440000";
 const nextSubmissionId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
-function withHourlyValues(): WizardState {
+function withHourlyValues(): ServiceWizardState {
   return {
-    ...createInitialWizardState(firstSubmissionId),
+    ...createInitialServiceWizardState(firstSubmissionId),
     step: "currentPrice",
     values: {
-      ...createInitialWizardState(firstSubmissionId).values,
+      ...createInitialServiceWizardState(firstSubmissionId).values,
       pricingMethod: "hour",
       desiredMonthlyIncome: "5000",
       hourlyRate: "125,90",
@@ -26,12 +26,10 @@ function withHourlyValues(): WizardState {
   };
 }
 
-describe("wizard state", () => {
+describe("service wizard state", () => {
   it("starts on the first step with an injected submission id", () => {
-    expect(createInitialWizardState(firstSubmissionId)).toEqual({
-      step: "diagnosisType",
-      diagnosisType: "",
-      diagnosisTypeError: null,
+    expect(createInitialServiceWizardState(firstSubmissionId)).toEqual({
+      step: "monthlyGoal",
       values: {
         submissionId: firstSubmissionId,
         pricingMethod: "",
@@ -51,33 +49,14 @@ describe("wizard state", () => {
       diagnosisId: null,
       submitError: null,
     });
-    expect(wizardSteps).toHaveLength(8);
-  });
-
-  it("selects a diagnosis type and clears its validation error", () => {
-    const state = wizardReducer(createInitialWizardState(firstSubmissionId), {
-      type: "setDiagnosisTypeError",
-      error: "Selecione uma opção.",
-    });
-
-    expect(
-      wizardReducer(state, {
-        type: "setDiagnosisType",
-        value: "service",
-      }),
-    ).toEqual(
-      expect.objectContaining({
-        diagnosisType: "service",
-        diagnosisTypeError: null,
-      }),
-    );
+    expect(serviceWizardSteps).toHaveLength(7);
   });
 
   it("sets a field without changing the other answers", () => {
-    const state = createInitialWizardState(firstSubmissionId);
+    const state = createInitialServiceWizardState(firstSubmissionId);
 
     expect(
-      wizardReducer(state, {
+      serviceWizardReducer(state, {
         type: "setField",
         field: "desiredMonthlyIncome",
         value: "5000",
@@ -89,7 +68,7 @@ describe("wizard state", () => {
     const state = withHourlyValues();
 
     expect(
-      wizardReducer(state, {
+      serviceWizardReducer(state, {
         type: "setPricingMethod",
         value: "minute",
       }).values,
@@ -106,21 +85,22 @@ describe("wizard state", () => {
   });
 
   it("sets and replaces field errors", () => {
-    const state = createInitialWizardState(firstSubmissionId);
+    const state = createInitialServiceWizardState(firstSubmissionId);
     const fieldErrors = { hourlyRate: ["Informe o valor por hora."] };
 
     expect(
-      wizardReducer(state, { type: "setFieldErrors", fieldErrors }).fieldErrors,
+      serviceWizardReducer(state, { type: "setFieldErrors", fieldErrors })
+        .fieldErrors,
     ).toEqual(fieldErrors);
   });
 
   it("moves next and back while preserving answers", () => {
-    const state = wizardReducer(withHourlyValues(), {
+    const state = serviceWizardReducer(withHourlyValues(), {
       type: "edit",
       step: "monthlyGoal",
     });
-    const next = wizardReducer(state, { type: "next" });
-    const back = wizardReducer(next, { type: "back" });
+    const next = serviceWizardReducer(state, { type: "next" });
+    const back = serviceWizardReducer(next, { type: "back" });
 
     expect(next.step).toBe("fixedExpenses");
     expect(back.step).toBe("monthlyGoal");
@@ -128,32 +108,35 @@ describe("wizard state", () => {
   });
 
   it("clamps navigation to the first and last steps", () => {
-    const initial = createInitialWizardState(firstSubmissionId);
-    const review = { ...initial, step: "review" } satisfies WizardState;
+    const initial = createInitialServiceWizardState(firstSubmissionId);
+    const review = { ...initial, step: "review" } satisfies ServiceWizardState;
 
-    expect(wizardReducer(initial, { type: "back" }).step).toBe("diagnosisType");
-    expect(wizardReducer(review, { type: "next" }).step).toBe("review");
+    expect(serviceWizardReducer(initial, { type: "back" }).step).toBe(
+      "monthlyGoal",
+    );
+    expect(serviceWizardReducer(review, { type: "next" }).step).toBe("review");
   });
 
   it("edits a named source step", () => {
     const state = {
       ...withHourlyValues(),
       step: "review",
-    } satisfies WizardState;
+    } satisfies ServiceWizardState;
 
     expect(
-      wizardReducer(state, { type: "edit", step: "workRoutine" }).step,
+      serviceWizardReducer(state, { type: "edit", step: "workRoutine" })
+        .step,
     ).toBe("workRoutine");
   });
 
   it("tracks submitting, safe retry errors and success", () => {
     const state = withHourlyValues();
-    const submitting = wizardReducer(state, { type: "submitting" });
-    const retry = wizardReducer(submitting, {
+    const submitting = serviceWizardReducer(state, { type: "submitting" });
+    const retry = serviceWizardReducer(submitting, {
       type: "submitError",
       error: "create_failed",
     });
-    const success = wizardReducer(submitting, {
+    const success = serviceWizardReducer(submitting, {
       type: "success",
       diagnosisId: 42,
     });
@@ -176,7 +159,7 @@ describe("wizard state", () => {
   });
 
   it("resets every answer with a fresh submission id", () => {
-    const reset = wizardReducer(
+    const reset = serviceWizardReducer(
       {
         ...withHourlyValues(),
         fieldErrors: { hourlyRate: ["Erro"] },
@@ -185,6 +168,6 @@ describe("wizard state", () => {
       { type: "reset", submissionId: nextSubmissionId },
     );
 
-    expect(reset).toEqual(createInitialWizardState(nextSubmissionId));
+    expect(reset).toEqual(createInitialServiceWizardState(nextSubmissionId));
   });
 });

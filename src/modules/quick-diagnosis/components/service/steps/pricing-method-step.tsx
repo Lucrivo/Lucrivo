@@ -1,9 +1,9 @@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-import { pricingMethods, type ServicePricingMethod } from "../../types";
-import type { StepProps } from "./step-field";
+import { pricingMethods, type ServicePricingMethod } from "../../../types";
+import type { ServiceStepProps } from "./types";
 
-type PricingMethodStepProps = Pick<StepProps, "values" | "errors"> & {
+type PricingMethodStepProps = Pick<ServiceStepProps, "values" | "errors"> & {
   onPricingMethodChange: (value: ServicePricingMethod) => void;
 };
 

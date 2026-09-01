@@ -2,7 +2,7 @@ import { BoxIcon, FactoryIcon, HandPlatterIcon, LockIcon } from "lucide-react";
 
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-import type { DiagnosisType } from "../wizard-state";
+type DiagnosisType = "service" | "product" | "production";
 
 type DiagnosisTypeStepProps = {
   value: DiagnosisType | "";
@@ -104,4 +104,4 @@ function DiagnosisTypeStep({ value, error, onChange }: DiagnosisTypeStepProps) {
   );
 }
 
-export { DiagnosisTypeStep };
+export { DiagnosisTypeStep, type DiagnosisType };

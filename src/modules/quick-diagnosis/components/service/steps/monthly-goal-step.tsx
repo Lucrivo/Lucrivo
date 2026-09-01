@@ -1,6 +1,7 @@
-import { StepField, type StepProps } from "./step-field";
+import { StepField } from "../../shared/step-field";
+import type { ServiceStepProps } from "./types";
 
-function MonthlyGoalStep(props: StepProps) {
+function MonthlyGoalStep(props: ServiceStepProps) {
   return (
     <StepField
       {...props}
