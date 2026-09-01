@@ -40,6 +40,7 @@ describe("report formatters", () => {
     ["minute", "Por minuto"],
     ["appointment", "Por atendimento"],
     ["resale", "Revenda"],
+    ["manufacturing", "Fabricação própria"],
   ] as const)("formats the %s scenario", (scenario, expected) => {
     expect(formatReportScenario(scenario)).toBe(expected);
   });

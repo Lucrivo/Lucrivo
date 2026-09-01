@@ -4,6 +4,9 @@ const SERVICE_CONTENT_VERSION = 2;
 const PRODUCT_REPORT_SCHEMA_VERSION = 1;
 const PRODUCT_CALCULATION_VERSION = 1;
 const PRODUCT_CONTENT_VERSION = 1;
+const PRODUCTION_REPORT_SCHEMA_VERSION = 1;
+const PRODUCTION_CALCULATION_VERSION = 1;
+const PRODUCTION_CONTENT_VERSION = 1;
 
 const reportTones = ["neutral", "positive", "warning", "critical"] as const;
 const serviceReportVerdicts = [
@@ -56,8 +59,15 @@ const productionReportPriorities = [
 const reportPriorities = ["cost", "data", "price", "margin", "volume"] as const;
 const serviceReportUnits = ["hour", "appointment"] as const;
 const productReportUnits = ["unit"] as const;
+const productionReportUnits = ["unit"] as const;
 const reportUnits = ["hour", "appointment", "unit"] as const;
-const reportScenarios = ["hour", "minute", "appointment", "resale"] as const;
+const reportScenarios = [
+  "hour",
+  "minute",
+  "appointment",
+  "resale",
+  "manufacturing",
+] as const;
 const reportSectionKeys = [
   "break_even",
   "hidden_cost",
@@ -83,6 +93,7 @@ type ProductionReportPriority = (typeof productionReportPriorities)[number];
 type ReportPriority = (typeof reportPriorities)[number];
 type ServiceReportUnit = (typeof serviceReportUnits)[number];
 type ProductReportUnit = (typeof productReportUnits)[number];
+type ProductionReportUnit = (typeof productionReportUnits)[number];
 type ReportUnit = (typeof reportUnits)[number];
 type ReportScenario = (typeof reportScenarios)[number];
 type ReportSectionKey = (typeof reportSectionKeys)[number];
@@ -135,6 +146,9 @@ export {
   PRODUCT_CALCULATION_VERSION,
   PRODUCT_CONTENT_VERSION,
   PRODUCT_REPORT_SCHEMA_VERSION,
+  PRODUCTION_CALCULATION_VERSION,
+  PRODUCTION_CONTENT_VERSION,
+  PRODUCTION_REPORT_SCHEMA_VERSION,
   SERVICE_CALCULATION_VERSION,
   SERVICE_CONTENT_VERSION,
   SERVICE_REPORT_SCHEMA_VERSION,
@@ -142,6 +156,7 @@ export {
   productReportUnits,
   productReportVerdicts,
   productionReportPriorities,
+  productionReportUnits,
   productionReportVerdicts,
   reportExecutiveSummaryAnswerKeys,
   reportExecutiveSummaryFactKeys,
@@ -160,6 +175,7 @@ export {
   type ProductReportVerdict,
   type ProductionReportCalculation,
   type ProductionReportPriority,
+  type ProductionReportUnit,
   type ProductionReportVerdict,
   type ReportPriority,
   type ReportScenario,
@@ -182,6 +198,10 @@ export type {
   ProductReportDiscountSimulationBase,
   ProductReportSnapshotV1,
 } from "./schemas/product-report-snapshot.schema";
+export type {
+  ProductionReportDiscountSimulationBase,
+  ProductionReportSnapshotV1,
+} from "./schemas/production-report-snapshot.schema";
 export type {
   ReportDiscountSimulationBase,
   ReportSnapshot,

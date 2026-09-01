@@ -37,6 +37,7 @@ const scenarioLabels = {
   minute: "Por minuto",
   appointment: "Por atendimento",
   resale: "Revenda",
+  manufacturing: "Fabricação própria",
 } as const satisfies Record<ReportScenario, string>;
 
 const unitLabels = {
