@@ -6,11 +6,7 @@ import type {
   ProductDiagnosisFieldErrors,
   ProductDiagnosisInput,
 } from "../types";
-import {
-  moneySchema,
-  percentageSchema,
-  scaledInteger,
-} from "./decimal-input";
+import { moneySchema, percentageSchema, scaledInteger } from "./decimal-input";
 
 const POSTGRES_INTEGER_MAX = 2_147_483_647;
 

@@ -112,9 +112,7 @@ describe("buildProductExecutiveSummary", () => {
         priority,
       });
 
-      expect(summary.verdict).toEqual(
-        expect.objectContaining({ label, tone }),
-      );
+      expect(summary.verdict).toEqual(expect.objectContaining({ label, tone }));
       expect(summary.answers[2]).toEqual(
         expect.objectContaining({ key: "immediate_action", answer: action }),
       );

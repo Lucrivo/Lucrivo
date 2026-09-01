@@ -152,7 +152,8 @@ function buildProductPriceAnswer(
   } else if (calculation.currentPriceCents < calculation.minimumPriceCents) {
     answer = `Não — está abaixo do mínimo financeiro de ${formatCurrency(calculation.minimumPriceCents)}.`;
   } else if (calculation.currentPriceCents < calculation.targetPriceCents) {
-    answer = "Parcialmente — cobre os custos, mas ainda não alcança a meta de 20%.";
+    answer =
+      "Parcialmente — cobre os custos, mas ainda não alcança a meta de 20%.";
   } else {
     answer = "Sim — alcança a referência financeira para a meta de 20%.";
   }

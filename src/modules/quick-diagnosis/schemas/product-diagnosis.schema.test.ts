@@ -59,15 +59,12 @@ describe("productDiagnosisSchema", () => {
 
   it("returns only errors requested by progressive validation", () => {
     expect(
-      validateProductDiagnosisFields(
-        ["purchaseUnitCost", "unitSalePrice"],
-        {
-          ...validProduct,
-          purchaseUnitCost: "0",
-          unitSalePrice: "0",
-          proLabore: "0",
-        },
-      ),
+      validateProductDiagnosisFields(["purchaseUnitCost", "unitSalePrice"], {
+        ...validProduct,
+        purchaseUnitCost: "0",
+        unitSalePrice: "0",
+        proLabore: "0",
+      }),
     ).toEqual({
       purchaseUnitCost: ["Informe um custo de compra maior que zero."],
       unitSalePrice: ["Informe um preço de venda maior que zero."],

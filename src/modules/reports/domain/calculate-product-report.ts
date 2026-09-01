@@ -50,8 +50,7 @@ function calculateProductReport(
   command: ProductDiagnosisCommand,
 ): ProductReportCalculation {
   const effectiveFixedCostCents = roundDivide(
-    BigInt(command.fixedMonthlyExpensesCents) +
-      BigInt(command.proLaboreCents),
+    BigInt(command.fixedMonthlyExpensesCents) + BigInt(command.proLaboreCents),
     BigInt(1),
   );
   const totalFeeBasisPoints = roundDivide(
@@ -59,8 +58,7 @@ function calculateProductReport(
     BigInt(1),
   );
   const netRateBasisPoints = RATE_SCALE - totalFeeBasisPoints;
-  const targetRateBasisPoints =
-    netRateBasisPoints - PRODUCT_TARGET_MARGIN_BPS;
+  const targetRateBasisPoints = netRateBasisPoints - PRODUCT_TARGET_MARGIN_BPS;
   const netRevenueCents = multiplyDivideRound(
     command.unitSalePriceCents,
     netRateBasisPoints,
@@ -81,8 +79,7 @@ function calculateProductReport(
     fixedAllocationCents === null
       ? null
       : roundDivide(
-          BigInt(command.purchaseUnitCostCents) +
-            BigInt(fixedAllocationCents),
+          BigInt(command.purchaseUnitCostCents) + BigInt(fixedAllocationCents),
           BigInt(1),
         );
   const unitProfitCents =

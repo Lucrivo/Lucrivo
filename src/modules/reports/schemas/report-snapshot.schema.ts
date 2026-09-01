@@ -16,8 +16,7 @@ const reportSnapshotSchema = z.discriminatedUnion("category", [
 
 type ReportSnapshot = z.infer<typeof reportSnapshotSchema>;
 type ReportDiscountSimulationBase =
-  | ServiceReportDiscountSimulationBase
-  | ProductReportDiscountSimulationBase;
+  ServiceReportDiscountSimulationBase | ProductReportDiscountSimulationBase;
 
 function parseReportSnapshot(value: unknown): ReportSnapshot {
   return reportSnapshotSchema.parse(value);

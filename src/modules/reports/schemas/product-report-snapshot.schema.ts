@@ -30,12 +30,7 @@ const productReportInputsSchema = z.strictObject({
   purchaseUnitCostCents: positiveSafeIntegerSchema,
   unitSalePriceCents: positiveSafeIntegerSchema,
   fixedMonthlyExpensesCents: nonNegativeSafeIntegerSchema,
-  monthlySalesVolume: z
-    .number()
-    .int()
-    .positive()
-    .max(2_147_483_647)
-    .nullable(),
+  monthlySalesVolume: z.number().int().positive().max(2_147_483_647).nullable(),
   proLaboreIncluded: z.boolean(),
   proLaboreCents: nonNegativeSafeIntegerSchema,
   taxRateBasisPoints: z.number().int().min(0).max(10_000),
@@ -113,7 +108,8 @@ const productReportSnapshotV1Schema = z
       context.addIssue({
         code: "custom",
         path: ["results", "purchaseUnitCostCents"],
-        message: "O custo de compra do resultado deve corresponder às entradas.",
+        message:
+          "O custo de compra do resultado deve corresponder às entradas.",
       });
     }
 
@@ -168,7 +164,11 @@ const productReportSnapshotV1Schema = z
         discountSimulationBase.originalPriceCents,
         results.currentPriceCents,
       ],
-      ["unitCostCents", discountSimulationBase.unitCostCents, applicableUnitCost],
+      [
+        "unitCostCents",
+        discountSimulationBase.unitCostCents,
+        applicableUnitCost,
+      ],
       [
         "totalFeeBasisPoints",
         discountSimulationBase.totalFeeBasisPoints,
@@ -197,7 +197,10 @@ const productReportSnapshotV1Schema = z
       });
     }
 
-    for (const [index, expectedKey] of reportExecutiveSummaryFactKeys.entries()) {
+    for (const [
+      index,
+      expectedKey,
+    ] of reportExecutiveSummaryFactKeys.entries()) {
       if (snapshot.executiveSummary.facts[index]?.key === expectedKey) continue;
 
       context.addIssue({
@@ -207,8 +210,12 @@ const productReportSnapshotV1Schema = z
       });
     }
 
-    for (const [index, expectedKey] of reportExecutiveSummaryAnswerKeys.entries()) {
-      if (snapshot.executiveSummary.answers[index]?.key === expectedKey) continue;
+    for (const [
+      index,
+      expectedKey,
+    ] of reportExecutiveSummaryAnswerKeys.entries()) {
+      if (snapshot.executiveSummary.answers[index]?.key === expectedKey)
+        continue;
 
       context.addIssue({
         code: "custom",

@@ -128,9 +128,7 @@ const serviceReportSnapshotV2Schema = z
 type ServiceReportDiscountSimulationBase = z.infer<
   typeof serviceReportDiscountSimulationBaseSchema
 >;
-type ServiceReportSnapshotV2 = z.infer<
-  typeof serviceReportSnapshotV2Schema
->;
+type ServiceReportSnapshotV2 = z.infer<typeof serviceReportSnapshotV2Schema>;
 
 function parseServiceReportSnapshot(value: unknown): ServiceReportSnapshotV2 {
   return serviceReportSnapshotV2Schema.parse(value);

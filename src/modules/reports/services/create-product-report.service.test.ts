@@ -54,8 +54,7 @@ describe("createProductReport", () => {
       p_submission_id: completeCommand.submissionId,
       p_purchase_unit_cost_cents: completeCommand.purchaseUnitCostCents,
       p_unit_sale_price_cents: completeCommand.unitSalePriceCents,
-      p_fixed_monthly_expenses_cents:
-        completeCommand.fixedMonthlyExpensesCents,
+      p_fixed_monthly_expenses_cents: completeCommand.fixedMonthlyExpensesCents,
       p_monthly_sales_volume: completeCommand.monthlySalesVolume,
       p_pro_labore_included: completeCommand.proLaboreIncluded,
       p_pro_labore_cents: completeCommand.proLaboreCents,
@@ -105,21 +104,17 @@ describe("createProductReport", () => {
     });
   });
 
-  it.each([
-    null,
-    0,
-    -1,
-    1.5,
-    Number.MAX_SAFE_INTEGER + 1,
-    "42",
-  ])("returns a safe error for invalid RPC id %s", async (data) => {
-    rpc.mockResolvedValue({ data, error: null });
+  it.each([null, 0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1, "42"])(
+    "returns a safe error for invalid RPC id %s",
+    async (data) => {
+      rpc.mockResolvedValue({ data, error: null });
 
-    await expect(create().then(({ result }) => result)).resolves.toEqual({
-      status: "error",
-      error: "create_failed",
-    });
-  });
+      await expect(create().then(({ result }) => result)).resolves.toEqual({
+        status: "error",
+        error: "create_failed",
+      });
+    },
+  );
 
   it("sanitizes a thrown provider exception", async () => {
     rpc.mockRejectedValue(new Error("database failed for private@example.com"));

@@ -80,9 +80,7 @@ function buildProductBreakEvenSection(
       emphasisLabel: "Preço mínimo sem rateio fixo",
       emphasisValue: formatCurrency(minimumPrice),
       tone:
-        calculation.currentPriceCents >= minimumPrice
-          ? "positive"
-          : "critical",
+        calculation.currentPriceCents >= minimumPrice ? "positive" : "critical",
     };
   }
 
