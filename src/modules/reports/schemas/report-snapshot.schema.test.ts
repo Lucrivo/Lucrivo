@@ -521,20 +521,20 @@ describe("category-versioned report snapshots", () => {
     ).toThrow();
   });
 
-  it.each([
-    { materialUnitCostCents: null },
-    { packagingUnitCostCents: -1 },
-  ])("rejects invalid composed Production component %#", (component) => {
-    expect(() =>
-      parseReportSnapshot({
-        ...validProductionSnapshot,
-        inputs: {
-          ...validProductionSnapshot.inputs,
-          ...component,
-        },
-      }),
-    ).toThrow();
-  });
+  it.each([{ materialUnitCostCents: null }, { packagingUnitCostCents: -1 }])(
+    "rejects invalid composed Production component %#",
+    (component) => {
+      expect(() =>
+        parseReportSnapshot({
+          ...validProductionSnapshot,
+          inputs: {
+            ...validProductionSnapshot.inputs,
+            ...component,
+          },
+        }),
+      ).toThrow();
+    },
+  );
 
   it("rejects a mismatched composed Production total", () => {
     expect(() =>

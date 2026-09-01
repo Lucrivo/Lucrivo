@@ -244,7 +244,10 @@ const productionReportSnapshotV1Schema = z
       });
     }
 
-    for (const [index, expectedKey] of reportExecutiveSummaryFactKeys.entries()) {
+    for (const [
+      index,
+      expectedKey,
+    ] of reportExecutiveSummaryFactKeys.entries()) {
       if (snapshot.executiveSummary.facts[index]?.key === expectedKey) continue;
 
       context.addIssue({
