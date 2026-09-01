@@ -72,7 +72,9 @@ describe("ReportListCard", () => {
     const card = screen.getByRole("article", {
       name: "Diagnóstico de Produto — Revenda",
     });
-    expect(within(card).getByText("Diagnóstico de Produto")).toBeInTheDocument();
+    expect(
+      within(card).getByText("Diagnóstico de Produto"),
+    ).toBeInTheDocument();
     expect(within(card).getByText("Produto")).toBeInTheDocument();
     expect(within(card).getByText("Revenda")).toBeInTheDocument();
     const verdict = within(card).getByText("Complete o diagnóstico");

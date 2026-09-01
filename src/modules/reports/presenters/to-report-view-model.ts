@@ -128,9 +128,7 @@ function toProductNumbers(
     },
     {
       key: "target",
-      label: partial
-        ? "Preço-alvo (sem rateio fixo)"
-        : "Preço-alvo (20%)",
+      label: partial ? "Preço-alvo (sem rateio fixo)" : "Preço-alvo (20%)",
       value: optionalCurrency(snapshot.results.targetPriceCents),
     },
   ];
@@ -151,9 +149,7 @@ function toReportViewModel({
   return {
     identity: {
       id,
-      title: isProduct
-        ? "Diagnóstico de Produto"
-        : "Diagnóstico de Serviço",
+      title: isProduct ? "Diagnóstico de Produto" : "Diagnóstico de Serviço",
       categoryLabel: isProduct ? "Produto" : "Serviço",
       scenarioLabel: formatReportScenario(snapshot.scenario),
       createdAtLabel: formatReportDate(createdAt),

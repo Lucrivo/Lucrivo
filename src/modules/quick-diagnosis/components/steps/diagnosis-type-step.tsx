@@ -55,7 +55,7 @@ function DiagnosisTypeStep({ value, error, onChange }: DiagnosisTypeStepProps) {
           return (
             <label
               key={option.value}
-              className="border-border bg-background hover:border-primary/40 has-[[data-checked]]:border-primary has-[[data-checked]]:bg-primary/5 has-[[data-disabled]]:bg-muted/35 has-[[data-disabled]]:text-muted-foreground relative flex min-h-36 cursor-pointer flex-col gap-4 rounded-xl border p-4 transition-colors motion-reduce:transition-none has-[[data-disabled]]:cursor-not-allowed has-[[data-disabled]]:opacity-70"
+              className="border-border bg-background hover:border-primary/40 has-[[data-checked]]:border-primary has-[[data-checked]]:bg-primary/5 has-[[data-disabled]]:bg-muted/35 has-[[data-disabled]]:text-muted-foreground relative flex min-h-36 cursor-pointer flex-col gap-4 rounded-xl border p-4 transition-colors has-[[data-disabled]]:cursor-not-allowed has-[[data-disabled]]:opacity-70 motion-reduce:transition-none"
             >
               <span className="flex items-center justify-between gap-3">
                 <span className="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">

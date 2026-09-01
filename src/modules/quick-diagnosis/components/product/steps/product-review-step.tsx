@@ -181,11 +181,14 @@ function ProductReviewStep({
           role="alert"
           className="border-warning/30 bg-warning/10 text-warning-foreground dark:text-warning flex gap-3 rounded-lg border p-3 text-sm"
         >
-          <TriangleAlertIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+          <TriangleAlertIcon
+            aria-hidden="true"
+            className="mt-0.5 size-4 shrink-0"
+          />
           <p>
             Sem o volume mensal, os custos fixos não podem ser rateados por
-            unidade. O relatório será parcial e não classificará sua margem
-            como adequada.
+            unidade. O relatório será parcial e não classificará sua margem como
+            adequada.
           </p>
         </div>
       ) : null}

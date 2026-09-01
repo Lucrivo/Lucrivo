@@ -104,9 +104,7 @@ describe("createProductDiagnosis", () => {
       error: {
         flatten: () => ({
           fieldErrors: {
-            purchaseUnitCost: [
-              "Informe um custo de compra maior que zero.",
-            ],
+            purchaseUnitCost: ["Informe um custo de compra maior que zero."],
           },
         }),
       },

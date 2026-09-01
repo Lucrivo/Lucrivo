@@ -141,7 +141,10 @@ describe("product wizard state", () => {
     const initial = createInitialProductWizardState(firstSubmissionId);
     const next = productWizardReducer(initial, { type: "next" });
     const back = productWizardReducer(next, { type: "back" });
-    const review = { ...withProductValues(), step: "review" } satisfies ProductWizardState;
+    const review = {
+      ...withProductValues(),
+      step: "review",
+    } satisfies ProductWizardState;
 
     expect(next.step).toBe("productValues");
     expect(back.step).toBe("analysisMode");
@@ -149,9 +152,7 @@ describe("product wizard state", () => {
     expect(productWizardReducer(initial, { type: "back" }).step).toBe(
       "analysisMode",
     );
-    expect(productWizardReducer(review, { type: "next" }).step).toBe(
-      "review",
-    );
+    expect(productWizardReducer(review, { type: "next" }).step).toBe("review");
     expect(
       productWizardReducer(review, { type: "edit", step: "monthlyVolume" })
         .step,

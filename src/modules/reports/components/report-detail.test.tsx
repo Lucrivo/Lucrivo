@@ -130,6 +130,8 @@ describe("ReportDetail", () => {
       screen.getAllByText("Contribuição por unidade").length,
     ).toBeGreaterThan(0);
     expect(screen.getByText("Margem de contribuição")).toBeInTheDocument();
-    expect(screen.getByText("Simulação parcial", { exact: false })).toBeInTheDocument();
+    expect(
+      screen.getByText("Simulação parcial", { exact: false }),
+    ).toBeInTheDocument();
   });
 });

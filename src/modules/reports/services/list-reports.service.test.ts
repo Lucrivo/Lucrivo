@@ -115,10 +115,12 @@ describe("listOwnedReports", () => {
 
   it("maps Product enum values without loading the snapshot", async () => {
     limit.mockResolvedValue({
-      data: [row(84, "2026-08-31T15:00:00.000Z", {
-        category: "product",
-        scenario: "resale",
-      })],
+      data: [
+        row(84, "2026-08-31T15:00:00.000Z", {
+          category: "product",
+          scenario: "resale",
+        }),
+      ],
       error: null,
     });
 

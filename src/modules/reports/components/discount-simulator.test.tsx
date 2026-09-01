@@ -212,7 +212,9 @@ describe("DiscountSimulator", () => {
 
     expect(screen.getByText("Margem real")).toBeInTheDocument();
     expect(screen.getByText("Lucro por unidade")).toBeInTheDocument();
-    expect(screen.queryByText("Simulação parcial", { exact: false })).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Simulação parcial", { exact: false }),
+    ).not.toBeInTheDocument();
   });
 
   it("uses contribution language and a warning for a partial Product simulation", () => {
@@ -220,7 +222,9 @@ describe("DiscountSimulator", () => {
 
     expect(screen.getByText("Margem de contribuição")).toBeInTheDocument();
     expect(screen.getByText("Contribuição por unidade")).toBeInTheDocument();
-    expect(screen.getByText("Simulação parcial", { exact: false })).toHaveTextContent(
+    expect(
+      screen.getByText("Simulação parcial", { exact: false }),
+    ).toHaveTextContent(
       "Simulação parcial: despesas fixas e pró-labore não foram rateados por unidade.",
     );
     expect(screen.queryByText("Lucro por unidade")).not.toBeInTheDocument();
@@ -232,6 +236,8 @@ describe("DiscountSimulator", () => {
 
     expect(screen.getByText("Nova margem")).toBeInTheDocument();
     expect(screen.getByText("Lucro por venda")).toBeInTheDocument();
-    expect(screen.queryByText("Simulação parcial", { exact: false })).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Simulação parcial", { exact: false }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -62,19 +62,11 @@ describe("ProductDiagnosisWizard", () => {
     const volume = options?.volume ?? true;
     const compensation = options?.compensation ?? true;
 
-    await user.click(
-      screen.getByRole("radio", { name: "Diagnóstico rápido" }),
-    );
+    await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(screen.getByText("3 de 8")).toBeInTheDocument();
-    await user.type(
-      screen.getByLabelText("Custo de compra por unidade"),
-      "50",
-    );
-    await user.type(
-      screen.getByLabelText("Preço de venda por unidade"),
-      "100",
-    );
+    await user.type(screen.getByLabelText("Custo de compra por unidade"), "50");
+    await user.type(screen.getByLabelText("Preço de venda por unidade"), "100");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(screen.getByText("4 de 8")).toBeInTheDocument();
     await user.type(screen.getByLabelText("Despesas fixas mensais"), "1000");
@@ -153,9 +145,9 @@ describe("ProductDiagnosisWizard", () => {
       expect(screen.getByRole("heading", { name: heading })).toHaveFocus();
 
       if (buttonName === "Editar valores do produto") {
-        expect(screen.getByLabelText("Custo de compra por unidade")).toHaveValue(
-          "50",
-        );
+        expect(
+          screen.getByLabelText("Custo de compra por unidade"),
+        ).toHaveValue("50");
         expect(screen.getByLabelText("Preço de venda por unidade")).toHaveValue(
           "100",
         );
@@ -291,7 +283,9 @@ describe("ProductDiagnosisWizard", () => {
     ],
     ["unauthorized", "Sua sessão expirou. Entre novamente para continuar."],
   ] as const)("preserves review and UUID after %s", async (error, message) => {
-    const createDiagnosis = vi.fn().mockResolvedValue({ status: "error", error });
+    const createDiagnosis = vi
+      .fn()
+      .mockResolvedValue({ status: "error", error });
     renderWizard(createDiagnosis);
     const user = await completeValidDiagnosis();
 

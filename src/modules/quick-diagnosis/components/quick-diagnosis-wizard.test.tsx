@@ -64,18 +64,10 @@ describe("QuickDiagnosisWizard category orchestration", () => {
   async function completeProductDiagnosis(
     user: ReturnType<typeof userEvent.setup>,
   ) {
-    await user.click(
-      screen.getByRole("radio", { name: "Diagnóstico rápido" }),
-    );
+    await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(
-      screen.getByLabelText("Custo de compra por unidade"),
-      "50",
-    );
-    await user.type(
-      screen.getByLabelText("Preço de venda por unidade"),
-      "100",
-    );
+    await user.type(screen.getByLabelText("Custo de compra por unidade"), "50");
+    await user.type(screen.getByLabelText("Preço de venda por unidade"), "100");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(screen.getByLabelText("Despesas fixas mensais"), "1000");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
@@ -162,18 +154,10 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(createSubmissionId).toHaveBeenCalledTimes(1);
 
-    await user.click(
-      screen.getByRole("radio", { name: "Diagnóstico rápido" }),
-    );
+    await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(
-      screen.getByLabelText("Custo de compra por unidade"),
-      "50",
-    );
-    await user.type(
-      screen.getByLabelText("Preço de venda por unidade"),
-      "100",
-    );
+    await user.type(screen.getByLabelText("Custo de compra por unidade"), "50");
+    await user.type(screen.getByLabelText("Preço de venda por unidade"), "100");
     await openCategoryFromProductValues(user);
 
     expect(screen.getByRole("radio", { name: "Produto" })).toBeChecked();
@@ -196,9 +180,7 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     await user.click(screen.getByRole("radio", { name: "Produto" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(createSubmissionId).toHaveBeenCalledTimes(3);
-    await user.click(
-      screen.getByRole("radio", { name: "Diagnóstico rápido" }),
-    );
+    await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(screen.getByLabelText("Custo de compra por unidade")).toHaveValue(
       "",

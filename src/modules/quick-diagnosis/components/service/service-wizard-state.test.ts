@@ -124,8 +124,7 @@ describe("service wizard state", () => {
     } satisfies ServiceWizardState;
 
     expect(
-      serviceWizardReducer(state, { type: "edit", step: "workRoutine" })
-        .step,
+      serviceWizardReducer(state, { type: "edit", step: "workRoutine" }).step,
     ).toBe("workRoutine");
   });
 

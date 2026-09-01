@@ -287,11 +287,7 @@ function DiscountSimulator({ base }: { base: ReportDiscountSimulationBase }) {
             )}
           >
             <StatusIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-            {safetyMessage(
-              simulation,
-              base.targetMarginBasisPoints,
-              partial,
-            )}
+            {safetyMessage(simulation, base.targetMarginBasisPoints, partial)}
           </p>
         </div>
       </CardContent>

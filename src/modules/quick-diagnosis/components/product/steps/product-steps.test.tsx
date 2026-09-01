@@ -34,13 +34,7 @@ describe("Product diagnosis steps", () => {
     const user = userEvent.setup();
     const onModeChange = vi.fn();
 
-    render(
-      <AnalysisModeStep
-        value=""
-        error={null}
-        onChange={onModeChange}
-      />,
-    );
+    render(<AnalysisModeStep value="" error={null} onChange={onModeChange} />);
 
     const quick = screen.getByRole("radio", { name: "Diagnóstico rápido" });
     quick.focus();
@@ -94,9 +88,9 @@ describe("Product diagnosis steps", () => {
       <MonthlyVolumeStep values={values} errors={{}} onChange={onChange} />,
     );
     expect(screen.getByText(/opcional/i)).toBeVisible();
-    expect(
-      screen.getByLabelText("Volume médio mensal de vendas"),
-    ).toHaveValue("");
+    expect(screen.getByLabelText("Volume médio mensal de vendas")).toHaveValue(
+      "",
+    );
   });
 
   it("toggles compensation by keyboard and removes stale browser text", async () => {
@@ -129,7 +123,9 @@ describe("Product diagnosis steps", () => {
     });
 
     expect(compensation).not.toBeChecked();
-    expect(screen.queryByLabelText("Pró-labore mensal")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Pró-labore mensal"),
+    ).not.toBeInTheDocument();
 
     compensation.focus();
     await user.keyboard(" ");
@@ -139,7 +135,9 @@ describe("Product diagnosis steps", () => {
     compensation.focus();
     await user.keyboard(" ");
     expect(compensation).not.toBeChecked();
-    expect(screen.queryByLabelText("Pró-labore mensal")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Pró-labore mensal"),
+    ).not.toBeInTheDocument();
 
     compensation.focus();
     await user.keyboard(" ");
