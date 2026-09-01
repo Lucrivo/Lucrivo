@@ -200,16 +200,22 @@ type ProductionDiagnosisInput = {
 };
 ```
 
-The schema converts valid input into an integer-only Production command. Its
+The schema converts valid input into an integer-only validated value. Its
 shape contains:
 
 - the submission UUID and both boolean mode discriminators;
-- the authoritative production unit cost in cents;
+- the summarized production unit cost in cents or `null` in composed mode;
 - four component values in cents when composition is enabled, otherwise
   `null`;
 - sale price, fixed expenses, and owner compensation in cents;
 - optional monthly sales volume as an integer;
 - tax and card rates in basis points.
+
+After authentication, a pure composer converts this validated value into the
+final `ProductionDiagnosisCommand`. It recalculates the authoritative
+production unit cost from the four components when composition is enabled and
+rechecks that the sum remains a positive safe integer. The calculator,
+snapshot builder, and persistence service consume only this final command.
 
 Validation rules are:
 
