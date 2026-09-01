@@ -46,9 +46,52 @@ type CreateServiceDiagnosisActionResult =
     }
   | { status: "error"; error: "unauthorized" | "create_failed" };
 
+type ProductDiagnosisInput = {
+  submissionId: string;
+  purchaseUnitCost: string;
+  unitSalePrice: string;
+  fixedMonthlyExpenses: string;
+  monthlySalesVolume: string;
+  proLaboreIncluded: boolean;
+  proLabore: string;
+  taxRate: string;
+  cardFeeRate: string;
+};
+
+type ProductDiagnosisCommand = {
+  submissionId: string;
+  purchaseUnitCostCents: number;
+  unitSalePriceCents: number;
+  fixedMonthlyExpensesCents: number;
+  monthlySalesVolume: number | null;
+  proLaboreIncluded: boolean;
+  proLaboreCents: number;
+  taxRateBasisPoints: number;
+  cardFeeRateBasisPoints: number;
+};
+
+type ProductDiagnosisField = keyof ProductDiagnosisInput;
+type ProductDiagnosisFieldErrors = Partial<
+  Record<ProductDiagnosisField, string[]>
+>;
+
+type CreateProductDiagnosisActionResult =
+  | { status: "success"; diagnosisId: number }
+  | {
+      status: "error";
+      error: "invalid_input";
+      fieldErrors: ProductDiagnosisFieldErrors;
+    }
+  | { status: "error"; error: "unauthorized" | "create_failed" };
+
 export {
   pricingMethods,
+  type CreateProductDiagnosisActionResult,
   type CreateServiceDiagnosisActionResult,
+  type ProductDiagnosisCommand,
+  type ProductDiagnosisField,
+  type ProductDiagnosisFieldErrors,
+  type ProductDiagnosisInput,
   type ServiceDiagnosisCommand,
   type ServiceDiagnosisField,
   type ServiceDiagnosisFieldErrors,

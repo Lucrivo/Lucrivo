@@ -1,9 +1,14 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import type { ServiceDiagnosisCommand } from "@/modules/quick-diagnosis/types";
+import type {
+  ProductDiagnosisCommand,
+  ServiceDiagnosisCommand,
+} from "@/modules/quick-diagnosis/types";
 
+import { buildProductReportSnapshot } from "../domain/build-product-report-snapshot";
 import { buildServiceReportSnapshot } from "../domain/build-service-report-snapshot";
+import { calculateProductReport } from "../domain/calculate-product-report";
 import { calculateServiceReport } from "../domain/calculate-service-report";
 import { toReportViewModel } from "../presenters/to-report-view-model";
 import { ReportDetail } from "./report-detail";
@@ -33,6 +38,26 @@ const viewModel = toReportViewModel({
   snapshot,
 });
 
+const productCommand: ProductDiagnosisCommand = {
+  submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  purchaseUnitCostCents: 5000,
+  unitSalePriceCents: 10000,
+  fixedMonthlyExpensesCents: 100000,
+  monthlySalesVolume: null,
+  proLaboreIncluded: true,
+  proLaboreCents: 200000,
+  taxRateBasisPoints: 600,
+  cardFeeRateBasisPoints: 200,
+};
+const productViewModel = toReportViewModel({
+  id: 84,
+  createdAt: "2026-08-31T15:00:00.000Z",
+  snapshot: buildProductReportSnapshot(
+    productCommand,
+    calculateProductReport(productCommand),
+  ),
+});
+
 describe("ReportDetail", () => {
   it("renders one guided report heading and navigation actions", () => {
     render(<ReportDetail viewModel={viewModel} />);
@@ -49,19 +74,24 @@ describe("ReportDetail", () => {
     ).toHaveAttribute("href", "/quick-diagnosis");
   });
 
-  it("shows verdict, priority, metrics, and price references in the summary rail", () => {
+  it("renders the executive summary before numbers and detailed analysis", () => {
     render(<ReportDetail viewModel={viewModel} />);
-    const summary = screen.getByRole("complementary", {
-      name: "Resumo da decisão",
+    const executiveSummary = screen.getByRole("region", {
+      name: "A verdade por trás do preço.",
     });
+    const numbers = screen.getByRole("complementary", { name: "Seus números" });
+    const analysis = screen.getByRole("region", { name: "Análise detalhada" });
 
-    expect(within(summary).getByText("Margem adequada")).toBeInTheDocument();
-    expect(within(summary).getByText("Volume")).toBeInTheDocument();
-    expect(within(summary).getByText("R$ 80,00")).toBeInTheDocument();
-    expect(within(summary).getByText("17%")).toBeInTheDocument();
-    expect(within(summary).getByText("R$ 13,60")).toBeInTheDocument();
-    expect(within(summary).getByText("R$ 65,22")).toBeInTheDocument();
-    expect(within(summary).getByText("R$ 77,93")).toBeInTheDocument();
+    expect(
+      executiveSummary.compareDocumentPosition(numbers) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      executiveSummary.compareDocumentPosition(analysis) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.queryByText("Leitura principal")).not.toBeInTheDocument();
+    expect(screen.queryByText("Prioridade agora")).not.toBeInTheDocument();
   });
 
   it("renders exactly five persisted sections in snapshot order", () => {
@@ -87,5 +117,21 @@ describe("ReportDetail", () => {
     expect(
       screen.getAllByLabelText("Situação positiva").length,
     ).toBeGreaterThan(0);
+  });
+
+  it("renders Product identity and partial simulation semantics", () => {
+    render(<ReportDetail viewModel={productViewModel} />);
+
+    expect(
+      screen.getByRole("heading", { name: "Diagnóstico de Produto" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Revenda")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Contribuição por unidade").length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("Margem de contribuição")).toBeInTheDocument();
+    expect(
+      screen.getByText("Simulação parcial", { exact: false }),
+    ).toBeInTheDocument();
   });
 });

@@ -8,8 +8,8 @@ select has_type('public', 'business_category', 'business category enum exists');
 select enum_has_labels(
   'public',
   'business_category',
-  array['service'],
-  'business category contains only service'
+  array['service', 'product'],
+  'business category contains Service and Product'
 );
 select has_type(
   'public',

@@ -2,7 +2,7 @@ import { BoxIcon, FactoryIcon, HandPlatterIcon, LockIcon } from "lucide-react";
 
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-import type { DiagnosisType } from "../wizard-state";
+type DiagnosisType = "service" | "product" | "production";
 
 type DiagnosisTypeStepProps = {
   value: DiagnosisType | "";
@@ -23,7 +23,7 @@ const options = [
     label: "Produto",
     detail: "Para produtos comprados e revendidos",
     icon: BoxIcon,
-    disabled: true,
+    disabled: false,
   },
   {
     value: "production",
@@ -43,7 +43,9 @@ function DiagnosisTypeStep({ value, error, onChange }: DiagnosisTypeStepProps) {
         aria-invalid={Boolean(error)}
         aria-describedby={error ? "diagnosisType-error" : undefined}
         onValueChange={(nextValue) => {
-          if (nextValue === "service") onChange(nextValue);
+          if (nextValue === "service" || nextValue === "product") {
+            onChange(nextValue);
+          }
         }}
         className="grid gap-3 sm:grid-cols-3"
       >
@@ -53,7 +55,7 @@ function DiagnosisTypeStep({ value, error, onChange }: DiagnosisTypeStepProps) {
           return (
             <label
               key={option.value}
-              className="border-border bg-background hover:border-primary/40 has-[[data-checked]]:border-primary has-[[data-checked]]:bg-primary/5 has-[[data-disabled]]:bg-muted/35 has-[[data-disabled]]:text-muted-foreground relative flex min-h-36 cursor-pointer flex-col gap-4 rounded-xl border p-4 transition-colors has-[[data-disabled]]:cursor-not-allowed has-[[data-disabled]]:opacity-70"
+              className="border-border bg-background hover:border-primary/40 has-[[data-checked]]:border-primary has-[[data-checked]]:bg-primary/5 has-[[data-disabled]]:bg-muted/35 has-[[data-disabled]]:text-muted-foreground relative flex min-h-36 cursor-pointer flex-col gap-4 rounded-xl border p-4 transition-colors has-[[data-disabled]]:cursor-not-allowed has-[[data-disabled]]:opacity-70 motion-reduce:transition-none"
             >
               <span className="flex items-center justify-between gap-3">
                 <span className="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
@@ -104,4 +106,4 @@ function DiagnosisTypeStep({ value, error, onChange }: DiagnosisTypeStepProps) {
   );
 }
 
-export { DiagnosisTypeStep };
+export { DiagnosisTypeStep, type DiagnosisType };

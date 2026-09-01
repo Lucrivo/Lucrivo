@@ -18,12 +18,9 @@ export default function ReportLoading() {
           <Skeleton className="h-5 w-56" />
         </CardHeader>
       </Card>
+      <Skeleton className="h-[34rem] rounded-3xl sm:h-[28rem]" />
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)]">
-        <div className="grid gap-4">
-          <Skeleton className="h-72 rounded-xl" />
-          <Skeleton className="h-40 rounded-xl" />
-          <Skeleton className="h-48 rounded-xl" />
-        </div>
+        <Skeleton className="h-72 rounded-xl" />
         <section aria-label="Carregando análise" className="grid gap-4">
           <Skeleton className="mb-2 h-16 w-2/3" />
           {Array.from({ length: 5 }, (_, index) => (

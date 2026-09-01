@@ -8,37 +8,13 @@ import {
   type ServiceDiagnosisInput,
   type ServicePricingMethod,
 } from "../types";
-
-function canonicalDecimal(value: string): string {
-  const compact = value
-    .trim()
-    .replace(/^R\$\s*/, "")
-    .replace(/\s/g, "");
-
-  if (compact === "") return "0";
-
-  return compact.includes(",")
-    ? compact.replace(/\./g, "").replace(",", ".")
-    : compact;
-}
-
-function scaledInteger(value: string, scale: number): number {
-  const match = canonicalDecimal(value).match(/^(\d+)(?:\.(\d+))?$/);
-
-  if (!match || (match[2]?.length ?? 0) > scale) {
-    throw new Error("invalid_decimal");
-  }
-
-  const factor = BigInt(10) ** BigInt(scale);
-  const fraction = (match[2] ?? "").padEnd(scale, "0");
-  const result = BigInt(match[1]) * factor + BigInt(fraction || "0");
-
-  if (result > BigInt(Number.MAX_SAFE_INTEGER)) {
-    throw new Error("unsafe_integer");
-  }
-
-  return Number(result);
-}
+import {
+  canonicalDecimal,
+  convertedNumber,
+  moneySchema,
+  percentageSchema,
+  scaledInteger,
+} from "./decimal-input";
 
 function roundedMinutes(value: string): number {
   const canonical = canonicalDecimal(value);
@@ -58,28 +34,6 @@ function roundedMinutes(value: string): number {
   return Number(minutes);
 }
 
-function convertedNumber(convert: (value: string) => number, message: string) {
-  return z.string().transform((value, context) => {
-    try {
-      return convert(value);
-    } catch {
-      context.addIssue({ code: "custom", message });
-      return z.NEVER;
-    }
-  });
-}
-
-const money = convertedNumber(
-  (value) => scaledInteger(value, 2),
-  "Informe um valor monetário válido com até duas casas decimais.",
-);
-
-const percentage = convertedNumber((value) => {
-  const basisPoints = scaledInteger(value, 2);
-  if (basisPoints > 10000) throw new Error("out_of_range");
-  return basisPoints;
-}, "Informe um percentual entre 0 e 100 com até duas casas decimais.");
-
 const nonNegativeInteger = convertedNumber(
   (value) => scaledInteger(value, 0),
   "Informe um número inteiro não negativo.",
@@ -94,8 +48,8 @@ const rawServiceDiagnosisSchema = z.object({
         pricingMethods.some((method) => method === value),
       "Selecione uma forma de cobrança válida.",
     ),
-  desiredMonthlyIncome: money,
-  fixedMonthlyExpenses: money,
+  desiredMonthlyIncome: moneySchema,
+  fixedMonthlyExpenses: moneySchema,
   monthlyWorkHours: convertedNumber(
     roundedMinutes,
     "Informe uma carga mensal entre 0 e 744 horas.",
@@ -104,12 +58,12 @@ const rawServiceDiagnosisSchema = z.object({
     (value) => value <= 7,
     "Informe no máximo 7 dias de trabalho por semana.",
   ),
-  hourlyRate: money,
-  minuteRate: money,
-  appointmentRate: money,
+  hourlyRate: moneySchema,
+  minuteRate: moneySchema,
+  appointmentRate: moneySchema,
   appointmentDurationMinutes: nonNegativeInteger,
-  taxRate: percentage,
-  cardFeeRate: percentage,
+  taxRate: percentageSchema,
+  cardFeeRate: percentageSchema,
 });
 
 const serviceDiagnosisSchema: z.ZodType<

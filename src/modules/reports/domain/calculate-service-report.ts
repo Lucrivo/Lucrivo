@@ -1,10 +1,9 @@
 import type { ServiceDiagnosisCommand } from "@/modules/quick-diagnosis/types";
 
 import type {
-  ReportPriority,
-  ReportResults,
-  ReportUnit,
-  ReportVerdict,
+  ServiceReportPriority,
+  ServiceReportUnit,
+  ServiceReportVerdict,
 } from "../types";
 import { ceilDivide, multiplyDivideRound, roundDivide } from "./integer-math";
 
@@ -14,16 +13,31 @@ const SERVICE_MARGIN_TOLERANCE_BPS = 50;
 const SERVICE_ABOVE_TARGET_BPS = 300;
 const WEEKLY_DIVISOR_HUNDREDTHS = 433;
 
-type ServiceReportCalculation = ReportResults & {
-  unit: ReportUnit;
+type ServiceReportCalculation = {
+  unit: ServiceReportUnit;
   totalFeeBasisPoints: number;
   monthlyWorkMinutes: number;
+  monthlyCostCents: number;
+  hourCostCents: number | null;
+  unitCostCents: number | null;
+  currentPriceCents: number;
+  netRevenueCents: number | null;
+  unitProfitCents: number | null;
+  realMarginBasisPoints: number | null;
+  minimumPriceCents: number | null;
+  targetPriceCents: number | null;
+  monthlySalesGoal: number | null;
+  weeklySalesGoal: number | null;
+  dailySalesGoal: number | null;
+  breakEvenDiscountPercent: number | null;
+  verdict: ServiceReportVerdict;
+  priority: ServiceReportPriority;
 };
 
 function classifyServiceMargin(
   currentPriceCents: number,
   realMarginBasisPoints: number | null,
-): ReportVerdict {
+): ServiceReportVerdict {
   if (currentPriceCents <= 0) return "missing_price";
   if (realMarginBasisPoints === null || realMarginBasisPoints <= 0) {
     return "operational_loss";
@@ -43,7 +57,9 @@ function classifyServiceMargin(
   return "above_target";
 }
 
-function selectServicePriority(verdict: ReportVerdict): ReportPriority {
+function selectServicePriority(
+  verdict: ServiceReportVerdict,
+): ServiceReportPriority {
   if (verdict === "missing_price" || verdict === "operational_loss") {
     return "price";
   }
@@ -77,7 +93,7 @@ function calculateServiceReport(
   );
   const netRateBps = RATE_SCALE - totalFeeBasisPoints;
   const targetRateBps = netRateBps - SERVICE_TARGET_MARGIN_BPS;
-  const unit: ReportUnit =
+  const unit: ServiceReportUnit =
     command.pricingMethod === "hour" ? "hour" : "appointment";
   const unitDurationMinutes =
     command.pricingMethod === "hour" ? 60 : command.appointmentDurationMinutes;

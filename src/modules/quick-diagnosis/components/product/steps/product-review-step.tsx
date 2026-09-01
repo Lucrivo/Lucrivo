@@ -1,21 +1,21 @@
 import Link from "next/link";
-import { CheckIcon, PencilIcon } from "lucide-react";
+import { CheckIcon, PencilIcon, TriangleAlertIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
 import type {
-  ServiceDiagnosisFieldErrors,
-  ServiceDiagnosisInput,
-} from "../../types";
-import type { DiagnosisType, WizardStep } from "../wizard-state";
+  ProductDiagnosisFieldErrors,
+  ProductDiagnosisInput,
+} from "../../../types";
+import type { ProductWizardStep } from "../product-wizard-state";
 
-type ReviewStepProps = {
-  values: ServiceDiagnosisInput;
-  diagnosisType: DiagnosisType | "";
-  errors: ServiceDiagnosisFieldErrors;
+type ProductReviewStepProps = {
+  values: ProductDiagnosisInput;
+  errors: ProductDiagnosisFieldErrors;
   pending: boolean;
   submitError: "unauthorized" | "create_failed" | null;
-  onEdit: (step: WizardStep) => void;
+  onEdit: (step: ProductWizardStep) => void;
+  onBackToType: () => void;
   onSubmit: () => void;
 };
 
@@ -23,12 +23,6 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
 });
-
-const pricingMethodLabels = {
-  hour: "Por hora",
-  minute: "Por minuto",
-  appointment: "Por atendimento",
-} as const;
 
 function decimalNumber(value: string): number {
   const compact = value
@@ -76,7 +70,7 @@ function ReviewGroup({
           size="sm"
           aria-label={editName}
           onClick={onEdit}
-          className="motion-reduce:transition-none"
+          className="motion-reduce:transform-none motion-reduce:transition-none"
         >
           <PencilIcon aria-hidden="true" />
           Editar
@@ -87,60 +81,47 @@ function ReviewGroup({
   );
 }
 
-function ReviewStep({
+function ProductReviewStep({
   values,
-  diagnosisType,
   pending,
   submitError,
   onEdit,
+  onBackToType,
   onSubmit,
-}: ReviewStepProps) {
-  const currentPrice =
-    values.pricingMethod === "hour"
-      ? ["Valor por hora", values.hourlyRate]
-      : values.pricingMethod === "minute"
-        ? ["Valor por minuto", values.minuteRate]
-        : ["Valor por atendimento", values.appointmentRate];
-  const requiresDuration =
-    values.pricingMethod === "minute" || values.pricingMethod === "appointment";
+}: ProductReviewStepProps) {
+  const hasMonthlyVolume = values.monthlySalesVolume.trim() !== "";
 
   return (
-    <div className="grid gap-5">
+    <div className="text-foreground grid gap-5">
       <div className="grid gap-3 sm:grid-cols-2">
         <ReviewGroup
           title="Tipo de diagnóstico"
           editName="Editar tipo de diagnóstico"
-          onEdit={() => onEdit("diagnosisType")}
+          onEdit={onBackToType}
         >
-          <ReviewItem
-            label="O que será analisado"
-            value={diagnosisType === "service" ? "Serviço" : ""}
-          />
+          <ReviewItem label="O que será analisado" value="Produto" />
         </ReviewGroup>
 
         <ReviewGroup
-          title="Forma de cobrança"
-          editName="Editar forma de cobrança"
-          onEdit={() => onEdit("pricingMethod")}
+          title="Modalidade"
+          editName="Editar modalidade"
+          onEdit={() => onEdit("analysisMode")}
         >
-          <ReviewItem
-            label="Método"
-            value={
-              pricingMethodLabels[
-                values.pricingMethod as keyof typeof pricingMethodLabels
-              ]
-            }
-          />
+          <ReviewItem label="Tipo de análise" value="Diagnóstico rápido" />
         </ReviewGroup>
 
         <ReviewGroup
-          title="Meta mensal"
-          editName="Editar meta mensal"
-          onEdit={() => onEdit("monthlyGoal")}
+          title="Valores do produto"
+          editName="Editar valores do produto"
+          onEdit={() => onEdit("productValues")}
         >
           <ReviewItem
-            label="Renda desejada"
-            value={formatMoney(values.desiredMonthlyIncome)}
+            label="Custo de compra por unidade"
+            value={formatMoney(values.purchaseUnitCost)}
+          />
+          <ReviewItem
+            label="Preço de venda por unidade"
+            value={formatMoney(values.unitSalePrice)}
           />
         </ReviewGroup>
 
@@ -156,35 +137,33 @@ function ReviewStep({
         </ReviewGroup>
 
         <ReviewGroup
-          title="Rotina"
-          editName="Editar rotina"
-          onEdit={() => onEdit("workRoutine")}
+          title="Volume mensal"
+          editName="Editar volume mensal"
+          onEdit={() => onEdit("monthlyVolume")}
         >
           <ReviewItem
-            label="Carga de trabalho"
-            value={`${values.monthlyWorkHours} horas por mês`}
-          />
-          <ReviewItem
-            label="Frequência"
-            value={`${values.weeklyWorkDays} dias por semana`}
+            label="Vendas"
+            value={
+              hasMonthlyVolume
+                ? `${values.monthlySalesVolume} unidades por mês`
+                : "Não informado"
+            }
           />
         </ReviewGroup>
 
         <ReviewGroup
-          title="Preço atual"
-          editName="Editar preço atual"
-          onEdit={() => onEdit("currentPrice")}
+          title="Pró-labore"
+          editName="Editar pró-labore"
+          onEdit={() => onEdit("ownerCompensation")}
         >
           <ReviewItem
-            label={currentPrice[0]}
-            value={formatMoney(currentPrice[1])}
+            label="Remuneração mensal"
+            value={
+              values.proLaboreIncluded
+                ? formatMoney(values.proLabore)
+                : "Não incluído"
+            }
           />
-          {requiresDuration ? (
-            <ReviewItem
-              label="Duração média"
-              value={`${values.appointmentDurationMinutes} minutos`}
-            />
-          ) : null}
         </ReviewGroup>
 
         <ReviewGroup
@@ -196,6 +175,23 @@ function ReviewStep({
           <ReviewItem label="Taxa do cartão" value={`${values.cardFeeRate}%`} />
         </ReviewGroup>
       </div>
+
+      {!hasMonthlyVolume ? (
+        <div
+          role="alert"
+          className="border-warning/30 bg-warning/10 text-warning-foreground dark:text-warning flex gap-3 rounded-lg border p-3 text-sm"
+        >
+          <TriangleAlertIcon
+            aria-hidden="true"
+            className="mt-0.5 size-4 shrink-0"
+          />
+          <p>
+            Sem o volume mensal, os custos fixos não podem ser rateados por
+            unidade. O relatório será parcial e não classificará sua margem como
+            adequada.
+          </p>
+        </div>
+      ) : null}
 
       {submitError ? (
         <div
@@ -223,7 +219,7 @@ function ReviewStep({
         size="lg"
         disabled={pending}
         onClick={onSubmit}
-        className="w-full motion-reduce:transition-none"
+        className="w-full motion-reduce:transform-none motion-reduce:transition-none"
       >
         {pending ? (
           "Preparando relatório..."
@@ -238,4 +234,4 @@ function ReviewStep({
   );
 }
 
-export { ReviewStep, type ReviewStepProps };
+export { ProductReviewStep, type ProductReviewStepProps };

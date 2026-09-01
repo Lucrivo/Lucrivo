@@ -10,11 +10,18 @@ import {
 
 const createdAt = "2026-08-28T22:30:00.000Z";
 
-function row(id: number, timestamp = createdAt) {
+function row(
+  id: number,
+  timestamp = createdAt,
+  identity: { category: "service" | "product"; scenario: string } = {
+    category: "service",
+    scenario: "hour",
+  },
+) {
   return {
     id,
-    business_category: "service" as const,
-    scenario: "hour",
+    business_category: identity.category,
+    scenario: identity.scenario,
     created_at: timestamp,
     current_price_cents: 8_000,
     real_margin_basis_points: 1_700,
@@ -104,6 +111,30 @@ describe("listOwnedReports", () => {
     expect(secondOrder).toHaveBeenCalledWith("id", { ascending: false });
     expect(limit).toHaveBeenCalledWith(13);
     expect(or).not.toHaveBeenCalled();
+  });
+
+  it("maps Product enum values without loading the snapshot", async () => {
+    limit.mockResolvedValue({
+      data: [
+        row(84, "2026-08-31T15:00:00.000Z", {
+          category: "product",
+          scenario: "resale",
+        }),
+      ],
+      error: null,
+    });
+
+    await expect(list()).resolves.toMatchObject({
+      status: "success",
+      reports: [
+        expect.objectContaining({
+          id: 84,
+          businessCategory: "product",
+          scenario: "resale",
+        }),
+      ],
+    });
+    expect(select.mock.calls[0]?.[0]).not.toContain("report_snapshot");
   });
 
   it("applies a validated tuple-equivalent keyset cursor", async () => {

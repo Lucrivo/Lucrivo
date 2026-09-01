@@ -78,6 +78,31 @@ describe("ReportPage", () => {
     );
   });
 
+  it("passes a Product snapshot through the same safe report route", async () => {
+    const productSnapshot = {
+      schemaVersion: 1,
+      category: "product",
+      scenario: "resale",
+    };
+    getOwnedReport.mockResolvedValue({
+      status: "found",
+      report: {
+        id: 84,
+        createdAt: "2026-08-31T15:00:00.000Z",
+        snapshot: productSnapshot,
+      },
+    });
+
+    await renderPage("84");
+
+    expect(toReportViewModel).toHaveBeenCalledWith({
+      id: 84,
+      createdAt: "2026-08-31T15:00:00.000Z",
+      snapshot: productSnapshot,
+    });
+    expect(screen.getByText("Detalhe renderizado")).toBeInTheDocument();
+  });
+
   it.each(["abc", "0"])("calls notFound for malformed id %s", async (id) => {
     await expect(
       ReportPage({ params: Promise.resolve({ id }) }),

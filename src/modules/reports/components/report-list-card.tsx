@@ -19,21 +19,22 @@ import {
   formatReportDate,
 } from "../formatters";
 import type { OwnedReportSummary } from "../services/list-reports.service";
+import type { ReportScenario, ReportVerdict } from "../types";
 
-const categoryLabels: Record<string, string> = {
+const categoryLabels = {
   service: "Serviço",
   product: "Produto",
-  production: "Produção",
-};
+} as const satisfies Record<OwnedReportSummary["businessCategory"], string>;
 
-const scenarioLabels: Record<string, string> = {
+const scenarioLabels = {
   hour: "Por hora",
   minute: "Por minuto",
   appointment: "Por atendimento",
-};
+  resale: "Revenda",
+} as const satisfies Record<ReportScenario, string>;
 
 const verdictPresentation: Record<
-  string,
+  ReportVerdict,
   {
     label: string;
     badge: "info" | "success" | "warning" | "destructive";
@@ -42,6 +43,16 @@ const verdictPresentation: Record<
 > = {
   missing_price: {
     label: "Informe o preço",
+    badge: "info",
+    icon: CircleGaugeIcon,
+  },
+  direct_loss: {
+    label: "Prejuízo direto",
+    badge: "destructive",
+    icon: CircleAlertIcon,
+  },
+  incomplete_volume: {
+    label: "Complete o diagnóstico",
     badge: "info",
     icon: CircleGaugeIcon,
   },
@@ -76,11 +87,12 @@ function optionalMargin(value: number | null): string {
 }
 
 function ReportListCard({ report }: { report: OwnedReportSummary }) {
-  const category =
-    categoryLabels[report.businessCategory] ?? report.businessCategory;
-  const scenario = scenarioLabels[report.scenario] ?? report.scenario;
+  const category = categoryLabels[report.businessCategory];
+  const scenario =
+    scenarioLabels[report.scenario as ReportScenario] ?? report.scenario;
   const verdict =
-    verdictPresentation[report.verdict] ?? verdictPresentation.missing_price;
+    verdictPresentation[report.verdict as ReportVerdict] ??
+    verdictPresentation.missing_price;
   const VerdictIcon = verdict.icon;
 
   return (
@@ -130,7 +142,11 @@ function ReportListCard({ report }: { report: OwnedReportSummary }) {
             </dd>
           </div>
           <div className="grid gap-1 p-3.5">
-            <dt className="text-muted-foreground text-xs">Lucro por venda</dt>
+            <dt className="text-muted-foreground text-xs">
+              {report.businessCategory === "product"
+                ? "Lucro por unidade"
+                : "Lucro por venda"}
+            </dt>
             <dd className="font-semibold tabular-nums">
               {optionalCurrency(report.unitProfitCents)}
             </dd>

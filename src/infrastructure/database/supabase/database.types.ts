@@ -66,6 +66,56 @@ export type Database = {
         };
         Relationships: [];
       };
+      product_diagnoses: {
+        Row: {
+          card_fee_rate_basis_points: number;
+          diagnosis_id: number;
+          fixed_monthly_expenses_cents: number;
+          monthly_sales_volume: number | null;
+          pro_labore_cents: number;
+          pro_labore_included: boolean;
+          purchase_unit_cost_cents: number;
+          submission_id: string;
+          tax_rate_basis_points: number;
+          unit_sale_price_cents: number;
+          user_id: string;
+        };
+        Insert: {
+          card_fee_rate_basis_points: number;
+          diagnosis_id: number;
+          fixed_monthly_expenses_cents: number;
+          monthly_sales_volume?: number | null;
+          pro_labore_cents: number;
+          pro_labore_included: boolean;
+          purchase_unit_cost_cents: number;
+          submission_id: string;
+          tax_rate_basis_points: number;
+          unit_sale_price_cents: number;
+          user_id: string;
+        };
+        Update: {
+          card_fee_rate_basis_points?: number;
+          diagnosis_id?: number;
+          fixed_monthly_expenses_cents?: number;
+          monthly_sales_volume?: number | null;
+          pro_labore_cents?: number;
+          pro_labore_included?: boolean;
+          purchase_unit_cost_cents?: number;
+          submission_id?: string;
+          tax_rate_basis_points?: number;
+          unit_sale_price_cents?: number;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "product_diagnoses_diagnosis_id_fkey";
+            columns: ["diagnosis_id"];
+            isOneToOne: true;
+            referencedRelation: "diagnoses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       service_diagnoses: {
         Row: {
           appointment_duration_minutes: number;
@@ -139,6 +189,31 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      create_product_diagnosis_report: {
+        Args: {
+          p_calculation_version: number;
+          p_card_fee_rate_basis_points: number;
+          p_content_version: number;
+          p_current_price_cents: number;
+          p_fixed_monthly_expenses_cents: number;
+          p_monthly_sales_volume: number;
+          p_priority: string;
+          p_pro_labore_cents: number;
+          p_pro_labore_included: boolean;
+          p_purchase_unit_cost_cents: number;
+          p_real_margin_basis_points: number;
+          p_report_snapshot: Json;
+          p_scenario: string;
+          p_schema_version: number;
+          p_submission_id: string;
+          p_tax_rate_basis_points: number;
+          p_unit: string;
+          p_unit_profit_cents: number;
+          p_unit_sale_price_cents: number;
+          p_verdict: string;
+        };
+        Returns: number;
+      };
       create_service_diagnosis_report: {
         Args: {
           p_appointment_duration_minutes: number;
@@ -169,7 +244,7 @@ export type Database = {
       };
     };
     Enums: {
-      business_category: "service";
+      business_category: "service" | "product";
       service_pricing_method: "hour" | "minute" | "appointment";
     };
     CompositeTypes: {
@@ -298,7 +373,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      business_category: ["service"],
+      business_category: ["service", "product"],
       service_pricing_method: ["hour", "minute", "appointment"],
     },
   },

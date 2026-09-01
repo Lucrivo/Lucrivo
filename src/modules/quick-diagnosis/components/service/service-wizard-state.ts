@@ -3,10 +3,9 @@ import type {
   ServiceDiagnosisFieldErrors,
   ServiceDiagnosisInput,
   ServicePricingMethod,
-} from "../types";
+} from "../../types";
 
-const wizardSteps = [
-  "diagnosisType",
+const serviceWizardSteps = [
   "monthlyGoal",
   "fixedExpenses",
   "workRoutine",
@@ -16,13 +15,10 @@ const wizardSteps = [
   "review",
 ] as const;
 
-type WizardStep = (typeof wizardSteps)[number];
-type DiagnosisType = "service" | "product" | "production";
+type ServiceWizardStep = (typeof serviceWizardSteps)[number];
 
-type WizardState = {
-  step: WizardStep;
-  diagnosisType: DiagnosisType | "";
-  diagnosisTypeError: string | null;
+type ServiceWizardState = {
+  step: ServiceWizardStep;
   values: ServiceDiagnosisInput;
   fieldErrors: ServiceDiagnosisFieldErrors;
   status: "editing" | "submitting" | "success";
@@ -30,22 +26,20 @@ type WizardState = {
   submitError: "unauthorized" | "create_failed" | null;
 };
 
-type WizardAction =
+type ServiceWizardAction =
   | {
       type: "setField";
       field: ServiceDiagnosisField;
       value: string;
     }
   | { type: "setPricingMethod"; value: ServicePricingMethod }
-  | { type: "setDiagnosisType"; value: DiagnosisType }
-  | { type: "setDiagnosisTypeError"; error: string | null }
   | {
       type: "setFieldErrors";
       fieldErrors: ServiceDiagnosisFieldErrors;
     }
   | { type: "next" }
   | { type: "back" }
-  | { type: "edit"; step: WizardStep }
+  | { type: "edit"; step: ServiceWizardStep }
   | { type: "submitting" }
   | {
       type: "submitError";
@@ -61,11 +55,11 @@ const methodDependentFields = [
   "appointmentDurationMinutes",
 ] as const satisfies readonly ServiceDiagnosisField[];
 
-function createInitialWizardState(submissionId: string): WizardState {
+function createInitialServiceWizardState(
+  submissionId: string,
+): ServiceWizardState {
   return {
-    step: "diagnosisType",
-    diagnosisType: "",
-    diagnosisTypeError: null,
+    step: "monthlyGoal",
     values: {
       submissionId,
       pricingMethod: "",
@@ -87,17 +81,23 @@ function createInitialWizardState(submissionId: string): WizardState {
   };
 }
 
-function adjacentStep(step: WizardStep, offset: -1 | 1): WizardStep {
-  const currentIndex = wizardSteps.indexOf(step);
+function adjacentStep(
+  step: ServiceWizardStep,
+  offset: -1 | 1,
+): ServiceWizardStep {
+  const currentIndex = serviceWizardSteps.indexOf(step);
   const nextIndex = Math.min(
-    wizardSteps.length - 1,
+    serviceWizardSteps.length - 1,
     Math.max(0, currentIndex + offset),
   );
 
-  return wizardSteps[nextIndex];
+  return serviceWizardSteps[nextIndex];
 }
 
-function wizardReducer(state: WizardState, action: WizardAction): WizardState {
+function serviceWizardReducer(
+  state: ServiceWizardState,
+  action: ServiceWizardAction,
+): ServiceWizardState {
   switch (action.type) {
     case "setField": {
       const fieldErrors = { ...state.fieldErrors };
@@ -127,14 +127,6 @@ function wizardReducer(state: WizardState, action: WizardAction): WizardState {
         fieldErrors,
       };
     }
-    case "setDiagnosisType":
-      return {
-        ...state,
-        diagnosisType: action.value,
-        diagnosisTypeError: null,
-      };
-    case "setDiagnosisTypeError":
-      return { ...state, diagnosisTypeError: action.error };
     case "setFieldErrors":
       return { ...state, fieldErrors: action.fieldErrors };
     case "next":
@@ -159,16 +151,15 @@ function wizardReducer(state: WizardState, action: WizardAction): WizardState {
         submitError: null,
       };
     case "reset":
-      return createInitialWizardState(action.submissionId);
+      return createInitialServiceWizardState(action.submissionId);
   }
 }
 
 export {
-  createInitialWizardState,
-  wizardReducer,
-  wizardSteps,
-  type WizardAction,
-  type DiagnosisType,
-  type WizardState,
-  type WizardStep,
+  createInitialServiceWizardState,
+  serviceWizardReducer,
+  serviceWizardSteps,
+  type ServiceWizardAction,
+  type ServiceWizardState,
+  type ServiceWizardStep,
 };

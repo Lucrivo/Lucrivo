@@ -6,22 +6,26 @@ import {
   formatReportUnit,
 } from "../formatters";
 import type {
+  ProductReportSnapshotV1,
   ReportDiscountSimulationBase,
-  ReportPriority,
   ReportSnapshot,
   ReportTone,
+  ServiceReportSnapshotV2,
 } from "../types";
 
-type ReportMetricViewModel = {
-  key: "price" | "margin" | "profit";
+type ReportNumberViewModel = {
+  key: "price" | "margin" | "profit" | "minimum" | "target";
   label: string;
   value: string;
 };
 
-type ReportReferenceViewModel = {
-  key: "minimum" | "target";
-  label: string;
-  value: string;
+type ReportExecutiveSummaryViewModel = Omit<
+  ReportSnapshot["executiveSummary"],
+  "verdict"
+> & {
+  verdict: ReportSnapshot["executiveSummary"]["verdict"] & {
+    toneLabel: string;
+  };
 };
 
 type ReportSectionViewModel = ReportSnapshot["sections"][number] & {
@@ -37,18 +41,8 @@ type ReportViewModel = {
     createdAtLabel: string;
     unitLabel: string;
   };
-  summary: {
-    verdict: {
-      label: string;
-      description: string;
-      tone: ReportTone;
-      toneLabel: string;
-    };
-    priority: { label: string; description: string };
-    metrics: ReportMetricViewModel[];
-  };
-  priceReferences: ReportReferenceViewModel[];
-  nextActions: string[];
+  executiveSummary: ReportExecutiveSummaryViewModel;
+  numbers: ReportNumberViewModel[];
   sections: ReportSectionViewModel[];
   discountSimulationBase: ReportDiscountSimulationBase;
 };
@@ -60,51 +54,84 @@ const toneLabels: Record<ReportTone, string> = {
   critical: "Ação necessária",
 };
 
-const priorityContent: Record<
-  ReportPriority,
-  { label: string; description: string; actions: [string, string] }
-> = {
-  cost: {
-    label: "Custo",
-    description: "Reduza o custo da operação antes de acelerar as vendas.",
-    actions: [
-      "Revise os custos que mais pressionam cada venda.",
-      "Recalcule o preço depois de reduzir ou renegociar despesas.",
-    ],
-  },
-  price: {
-    label: "Preço",
-    description: "Seu preço precisa sair do prejuízo antes de buscar escala.",
-    actions: [
-      "Corrija o preço antes de buscar mais volume.",
-      "Use o preço mínimo como limite financeiro imediato.",
-    ],
-  },
-  margin: {
-    label: "Margem",
-    description: "O preço cobre a operação, mas ainda não entrega a meta.",
-    actions: [
-      "Aproxime seu preço da margem-alvo de 15%.",
-      "Combine ajuste de preço, custo e valor percebido.",
-    ],
-  },
-  volume: {
-    label: "Volume",
-    description:
-      "Seu preço se sustenta. Agora transforme a meta em rotina comercial.",
-    actions: [
-      "Use a meta mensal como referência para sua agenda.",
-      "Acompanhe ocupação e recorrência antes de conceder descontos.",
-    ],
-  },
-};
-
 function optionalCurrency(value: number | null): string {
   return value === null ? "Indisponível" : formatCurrency(value);
 }
 
 function optionalPercentage(value: number | null): string {
   return value === null ? "Indisponível" : formatBasisPoints(value);
+}
+
+function toServiceNumbers(
+  snapshot: ServiceReportSnapshotV2,
+): ReportNumberViewModel[] {
+  const unitLabel = formatReportUnit(snapshot.unit);
+
+  return [
+    {
+      key: "price",
+      label: "Preço atual",
+      value: formatCurrency(snapshot.results.currentPriceCents),
+    },
+    {
+      key: "margin",
+      label: "Margem real",
+      value: optionalPercentage(snapshot.results.realMarginBasisPoints),
+    },
+    {
+      key: "profit",
+      label: `Lucro por ${unitLabel}`,
+      value: optionalCurrency(snapshot.results.unitProfitCents),
+    },
+    {
+      key: "minimum",
+      label: "Preço mínimo",
+      value: optionalCurrency(snapshot.results.minimumPriceCents),
+    },
+    {
+      key: "target",
+      label: "Preço-alvo (15%)",
+      value: optionalCurrency(snapshot.results.targetPriceCents),
+    },
+  ];
+}
+
+function toProductNumbers(
+  snapshot: ProductReportSnapshotV1,
+): ReportNumberViewModel[] {
+  const partial = snapshot.results.priceReferencesPartial;
+
+  return [
+    {
+      key: "price",
+      label: "Preço atual",
+      value: formatCurrency(snapshot.results.currentPriceCents),
+    },
+    {
+      key: "margin",
+      label: "Margem real",
+      value: optionalPercentage(snapshot.results.realMarginBasisPoints),
+    },
+    {
+      key: "profit",
+      label: partial ? "Contribuição por unidade" : "Lucro por unidade",
+      value: optionalCurrency(
+        partial
+          ? snapshot.results.unitContributionCents
+          : snapshot.results.unitProfitCents,
+      ),
+    },
+    {
+      key: "minimum",
+      label: partial ? "Preço mínimo (sem rateio fixo)" : "Preço mínimo",
+      value: optionalCurrency(snapshot.results.minimumPriceCents),
+    },
+    {
+      key: "target",
+      label: partial ? "Preço-alvo (sem rateio fixo)" : "Preço-alvo (20%)",
+      value: optionalCurrency(snapshot.results.targetPriceCents),
+    },
+  ];
 }
 
 function toReportViewModel({
@@ -116,65 +143,28 @@ function toReportViewModel({
   createdAt: string;
   snapshot: ReportSnapshot;
 }): ReportViewModel {
-  const marginSection = snapshot.sections.find(
-    ({ key }) => key === "margin_diagnosis",
-  );
-  if (!marginSection) throw new Error("missing_margin_section");
-
-  const priority = priorityContent[snapshot.results.priority];
   const unitLabel = formatReportUnit(snapshot.unit);
+  const isProduct = snapshot.category === "product";
 
   return {
     identity: {
       id,
-      title: "Diagnóstico de Serviço",
-      categoryLabel: "Serviço",
+      title: isProduct ? "Diagnóstico de Produto" : "Diagnóstico de Serviço",
+      categoryLabel: isProduct ? "Produto" : "Serviço",
       scenarioLabel: formatReportScenario(snapshot.scenario),
       createdAtLabel: formatReportDate(createdAt),
       unitLabel,
     },
-    summary: {
+    executiveSummary: {
+      ...snapshot.executiveSummary,
       verdict: {
-        label: marginSection.emphasisValue ?? "Diagnóstico da margem",
-        description: marginSection.body,
-        tone: marginSection.tone,
-        toneLabel: toneLabels[marginSection.tone],
+        ...snapshot.executiveSummary.verdict,
+        toneLabel: toneLabels[snapshot.executiveSummary.verdict.tone],
       },
-      priority: {
-        label: priority.label,
-        description: priority.description,
-      },
-      metrics: [
-        {
-          key: "price",
-          label: "Preço atual",
-          value: formatCurrency(snapshot.results.currentPriceCents),
-        },
-        {
-          key: "margin",
-          label: "Margem real",
-          value: optionalPercentage(snapshot.results.realMarginBasisPoints),
-        },
-        {
-          key: "profit",
-          label: `Lucro por ${unitLabel}`,
-          value: optionalCurrency(snapshot.results.unitProfitCents),
-        },
-      ],
     },
-    priceReferences: [
-      {
-        key: "minimum",
-        label: "Preço mínimo",
-        value: optionalCurrency(snapshot.results.minimumPriceCents),
-      },
-      {
-        key: "target",
-        label: "Preço-alvo (15%)",
-        value: optionalCurrency(snapshot.results.targetPriceCents),
-      },
-    ],
-    nextActions: [...priority.actions],
+    numbers: isProduct
+      ? toProductNumbers(snapshot)
+      : toServiceNumbers(snapshot),
     sections: snapshot.sections.map((section) => ({
       ...section,
       toneLabel: toneLabels[section.tone],
@@ -185,8 +175,8 @@ function toReportViewModel({
 
 export {
   toReportViewModel,
-  type ReportMetricViewModel,
-  type ReportReferenceViewModel,
+  type ReportExecutiveSummaryViewModel,
+  type ReportNumberViewModel,
   type ReportSectionViewModel,
   type ReportViewModel,
 };
