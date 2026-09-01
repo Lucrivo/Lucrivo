@@ -1,11 +1,16 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-const { createServiceDiagnosis, QuickDiagnosisWizard } = vi.hoisted(() => ({
+const { createProductDiagnosis, createServiceDiagnosis, QuickDiagnosisWizard } = vi.hoisted(() => ({
+  createProductDiagnosis: vi.fn(),
   createServiceDiagnosis: vi.fn(),
   QuickDiagnosisWizard: vi.fn(() => <div>Wizard do diagnóstico</div>),
 }));
 
+vi.mock(
+  "@/modules/quick-diagnosis/actions/create-product-diagnosis.action",
+  () => ({ createProductDiagnosis }),
+);
 vi.mock(
   "@/modules/quick-diagnosis/actions/create-service-diagnosis.action",
   () => ({ createServiceDiagnosis }),
@@ -25,7 +30,7 @@ describe("QuickDiagnosisPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Wizard do diagnóstico")).toBeInTheDocument();
     expect(QuickDiagnosisWizard).toHaveBeenCalledWith(
-      { createDiagnosis: createServiceDiagnosis },
+      { createServiceDiagnosis, createProductDiagnosis },
       undefined,
     );
   });

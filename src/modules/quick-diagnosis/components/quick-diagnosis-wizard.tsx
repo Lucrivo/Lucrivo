@@ -1,9 +1,17 @@
 "use client";
 
-import { useReducer, useState } from "react";
+import { useState, type Dispatch } from "react";
 
-import { DiagnosisTypeStep, type DiagnosisType } from "./steps/diagnosis-type-step";
-import { WizardShell } from "./shared/wizard-shell";
+import {
+  ProductDiagnosisWizard,
+  type CreateProductDiagnosisAction,
+} from "./product/product-diagnosis-wizard";
+import {
+  createInitialProductWizardState,
+  productWizardReducer,
+  type ProductWizardAction,
+  type ProductWizardState,
+} from "./product/product-wizard-state";
 import {
   ServiceDiagnosisWizard,
   type CreateServiceDiagnosisAction,
@@ -11,30 +19,59 @@ import {
 import {
   createInitialServiceWizardState,
   serviceWizardReducer,
+  type ServiceWizardAction,
+  type ServiceWizardState,
 } from "./service/service-wizard-state";
+import { WizardShell } from "./shared/wizard-shell";
+import {
+  DiagnosisTypeStep,
+  type DiagnosisType,
+} from "./steps/diagnosis-type-step";
+
+type ActiveDiagnosisBranch =
+  | { type: "service"; state: ServiceWizardState }
+  | { type: "product"; state: ProductWizardState };
 
 type QuickDiagnosisWizardProps = {
-  createDiagnosis: CreateServiceDiagnosisAction;
+  createServiceDiagnosis: CreateServiceDiagnosisAction;
+  createProductDiagnosis: CreateProductDiagnosisAction;
   createSubmissionId?: () => string;
 };
 
 function QuickDiagnosisWizard({
-  createDiagnosis,
+  createServiceDiagnosis,
+  createProductDiagnosis,
   createSubmissionId = () => crypto.randomUUID(),
 }: QuickDiagnosisWizardProps) {
-  const [initialSubmissionId] = useState(createSubmissionId);
-  const [serviceState, serviceDispatch] = useReducer(
-    serviceWizardReducer,
-    initialSubmissionId,
-    createInitialServiceWizardState,
-  );
   const [diagnosisType, setDiagnosisType] = useState<DiagnosisType | "">("");
   const [diagnosisTypeError, setDiagnosisTypeError] = useState<string | null>(
     null,
   );
-  const [activeBranch, setActiveBranch] = useState<"category" | "service">(
-    "category",
-  );
+  const [activeBranch, setActiveBranch] =
+    useState<ActiveDiagnosisBranch | null>(null);
+  const [showCategory, setShowCategory] = useState(true);
+
+  const serviceDispatch: Dispatch<ServiceWizardAction> = (action) => {
+    setActiveBranch((branch) =>
+      branch?.type === "service"
+        ? {
+            type: "service",
+            state: serviceWizardReducer(branch.state, action),
+          }
+        : branch,
+    );
+  };
+
+  const productDispatch: Dispatch<ProductWizardAction> = (action) => {
+    setActiveBranch((branch) =>
+      branch?.type === "product"
+        ? {
+            type: "product",
+            state: productWizardReducer(branch.state, action),
+          }
+        : branch,
+    );
+  };
 
   function selectDiagnosisType(value: DiagnosisType) {
     setDiagnosisType(value);
@@ -42,22 +79,49 @@ function QuickDiagnosisWizard({
   }
 
   function continueToBranch() {
-    if (diagnosisType !== "service") {
+    if (diagnosisType !== "service" && diagnosisType !== "product") {
       setDiagnosisTypeError("Selecione o que você quer analisar.");
       return;
     }
 
-    setActiveBranch("service");
+    if (activeBranch?.type !== diagnosisType) {
+      const submissionId = createSubmissionId();
+      setActiveBranch(
+        diagnosisType === "service"
+          ? {
+              type: "service",
+              state: createInitialServiceWizardState(submissionId),
+            }
+          : {
+              type: "product",
+              state: createInitialProductWizardState(submissionId),
+            },
+      );
+    }
+
+    setShowCategory(false);
   }
 
-  if (activeBranch === "service") {
+  if (!showCategory && activeBranch?.type === "service") {
     return (
       <ServiceDiagnosisWizard
-        state={serviceState}
+        state={activeBranch.state}
         dispatch={serviceDispatch}
-        createDiagnosis={createDiagnosis}
+        createDiagnosis={createServiceDiagnosis}
         createSubmissionId={createSubmissionId}
-        onBackToType={() => setActiveBranch("category")}
+        onBackToType={() => setShowCategory(true)}
+      />
+    );
+  }
+
+  if (!showCategory && activeBranch?.type === "product") {
+    return (
+      <ProductDiagnosisWizard
+        state={activeBranch.state}
+        dispatch={productDispatch}
+        createDiagnosis={createProductDiagnosis}
+        createSubmissionId={createSubmissionId}
+        onBackToType={() => setShowCategory(true)}
       />
     );
   }
@@ -82,6 +146,8 @@ function QuickDiagnosisWizard({
 
 export {
   QuickDiagnosisWizard,
+  type ActiveDiagnosisBranch,
+  type CreateProductDiagnosisAction,
   type CreateServiceDiagnosisAction,
   type QuickDiagnosisWizardProps,
 };
