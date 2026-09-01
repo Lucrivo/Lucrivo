@@ -32,6 +32,43 @@ type ReportPriority = (typeof reportPriorities)[number];
 type ReportUnit = (typeof reportUnits)[number];
 type ReportSectionKey = (typeof reportSectionKeys)[number];
 
+type ProductReportVerdict =
+  | "direct_loss"
+  | "incomplete_volume"
+  | "operational_loss"
+  | "tight_margin"
+  | "adequate_margin"
+  | "above_target";
+
+type ProductReportPriority =
+  | "cost"
+  | "data"
+  | "price"
+  | "margin"
+  | "volume";
+
+type ProductReportCalculation = {
+  effectiveFixedCostCents: number;
+  purchaseUnitCostCents: number;
+  fixedAllocationCents: number | null;
+  totalUnitCostCents: number | null;
+  currentPriceCents: number;
+  netRevenueCents: number;
+  unitContributionCents: number;
+  unitProfitCents: number | null;
+  realMarginBasisPoints: number | null;
+  minimumPriceCents: number | null;
+  targetPriceCents: number | null;
+  priceReferencesPartial: boolean;
+  monthlySalesGoal: number | null;
+  weeklySalesGoal: number | null;
+  dailySalesGoal: number | null;
+  breakEvenDiscountPercent: number | null;
+  totalFeeBasisPoints: number;
+  verdict: ProductReportVerdict;
+  priority: ProductReportPriority;
+};
+
 export {
   REPORT_SCHEMA_VERSION,
   SERVICE_CALCULATION_VERSION,
@@ -43,6 +80,9 @@ export {
   reportTones,
   reportUnits,
   reportVerdicts,
+  type ProductReportCalculation,
+  type ProductReportPriority,
+  type ProductReportVerdict,
   type ReportPriority,
   type ReportSectionKey,
   type ReportTone,
