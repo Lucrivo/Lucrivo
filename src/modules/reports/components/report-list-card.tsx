@@ -24,6 +24,7 @@ import type { ReportScenario, ReportVerdict } from "../types";
 const categoryLabels = {
   service: "Serviço",
   product: "Produto",
+  production: "Produção",
 } as const satisfies Record<OwnedReportSummary["businessCategory"], string>;
 
 const scenarioLabels = {
@@ -31,6 +32,7 @@ const scenarioLabels = {
   minute: "Por minuto",
   appointment: "Por atendimento",
   resale: "Revenda",
+  manufacturing: "Fabricação própria",
 } as const satisfies Record<ReportScenario, string>;
 
 const verdictPresentation: Record<
@@ -143,7 +145,8 @@ function ReportListCard({ report }: { report: OwnedReportSummary }) {
           </div>
           <div className="grid gap-1 p-3.5">
             <dt className="text-muted-foreground text-xs">
-              {report.businessCategory === "product"
+              {report.businessCategory === "product" ||
+              report.businessCategory === "production"
                 ? "Lucro por unidade"
                 : "Lucro por venda"}
             </dt>

@@ -94,8 +94,7 @@ function firstInvalidField(
 
       return (
         stepDifference ||
-        productionFieldOrder.indexOf(left) -
-          productionFieldOrder.indexOf(right)
+        productionFieldOrder.indexOf(left) - productionFieldOrder.indexOf(right)
       );
     })[0];
 }

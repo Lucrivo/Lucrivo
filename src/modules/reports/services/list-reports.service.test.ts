@@ -13,7 +13,10 @@ const createdAt = "2026-08-28T22:30:00.000Z";
 function row(
   id: number,
   timestamp = createdAt,
-  identity: { category: "service" | "product"; scenario: string } = {
+  identity: {
+    category: "service" | "product" | "production";
+    scenario: string;
+  } = {
     category: "service",
     scenario: "hour",
   },
@@ -131,6 +134,30 @@ describe("listOwnedReports", () => {
           id: 84,
           businessCategory: "product",
           scenario: "resale",
+        }),
+      ],
+    });
+    expect(select.mock.calls[0]?.[0]).not.toContain("report_snapshot");
+  });
+
+  it("maps Production enum values without loading the snapshot", async () => {
+    limit.mockResolvedValue({
+      data: [
+        row(126, "2026-09-01T15:00:00.000Z", {
+          category: "production",
+          scenario: "manufacturing",
+        }),
+      ],
+      error: null,
+    });
+
+    await expect(list()).resolves.toMatchObject({
+      status: "success",
+      reports: [
+        expect.objectContaining({
+          id: 126,
+          businessCategory: "production",
+          scenario: "manufacturing",
         }),
       ],
     });

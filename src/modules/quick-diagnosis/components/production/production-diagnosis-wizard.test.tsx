@@ -179,8 +179,12 @@ describe("ProductionDiagnosisWizard", () => {
 
     expect(screen.getByText("3 de 8")).toBeInTheDocument();
     expect(screen.getAllByRole("alert")).toHaveLength(2);
-    expect(screen.getByText("Informe um custo de produção maior que zero.")).toBeInTheDocument();
-    expect(screen.getByText("Informe um preço de venda maior que zero.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Informe um custo de produção maior que zero."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Informe um preço de venda maior que zero."),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Voltar" }));
     await user.click(screen.getByRole("button", { name: "Voltar" }));
@@ -188,20 +192,25 @@ describe("ProductionDiagnosisWizard", () => {
   });
 
   it("completes the summarized path and exposes every review edit", async () => {
-    const { createDiagnosis, createSubmissionId, onBackToType } = renderWizard();
+    const { createDiagnosis, createSubmissionId, onBackToType } =
+      renderWizard();
     expect(screen.getAllByTestId("wizard-step")).toHaveLength(1);
 
     const user = await completeValidDiagnosis();
 
     expect(screen.getByText("Produção")).toBeInTheDocument();
     expect(screen.getByText("Diagnóstico rápido")).toBeInTheDocument();
-    expect(screen.getByText("Custo de fabricação por unidade")).toBeInTheDocument();
+    expect(
+      screen.getByText("Custo de fabricação por unidade"),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Custo composto")).not.toBeInTheDocument();
     expect(screen.queryByText("Materiais por unidade")).not.toBeInTheDocument();
     expect(screen.getByText("R$ 50,00")).toBeInTheDocument();
     expect(screen.getByText("R$ 100,00")).toBeInTheDocument();
     expect(screen.getByText("R$ 1.000,00")).toBeInTheDocument();
-    expect(screen.getByText("100 unidades vendidas por mês")).toBeInTheDocument();
+    expect(
+      screen.getByText("100 unidades vendidas por mês"),
+    ).toBeInTheDocument();
     expect(screen.getByText("R$ 2.000,00")).toBeInTheDocument();
     expect(screen.getByText("6,25%")).toBeInTheDocument();
     expect(screen.getByText("3,50%")).toBeInTheDocument();
@@ -254,7 +263,9 @@ describe("ProductionDiagnosisWizard", () => {
     expect(screen.getByText("Custo composto")).toBeInTheDocument();
     expect(screen.getByText("Materiais por unidade")).toBeInTheDocument();
     expect(screen.getByText("Embalagem por unidade")).toBeInTheDocument();
-    expect(screen.getByText("Mão de obra direta por unidade")).toBeInTheDocument();
+    expect(
+      screen.getByText("Mão de obra direta por unidade"),
+    ).toBeInTheDocument();
     expect(
       screen.getByText("Outros custos variáveis por unidade"),
     ).toBeInTheDocument();
@@ -318,9 +329,9 @@ describe("ProductionDiagnosisWizard", () => {
       screen.getByRole("switch", { name: "Compor custo de fabricação" }),
     );
 
-    expect(screen.getByLabelText("Custo de fabricação por unidade")).toHaveValue(
-      "50,00",
-    );
+    expect(
+      screen.getByLabelText("Custo de fabricação por unidade"),
+    ).toHaveValue("50,00");
 
     while (!screen.queryByText("8 de 8")) {
       await user.click(screen.getByRole("button", { name: "Continuar" }));
@@ -443,7 +454,9 @@ describe("ProductionDiagnosisWizard", () => {
     ],
     ["unauthorized", "Sua sessão expirou. Entre novamente para continuar."],
   ] as const)("preserves answers and UUID after %s", async (error, message) => {
-    const createDiagnosis = vi.fn().mockResolvedValue({ status: "error", error });
+    const createDiagnosis = vi
+      .fn()
+      .mockResolvedValue({ status: "error", error });
     renderWizard(createDiagnosis);
     const user = await completeValidDiagnosis();
 
