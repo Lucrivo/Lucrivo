@@ -5,14 +5,14 @@ import {
 } from "../formatters";
 import type {
   ReportExecutiveSummary,
-  ReportPriority,
   ReportTone,
-  ReportVerdict,
+  ServiceReportPriority,
+  ServiceReportVerdict,
 } from "../types";
 import type { ServiceReportCalculation } from "./calculate-service-report";
 
 const verdictContent: Record<
-  ReportVerdict,
+  ServiceReportVerdict,
   { label: string; body: string; tone: ReportTone }
 > = {
   missing_price: {
@@ -43,7 +43,7 @@ const verdictContent: Record<
 };
 
 const priorityContent: Record<
-  ReportPriority,
+  ServiceReportPriority,
   { label: string; body: string; action: string }
 > = {
   cost: {
@@ -109,7 +109,7 @@ function buildFacts(
 }
 
 function buildPriority(
-  priority: ReportPriority,
+  priority: ServiceReportPriority,
 ): ReportExecutiveSummary["priority"] {
   const { label, body } = priorityContent[priority];
   return { label, body };
@@ -173,7 +173,7 @@ function buildPriceSufficiencyAnswer(
 }
 
 function buildImmediateActionAnswer(
-  priority: ReportPriority,
+  priority: ServiceReportPriority,
 ): ReportExecutiveSummary["answers"][number] {
   return {
     key: "immediate_action",

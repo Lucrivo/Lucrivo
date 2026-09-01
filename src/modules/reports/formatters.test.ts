@@ -39,6 +39,7 @@ describe("report formatters", () => {
     ["hour", "Por hora"],
     ["minute", "Por minuto"],
     ["appointment", "Por atendimento"],
+    ["resale", "Revenda"],
   ] as const)("formats the %s scenario", (scenario, expected) => {
     expect(formatReportScenario(scenario)).toBe(expected);
   });
@@ -46,6 +47,7 @@ describe("report formatters", () => {
   it.each([
     ["hour", "hora"],
     ["appointment", "atendimento"],
+    ["unit", "unidade"],
   ] as const)("formats the %s report unit", (unit, expected) => {
     expect(formatReportUnit(unit)).toBe(expected);
   });

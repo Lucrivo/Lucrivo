@@ -1,6 +1,4 @@
-import type { ServicePricingMethod } from "@/modules/quick-diagnosis/types";
-
-import type { ReportUnit } from "./types";
+import type { ReportScenario, ReportUnit } from "./types";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -38,11 +36,13 @@ const scenarioLabels = {
   hour: "Por hora",
   minute: "Por minuto",
   appointment: "Por atendimento",
-} as const satisfies Record<ServicePricingMethod, string>;
+  resale: "Revenda",
+} as const satisfies Record<ReportScenario, string>;
 
 const unitLabels = {
   hour: "hora",
   appointment: "atendimento",
+  unit: "unidade",
 } as const satisfies Record<ReportUnit, string>;
 
 function requireSafeInteger(value: number): void {
@@ -73,7 +73,7 @@ function formatBillableHours(minutes: number): string {
   return hoursFormatter.format(minutes / 60);
 }
 
-function formatReportScenario(scenario: ServicePricingMethod): string {
+function formatReportScenario(scenario: ReportScenario): string {
   return scenarioLabels[scenario];
 }
 

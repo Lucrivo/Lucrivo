@@ -8,12 +8,12 @@ import type {
 } from "@/infrastructure/database/supabase/database.types";
 import type { ServiceDiagnosisCommand } from "@/modules/quick-diagnosis/types";
 
-import type { ReportSnapshot } from "../types";
+import type { ServiceReportSnapshotV2 } from "../types";
 
 type CreateServiceReportInput = {
   supabase: SupabaseClient<Database>;
   command: ServiceDiagnosisCommand;
-  snapshot: ReportSnapshot;
+  snapshot: ServiceReportSnapshotV2;
 };
 
 type CreateServiceReportResult =
@@ -33,7 +33,7 @@ type ServiceReportRpcArgs = Omit<
 
 function toRpcArgs(
   command: ServiceDiagnosisCommand,
-  snapshot: ReportSnapshot,
+  snapshot: ServiceReportSnapshotV2,
 ): ServiceReportRpcArgs {
   return {
     p_submission_id: command.submissionId,

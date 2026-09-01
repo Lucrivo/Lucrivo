@@ -7,16 +7,16 @@ import {
   formatReportUnit,
 } from "../formatters";
 import {
-  parseReportSnapshot,
-  type ReportSnapshot,
-} from "../schemas/report-snapshot.schema";
+  parseServiceReportSnapshot,
+  type ServiceReportSnapshotV2,
+} from "../schemas/service-report-snapshot.schema";
 import {
-  REPORT_SCHEMA_VERSION,
   SERVICE_CALCULATION_VERSION,
   SERVICE_CONTENT_VERSION,
+  SERVICE_REPORT_SCHEMA_VERSION,
   type ReportSection,
   type ReportTone,
-  type ReportVerdict,
+  type ServiceReportVerdict,
 } from "../types";
 import {
   SERVICE_TARGET_MARGIN_BPS,
@@ -25,7 +25,7 @@ import {
 import { buildExecutiveSummary } from "./build-executive-summary";
 
 const verdictContent: Record<
-  ReportVerdict,
+  ServiceReportVerdict,
   { label: string; body: string; tone: ReportTone }
 > = {
   missing_price: {
@@ -211,7 +211,7 @@ function buildDiscountSimulatorSection(
 function buildServiceReportSnapshot(
   command: ServiceDiagnosisCommand,
   calculation: ServiceReportCalculation,
-): ReportSnapshot {
+): ServiceReportSnapshotV2 {
   const { unit, totalFeeBasisPoints } = calculation;
   const results = {
     monthlyCostCents: calculation.monthlyCostCents,
@@ -231,8 +231,8 @@ function buildServiceReportSnapshot(
     priority: calculation.priority,
   };
 
-  return parseReportSnapshot({
-    schemaVersion: REPORT_SCHEMA_VERSION,
+  return parseServiceReportSnapshot({
+    schemaVersion: SERVICE_REPORT_SCHEMA_VERSION,
     calculationVersion: SERVICE_CALCULATION_VERSION,
     contentVersion: SERVICE_CONTENT_VERSION,
     category: "service",

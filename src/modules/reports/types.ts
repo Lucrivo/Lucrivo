@@ -1,17 +1,48 @@
-const REPORT_SCHEMA_VERSION = 2;
+const SERVICE_REPORT_SCHEMA_VERSION = 2;
 const SERVICE_CALCULATION_VERSION = 1;
 const SERVICE_CONTENT_VERSION = 2;
+const PRODUCT_REPORT_SCHEMA_VERSION = 1;
+const PRODUCT_CALCULATION_VERSION = 1;
+const PRODUCT_CONTENT_VERSION = 1;
 
 const reportTones = ["neutral", "positive", "warning", "critical"] as const;
-const reportVerdicts = [
+const serviceReportVerdicts = [
   "missing_price",
   "operational_loss",
   "tight_margin",
   "adequate_margin",
   "above_target",
 ] as const;
-const reportPriorities = ["cost", "price", "margin", "volume"] as const;
-const reportUnits = ["hour", "appointment"] as const;
+const productReportVerdicts = [
+  "direct_loss",
+  "incomplete_volume",
+  "operational_loss",
+  "tight_margin",
+  "adequate_margin",
+  "above_target",
+] as const;
+const reportVerdicts = [
+  "missing_price",
+  "direct_loss",
+  "incomplete_volume",
+  "operational_loss",
+  "tight_margin",
+  "adequate_margin",
+  "above_target",
+] as const;
+const serviceReportPriorities = ["cost", "price", "margin", "volume"] as const;
+const productReportPriorities = [
+  "cost",
+  "data",
+  "price",
+  "margin",
+  "volume",
+] as const;
+const reportPriorities = ["cost", "data", "price", "margin", "volume"] as const;
+const serviceReportUnits = ["hour", "appointment"] as const;
+const productReportUnits = ["unit"] as const;
+const reportUnits = ["hour", "appointment", "unit"] as const;
+const reportScenarios = ["hour", "minute", "appointment", "resale"] as const;
 const reportSectionKeys = [
   "break_even",
   "hidden_cost",
@@ -27,25 +58,17 @@ const reportExecutiveSummaryAnswerKeys = [
 ] as const;
 
 type ReportTone = (typeof reportTones)[number];
+type ServiceReportVerdict = (typeof serviceReportVerdicts)[number];
+type ProductReportVerdict = (typeof productReportVerdicts)[number];
 type ReportVerdict = (typeof reportVerdicts)[number];
+type ServiceReportPriority = (typeof serviceReportPriorities)[number];
+type ProductReportPriority = (typeof productReportPriorities)[number];
 type ReportPriority = (typeof reportPriorities)[number];
+type ServiceReportUnit = (typeof serviceReportUnits)[number];
+type ProductReportUnit = (typeof productReportUnits)[number];
 type ReportUnit = (typeof reportUnits)[number];
+type ReportScenario = (typeof reportScenarios)[number];
 type ReportSectionKey = (typeof reportSectionKeys)[number];
-
-type ProductReportVerdict =
-  | "direct_loss"
-  | "incomplete_volume"
-  | "operational_loss"
-  | "tight_margin"
-  | "adequate_margin"
-  | "above_target";
-
-type ProductReportPriority =
-  | "cost"
-  | "data"
-  | "price"
-  | "margin"
-  | "volume";
 
 type ProductReportCalculation = {
   effectiveFixedCostCents: number;
@@ -70,34 +93,56 @@ type ProductReportCalculation = {
 };
 
 export {
-  REPORT_SCHEMA_VERSION,
+  PRODUCT_CALCULATION_VERSION,
+  PRODUCT_CONTENT_VERSION,
+  PRODUCT_REPORT_SCHEMA_VERSION,
   SERVICE_CALCULATION_VERSION,
   SERVICE_CONTENT_VERSION,
+  SERVICE_REPORT_SCHEMA_VERSION,
+  productReportPriorities,
+  productReportUnits,
+  productReportVerdicts,
   reportExecutiveSummaryAnswerKeys,
   reportExecutiveSummaryFactKeys,
   reportPriorities,
+  reportScenarios,
   reportSectionKeys,
   reportTones,
   reportUnits,
   reportVerdicts,
+  serviceReportPriorities,
+  serviceReportUnits,
+  serviceReportVerdicts,
   type ProductReportCalculation,
   type ProductReportPriority,
+  type ProductReportUnit,
   type ProductReportVerdict,
   type ReportPriority,
+  type ReportScenario,
   type ReportSectionKey,
   type ReportTone,
   type ReportUnit,
   type ReportVerdict,
+  type ServiceReportPriority,
+  type ServiceReportUnit,
+  type ServiceReportVerdict,
 };
 
 export type {
   ExecutiveSummaryAnswer,
   ExecutiveSummaryFact,
-  ReportDiscountSimulationBase,
   ReportExecutiveSummary,
-  ReportInputs,
-  ReportPolicy,
-  ReportResults,
   ReportSection,
+} from "./schemas/report-content.schema";
+export type {
+  ProductReportDiscountSimulationBase,
+  ProductReportSnapshotV1,
+} from "./schemas/product-report-snapshot.schema";
+export type {
+  ReportDiscountSimulationBase,
   ReportSnapshot,
 } from "./schemas/report-snapshot.schema";
+export type {
+  ServiceReportDiscountSimulationBase,
+  ServiceReportSnapshotV2,
+} from "./schemas/service-report-snapshot.schema";
