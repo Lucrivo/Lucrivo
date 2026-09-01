@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import type { ServiceDiagnosisCommand } from "@/modules/quick-diagnosis/types";
+import type {
+  ProductDiagnosisCommand,
+  ServiceDiagnosisCommand,
+} from "@/modules/quick-diagnosis/types";
 
+import { buildProductReportSnapshot } from "../domain/build-product-report-snapshot";
 import { buildServiceReportSnapshot } from "../domain/build-service-report-snapshot";
+import { calculateProductReport } from "../domain/calculate-product-report";
 import { calculateServiceReport } from "../domain/calculate-service-report";
 import { toReportViewModel } from "./to-report-view-model";
 
@@ -21,6 +26,18 @@ const command: ServiceDiagnosisCommand = {
   cardFeeRateBasisPoints: 200,
 };
 
+const productCommand: ProductDiagnosisCommand = {
+  submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  purchaseUnitCostCents: 5000,
+  unitSalePriceCents: 10000,
+  fixedMonthlyExpensesCents: 100000,
+  monthlySalesVolume: 100,
+  proLaboreIncluded: true,
+  proLaboreCents: 200000,
+  taxRateBasisPoints: 600,
+  cardFeeRateBasisPoints: 200,
+};
+
 function present(input: ServiceDiagnosisCommand = command) {
   const snapshot = buildSnapshot(input);
   return toReportViewModel({
@@ -32,6 +49,19 @@ function present(input: ServiceDiagnosisCommand = command) {
 
 function buildSnapshot(input: ServiceDiagnosisCommand = command) {
   return buildServiceReportSnapshot(input, calculateServiceReport(input));
+}
+
+function presentProduct(input: ProductDiagnosisCommand = productCommand) {
+  const snapshot = buildProductReportSnapshot(
+    input,
+    calculateProductReport(input),
+  );
+
+  return toReportViewModel({
+    id: 42,
+    createdAt: "2026-08-31T15:00:00.000Z",
+    snapshot,
+  });
 }
 
 describe("toReportViewModel", () => {
@@ -105,5 +135,52 @@ describe("toReportViewModel", () => {
         toneLabel: "Situação positiva",
       }),
     );
+  });
+
+  it("presents a complete Product report with category-specific numbers", () => {
+    const viewModel = presentProduct();
+
+    expect(viewModel.identity).toEqual({
+      id: 42,
+      title: "Diagnóstico de Produto",
+      categoryLabel: "Produto",
+      scenarioLabel: "Revenda",
+      createdAtLabel: "31/08/2026, 12:00",
+      unitLabel: "unidade",
+    });
+    expect(viewModel.numbers).toEqual([
+      { key: "price", label: "Preço atual", value: "R$ 100,00" },
+      { key: "margin", label: "Margem real", value: "12%" },
+      { key: "profit", label: "Lucro por unidade", value: "R$ 12,00" },
+      { key: "minimum", label: "Preço mínimo", value: "R$ 86,96" },
+      { key: "target", label: "Preço-alvo (20%)", value: "R$ 111,12" },
+    ]);
+  });
+
+  it("presents partial Product references without inventing real profit", () => {
+    const viewModel = presentProduct({
+      ...productCommand,
+      monthlySalesVolume: null,
+    });
+
+    expect(viewModel.numbers).toEqual([
+      { key: "price", label: "Preço atual", value: "R$ 100,00" },
+      { key: "margin", label: "Margem real", value: "Indisponível" },
+      {
+        key: "profit",
+        label: "Contribuição por unidade",
+        value: "R$ 42,00",
+      },
+      {
+        key: "minimum",
+        label: "Preço mínimo (sem rateio fixo)",
+        value: "R$ 54,35",
+      },
+      {
+        key: "target",
+        label: "Preço-alvo (sem rateio fixo)",
+        value: "R$ 69,45",
+      },
+    ]);
   });
 });

@@ -15,8 +15,14 @@ vi.mock("@/modules/reports/services/list-reports.service", () => ({
   listOwnedReports,
 }));
 vi.mock("@/modules/reports/components/report-list-card", () => ({
-  ReportListCard: ({ report }: { report: { id: number } }) => (
-    <article>Relatório {report.id}</article>
+  ReportListCard: ({
+    report,
+  }: {
+    report: { id: number; businessCategory: string; scenario: string };
+  }) => (
+    <article>
+      Relatório {report.id} — {report.businessCategory} — {report.scenario}
+    </article>
   ),
 }));
 vi.mock("@/modules/reports/components/reports-empty-state", () => ({
@@ -66,7 +72,7 @@ describe("ReportsPage", () => {
     expect(
       screen.getByRole("heading", { name: "Seus diagnósticos" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Relatório 42")).toBeInTheDocument();
+    expect(screen.getByText(/Relatório 42/)).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Novo diagnóstico" }),
     ).toHaveAttribute("href", "/quick-diagnosis");
@@ -90,6 +96,32 @@ describe("ReportsPage", () => {
     expect(
       screen.queryByRole("list", { name: "Diagnósticos salvos" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("passes Product summaries to the report library unchanged", async () => {
+    listOwnedReports.mockResolvedValue({
+      status: "success",
+      reports: [
+        {
+          ...report,
+          id: 84,
+          businessCategory: "product",
+          scenario: "resale",
+          realMarginBasisPoints: null,
+          unitProfitCents: null,
+          verdict: "incomplete_volume",
+          priority: "data",
+          unit: "unit",
+        },
+      ],
+      nextCursor: null,
+    });
+
+    await renderPage();
+
+    expect(
+      screen.getByText("Relatório 84 — product — resale"),
+    ).toBeInTheDocument();
   });
 
   it("accepts a valid cursor and links to the next opaque page", async () => {

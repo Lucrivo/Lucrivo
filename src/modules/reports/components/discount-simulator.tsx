@@ -125,8 +125,24 @@ function simulateDiscount(
 function safetyMessage(
   simulation: DiscountSimulation,
   targetMarginBasisPoints: number,
+  partial: boolean,
 ): string {
   const target = formatBasisPoints(targetMarginBasisPoints);
+
+  if (partial) {
+    switch (simulation.status) {
+      case "unavailable":
+        return "Não foi possível simular descontos porque o preço mínimo ou o custo de compra está indisponível.";
+      case "target":
+        return `Sua margem de contribuição continua na meta. Este desconto ainda preserva pelo menos ${target} de contribuição sobre o preço.`;
+      case "below_target":
+        return `Atenção: a contribuição continua positiva, mas sua margem de contribuição ficou abaixo da meta de ${target}.`;
+      case "break_even":
+        return "Você chegou ao limite: este preço cobre apenas o custo de compra e as taxas, sem gerar contribuição.";
+      case "loss":
+        return "Perigo: este preço não cobre o custo de compra e as taxas. Reduza o desconto antes de fechar a venda.";
+    }
+  }
 
   switch (simulation.status) {
     case "unavailable":
@@ -153,6 +169,8 @@ function optionalMargin(value: number | null): string {
 function DiscountSimulator({ base }: { base: ReportDiscountSimulationBase }) {
   const inputId = useId();
   const [discountPercent, setDiscountPercent] = useState(10);
+  const isProduct = "partial" in base;
+  const partial = isProduct && base.partial;
   const simulation = simulateDiscount(base, discountPercent);
   const presentation = statusPresentation[simulation.status];
   const StatusIcon = presentation.icon;
@@ -174,9 +192,16 @@ function DiscountSimulator({ base }: { base: ReportDiscountSimulationBase }) {
           </Badge>
         </div>
         <p className="text-muted-foreground max-w-3xl text-[0.9375rem] leading-6">
-          Arraste e veja o preço, a margem e o lucro mudarem — e onde está o seu
-          limite.
+          {partial
+            ? "Arraste e veja como o desconto altera o preço e a contribuição disponível para pagar a operação."
+            : "Arraste e veja o preço, a margem e o lucro mudarem — e onde está o seu limite."}
         </p>
+        {partial ? (
+          <p className="border-info/25 bg-info/8 text-info rounded-xl border px-4 py-3 text-sm leading-5 font-medium">
+            Simulação parcial: despesas fixas e pró-labore não foram rateados
+            por unidade.
+          </p>
+        ) : null}
       </CardHeader>
 
       <CardContent className="grid gap-6 px-5 pb-5 sm:px-6 sm:pb-6">
@@ -227,13 +252,25 @@ function DiscountSimulator({ base }: { base: ReportDiscountSimulationBase }) {
               </dd>
             </div>
             <div className="border-border/70 bg-card grid gap-1 rounded-xl border p-3">
-              <dt className="text-muted-foreground text-xs">Nova margem</dt>
+              <dt className="text-muted-foreground text-xs">
+                {partial
+                  ? "Margem de contribuição"
+                  : isProduct
+                    ? "Margem real"
+                    : "Nova margem"}
+              </dt>
               <dd className="font-semibold tabular-nums">
                 {optionalMargin(simulation.realMarginBasisPoints)}
               </dd>
             </div>
             <div className="border-border/70 bg-card grid gap-1 rounded-xl border p-3">
-              <dt className="text-muted-foreground text-xs">Lucro por venda</dt>
+              <dt className="text-muted-foreground text-xs">
+                {partial
+                  ? "Contribuição por unidade"
+                  : isProduct
+                    ? "Lucro por unidade"
+                    : "Lucro por venda"}
+              </dt>
               <dd className="font-semibold tabular-nums">
                 {optionalCurrency(simulation.unitProfitCents)}
               </dd>
@@ -250,7 +287,11 @@ function DiscountSimulator({ base }: { base: ReportDiscountSimulationBase }) {
             )}
           >
             <StatusIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-            {safetyMessage(simulation, base.targetMarginBasisPoints)}
+            {safetyMessage(
+              simulation,
+              base.targetMarginBasisPoints,
+              partial,
+            )}
           </p>
         </div>
       </CardContent>

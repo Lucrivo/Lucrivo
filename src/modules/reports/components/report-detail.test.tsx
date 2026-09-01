@@ -1,9 +1,14 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import type { ServiceDiagnosisCommand } from "@/modules/quick-diagnosis/types";
+import type {
+  ProductDiagnosisCommand,
+  ServiceDiagnosisCommand,
+} from "@/modules/quick-diagnosis/types";
 
+import { buildProductReportSnapshot } from "../domain/build-product-report-snapshot";
 import { buildServiceReportSnapshot } from "../domain/build-service-report-snapshot";
+import { calculateProductReport } from "../domain/calculate-product-report";
 import { calculateServiceReport } from "../domain/calculate-service-report";
 import { toReportViewModel } from "../presenters/to-report-view-model";
 import { ReportDetail } from "./report-detail";
@@ -31,6 +36,26 @@ const viewModel = toReportViewModel({
   id: 42,
   createdAt: "2026-08-28T22:30:00.000Z",
   snapshot,
+});
+
+const productCommand: ProductDiagnosisCommand = {
+  submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  purchaseUnitCostCents: 5000,
+  unitSalePriceCents: 10000,
+  fixedMonthlyExpensesCents: 100000,
+  monthlySalesVolume: null,
+  proLaboreIncluded: true,
+  proLaboreCents: 200000,
+  taxRateBasisPoints: 600,
+  cardFeeRateBasisPoints: 200,
+};
+const productViewModel = toReportViewModel({
+  id: 84,
+  createdAt: "2026-08-31T15:00:00.000Z",
+  snapshot: buildProductReportSnapshot(
+    productCommand,
+    calculateProductReport(productCommand),
+  ),
 });
 
 describe("ReportDetail", () => {
@@ -92,5 +117,19 @@ describe("ReportDetail", () => {
     expect(
       screen.getAllByLabelText("Situação positiva").length,
     ).toBeGreaterThan(0);
+  });
+
+  it("renders Product identity and partial simulation semantics", () => {
+    render(<ReportDetail viewModel={productViewModel} />);
+
+    expect(
+      screen.getByRole("heading", { name: "Diagnóstico de Produto" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Revenda")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Contribuição por unidade").length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("Margem de contribuição")).toBeInTheDocument();
+    expect(screen.getByText("Simulação parcial", { exact: false })).toBeInTheDocument();
   });
 });

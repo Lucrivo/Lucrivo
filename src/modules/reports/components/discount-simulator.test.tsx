@@ -12,6 +12,24 @@ const base = {
   minimumPriceCents: 8_000,
 } satisfies ReportDiscountSimulationBase;
 
+const completeProductBase = {
+  originalPriceCents: 10_000,
+  unitCostCents: 8_000,
+  totalFeeBasisPoints: 800,
+  targetMarginBasisPoints: 2_000,
+  minimumPriceCents: 8_696,
+  partial: false,
+} satisfies ReportDiscountSimulationBase;
+
+const partialProductBase = {
+  originalPriceCents: 10_000,
+  unitCostCents: 5_000,
+  totalFeeBasisPoints: 800,
+  targetMarginBasisPoints: 2_000,
+  minimumPriceCents: 5_435,
+  partial: true,
+} satisfies ReportDiscountSimulationBase;
+
 describe("simulateDiscount", () => {
   it.each([
     {
@@ -75,6 +93,58 @@ describe("simulateDiscount", () => {
       simulateDiscount({ ...base, originalPriceCents: 0 }, 10),
     ).toMatchObject({ status: "unavailable" });
   });
+
+  it.each([
+    [0, 10_000, 1_200, 1_200, "below_target"],
+    [10, 9_000, 280, 311, "below_target"],
+    [13, 8_700, 4, 5, "below_target"],
+    [50, 5_000, -3_400, -6_800, "loss"],
+  ] as const)(
+    "calculates complete Product profit at %i%%",
+    (discount, price, profit, margin, status) => {
+      expect(simulateDiscount(completeProductBase, discount)).toMatchObject({
+        discountedPriceCents: price,
+        unitProfitCents: profit,
+        realMarginBasisPoints: margin,
+        status,
+      });
+    },
+  );
+
+  it.each([
+    [0, 10_000, 4_200, 4_200, "target"],
+    [10, 9_000, 3_280, 3_644, "target"],
+    [46, 5_400, -32, -59, "loss"],
+    [50, 5_000, -400, -800, "loss"],
+  ] as const)(
+    "calculates partial Product contribution at %i%%",
+    (discount, price, contribution, margin, status) => {
+      expect(simulateDiscount(partialProductBase, discount)).toMatchObject({
+        discountedPriceCents: price,
+        unitProfitCents: contribution,
+        realMarginBasisPoints: margin,
+        status,
+      });
+    },
+  );
+
+  it("keeps the Product break-even boundary deterministic", () => {
+    expect(
+      simulateDiscount(
+        {
+          ...partialProductBase,
+          totalFeeBasisPoints: 0,
+          minimumPriceCents: 5_000,
+        },
+        50,
+      ),
+    ).toMatchObject({
+      discountedPriceCents: 5_000,
+      unitProfitCents: 0,
+      realMarginBasisPoints: 0,
+      status: "break_even",
+    });
+  });
 });
 
 describe("DiscountSimulator", () => {
@@ -135,5 +205,33 @@ describe("DiscountSimulator", () => {
     expect(
       screen.getByRole("slider", { name: "Desconto simulado" }),
     ).toBeDisabled();
+  });
+
+  it("uses real profit language for a complete Product simulation", () => {
+    render(<DiscountSimulator base={completeProductBase} />);
+
+    expect(screen.getByText("Margem real")).toBeInTheDocument();
+    expect(screen.getByText("Lucro por unidade")).toBeInTheDocument();
+    expect(screen.queryByText("Simulação parcial", { exact: false })).not.toBeInTheDocument();
+  });
+
+  it("uses contribution language and a warning for a partial Product simulation", () => {
+    render(<DiscountSimulator base={partialProductBase} />);
+
+    expect(screen.getByText("Margem de contribuição")).toBeInTheDocument();
+    expect(screen.getByText("Contribuição por unidade")).toBeInTheDocument();
+    expect(screen.getByText("Simulação parcial", { exact: false })).toHaveTextContent(
+      "Simulação parcial: despesas fixas e pró-labore não foram rateados por unidade.",
+    );
+    expect(screen.queryByText("Lucro por unidade")).not.toBeInTheDocument();
+    expect(screen.queryByText("Margem real")).not.toBeInTheDocument();
+  });
+
+  it("keeps immutable Service simulator copy unchanged", () => {
+    render(<DiscountSimulator base={base} />);
+
+    expect(screen.getByText("Nova margem")).toBeInTheDocument();
+    expect(screen.getByText("Lucro por venda")).toBeInTheDocument();
+    expect(screen.queryByText("Simulação parcial", { exact: false })).not.toBeInTheDocument();
   });
 });
