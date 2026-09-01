@@ -21,6 +21,14 @@ const productReportVerdicts = [
   "adequate_margin",
   "above_target",
 ] as const;
+const productionReportVerdicts = [
+  "direct_loss",
+  "incomplete_volume",
+  "operational_loss",
+  "tight_margin",
+  "adequate_margin",
+  "above_target",
+] as const;
 const reportVerdicts = [
   "missing_price",
   "direct_loss",
@@ -32,6 +40,13 @@ const reportVerdicts = [
 ] as const;
 const serviceReportPriorities = ["cost", "price", "margin", "volume"] as const;
 const productReportPriorities = [
+  "cost",
+  "data",
+  "price",
+  "margin",
+  "volume",
+] as const;
+const productionReportPriorities = [
   "cost",
   "data",
   "price",
@@ -60,9 +75,11 @@ const reportExecutiveSummaryAnswerKeys = [
 type ReportTone = (typeof reportTones)[number];
 type ServiceReportVerdict = (typeof serviceReportVerdicts)[number];
 type ProductReportVerdict = (typeof productReportVerdicts)[number];
+type ProductionReportVerdict = (typeof productionReportVerdicts)[number];
 type ReportVerdict = (typeof reportVerdicts)[number];
 type ServiceReportPriority = (typeof serviceReportPriorities)[number];
 type ProductReportPriority = (typeof productReportPriorities)[number];
+type ProductionReportPriority = (typeof productionReportPriorities)[number];
 type ReportPriority = (typeof reportPriorities)[number];
 type ServiceReportUnit = (typeof serviceReportUnits)[number];
 type ProductReportUnit = (typeof productReportUnits)[number];
@@ -92,6 +109,28 @@ type ProductReportCalculation = {
   priority: ProductReportPriority;
 };
 
+type ProductionReportCalculation = {
+  effectiveFixedCostCents: number;
+  productionUnitCostCents: number;
+  fixedAllocationCents: number | null;
+  totalUnitCostCents: number | null;
+  currentPriceCents: number;
+  netRevenueCents: number;
+  unitContributionCents: number;
+  unitProfitCents: number | null;
+  realMarginBasisPoints: number | null;
+  minimumPriceCents: number | null;
+  targetPriceCents: number | null;
+  priceReferencesPartial: boolean;
+  monthlySalesGoal: number | null;
+  weeklySalesGoal: number | null;
+  dailySalesGoal: number | null;
+  breakEvenDiscountPercent: number | null;
+  totalFeeBasisPoints: number;
+  verdict: ProductionReportVerdict;
+  priority: ProductionReportPriority;
+};
+
 export {
   PRODUCT_CALCULATION_VERSION,
   PRODUCT_CONTENT_VERSION,
@@ -102,6 +141,8 @@ export {
   productReportPriorities,
   productReportUnits,
   productReportVerdicts,
+  productionReportPriorities,
+  productionReportVerdicts,
   reportExecutiveSummaryAnswerKeys,
   reportExecutiveSummaryFactKeys,
   reportPriorities,
@@ -117,6 +158,9 @@ export {
   type ProductReportPriority,
   type ProductReportUnit,
   type ProductReportVerdict,
+  type ProductionReportCalculation,
+  type ProductionReportPriority,
+  type ProductionReportVerdict,
   type ReportPriority,
   type ReportScenario,
   type ReportSectionKey,
