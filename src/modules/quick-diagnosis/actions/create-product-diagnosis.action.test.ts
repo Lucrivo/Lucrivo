@@ -104,7 +104,7 @@ describe("createProductDiagnosis", () => {
       error: {
         flatten: () => ({
           fieldErrors: {
-            purchaseUnitCost: ["Informe um custo de compra maior que zero."],
+            purchaseUnitCost: ["Informe um custo de compra válido."],
           },
         }),
       },
@@ -112,14 +112,14 @@ describe("createProductDiagnosis", () => {
 
     const result = await createProductDiagnosis({
       ...validInput,
-      purchaseUnitCost: "0",
+      purchaseUnitCost: "-1",
     });
 
     expect(result).toEqual({
       status: "error",
       error: "invalid_input",
       fieldErrors: {
-        purchaseUnitCost: ["Informe um custo de compra maior que zero."],
+        purchaseUnitCost: ["Informe um custo de compra válido."],
       },
     });
     expectNoTechnicalDetails(result);

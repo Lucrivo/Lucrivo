@@ -94,7 +94,7 @@ Depois de escolher “Um produto”, o usuário decide entre:
 
 No caminho rápido de revenda, são solicitados:
 
-- custo de compra de uma unidade;
+- custo de compra de uma unidade, opcional para produtos sem custo direto;
 - preço de venda de uma unidade;
 - contas fixas mensais;
 - volume médio vendido por mês, opcional;
@@ -133,15 +133,15 @@ O volume mensal significa **unidades vendidas**, não unidades apenas produzidas
 
 ### 4.2 Parâmetros de produtos
 
-| Parâmetro             | Significado                                                 | Observação                                |
-| --------------------- | ----------------------------------------------------------- | ----------------------------------------- |
-| Custo de compra       | Valor pago ao fornecedor por unidade                        | Usado na revenda                          |
-| Custo de produção     | Custo resumido da unidade pronta ou soma da composição fixa | Usado na produção própria                 |
-| Embalagem por unidade | Embalagem consumida para fabricar uma unidade               | Uma das quatro categorias da composição   |
-| Mão de obra direta    | Trabalho variável necessário para fabricar uma unidade      | Não deve duplicar o pró-labore mensal     |
-| Volume mensal         | Quantidade média de unidades vendidas no mês                | Permite dividir o custo fixo por unidade  |
-| Rendimento            | Quantas unidades uma receita ou lote produz                 | Fora do diagnóstico rápido; escopo futuro |
-| Perda/desperdício     | Parte da produção que não vira venda                        | Fora do diagnóstico rápido; escopo futuro |
+| Parâmetro             | Significado                                                 | Observação                                                  |
+| --------------------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
+| Custo de compra       | Valor pago ao fornecedor por unidade                        | Opcional; vazio ou zero representa ausência de custo direto |
+| Custo de produção     | Custo resumido da unidade pronta ou soma da composição fixa | Usado na produção própria                                   |
+| Embalagem por unidade | Embalagem consumida para fabricar uma unidade               | Uma das quatro categorias da composição                     |
+| Mão de obra direta    | Trabalho variável necessário para fabricar uma unidade      | Não deve duplicar o pró-labore mensal                       |
+| Volume mensal         | Quantidade média de unidades vendidas no mês                | Permite dividir o custo fixo por unidade                    |
+| Rendimento            | Quantas unidades uma receita ou lote produz                 | Fora do diagnóstico rápido; escopo futuro                   |
+| Perda/desperdício     | Parte da produção que não vira venda                        | Fora do diagnóstico rápido; escopo futuro                   |
 
 ### 4.3 Parâmetros de serviços
 
@@ -250,6 +250,8 @@ Na revenda:
 ```text
 CD = custo de compra por unidade
 ```
+
+O custo de compra é opcional. Se o campo ficar vazio ou for informado como zero, o diagnóstico considera **CD = R$ 0,00**, como pode ocorrer na venda de produtos digitais sem custo direto por unidade.
 
 Na produção rápida:
 

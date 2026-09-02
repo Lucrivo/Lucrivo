@@ -57,7 +57,16 @@ describe("productDiagnosisSchema", () => {
     );
   });
 
-  it("returns only errors requested by progressive validation", () => {
+  it.each(["", "0"])(
+    "normalizes optional purchase cost %j to zero",
+    (purchaseUnitCost) => {
+      expect(
+        productDiagnosisSchema.parse({ ...validProduct, purchaseUnitCost }),
+      ).toEqual(expect.objectContaining({ purchaseUnitCostCents: 0 }));
+    },
+  );
+
+  it("accepts zero purchase cost and returns only requested validation errors", () => {
     expect(
       validateProductDiagnosisFields(["purchaseUnitCost", "unitSalePrice"], {
         ...validProduct,
@@ -66,7 +75,6 @@ describe("productDiagnosisSchema", () => {
         proLabore: "0",
       }),
     ).toEqual({
-      purchaseUnitCost: ["Informe um custo de compra maior que zero."],
       unitSalePrice: ["Informe um preço de venda maior que zero."],
     });
   });

@@ -57,15 +57,22 @@ describe("ProductDiagnosisWizard", () => {
   async function completeValidDiagnosis(options?: {
     volume?: boolean;
     compensation?: boolean;
+    purchaseCost?: string;
   }) {
     const user = userEvent.setup();
     const volume = options?.volume ?? true;
     const compensation = options?.compensation ?? true;
+    const purchaseCost = options?.purchaseCost ?? "50";
 
     await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(screen.getByText("3 de 8")).toBeInTheDocument();
-    await user.type(screen.getByLabelText("Custo de compra por unidade"), "50");
+    if (purchaseCost) {
+      await user.type(
+        screen.getByLabelText("Custo de compra por unidade"),
+        purchaseCost,
+      );
+    }
     await user.type(screen.getByLabelText("Preço de venda por unidade"), "100");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(screen.getByText("4 de 8")).toBeInTheDocument();
@@ -187,6 +194,23 @@ describe("ProductDiagnosisWizard", () => {
     expect(markup).toContain("motion-reduce:transition-none");
     expect(markup).toContain("motion-reduce:transform-none");
     expect(markup).not.toMatch(/w-\[(?:4\d\d|[5-9]\d\d|\d{4,})px\]/);
+  });
+
+  it("submits a Product diagnosis with an omitted purchase cost", async () => {
+    const createDiagnosis = vi
+      .fn()
+      .mockResolvedValue({ status: "success", diagnosisId: 42 });
+    renderWizard(createDiagnosis);
+    const user = await completeValidDiagnosis({ purchaseCost: "" });
+
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+
+    expect(createDiagnosis).toHaveBeenCalledWith(
+      expect.objectContaining({ purchaseUnitCost: "" }),
+    );
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/reports/42"));
   });
 
   it("routes invalid server fields to the earliest Product input", async () => {

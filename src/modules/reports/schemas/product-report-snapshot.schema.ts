@@ -27,7 +27,7 @@ const productReportPolicySchema = z.strictObject({
 });
 
 const productReportInputsSchema = z.strictObject({
-  purchaseUnitCostCents: positiveSafeIntegerSchema,
+  purchaseUnitCostCents: nonNegativeSafeIntegerSchema,
   unitSalePriceCents: positiveSafeIntegerSchema,
   fixedMonthlyExpensesCents: nonNegativeSafeIntegerSchema,
   monthlySalesVolume: z.number().int().positive().max(2_147_483_647).nullable(),
@@ -39,7 +39,7 @@ const productReportInputsSchema = z.strictObject({
 
 const productReportResultsSchema = z.strictObject({
   effectiveFixedCostCents: nonNegativeSafeIntegerSchema,
-  purchaseUnitCostCents: positiveSafeIntegerSchema,
+  purchaseUnitCostCents: nonNegativeSafeIntegerSchema,
   fixedAllocationCents: nonNegativeSafeIntegerSchema.nullable(),
   totalUnitCostCents: nonNegativeSafeIntegerSchema.nullable(),
   currentPriceCents: positiveSafeIntegerSchema,
@@ -60,7 +60,7 @@ const productReportResultsSchema = z.strictObject({
 
 const productReportDiscountSimulationBaseSchema = z.strictObject({
   originalPriceCents: positiveSafeIntegerSchema,
-  unitCostCents: positiveSafeIntegerSchema,
+  unitCostCents: nonNegativeSafeIntegerSchema,
   totalFeeBasisPoints: z.number().int().min(0).max(20_000),
   targetMarginBasisPoints: z.literal(2000),
   minimumPriceCents: nonNegativeSafeIntegerSchema.nullable(),
