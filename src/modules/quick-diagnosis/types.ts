@@ -1,18 +1,23 @@
 const pricingMethods = ["hour", "minute", "appointment"] as const;
+const serviceWorkPeriods = ["day", "week", "month"] as const;
 
 type ServicePricingMethod = (typeof pricingMethods)[number];
+type ServiceWorkPeriod = (typeof serviceWorkPeriods)[number];
 
 type ServiceDiagnosisInput = {
   submissionId: string;
   pricingMethod: string;
   desiredMonthlyIncome: string;
   fixedMonthlyExpenses: string;
-  monthlyWorkHours: string;
+  workHoursPeriod: string;
+  workHours: string;
   weeklyWorkDays: string;
   hourlyRate: string;
   minuteRate: string;
   appointmentRate: string;
   appointmentDurationMinutes: string;
+  hasMaterialCost: boolean;
+  materialUnitCost: string;
   taxRate: string;
   cardFeeRate: string;
 };
@@ -22,12 +27,15 @@ type ServiceDiagnosisCommand = {
   pricingMethod: ServicePricingMethod;
   desiredMonthlyIncomeCents: number;
   fixedMonthlyExpensesCents: number;
+  workHoursPeriod: ServiceWorkPeriod;
+  workPeriodMinutes: number;
   monthlyWorkMinutes: number;
   weeklyWorkDays: number;
   hourlyRateCents: number;
   minuteRateCents: number;
   appointmentRateCents: number;
   appointmentDurationMinutes: number;
+  materialUnitCostCents: number;
   taxRateBasisPoints: number;
   cardFeeRateBasisPoints: number;
 };
@@ -141,6 +149,7 @@ type CreateProductionDiagnosisActionResult =
 
 export {
   pricingMethods,
+  serviceWorkPeriods,
   type CreateProductDiagnosisActionResult,
   type CreateProductionDiagnosisActionResult,
   type CreateServiceDiagnosisActionResult,
@@ -158,4 +167,5 @@ export {
   type ServiceDiagnosisFieldErrors,
   type ServiceDiagnosisInput,
   type ServicePricingMethod,
+  type ServiceWorkPeriod,
 };

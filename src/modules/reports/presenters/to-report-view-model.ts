@@ -11,7 +11,7 @@ import type {
   ReportDiscountSimulationBase,
   ReportSnapshot,
   ReportTone,
-  ServiceReportSnapshotV2,
+  ServiceReportSnapshot,
 } from "../types";
 
 type ReportNumberViewModel = {
@@ -65,7 +65,7 @@ function optionalPercentage(value: number | null): string {
 }
 
 function toServiceNumbers(
-  snapshot: ServiceReportSnapshotV2,
+  snapshot: ServiceReportSnapshot,
 ): ReportNumberViewModel[] {
   const unitLabel = formatReportUnit(snapshot.unit);
 

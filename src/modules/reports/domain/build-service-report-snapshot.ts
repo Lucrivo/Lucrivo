@@ -7,8 +7,8 @@ import {
   formatReportUnit,
 } from "../formatters";
 import {
-  parseServiceReportSnapshot,
-  type ServiceReportSnapshotV2,
+  parseServiceReportSnapshotV3,
+  type ServiceReportSnapshotV3,
 } from "../schemas/service-report-snapshot.schema";
 import {
   SERVICE_CALCULATION_VERSION,
@@ -32,6 +32,11 @@ const verdictContent: Record<
     label: "Informe o preço",
     body: "Preencha o preço atual para diagnosticar sua margem.",
     tone: "neutral",
+  },
+  direct_loss: {
+    label: "Prejuízo direto",
+    body: "O preço líquido não cobre o material e as taxas da venda.",
+    tone: "critical",
   },
   operational_loss: {
     label: "Preço não cobre a operação",
@@ -111,11 +116,17 @@ function buildHiddenCostSection(
 
   const unit = formatReportUnit(calculation.unit);
   const profit = calculation.unitProfitCents;
+  const body =
+    calculation.materialUnitCostCents > 0 &&
+    calculation.structureUnitCostCents !== null &&
+    calculation.unitCostCents !== null
+      ? `Sua estrutura custa ${formatCurrency(calculation.structureUnitCostCents)} por ${unit}. Somando ${formatCurrency(calculation.materialUnitCostCents)} de material usado diretamente, o custo total chega a ${formatCurrency(calculation.unitCostCents)}.`
+      : `Só ${formatBillableHours(calculation.monthlyWorkMinutes)}h/mês são realmente pagas — é sobre elas que caem seus custos de estrutura. Por isso a hora custa ${formatCurrency(calculation.hourCostCents)}, não o que você imagina. É com esse número que a conta fecha.`;
 
   return {
     key: "hidden_cost",
     title: "2 · A conta que ninguém faz",
-    body: `Só ${formatBillableHours(calculation.monthlyWorkMinutes)}h/mês são realmente pagas — é sobre elas que caem seus custos. Por isso a hora custa ${formatCurrency(calculation.hourCostCents)}, não o que você imagina. É com esse número que a conta fecha.`,
+    body,
     emphasisLabel: profit === null ? null : `Lucro por ${unit}`,
     emphasisValue: profit === null ? null : formatCurrency(profit),
     tone: profit === null ? "neutral" : profit > 0 ? "positive" : "critical",
@@ -147,12 +158,16 @@ function buildSalesGoalSection(
 ): ReportSection {
   if (
     calculation.verdict === "missing_price" ||
+    calculation.verdict === "direct_loss" ||
     calculation.verdict === "operational_loss"
   ) {
     return {
       key: "sales_goal",
       title: "Meta de vendas",
-      body: "Seu preço atual não sustenta a operação. Corrija o preço antes de buscar mais volume.",
+      body:
+        calculation.verdict === "direct_loss"
+          ? "Seu preço líquido não cobre o material e as taxas. Corrija o custo ou o preço antes de buscar mais volume."
+          : "Seu preço atual não sustenta a operação. Corrija o preço antes de buscar mais volume.",
       emphasisLabel: null,
       emphasisValue: null,
       tone: "critical",
@@ -211,14 +226,17 @@ function buildDiscountSimulatorSection(
 function buildServiceReportSnapshot(
   command: ServiceDiagnosisCommand,
   calculation: ServiceReportCalculation,
-): ServiceReportSnapshotV2 {
+): ServiceReportSnapshotV3 {
   const { unit, totalFeeBasisPoints } = calculation;
   const results = {
     monthlyCostCents: calculation.monthlyCostCents,
     hourCostCents: calculation.hourCostCents,
+    structureUnitCostCents: calculation.structureUnitCostCents,
+    materialUnitCostCents: calculation.materialUnitCostCents,
     unitCostCents: calculation.unitCostCents,
     currentPriceCents: calculation.currentPriceCents,
     netRevenueCents: calculation.netRevenueCents,
+    unitContributionCents: calculation.unitContributionCents,
     unitProfitCents: calculation.unitProfitCents,
     realMarginBasisPoints: calculation.realMarginBasisPoints,
     minimumPriceCents: calculation.minimumPriceCents,
@@ -231,7 +249,7 @@ function buildServiceReportSnapshot(
     priority: calculation.priority,
   };
 
-  return parseServiceReportSnapshot({
+  return parseServiceReportSnapshotV3({
     schemaVersion: SERVICE_REPORT_SCHEMA_VERSION,
     calculationVersion: SERVICE_CALCULATION_VERSION,
     contentVersion: SERVICE_CONTENT_VERSION,
@@ -248,12 +266,15 @@ function buildServiceReportSnapshot(
     inputs: {
       desiredMonthlyIncomeCents: command.desiredMonthlyIncomeCents,
       fixedMonthlyExpensesCents: command.fixedMonthlyExpensesCents,
+      workHoursPeriod: command.workHoursPeriod,
+      workPeriodMinutes: command.workPeriodMinutes,
       monthlyWorkMinutes: command.monthlyWorkMinutes,
       weeklyWorkDays: command.weeklyWorkDays,
       hourlyRateCents: command.hourlyRateCents,
       minuteRateCents: command.minuteRateCents,
       appointmentRateCents: command.appointmentRateCents,
       appointmentDurationMinutes: command.appointmentDurationMinutes,
+      materialUnitCostCents: command.materialUnitCostCents,
       taxRateBasisPoints: command.taxRateBasisPoints,
       cardFeeRateBasisPoints: command.cardFeeRateBasisPoints,
     },

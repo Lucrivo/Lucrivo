@@ -13,12 +13,15 @@ const baseCommand: ServiceDiagnosisCommand = {
   pricingMethod: "appointment",
   desiredMonthlyIncomeCents: 400000,
   fixedMonthlyExpensesCents: 200000,
+  workHoursPeriod: "month",
+  workPeriodMinutes: 6000,
   monthlyWorkMinutes: 6000,
   weeklyWorkDays: 5,
   hourlyRateCents: 0,
   minuteRateCents: 0,
   appointmentRateCents: 8000,
   appointmentDurationMinutes: 50,
+  materialUnitCostCents: 0,
   taxRateBasisPoints: 600,
   cardFeeRateBasisPoints: 200,
 };
@@ -137,7 +140,54 @@ describe("calculateServiceReport", () => {
     );
   });
 
-  it("prioritizes price and suppresses volume while the service loses money", () => {
+  it("adds material directly and bases the sales goal on contribution", () => {
+    expect(
+      calculateServiceReport({
+        ...baseCommand,
+        materialUnitCostCents: 1000,
+      }),
+    ).toEqual(
+      expect.objectContaining({
+        hourCostCents: 6000,
+        structureUnitCostCents: 5000,
+        materialUnitCostCents: 1000,
+        unitCostCents: 6000,
+        currentPriceCents: 8000,
+        netRevenueCents: 7360,
+        unitContributionCents: 6360,
+        unitProfitCents: 1360,
+        realMarginBasisPoints: 1700,
+        minimumPriceCents: 6522,
+        targetPriceCents: 7793,
+        monthlySalesGoal: 95,
+        weeklySalesGoal: 22,
+        dailySalesGoal: 5,
+        verdict: "adequate_margin",
+        priority: "volume",
+      }),
+    );
+  });
+
+  it("classifies non-positive contribution as a direct loss", () => {
+    expect(
+      calculateServiceReport({
+        ...baseCommand,
+        appointmentRateCents: 1000,
+        materialUnitCostCents: 1000,
+      }),
+    ).toEqual(
+      expect.objectContaining({
+        unitContributionCents: -80,
+        monthlySalesGoal: null,
+        weeklySalesGoal: null,
+        dailySalesGoal: null,
+        verdict: "direct_loss",
+        priority: "cost",
+      }),
+    );
+  });
+
+  it("prioritizes price but preserves the contribution-based goal", () => {
     expect(
       calculateServiceReport({ ...baseCommand, appointmentRateCents: 4000 }),
     ).toEqual(
@@ -145,9 +195,9 @@ describe("calculateServiceReport", () => {
         unitProfitCents: -1320,
         verdict: "operational_loss",
         priority: "price",
-        monthlySalesGoal: null,
-        weeklySalesGoal: null,
-        dailySalesGoal: null,
+        monthlySalesGoal: 164,
+        weeklySalesGoal: 38,
+        dailySalesGoal: 8,
       }),
     );
   });
@@ -155,17 +205,27 @@ describe("calculateServiceReport", () => {
 
 describe("classifyServiceMargin", () => {
   it.each([
-    [0, null, "missing_price"],
-    [100, 0, "operational_loss"],
-    [100, 1449, "tight_margin"],
-    [100, 1450, "adequate_margin"],
-    [100, 1800, "adequate_margin"],
-    [100, 1801, "above_target"],
+    [0, null, null, "missing_price"],
+    [100, 0, null, "direct_loss"],
+    [100, 1, 0, "operational_loss"],
+    [100, 1, 1449, "tight_margin"],
+    [100, 1, 1450, "adequate_margin"],
+    [100, 1, 1800, "adequate_margin"],
+    [100, 1, 1801, "above_target"],
   ] as const)(
-    "classifies price %s and margin %s as %s",
-    (currentPriceCents, realMarginBasisPoints, expected) => {
+    "classifies price %s, contribution %s, and margin %s as %s",
+    (
+      currentPriceCents,
+      unitContributionCents,
+      realMarginBasisPoints,
+      expected,
+    ) => {
       expect(
-        classifyServiceMargin(currentPriceCents, realMarginBasisPoints),
+        classifyServiceMargin(
+          currentPriceCents,
+          unitContributionCents,
+          realMarginBasisPoints,
+        ),
       ).toBe(expected);
     },
   );
@@ -174,6 +234,7 @@ describe("classifyServiceMargin", () => {
 describe("selectServicePriority", () => {
   it.each([
     ["missing_price", "price"],
+    ["direct_loss", "cost"],
     ["operational_loss", "price"],
     ["tight_margin", "margin"],
     ["adequate_margin", "volume"],

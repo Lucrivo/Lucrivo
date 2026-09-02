@@ -10,12 +10,15 @@ const baseCommand: ServiceDiagnosisCommand = {
   pricingMethod: "appointment",
   desiredMonthlyIncomeCents: 400000,
   fixedMonthlyExpensesCents: 200000,
+  workHoursPeriod: "month",
+  workPeriodMinutes: 6000,
   monthlyWorkMinutes: 6000,
   weeklyWorkDays: 5,
   hourlyRateCents: 0,
   minuteRateCents: 0,
   appointmentRateCents: 8000,
   appointmentDurationMinutes: 50,
+  materialUnitCostCents: 0,
   taxRateBasisPoints: 600,
   cardFeeRateBasisPoints: 200,
 };
@@ -99,6 +102,7 @@ describe("buildServiceExecutiveSummary", () => {
 
   it.each([
     ["missing_price", "Informe o preço", "neutral"],
+    ["direct_loss", "Prejuízo direto", "critical"],
     ["operational_loss", "Prejuízo", "critical"],
     ["tight_margin", "Margem apertada", "warning"],
     ["adequate_margin", "Margem adequada", "positive"],

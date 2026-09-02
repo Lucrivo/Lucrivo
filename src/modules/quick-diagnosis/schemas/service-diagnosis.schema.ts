@@ -2,37 +2,24 @@ import { z } from "zod";
 
 import {
   pricingMethods,
+  serviceWorkPeriods,
   type ServiceDiagnosisCommand,
   type ServiceDiagnosisField,
   type ServiceDiagnosisFieldErrors,
   type ServiceDiagnosisInput,
   type ServicePricingMethod,
+  type ServiceWorkPeriod,
 } from "../types";
 import {
-  canonicalDecimal,
   convertedNumber,
   moneySchema,
   percentageSchema,
   scaledInteger,
 } from "./decimal-input";
-
-function roundedMinutes(value: string): number {
-  const canonical = canonicalDecimal(value);
-  const [whole, fraction = ""] = canonical.split(".");
-
-  if (!/^\d+$/.test(whole) || !/^\d*$/.test(fraction)) {
-    throw new Error("invalid_decimal");
-  }
-
-  const denominator = BigInt(10) ** BigInt(fraction.length);
-  const numerator = BigInt(whole) * denominator + BigInt(fraction || "0");
-  const minutes =
-    (numerator * BigInt(120) + denominator) / (BigInt(2) * denominator);
-
-  if (minutes > BigInt(44640)) throw new Error("out_of_range");
-
-  return Number(minutes);
-}
+import {
+  normalizeMonthlyWorkMinutes,
+  parseServiceWorkPeriodMinutes,
+} from "./service-work-capacity";
 
 const nonNegativeInteger = convertedNumber(
   (value) => scaledInteger(value, 0),
@@ -50,10 +37,14 @@ const rawServiceDiagnosisSchema = z.object({
     ),
   desiredMonthlyIncome: moneySchema,
   fixedMonthlyExpenses: moneySchema,
-  monthlyWorkHours: convertedNumber(
-    roundedMinutes,
-    "Informe uma carga mensal entre 0 e 744 horas.",
-  ),
+  workHoursPeriod: z
+    .string()
+    .refine(
+      (value): value is ServiceWorkPeriod =>
+        serviceWorkPeriods.some((period) => period === value),
+      "Selecione um período válido para as horas faturáveis.",
+    ),
+  workHours: z.string(),
   weeklyWorkDays: nonNegativeInteger.refine(
     (value) => value <= 7,
     "Informe no máximo 7 dias de trabalho por semana.",
@@ -62,46 +53,96 @@ const rawServiceDiagnosisSchema = z.object({
   minuteRate: moneySchema,
   appointmentRate: moneySchema,
   appointmentDurationMinutes: nonNegativeInteger,
+  hasMaterialCost: z.boolean(),
+  materialUnitCost: z.string(),
   taxRate: percentageSchema,
   cardFeeRate: percentageSchema,
 });
+
+const workHoursMessages = {
+  day: "Informe uma carga diária entre 0 e 24 horas.",
+  week: "Informe uma carga semanal entre 0 e 168 horas.",
+  month: "Informe uma carga mensal entre 0 e 744 horas.",
+} satisfies Record<ServiceWorkPeriod, string>;
 
 const serviceDiagnosisSchema: z.ZodType<
   ServiceDiagnosisCommand,
   ServiceDiagnosisInput
 > = rawServiceDiagnosisSchema
+  .superRefine((input, context) => {
+    try {
+      parseServiceWorkPeriodMinutes(input.workHours, input.workHoursPeriod);
+    } catch {
+      context.addIssue({
+        code: "custom",
+        path: ["workHours"],
+        message: workHoursMessages[input.workHoursPeriod],
+      });
+    }
+
+    if (input.hasMaterialCost) {
+      try {
+        if (scaledInteger(input.materialUnitCost, 2) <= 0) throw new Error();
+      } catch {
+        context.addIssue({
+          code: "custom",
+          path: ["materialUnitCost"],
+          message: "Informe um custo de material maior que zero.",
+        });
+      }
+    }
+  })
   .transform(
     ({
       submissionId,
       pricingMethod,
       desiredMonthlyIncome,
       fixedMonthlyExpenses,
-      monthlyWorkHours,
+      workHoursPeriod,
+      workHours,
       weeklyWorkDays,
       hourlyRate,
       minuteRate,
       appointmentRate,
       appointmentDurationMinutes,
+      hasMaterialCost,
+      materialUnitCost,
       taxRate,
       cardFeeRate,
-    }): ServiceDiagnosisCommand => ({
-      submissionId,
-      pricingMethod,
-      desiredMonthlyIncomeCents: desiredMonthlyIncome,
-      fixedMonthlyExpensesCents: fixedMonthlyExpenses,
-      monthlyWorkMinutes: monthlyWorkHours,
-      weeklyWorkDays,
-      hourlyRateCents: pricingMethod === "hour" ? hourlyRate : 0,
-      minuteRateCents: pricingMethod === "minute" ? minuteRate : 0,
-      appointmentRateCents:
-        pricingMethod === "appointment" ? appointmentRate : 0,
-      appointmentDurationMinutes:
-        pricingMethod === "minute" || pricingMethod === "appointment"
-          ? appointmentDurationMinutes
+    }): ServiceDiagnosisCommand => {
+      const workPeriodMinutes = parseServiceWorkPeriodMinutes(
+        workHours,
+        workHoursPeriod,
+      );
+
+      return {
+        submissionId,
+        pricingMethod,
+        desiredMonthlyIncomeCents: desiredMonthlyIncome,
+        fixedMonthlyExpensesCents: fixedMonthlyExpenses,
+        workHoursPeriod,
+        workPeriodMinutes,
+        monthlyWorkMinutes: normalizeMonthlyWorkMinutes(
+          workHoursPeriod,
+          workPeriodMinutes,
+          weeklyWorkDays,
+        ),
+        weeklyWorkDays,
+        hourlyRateCents: pricingMethod === "hour" ? hourlyRate : 0,
+        minuteRateCents: pricingMethod === "minute" ? minuteRate : 0,
+        appointmentRateCents:
+          pricingMethod === "appointment" ? appointmentRate : 0,
+        appointmentDurationMinutes:
+          pricingMethod === "minute" || pricingMethod === "appointment"
+            ? appointmentDurationMinutes
+            : 0,
+        materialUnitCostCents: hasMaterialCost
+          ? scaledInteger(materialUnitCost, 2)
           : 0,
-      taxRateBasisPoints: taxRate,
-      cardFeeRateBasisPoints: cardFeeRate,
-    }),
+        taxRateBasisPoints: taxRate,
+        cardFeeRateBasisPoints: cardFeeRate,
+      };
+    },
   )
   .superRefine((command, context) => {
     if (command.pricingMethod === "hour" && command.hourlyRateCents <= 0) {

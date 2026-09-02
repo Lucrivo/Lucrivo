@@ -139,6 +139,40 @@ const validServiceSnapshot = {
   },
 };
 
+const validServiceV3Snapshot = {
+  ...validServiceSnapshot,
+  schemaVersion: 3,
+  calculationVersion: 2,
+  contentVersion: 3,
+  inputs: {
+    ...validServiceSnapshot.inputs,
+    workHoursPeriod: "month",
+    workPeriodMinutes: 6000,
+    materialUnitCostCents: 1000,
+  },
+  results: {
+    ...validServiceSnapshot.results,
+    structureUnitCostCents: 5000,
+    materialUnitCostCents: 1000,
+    unitCostCents: 6000,
+    unitContributionCents: 6360,
+    unitProfitCents: 1360,
+    realMarginBasisPoints: 1700,
+    minimumPriceCents: 6522,
+    targetPriceCents: 7793,
+    monthlySalesGoal: 95,
+    weeklySalesGoal: 22,
+    dailySalesGoal: 5,
+    breakEvenDiscountPercent: 18,
+    verdict: "adequate_margin",
+  },
+  discountSimulationBase: {
+    ...validServiceSnapshot.discountSimulationBase,
+    unitCostCents: 6000,
+    minimumPriceCents: 6522,
+  },
+};
+
 const validProductSnapshot = {
   schemaVersion: 1,
   calculationVersion: 1,
@@ -333,6 +367,39 @@ describe("category-versioned report snapshots", () => {
       validServiceSnapshot,
     );
     expect(parseReportSnapshot(validServiceSnapshot).category).toBe("service");
+  });
+
+  it("parses the complete Service V3 shape", () => {
+    expect(parseServiceReportSnapshot(validServiceV3Snapshot)).toEqual(
+      validServiceV3Snapshot,
+    );
+    expect(parseReportSnapshot(validServiceV3Snapshot)).toEqual(
+      validServiceV3Snapshot,
+    );
+  });
+
+  it.each([
+    { ...validServiceV3Snapshot, schemaVersion: 4 },
+    { ...validServiceV3Snapshot, calculationVersion: 1 },
+    {
+      ...validServiceV3Snapshot,
+      inputs: {
+        desiredMonthlyIncomeCents: 400000,
+        fixedMonthlyExpensesCents: 200000,
+        workHoursPeriod: "month",
+        workPeriodMinutes: 6000,
+        monthlyWorkMinutes: 6000,
+        weeklyWorkDays: 5,
+        hourlyRateCents: 0,
+        minuteRateCents: 0,
+        appointmentRateCents: 8000,
+        appointmentDurationMinutes: 50,
+        taxRateBasisPoints: 600,
+        cardFeeRateBasisPoints: 200,
+      },
+    },
+  ])("rejects an invalid Service V3 contract %#", (snapshot) => {
+    expect(() => parseReportSnapshot(snapshot)).toThrow();
   });
 
   it("parses a complete Product V1 snapshot", () => {

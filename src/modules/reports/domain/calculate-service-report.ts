@@ -19,9 +19,12 @@ type ServiceReportCalculation = {
   monthlyWorkMinutes: number;
   monthlyCostCents: number;
   hourCostCents: number | null;
+  structureUnitCostCents: number | null;
+  materialUnitCostCents: number;
   unitCostCents: number | null;
   currentPriceCents: number;
   netRevenueCents: number | null;
+  unitContributionCents: number | null;
   unitProfitCents: number | null;
   realMarginBasisPoints: number | null;
   minimumPriceCents: number | null;
@@ -36,9 +39,13 @@ type ServiceReportCalculation = {
 
 function classifyServiceMargin(
   currentPriceCents: number,
+  unitContributionCents: number | null,
   realMarginBasisPoints: number | null,
 ): ServiceReportVerdict {
   if (currentPriceCents <= 0) return "missing_price";
+  if (unitContributionCents !== null && unitContributionCents <= 0) {
+    return "direct_loss";
+  }
   if (realMarginBasisPoints === null || realMarginBasisPoints <= 0) {
     return "operational_loss";
   }
@@ -60,6 +67,7 @@ function classifyServiceMargin(
 function selectServicePriority(
   verdict: ServiceReportVerdict,
 ): ServiceReportPriority {
+  if (verdict === "direct_loss") return "cost";
   if (verdict === "missing_price" || verdict === "operational_loss") {
     return "price";
   }
@@ -103,7 +111,7 @@ function calculateServiceReport(
     command.monthlyWorkMinutes > 0
       ? multiplyDivideRound(monthlyCostCents, 60, command.monthlyWorkMinutes)
       : null;
-  const unitCostCents =
+  const structureUnitCostCents =
     command.monthlyWorkMinutes > 0 && unitDurationMinutes > 0
       ? multiplyDivideRound(
           monthlyCostCents,
@@ -111,13 +119,31 @@ function calculateServiceReport(
           command.monthlyWorkMinutes,
         )
       : null;
+  const unitCostCents =
+    structureUnitCostCents === null
+      ? null
+      : roundDivide(
+          BigInt(structureUnitCostCents) +
+            BigInt(command.materialUnitCostCents),
+          BigInt(1),
+        );
   const netRevenueCents =
     priceCents > 0
       ? multiplyDivideRound(priceCents, netRateBps, RATE_SCALE)
       : null;
+  const unitContributionCents =
+    netRevenueCents === null
+      ? null
+      : roundDivide(
+          BigInt(netRevenueCents) - BigInt(command.materialUnitCostCents),
+          BigInt(1),
+        );
   const unitProfitCents =
-    netRevenueCents !== null && unitCostCents !== null
-      ? roundDivide(BigInt(netRevenueCents) - BigInt(unitCostCents), BigInt(1))
+    unitContributionCents !== null && structureUnitCostCents !== null
+      ? roundDivide(
+          BigInt(unitContributionCents) - BigInt(structureUnitCostCents),
+          BigInt(1),
+        )
       : null;
   const realMarginBasisPoints =
     unitProfitCents !== null && priceCents > 0
@@ -140,19 +166,16 @@ function calculateServiceReport(
           BigInt(targetRateBps),
         )
       : null;
-  const verdict = classifyServiceMargin(priceCents, realMarginBasisPoints);
+  const verdict = classifyServiceMargin(
+    priceCents,
+    unitContributionCents,
+    realMarginBasisPoints,
+  );
   const priority = selectServicePriority(verdict);
-  const canRecommendVolume =
-    unitProfitCents !== null &&
-    unitProfitCents > 0 &&
-    priceCents > 0 &&
-    netRateBps > 0;
-  const monthlySalesGoal = canRecommendVolume
-    ? ceilDivide(
-        BigInt(monthlyCostCents) * BigInt(RATE_SCALE),
-        BigInt(netRateBps) * BigInt(priceCents),
-      )
-    : null;
+  const monthlySalesGoal =
+    unitContributionCents !== null && unitContributionCents > 0
+      ? ceilDivide(BigInt(monthlyCostCents), BigInt(unitContributionCents))
+      : null;
   const weeklySalesGoal =
     monthlySalesGoal !== null
       ? ceilDivide(
@@ -181,9 +204,12 @@ function calculateServiceReport(
     monthlyWorkMinutes: command.monthlyWorkMinutes,
     monthlyCostCents,
     hourCostCents,
+    structureUnitCostCents,
+    materialUnitCostCents: command.materialUnitCostCents,
     unitCostCents,
     currentPriceCents: priceCents,
     netRevenueCents,
+    unitContributionCents,
     unitProfitCents,
     realMarginBasisPoints,
     minimumPriceCents,
