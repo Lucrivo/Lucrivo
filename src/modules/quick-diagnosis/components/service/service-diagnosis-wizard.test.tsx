@@ -51,16 +51,26 @@ describe("ServiceDiagnosisWizard", () => {
 
   async function completeValidDiagnosis() {
     const user = userEvent.setup();
-    await user.type(screen.getByLabelText("Renda mensal desejada"), "5000");
+    await user.type(screen.getByLabelText("Pró-labore mensal"), "5000");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Despesas fixas mensais"), "1200");
+    await user.type(screen.getByLabelText("Contas fixas mensais"), "1200");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Horas de trabalho por mês"), "160");
-    await user.type(screen.getByLabelText("Dias de trabalho por semana"), "5");
+    await user.type(
+      screen.getByLabelText("Quantas horas faturáveis por mês?"),
+      "160",
+    );
+    await user.type(
+      screen.getByLabelText("Quantos dias por semana você trabalha?"),
+      "5",
+    );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(screen.getByRole("radio", { name: "Por hora" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Valor por hora"), "125,90");
+    await user.type(
+      screen.getByLabelText("Quanto você cobra por hora?"),
+      "125,90",
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(screen.getByLabelText("Impostos"), "6,25");
     await user.type(screen.getByLabelText("Taxa do cartão"), "3,50");
@@ -68,19 +78,128 @@ describe("ServiceDiagnosisWizard", () => {
     return user;
   }
 
+  async function completeAppointmentDiagnosis() {
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Pró-labore mensal"), "5000");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.type(screen.getByLabelText("Contas fixas mensais"), "1200");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+
+    await user.click(
+      screen.getByRole("combobox", { name: "Horas faturáveis por" }),
+    );
+    await user.click(screen.getByRole("option", { name: "Dia" }));
+    await user.type(
+      screen.getByLabelText("Quantas horas faturáveis por dia?"),
+      "6",
+    );
+    await user.type(
+      screen.getByLabelText("Quantos dias por semana você trabalha?"),
+      "5",
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+
+    await user.click(screen.getByRole("radio", { name: "Por atendimento" }));
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.type(
+      screen.getByLabelText("Quanto dura cada atendimento?"),
+      "60",
+    );
+    await user.type(
+      screen.getByLabelText("Quanto você cobra por atendimento?"),
+      "125,90",
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+
+    await user.click(
+      screen.getByRole("switch", {
+        name: "Você tem algum custo de material por atendimento?",
+      }),
+    );
+    await user.type(
+      screen.getByLabelText("Custo de material por atendimento"),
+      "20",
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+
+    await user.type(screen.getByLabelText("Impostos"), "6,25");
+    await user.type(screen.getByLabelText("Taxa do cartão"), "3,50");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    return user;
+  }
+
+  it("submits the complete nine-step appointment journey", async () => {
+    const createDiagnosis = vi
+      .fn()
+      .mockResolvedValue({ status: "success", diagnosisId: 42 });
+    renderWizard(createDiagnosis);
+
+    const user = await completeAppointmentDiagnosis();
+
+    expect(screen.getByText("9 de 9")).toBeInTheDocument();
+    expect(screen.getByText("6 horas faturáveis por dia")).toBeInTheDocument();
+    expect(
+      screen.getByText("129,9 horas faturáveis por mês"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("R$ 20,00 por atendimento")).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+
+    expect(createDiagnosis).toHaveBeenCalledWith({
+      submissionId: "550e8400-e29b-41d4-a716-446655440000",
+      pricingMethod: "appointment",
+      desiredMonthlyIncome: "5000",
+      fixedMonthlyExpenses: "1200",
+      workHoursPeriod: "day",
+      workHours: "6",
+      weeklyWorkDays: "5",
+      hourlyRate: "",
+      minuteRate: "",
+      appointmentRate: "125,90",
+      appointmentDurationMinutes: "60",
+      hasMaterialCost: true,
+      materialUnitCost: "20",
+      taxRate: "6,25",
+      cardFeeRate: "3,50",
+    });
+  });
+
+  it("routes a material server error to its step and focuses the cost", async () => {
+    const createDiagnosis = vi.fn().mockResolvedValue({
+      status: "error",
+      error: "invalid_input",
+      fieldErrors: { materialUnitCost: ["Custo de material inválido."] },
+    });
+    renderWizard(createDiagnosis);
+    const user = await completeAppointmentDiagnosis();
+
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+
+    expect(
+      await screen.findByLabelText("Custo de material por atendimento"),
+    ).toHaveFocus();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Custo de material inválido.",
+    );
+  });
+
   it("renders global step two focused and delegates Back to category", async () => {
     const user = userEvent.setup();
     const { createDiagnosis, createSubmissionId, onBackToType } =
       renderWizard();
 
-    expect(screen.getByText("2 de 8")).toBeInTheDocument();
+    expect(screen.getByText("2 de 9")).toBeInTheDocument();
     expect(screen.getByRole("progressbar")).toHaveAttribute(
       "aria-valuenow",
       "2",
     );
     expect(screen.getByRole("progressbar")).toHaveAttribute(
       "aria-valuemax",
-      "8",
+      "9",
     );
     expect(
       screen.getByRole("heading", {
@@ -98,19 +217,25 @@ describe("ServiceDiagnosisWizard", () => {
   });
 
   it.each([
-    ["Por hora", "Valor por hora"],
-    ["Por minuto", "Valor por minuto"],
-    ["Por atendimento", "Valor por atendimento"],
+    ["Por hora", "Quanto você cobra por hora?"],
+    ["Por minuto", "Quanto você cobra por minuto?"],
+    ["Por atendimento", "Quanto você cobra por atendimento?"],
   ])("renders only the price fields for %s", async (method, priceLabel) => {
     const user = userEvent.setup();
     const { createDiagnosis } = renderWizard();
 
-    await user.type(screen.getByLabelText("Renda mensal desejada"), "5000");
+    await user.type(screen.getByLabelText("Pró-labore mensal"), "5000");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Despesas fixas mensais"), "1200");
+    await user.type(screen.getByLabelText("Contas fixas mensais"), "1200");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Horas de trabalho por mês"), "160");
-    await user.type(screen.getByLabelText("Dias de trabalho por semana"), "5");
+    await user.type(
+      screen.getByLabelText("Quantas horas faturáveis por mês?"),
+      "160",
+    );
+    await user.type(
+      screen.getByLabelText("Quantos dias por semana você trabalha?"),
+      "5",
+    );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(screen.getByRole("radio", { name: method }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
@@ -119,27 +244,28 @@ describe("ServiceDiagnosisWizard", () => {
     expect(screen.getAllByTestId("wizard-step")).toHaveLength(1);
     if (method === "Por minuto" || method === "Por atendimento") {
       expect(
-        screen.getByLabelText("Duração média do atendimento"),
+        screen.getByLabelText("Quanto dura cada atendimento?"),
       ).toBeInTheDocument();
     } else {
       expect(
-        screen.queryByLabelText("Duração média do atendimento"),
+        screen.queryByLabelText("Quanto dura cada atendimento?"),
       ).not.toBeInTheDocument();
     }
 
     await user.type(screen.getByLabelText(priceLabel), "125");
     if (method === "Por minuto" || method === "Por atendimento") {
       await user.type(
-        screen.getByLabelText("Duração média do atendimento"),
+        screen.getByLabelText("Quanto dura cada atendimento?"),
         "40",
       );
     }
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(screen.getByLabelText("Impostos"), "6");
     await user.type(screen.getByLabelText("Taxa do cartão"), "3");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
-    expect(screen.getByText("8 de 8")).toBeInTheDocument();
+    expect(screen.getByText("9 de 9")).toBeInTheDocument();
     expect(screen.getAllByTestId("wizard-step")).toHaveLength(1);
     if (method === "Por minuto") {
       expect(screen.getByText("40 minutos")).toBeInTheDocument();
@@ -151,22 +277,32 @@ describe("ServiceDiagnosisWizard", () => {
     const user = userEvent.setup();
     const { createDiagnosis } = renderWizard();
 
-    await user.type(screen.getByLabelText("Renda mensal desejada"), "5000");
+    await user.type(screen.getByLabelText("Pró-labore mensal"), "5000");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Despesas fixas mensais"), "1200");
+    await user.type(screen.getByLabelText("Contas fixas mensais"), "1200");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Horas de trabalho por mês"), "160");
-    await user.type(screen.getByLabelText("Dias de trabalho por semana"), "5");
+    await user.type(
+      screen.getByLabelText("Quantas horas faturáveis por mês?"),
+      "160",
+    );
+    await user.type(
+      screen.getByLabelText("Quantos dias por semana você trabalha?"),
+      "5",
+    );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(screen.getByRole("radio", { name: "Por hora" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Valor por hora"), "125,90");
+    await user.type(
+      screen.getByLabelText("Quanto você cobra por hora?"),
+      "125,90",
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(screen.getByLabelText("Impostos"), "6,25");
     await user.type(screen.getByLabelText("Taxa do cartão"), "3,50");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
-    expect(screen.getByText("8 de 8")).toBeInTheDocument();
+    expect(screen.getByText("9 de 9")).toBeInTheDocument();
     expect(screen.getAllByTestId("wizard-step")).toHaveLength(1);
     expect(createDiagnosis).not.toHaveBeenCalled();
 
@@ -182,21 +318,28 @@ describe("ServiceDiagnosisWizard", () => {
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(
-      screen.getByLabelText("Horas de trabalho por mês"),
+      screen.getByLabelText("Quantas horas faturáveis por mês?"),
       "744,01",
     );
-    await user.type(screen.getByLabelText("Dias de trabalho por semana"), "8");
+    await user.type(
+      screen.getByLabelText("Quantos dias por semana você trabalha?"),
+      "8",
+    );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
-    const hours = screen.getByLabelText("Horas de trabalho por mês");
-    const days = screen.getByLabelText("Dias de trabalho por semana");
+    const hours = screen.getByLabelText("Quantas horas faturáveis por mês?");
+    const days = screen.getByLabelText(
+      "Quantos dias por semana você trabalha?",
+    );
     expect(hours).toHaveAttribute("aria-invalid", "true");
-    expect(hours).toHaveAttribute("aria-describedby", "monthlyWorkHours-error");
+    expect(hours).toHaveAttribute("aria-describedby", "workHours-error");
     expect(days).toHaveAttribute("aria-invalid", "true");
     expect(days).toHaveAttribute("aria-describedby", "weeklyWorkDays-error");
     expect(screen.getAllByRole("alert")).toHaveLength(2);
     expect(
-      screen.getByRole("heading", { name: "Como é sua rotina de trabalho?" }),
+      screen.getByRole("heading", {
+        name: "Qual é sua capacidade de atendimento?",
+      }),
     ).toBeInTheDocument();
   });
 
@@ -209,31 +352,39 @@ describe("ServiceDiagnosisWizard", () => {
     }
     await user.click(screen.getByRole("radio", { name: "Por atendimento" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Valor por atendimento"), "0");
     await user.type(
-      screen.getByLabelText("Duração média do atendimento"),
+      screen.getByLabelText("Quanto você cobra por atendimento?"),
+      "0",
+    );
+    await user.type(
+      screen.getByLabelText("Quanto dura cada atendimento?"),
       "45,5",
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
     expect(
-      screen.getByLabelText("Duração média do atendimento"),
+      screen.getByLabelText("Quanto dura cada atendimento?"),
     ).toHaveAttribute("aria-invalid", "true");
 
-    await user.clear(screen.getByLabelText("Duração média do atendimento"));
+    await user.clear(screen.getByLabelText("Quanto dura cada atendimento?"));
     await user.type(
-      screen.getByLabelText("Duração média do atendimento"),
+      screen.getByLabelText("Quanto dura cada atendimento?"),
       "45",
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
-    expect(screen.getByLabelText("Valor por atendimento")).toHaveAttribute(
-      "aria-invalid",
-      "true",
-    );
+    expect(
+      screen.getByLabelText("Quanto você cobra por atendimento?"),
+    ).toHaveAttribute("aria-invalid", "true");
 
-    await user.clear(screen.getByLabelText("Valor por atendimento"));
-    await user.type(screen.getByLabelText("Valor por atendimento"), "350");
+    await user.clear(
+      screen.getByLabelText("Quanto você cobra por atendimento?"),
+    );
+    await user.type(
+      screen.getByLabelText("Quanto você cobra por atendimento?"),
+      "350",
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(screen.getByLabelText("Impostos"), "100,01");
     await user.type(screen.getByLabelText("Taxa do cartão"), "100,01");
@@ -263,34 +414,48 @@ describe("ServiceDiagnosisWizard", () => {
     await user.click(hour);
 
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Valor por hora"), "125");
+    await user.type(
+      screen.getByLabelText("Quanto você cobra por hora?"),
+      "125",
+    );
     await user.click(screen.getByRole("button", { name: "Voltar" }));
     await user.click(screen.getByRole("radio", { name: "Por minuto" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
-    expect(screen.getByLabelText("Valor por minuto")).toHaveValue("");
-    expect(screen.queryByLabelText("Valor por hora")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Quanto você cobra por minuto?")).toHaveValue(
+      "",
+    );
+    expect(
+      screen.queryByLabelText("Quanto você cobra por hora?"),
+    ).not.toBeInTheDocument();
   });
 
   it("reviews grouped, formatted answers and edits each source step", async () => {
     const { createDiagnosis, onBackToType } = renderWizard();
     const user = await completeValidDiagnosis();
 
-    expect(screen.getByText("8 de 8")).toBeInTheDocument();
+    expect(screen.getByText("9 de 9")).toBeInTheDocument();
     expect(screen.getByText("Serviço")).toBeInTheDocument();
     expect(screen.getByText("Por hora")).toBeInTheDocument();
     expect(screen.getByText("R$ 5.000,00")).toBeInTheDocument();
-    expect(screen.getByText("160 horas por mês")).toBeInTheDocument();
+    expect(
+      screen.getByText("160 horas faturáveis por mês"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Sem custo de material")).toBeInTheDocument();
     expect(screen.getByText("6,25%")).toBeInTheDocument();
     expect(createDiagnosis).not.toHaveBeenCalled();
 
     const edits = [
       ["Editar forma de cobrança", "Como você vende seu tempo?"],
       ["Editar meta mensal", "Quanto você quer tirar por mês pra você?"],
-      ["Editar despesas fixas", "Quais são suas despesas fixas?"],
-      ["Editar rotina", "Como é sua rotina de trabalho?"],
-      ["Editar preço atual", "Qual é seu preço atual?"],
-      ["Editar taxas", "Quais taxas incidem nas vendas?"],
+      ["Editar despesas fixas", "Quanto são suas contas fixas do mês?"],
+      ["Editar rotina", "Qual é sua capacidade de atendimento?"],
+      ["Editar preço atual", "Quanto você cobra?"],
+      [
+        "Editar custo de material",
+        "Você tem algum custo de material por hora trabalhada?",
+      ],
+      ["Editar taxas", "Você paga imposto e taxa de cartão?"],
     ] as const;
 
     for (const [buttonName, heading] of edits) {
@@ -298,7 +463,7 @@ describe("ServiceDiagnosisWizard", () => {
       expect(
         screen.getByRole("heading", { name: heading }),
       ).toBeInTheDocument();
-      while (!screen.queryByText("8 de 8")) {
+      while (!screen.queryByText("9 de 9")) {
         await user.click(screen.getByRole("button", { name: "Continuar" }));
       }
     }
@@ -306,9 +471,9 @@ describe("ServiceDiagnosisWizard", () => {
     await user.click(
       screen.getByRole("button", { name: "Editar meta mensal" }),
     );
-    expect(screen.getByLabelText("Renda mensal desejada")).toHaveValue("5000");
+    expect(screen.getByLabelText("Pró-labore mensal")).toHaveValue("5000");
 
-    while (!screen.queryByText("8 de 8")) {
+    while (!screen.queryByText("9 de 9")) {
       await user.click(screen.getByRole("button", { name: "Continuar" }));
     }
     await user.click(
@@ -357,7 +522,7 @@ describe("ServiceDiagnosisWizard", () => {
     expect(
       screen.getByRole("button", { name: "Preparando relatório..." }),
     ).toBeDisabled();
-    expect(screen.getByText("8 de 8")).toBeInTheDocument();
+    expect(screen.getByText("9 de 9")).toBeInTheDocument();
     expect(createSubmissionId).toHaveBeenCalledOnce();
   });
 
@@ -379,7 +544,7 @@ describe("ServiceDiagnosisWizard", () => {
     );
 
     expect(await screen.findByRole("alert")).toHaveTextContent(message);
-    expect(screen.getByText("8 de 8")).toBeInTheDocument();
+    expect(screen.getByText("9 de 9")).toBeInTheDocument();
     expect(screen.getByText("R$ 5.000,00")).toBeInTheDocument();
     if (error === "unauthorized") {
       expect(
@@ -438,7 +603,7 @@ describe("ServiceDiagnosisWizard", () => {
       screen.getByRole("button", { name: "Confirmar diagnóstico" }),
     );
 
-    expect(await screen.findByLabelText("Renda mensal desejada")).toHaveFocus();
+    expect(await screen.findByLabelText("Pró-labore mensal")).toHaveFocus();
     expect(screen.getByRole("alert")).toHaveTextContent("Meta inválida.");
     expect(replace).not.toHaveBeenCalled();
   });
@@ -468,7 +633,7 @@ describe("ServiceDiagnosisWizard", () => {
       }),
     ).toBeInTheDocument();
 
-    for (let step = 0; step < 3; step += 1) {
+    for (let step = 0; step < 4; step += 1) {
       await user.click(screen.getByRole("button", { name: "Continuar" }));
     }
     await user.click(

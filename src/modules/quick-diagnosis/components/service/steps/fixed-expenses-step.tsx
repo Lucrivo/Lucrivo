@@ -6,7 +6,7 @@ function FixedExpensesStep(props: ServiceStepProps) {
     <StepField
       {...props}
       field="fixedMonthlyExpenses"
-      label="Despesas fixas mensais"
+      label="Contas fixas mensais"
       value={props.values.fixedMonthlyExpenses}
       prefix="R$"
     />

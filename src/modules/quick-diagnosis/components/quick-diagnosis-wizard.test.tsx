@@ -100,16 +100,26 @@ describe("QuickDiagnosisWizard category orchestration", () => {
   async function completeServiceDiagnosis(
     user: ReturnType<typeof userEvent.setup>,
   ) {
-    await user.type(screen.getByLabelText("Renda mensal desejada"), "5000");
+    await user.type(screen.getByLabelText("Pró-labore mensal"), "5000");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Despesas fixas mensais"), "1200");
+    await user.type(screen.getByLabelText("Contas fixas mensais"), "1200");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Horas de trabalho por mês"), "160");
-    await user.type(screen.getByLabelText("Dias de trabalho por semana"), "5");
+    await user.type(
+      screen.getByLabelText("Quantas horas faturáveis por mês?"),
+      "160",
+    );
+    await user.type(
+      screen.getByLabelText("Quantos dias por semana você trabalha?"),
+      "5",
+    );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(screen.getByRole("radio", { name: "Por hora" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Valor por hora"), "125,90");
+    await user.type(
+      screen.getByLabelText("Quanto você cobra por hora?"),
+      "125,90",
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(screen.getByLabelText("Impostos"), "6,25");
     await user.type(screen.getByLabelText("Taxa do cartão"), "3,50");
@@ -257,7 +267,7 @@ describe("QuickDiagnosisWizard category orchestration", () => {
         await user.click(screen.getByRole("button", { name: "Voltar" }));
         await user.click(screen.getByRole("button", { name: "Voltar" }));
       } else {
-        await user.type(screen.getByLabelText("Renda mensal desejada"), "5000");
+        await user.type(screen.getByLabelText("Pró-labore mensal"), "5000");
         await user.click(screen.getByRole("button", { name: "Voltar" }));
       }
 
@@ -276,7 +286,7 @@ describe("QuickDiagnosisWizard category orchestration", () => {
           screen.getByRole("radio", { name: "Diagnóstico rápido" }),
         ).not.toBeChecked();
       } else {
-        expect(screen.getByLabelText("Renda mensal desejada")).toHaveValue("");
+        expect(screen.getByLabelText("Pró-labore mensal")).toHaveValue("");
       }
     },
   );
@@ -389,12 +399,15 @@ describe("QuickDiagnosisWizard category orchestration", () => {
       pricingMethod: "hour",
       desiredMonthlyIncome: "5000",
       fixedMonthlyExpenses: "1200",
-      monthlyWorkHours: "160",
+      workHoursPeriod: "month",
+      workHours: "160",
       weeklyWorkDays: "5",
       hourlyRate: "125,90",
       minuteRate: "",
       appointmentRate: "",
       appointmentDurationMinutes: "",
+      hasMaterialCost: false,
+      materialUnitCost: "",
       taxRate: "6,25",
       cardFeeRate: "3,50",
     });

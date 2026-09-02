@@ -31,19 +31,19 @@
 
 ## File Structure
 
-| Path | Responsibility |
-| --- | --- |
-| `src/modules/quick-diagnosis/types.ts` | Service raw input, normalized command, work-period contracts. |
-| `src/modules/quick-diagnosis/schemas/service-work-capacity.ts` | Parse period hours and normalize monthly capacity. |
-| `src/modules/quick-diagnosis/schemas/service-diagnosis.schema.ts` | Conditional material validation and command normalization. |
-| `src/modules/reports/domain/calculate-service-report.ts` | Structure/direct cost, contribution, prices, goal, and verdict. |
-| `src/modules/reports/schemas/service-report-snapshot.schema.ts` | Legacy Service V2 and current V3 contracts. |
-| `src/modules/reports/schemas/report-snapshot.schema.ts` | Root parser accepting both Service versions. |
-| `src/modules/reports/domain/build-service-report-snapshot.ts` | Service V3 content, inputs, results, and simulator base. |
-| `supabase/migrations/*_refine_service_diagnosis_cost_flow.sql` | Additive columns, constraints, backfill, and revised RPC. |
-| `src/infrastructure/database/supabase/database.types.ts` | Generated table, enum, and RPC types. |
-| `src/modules/quick-diagnosis/components/service/**` | Period/material state, steps, review, validation, and progress. |
-| `docs/QUICK-DIAGNOSIS.md` | Shipped Service questions and formulas. |
+| Path                                                              | Responsibility                                                  |
+| ----------------------------------------------------------------- | --------------------------------------------------------------- |
+| `src/modules/quick-diagnosis/types.ts`                            | Service raw input, normalized command, work-period contracts.   |
+| `src/modules/quick-diagnosis/schemas/service-work-capacity.ts`    | Parse period hours and normalize monthly capacity.              |
+| `src/modules/quick-diagnosis/schemas/service-diagnosis.schema.ts` | Conditional material validation and command normalization.      |
+| `src/modules/reports/domain/calculate-service-report.ts`          | Structure/direct cost, contribution, prices, goal, and verdict. |
+| `src/modules/reports/schemas/service-report-snapshot.schema.ts`   | Legacy Service V2 and current V3 contracts.                     |
+| `src/modules/reports/schemas/report-snapshot.schema.ts`           | Root parser accepting both Service versions.                    |
+| `src/modules/reports/domain/build-service-report-snapshot.ts`     | Service V3 content, inputs, results, and simulator base.        |
+| `supabase/migrations/*_refine_service_diagnosis_cost_flow.sql`    | Additive columns, constraints, backfill, and revised RPC.       |
+| `src/infrastructure/database/supabase/database.types.ts`          | Generated table, enum, and RPC types.                           |
+| `src/modules/quick-diagnosis/components/service/**`               | Period/material state, steps, review, validation, and progress. |
+| `docs/QUICK-DIAGNOSIS.md`                                         | Shipped Service questions and formulas.                         |
 
 ## Shared Contracts
 
@@ -178,8 +178,7 @@ function normalizeMonthlyWorkMinutes(
   if (period === "month") return periodMinutes;
   const days = period === "day" ? BigInt(weeklyWorkDays) : BigInt(1);
   return Number(
-    (BigInt(periodMinutes) * days * BigInt(433) + BigInt(50)) /
-      BigInt(100),
+    (BigInt(periodMinutes) * days * BigInt(433) + BigInt(50)) / BigInt(100),
   );
 }
 ```
