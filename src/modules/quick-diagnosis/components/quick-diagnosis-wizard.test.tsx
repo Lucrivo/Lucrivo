@@ -242,9 +242,7 @@ describe("QuickDiagnosisWizard category orchestration", () => {
       const user = userEvent.setup();
       const { createSubmissionId } = renderWizard();
 
-      await user.click(
-        screen.getByRole("radio", { name: initialCategory }),
-      );
+      await user.click(screen.getByRole("radio", { name: initialCategory }));
       await user.click(screen.getByRole("button", { name: "Continuar" }));
 
       if (initialCategory === "Produto") {
@@ -269,9 +267,7 @@ describe("QuickDiagnosisWizard category orchestration", () => {
       expect(screen.getByText("2 de 8")).toBeInTheDocument();
       await user.click(screen.getByRole("button", { name: "Voltar" }));
 
-      await user.click(
-        screen.getByRole("radio", { name: initialCategory }),
-      );
+      await user.click(screen.getByRole("radio", { name: initialCategory }));
       await user.click(screen.getByRole("button", { name: "Continuar" }));
       expect(createSubmissionId).toHaveBeenCalledTimes(3);
 

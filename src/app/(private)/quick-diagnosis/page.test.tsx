@@ -7,11 +7,11 @@ const {
   createServiceDiagnosis,
   QuickDiagnosisWizard,
 } = vi.hoisted(() => ({
-    createProductDiagnosis: vi.fn(),
-    createProductionDiagnosis: vi.fn(),
-    createServiceDiagnosis: vi.fn(),
-    QuickDiagnosisWizard: vi.fn(() => <div>Wizard do diagnóstico</div>),
-  }));
+  createProductDiagnosis: vi.fn(),
+  createProductionDiagnosis: vi.fn(),
+  createServiceDiagnosis: vi.fn(),
+  QuickDiagnosisWizard: vi.fn(() => <div>Wizard do diagnóstico</div>),
+}));
 
 vi.mock(
   "@/modules/quick-diagnosis/actions/create-product-diagnosis.action",

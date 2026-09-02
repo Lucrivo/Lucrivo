@@ -131,15 +131,15 @@ O volume mensal significa **unidades vendidas**, não unidades apenas produzidas
 
 ### 4.2 Parâmetros de produtos
 
-| Parâmetro                   | Significado                                            | Observação                                   |
-| --------------------------- | ------------------------------------------------------ | -------------------------------------------- |
-| Custo de compra             | Valor pago ao fornecedor por unidade                   | Usado na revenda                             |
-| Custo de produção           | Custo resumido da unidade pronta ou soma da composição fixa | Usado na produção própria                 |
-| Embalagem por unidade       | Embalagem consumida para fabricar uma unidade               | Uma das quatro categorias da composição   |
-| Mão de obra direta          | Trabalho variável necessário para fabricar uma unidade      | Não deve duplicar o pró-labore mensal     |
-| Volume mensal               | Quantidade média de unidades vendidas no mês                 | Permite dividir o custo fixo por unidade  |
-| Rendimento                  | Quantas unidades uma receita ou lote produz                  | Fora do diagnóstico rápido; escopo futuro |
-| Perda/desperdício           | Parte da produção que não vira venda                        | Fora do diagnóstico rápido; escopo futuro |
+| Parâmetro             | Significado                                                 | Observação                                |
+| --------------------- | ----------------------------------------------------------- | ----------------------------------------- |
+| Custo de compra       | Valor pago ao fornecedor por unidade                        | Usado na revenda                          |
+| Custo de produção     | Custo resumido da unidade pronta ou soma da composição fixa | Usado na produção própria                 |
+| Embalagem por unidade | Embalagem consumida para fabricar uma unidade               | Uma das quatro categorias da composição   |
+| Mão de obra direta    | Trabalho variável necessário para fabricar uma unidade      | Não deve duplicar o pró-labore mensal     |
+| Volume mensal         | Quantidade média de unidades vendidas no mês                | Permite dividir o custo fixo por unidade  |
+| Rendimento            | Quantas unidades uma receita ou lote produz                 | Fora do diagnóstico rápido; escopo futuro |
+| Perda/desperdício     | Parte da produção que não vira venda                        | Fora do diagnóstico rápido; escopo futuro |
 
 ### 4.3 Parâmetros de serviços
 
