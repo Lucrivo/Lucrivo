@@ -40,7 +40,8 @@ const statusPresentation = {
   },
   below_target: {
     icon: TriangleAlertIcon,
-    className: "border-warning/30 bg-warning/10 text-warning-foreground",
+    className:
+      "border-warning/30 bg-warning/10 text-warning-foreground dark:text-warning",
   },
   break_even: {
     icon: TriangleAlertIcon,

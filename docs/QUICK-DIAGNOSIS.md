@@ -66,11 +66,13 @@ O usuário informa:
 
 - quanto deseja retirar por mês como pró-labore;
 - total das contas fixas mensais;
-- quantidade de horas efetivamente faturáveis por mês;
+- período usado para informar as horas faturáveis: dia, semana ou mês;
+- quantidade de horas efetivamente faturáveis nesse período;
 - dias trabalhados por semana;
 - como cobra pelo trabalho;
 - preço atualmente cobrado;
 - duração média, quando a cobrança não é simplesmente por hora;
+- existência e valor de material consumido diretamente no serviço;
 - percentuais de imposto e cartão.
 
 Existem três formas de cobrança:
@@ -81,7 +83,7 @@ Existem três formas de cobrança:
 | Por atendimento | O valor informado é o preço completo de uma sessão | Atendimento                |
 | Por minuto      | Preço por minuto × duração média da sessão         | Atendimento                |
 
-Na cobrança por atendimento ou minuto, a duração é convertida em horas para descobrir quanto da capacidade mensal é consumida por uma sessão.
+Na cobrança por atendimento ou minuto, a duração é convertida em horas para descobrir quanto da capacidade mensal é consumida por uma sessão. O material é informado por hora na cobrança por hora e por atendimento completo nas cobranças por minuto ou atendimento.
 
 ### 3.2 Produto de revenda
 
@@ -143,11 +145,13 @@ O volume mensal significa **unidades vendidas**, não unidades apenas produzidas
 
 ### 4.3 Parâmetros de serviços
 
-| Parâmetro              | Significado                                       | Observação                                                               |
-| ---------------------- | ------------------------------------------------- | ------------------------------------------------------------------------ |
-| Horas faturáveis       | Horas do mês que realmente são pagas por clientes | Não devem incluir estudo, deslocamento, administração ou horários vazios |
-| Duração do atendimento | Tempo médio de uma sessão                         | Converte o custo da hora em custo por atendimento                        |
-| Forma de cobrança      | Hora, atendimento ou minuto                       | Determina a unidade usada no diagnóstico                                 |
+| Parâmetro              | Significado                                             | Observação                                                                     |
+| ---------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Período das horas      | Dia, semana ou mês usado para informar a capacidade     | O valor é normalizado para uma capacidade mensal                               |
+| Horas faturáveis       | Horas que realmente podem ser cobradas dos clientes     | Não incluem estudo, deslocamento, administração ou horários vazios             |
+| Duração do atendimento | Tempo médio de uma sessão                               | Converte o custo da hora em custo por atendimento                              |
+| Forma de cobrança      | Hora, atendimento ou minuto                             | Determina a unidade usada para preço, custo e resultado                        |
+| Material direto        | Material consumido somente quando o serviço é realizado | É informado por hora ou atendimento e nunca é dividido pelas horas disponíveis |
 
 ### 4.4 Valores iniciais adotados atualmente
 
@@ -159,7 +163,7 @@ O comportamento atual começa com alguns valores predefinidos:
 - referência de **6 dias por semana para produtos e produção própria**;
 - referência de **5 dias por semana para serviços**;
 - pró-labore inicialmente desligado para produtos e produção própria;
-- pró-labore inicialmente ligado para serviços.
+- pró-labore mensal informado diretamente no fluxo de serviços.
 
 No fluxo rápido atual, a meta de margem não é perguntada e também não há um controle visível para alterá-la na tela de resultado. Assim, o preço-alvo e a classificação usam automaticamente 20% ou 15%, conforme a trilha. O motor possui suporte para outras metas, mas essa escolha ainda não está exposta nessa jornada.
 
@@ -353,41 +357,51 @@ O resultado é arredondado para cima, pois não é possível vender uma fração
 
 Considere:
 
-- **CF** = custos fixos mensais;
-- **PL** = pró-labore, quando ligado;
-- **H** = horas faturáveis no mês;
-- **D** = duração do atendimento em horas;
+- **PL** = pró-labore mensal;
+- **CF** = contas fixas mensais;
+- **H** = horas faturáveis mensais normalizadas;
+- **D** = duração da unidade vendida em horas;
+- **CD** = custo direto de material por hora ou atendimento;
 - **P** = preço da hora ou do atendimento;
-- **T** = imposto + cartão + eventual comissão;
+- **V** = imposto + cartão;
 - **M** = meta de margem.
 
-### 7.1 Custo mensal da atividade
+### 7.1 Capacidade mensal normalizada
 
 ```text
-Custo mensal = CF + PL
+mês    -> minutos informados
+semana -> minutos informados × 4,33
+dia    -> minutos informados × dias trabalhados por semana × 4,33
 ```
 
-No serviço, o pró-labore começa ligado. Se for desligado, o resultado mostra apenas o mínimo necessário para manter a operação, sem remunerar o profissional.
+O cálculo usa minutos inteiros e arredondamento determinístico. Os limites são 24 horas por dia, 168 por semana e 744 por mês. Somente horas que podem ser cobradas entram na capacidade; estudo, administração, deslocamento e horários ociosos ficam de fora.
 
-### 7.2 Custo real da hora
+Os dias trabalhados não são um custo. Eles participam da conversão quando a capacidade foi informada por dia e também permitem traduzir a meta mensal em uma referência diária.
+
+### 7.2 Custo de estrutura
 
 ```text
-Custo real da hora = custo mensal ÷ H
+custoBase = pró-labore + contas fixas
+custoHora = custoBase ÷ horas faturáveis mensais normalizadas
+custoEstruturaUnit = custoHora × duração da unidade
 ```
 
-Somente horas que podem ser cobradas do cliente devem entrar em H. Quanto menor a quantidade de horas faturáveis, maior será o custo de cada hora.
+Na cobrança por hora, a duração da unidade é uma hora. Nas cobranças por atendimento ou minuto, a duração informada é convertida para horas.
 
-### 7.3 Custo por atendimento
+### 7.3 Custo direto e custo total
 
 ```text
-Custo por atendimento = custo real da hora × D
+materialUnit = custo de material informado
+custoUnit = custoEstruturaUnit + materialUnit
 ```
 
-Se uma sessão dura 50 minutos:
+O material é um custo direto e não passa pela divisão das horas disponíveis:
 
-```text
-D = 50 ÷ 60 = 0,8333 hora
-```
+- cobrança por hora: material por hora faturada;
+- cobrança por minuto: material do atendimento completo;
+- cobrança por atendimento: material do atendimento completo.
+
+Na cobrança por minuto, o preço por minuto é multiplicado pela duração, mas o material já representa o atendimento inteiro e não é multiplicado novamente.
 
 ### 7.4 Preço considerado
 
@@ -395,28 +409,30 @@ D = 50 ÷ 60 = 0,8333 hora
 - Por atendimento: P é o preço completo da sessão.
 - Por minuto: P é o preço por minuto multiplicado pela duração em minutos.
 
-### 7.5 Lucro e margem
+### 7.5 Receita, contribuição, lucro e margem
 
 ```text
-Lucro por hora ou atendimento = P × (1 - T) - custo da hora ou atendimento
-
-Margem real = lucro ÷ P
+receitaLiquidaUnit = preço × (1 − imposto − cartão)
+contribUnit = receitaLiquidaUnit − materialUnit
+lucroUnit = contribUnit − custoEstruturaUnit
+margem real = lucroUnit ÷ preço
 ```
+
+A contribuição mostra quanto cada venda deixa para pagar pró-labore e contas fixas depois de taxas e material. O lucro unitário também desconta o custo de estrutura rateado.
 
 ### 7.6 Preço mínimo e preço-alvo
 
 ```text
-Preço mínimo = custo da hora ou atendimento ÷ (1 - T)
-
-Preço-alvo = custo da hora ou atendimento ÷ (1 - T - M)
+preço mínimo = custoUnit ÷ (1 − imposto − cartão)
+preço-alvo = custoUnit ÷ (1 − imposto − cartão − margem-alvo)
 ```
 
-No fluxo rápido atual, M começa fixada em 15% para serviços.
+No fluxo rápido atual, a margem-alvo começa fixada em 15% para serviços. O preço-alvo só existe quando taxas e margem somam menos de 100%.
 
 ### 7.7 Capacidade mensal
 
 - Se a cobrança é por hora, a capacidade é igual às horas faturáveis mensais.
-- Se a cobrança é por atendimento, a capacidade estimada é:
+- Se a cobrança é por atendimento ou minuto, a capacidade estimada é:
 
 ```text
 Capacidade de atendimentos = H ÷ D
@@ -424,19 +440,11 @@ Capacidade de atendimentos = H ÷ D
 
 ### 7.8 Meta de vendas do serviço
 
-O sistema calcula primeiro o faturamento necessário para cobrir custos fixos e pró-labore, já descontando as taxas:
-
 ```text
-Faturamento necessário = (CF + PL) ÷ (1 - T)
+meta mensal = teto(custoBase ÷ contribUnit)
 ```
 
-Depois converte esse faturamento em horas ou atendimentos:
-
-```text
-Meta mensal = faturamento necessário ÷ P
-```
-
-Essa meta representa o volume necessário para cobrir a estrutura e o pró-labore. A meta de margem adicional é usada principalmente para calcular o preço-alvo, não para aumentar essa meta operacional de vendas.
+Essa meta representa quantas horas ou atendimentos precisam contribuir para pagar a estrutura e o pró-labore. Se a contribuição for zero ou negativa, aumentar o volume não fecha a conta; cada nova venda mantém ou amplia o prejuízo.
 
 ---
 
@@ -592,6 +600,8 @@ Ao salvar, o sistema registra um retrato do diagnóstico contendo, entre outros 
 
 A IA não realiza os cálculos principais. O motor de regras calcula os números primeiro; a IA recebe o retrato pronto para explicá-lo em linguagem consultiva.
 
+Novos relatórios de Serviço são salvos no contrato de snapshot V3, que preserva o período informado, a capacidade original e mensal normalizada e o custo de material. Relatórios V2 já existentes continuam sendo lidos pelo contrato legado sem reinterpretar ou recalcular seus números.
+
 No protótipo fora do ambiente original, o salvamento pode não persistir após recarregar a página e o relatório de IA pode exibir uma mensagem de indisponibilidade. Essas limitações não alteram os cálculos exibidos na tela.
 
 ---
@@ -652,30 +662,37 @@ Considere um profissional com:
 - 100 horas faturáveis por mês;
 - atendimentos de 50 minutos;
 - preço por atendimento: R$ 80;
+- material consumido por atendimento: R$ 10;
 - imposto + cartão: 8%;
 - meta de margem: 15%.
 
 ```text
-Custo mensal = 2.000 + 4.000 = R$ 6.000
+custoBase = 2.000 + 4.000 = R$ 6.000
 
-Custo real da hora = 6.000 ÷ 100 = R$ 60
+custoHora = 6.000 ÷ 100 = R$ 60
 
 Duração em horas = 50 ÷ 60 = 0,8333
 
-Custo por atendimento = 60 × 0,8333 = R$ 50
+custoEstruturaUnit = 60 × 0,8333 = R$ 50
 
-Receita líquida do atendimento = 80 × 92% = R$ 73,60
+custoUnit = 50 + 10 = R$ 60
 
-Lucro por atendimento = 73,60 - 50 = R$ 23,60
+receitaLiquidaUnit = 80 × 92% = R$ 73,60
 
-Margem real = 23,60 ÷ 80 = 29,5%
+contribUnit = 73,60 - 10 = R$ 63,60
 
-Preço mínimo = 50 ÷ 92% = R$ 54,35
+lucroUnit = 63,60 - 50 = R$ 13,60
 
-Preço-alvo = 50 ÷ (100% - 8% - 15%) = R$ 64,94
+margem real = 13,60 ÷ 80 = 17%
+
+preço mínimo = 60 ÷ 92% = R$ 65,22
+
+preço-alvo = 60 ÷ (100% - 8% - 15%) = R$ 77,92
+
+meta mensal = teto(6.000 ÷ 63,60) = 95 atendimentos
 ```
 
-Interpretação: o preço cobre os custos e supera a meta em mais de 3 pontos percentuais. O diagnóstico classifica a margem como **acima da meta**, e a prioridade passa a ser **volume**.
+Interpretação: o preço cobre estrutura, material e taxas e supera a meta de 15%. A contribuição de R$ 63,60 é o valor que cada atendimento deixa para pagar a estrutura mensal; por isso são necessários pelo menos 95 atendimentos para fechar essa conta.
 
 ---
 

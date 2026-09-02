@@ -20,6 +20,10 @@ import {
 import { CurrentPriceStep } from "./steps/current-price-step";
 import { FeesStep } from "./steps/fees-step";
 import { FixedExpensesStep } from "./steps/fixed-expenses-step";
+import {
+  getMaterialCostQuestion,
+  MaterialCostStep,
+} from "./steps/material-cost-step";
 import { MonthlyGoalStep } from "./steps/monthly-goal-step";
 import { PricingMethodStep } from "./steps/pricing-method-step";
 import { ReviewStep } from "./steps/review-step";
@@ -37,20 +41,29 @@ type ServiceDiagnosisWizardProps = {
   onBackToType: () => void;
 };
 
-const stepTitles: Record<ServiceWizardStep, string> = {
+const stepTitles: Record<Exclude<ServiceWizardStep, "materialCost">, string> = {
   monthlyGoal: "Quanto você quer tirar por mês pra você?",
-  fixedExpenses: "Quais são suas despesas fixas?",
-  workRoutine: "Como é sua rotina de trabalho?",
+  fixedExpenses: "Quanto são suas contas fixas do mês?",
+  workRoutine: "Qual é sua capacidade de atendimento?",
   pricingMethod: "Como você vende seu tempo?",
-  currentPrice: "Qual é seu preço atual?",
-  fees: "Quais taxas incidem nas vendas?",
+  currentPrice: "Quanto você cobra?",
+  fees: "Você paga imposto e taxa de cartão?",
   review: "Revise suas respostas",
 };
+
+function getStepTitle(
+  step: ServiceWizardStep,
+  values: ServiceDiagnosisInput,
+): string {
+  return step === "materialCost"
+    ? getMaterialCostQuestion(values)
+    : stepTitles[step];
+}
 
 const stepFields = {
   monthlyGoal: ["desiredMonthlyIncome"],
   fixedExpenses: ["fixedMonthlyExpenses"],
-  workRoutine: ["monthlyWorkHours", "weeklyWorkDays"],
+  workRoutine: ["workHoursPeriod", "workHours", "weeklyWorkDays"],
   pricingMethod: ["pricingMethod"],
   currentPrice: [
     "hourlyRate",
@@ -58,6 +71,7 @@ const stepFields = {
     "appointmentRate",
     "appointmentDurationMinutes",
   ],
+  materialCost: ["hasMaterialCost", "materialUnitCost"],
   fees: ["taxRate", "cardFeeRate"],
 } as const satisfies Record<
   Exclude<ServiceWizardStep, "review">,
@@ -69,12 +83,15 @@ const fieldStep: Record<ServiceDiagnosisField, ServiceWizardStep> = {
   pricingMethod: "pricingMethod",
   desiredMonthlyIncome: "monthlyGoal",
   fixedMonthlyExpenses: "fixedExpenses",
-  monthlyWorkHours: "workRoutine",
+  workHoursPeriod: "workRoutine",
+  workHours: "workRoutine",
   weeklyWorkDays: "workRoutine",
   hourlyRate: "currentPrice",
   minuteRate: "currentPrice",
   appointmentRate: "currentPrice",
   appointmentDurationMinutes: "currentPrice",
+  hasMaterialCost: "materialCost",
+  materialUnitCost: "materialCost",
   taxRate: "fees",
   cardFeeRate: "fees",
 };
@@ -147,9 +164,25 @@ function ServiceDiagnosisWizard({
       case "fixedExpenses":
         return <FixedExpensesStep {...stepProps} />;
       case "workRoutine":
-        return <WorkRoutineStep {...stepProps} />;
+        return (
+          <WorkRoutineStep
+            {...stepProps}
+            onWorkHoursPeriodChange={(value) =>
+              dispatch({ type: "setWorkHoursPeriod", value })
+            }
+          />
+        );
       case "currentPrice":
         return <CurrentPriceStep {...stepProps} />;
+      case "materialCost":
+        return (
+          <MaterialCostStep
+            {...stepProps}
+            onHasMaterialCostChange={(value) =>
+              dispatch({ type: "setHasMaterialCost", value })
+            }
+          />
+        );
       case "fees":
         return <FeesStep {...stepProps} />;
       case "review":
@@ -239,8 +272,8 @@ function ServiceDiagnosisWizard({
   return (
     <WizardShell
       stepNumber={globalStepNumber}
-      totalSteps={8}
-      title={stepTitles[state.step]}
+      totalSteps={9}
+      title={getStepTitle(state.step, state.values)}
       onBack={goBack}
       onContinue={state.step === "review" ? undefined : continueToNextStep}
     >

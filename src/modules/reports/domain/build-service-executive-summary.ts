@@ -20,6 +20,11 @@ const verdictContent: Record<
     body: "Informe o preço atual para o Lucrivo comparar sua cobrança com os custos e a meta de 15%.",
     tone: "neutral",
   },
+  direct_loss: {
+    label: "Prejuízo direto",
+    body: "O preço líquido não cobre nem o material usado diretamente. Cada nova venda aumenta o prejuízo antes mesmo de pagar a estrutura.",
+    tone: "critical",
+  },
   operational_loss: {
     label: "Prejuízo",
     body: "",
@@ -72,7 +77,14 @@ function buildVerdict(
   calculation: ServiceReportCalculation,
 ): ReportExecutiveSummary["verdict"] {
   const content = verdictContent[calculation.verdict];
-  if (calculation.verdict !== "operational_loss") return content;
+  if (
+    calculation.verdict !== "operational_loss" &&
+    calculation.verdict !== "direct_loss"
+  ) {
+    return content;
+  }
+
+  if (calculation.verdict === "direct_loss") return content;
 
   const unit = formatReportUnit(calculation.unit);
   return {

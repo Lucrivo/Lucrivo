@@ -1,6 +1,6 @@
-const SERVICE_REPORT_SCHEMA_VERSION = 2;
-const SERVICE_CALCULATION_VERSION = 1;
-const SERVICE_CONTENT_VERSION = 2;
+const SERVICE_REPORT_SCHEMA_VERSION = 3;
+const SERVICE_CALCULATION_VERSION = 2;
+const SERVICE_CONTENT_VERSION = 3;
 const PRODUCT_REPORT_SCHEMA_VERSION = 1;
 const PRODUCT_CALCULATION_VERSION = 1;
 const PRODUCT_CONTENT_VERSION = 1;
@@ -11,6 +11,7 @@ const PRODUCTION_CONTENT_VERSION = 1;
 const reportTones = ["neutral", "positive", "warning", "critical"] as const;
 const serviceReportVerdicts = [
   "missing_price",
+  "direct_loss",
   "operational_loss",
   "tight_margin",
   "adequate_margin",
@@ -208,5 +209,7 @@ export type {
 } from "./schemas/report-snapshot.schema";
 export type {
   ServiceReportDiscountSimulationBase,
+  ServiceReportSnapshot,
   ServiceReportSnapshotV2,
+  ServiceReportSnapshotV3,
 } from "./schemas/service-report-snapshot.schema";

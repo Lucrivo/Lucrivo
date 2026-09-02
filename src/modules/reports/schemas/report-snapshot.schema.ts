@@ -9,12 +9,14 @@ import {
   type ProductionReportDiscountSimulationBase,
 } from "./production-report-snapshot.schema";
 import {
+  serviceReportSnapshotV3Schema,
   serviceReportSnapshotV2Schema,
   type ServiceReportDiscountSimulationBase,
 } from "./service-report-snapshot.schema";
 
-const reportSnapshotSchema = z.discriminatedUnion("category", [
+const reportSnapshotSchema = z.union([
   serviceReportSnapshotV2Schema,
+  serviceReportSnapshotV3Schema,
   productReportSnapshotV1Schema,
   productionReportSnapshotV1Schema,
 ]);

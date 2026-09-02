@@ -6,7 +6,7 @@ function MonthlyGoalStep(props: ServiceStepProps) {
     <StepField
       {...props}
       field="desiredMonthlyIncome"
-      label="Renda mensal desejada"
+      label="Pró-labore mensal"
       value={props.values.desiredMonthlyIncome}
       prefix="R$"
     />
