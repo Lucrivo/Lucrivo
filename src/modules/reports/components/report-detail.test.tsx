@@ -3,12 +3,15 @@ import { describe, expect, it } from "vitest";
 
 import type {
   ProductDiagnosisCommand,
+  ProductionDiagnosisCommand,
   ServiceDiagnosisCommand,
 } from "@/modules/quick-diagnosis/types";
 
 import { buildProductReportSnapshot } from "../domain/build-product-report-snapshot";
+import { buildProductionReportSnapshot } from "../domain/build-production-report-snapshot";
 import { buildServiceReportSnapshot } from "../domain/build-service-report-snapshot";
 import { calculateProductReport } from "../domain/calculate-product-report";
+import { calculateProductionReport } from "../domain/calculate-production-report";
 import { calculateServiceReport } from "../domain/calculate-service-report";
 import { toReportViewModel } from "../presenters/to-report-view-model";
 import { ReportDetail } from "./report-detail";
@@ -55,6 +58,31 @@ const productViewModel = toReportViewModel({
   snapshot: buildProductReportSnapshot(
     productCommand,
     calculateProductReport(productCommand),
+  ),
+});
+
+const productionCommand: ProductionDiagnosisCommand = {
+  submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  costCompositionEnabled: false,
+  productionUnitCostCents: 5000,
+  materialUnitCostCents: null,
+  packagingUnitCostCents: null,
+  directLaborUnitCostCents: null,
+  otherVariableUnitCostCents: null,
+  unitSalePriceCents: 10000,
+  fixedMonthlyExpensesCents: 100000,
+  monthlySalesVolume: null,
+  proLaboreIncluded: false,
+  proLaboreCents: 0,
+  taxRateBasisPoints: 600,
+  cardFeeRateBasisPoints: 200,
+};
+const productionViewModel = toReportViewModel({
+  id: 126,
+  createdAt: "2026-09-01T15:00:00.000Z",
+  snapshot: buildProductionReportSnapshot(
+    productionCommand,
+    calculateProductionReport(productionCommand),
   ),
 });
 
@@ -126,6 +154,22 @@ describe("ReportDetail", () => {
       screen.getByRole("heading", { name: "Diagnóstico de Produto" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Revenda")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Contribuição por unidade").length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("Margem de contribuição")).toBeInTheDocument();
+    expect(
+      screen.getByText("Simulação parcial", { exact: false }),
+    ).toBeInTheDocument();
+  });
+
+  it("passes Production context to partial simulation wording", () => {
+    render(<ReportDetail viewModel={productionViewModel} />);
+
+    expect(
+      screen.getByRole("heading", { name: "Diagnóstico de Produção" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Fabricação própria")).toBeInTheDocument();
     expect(
       screen.getAllByText("Contribuição por unidade").length,
     ).toBeGreaterThan(0);

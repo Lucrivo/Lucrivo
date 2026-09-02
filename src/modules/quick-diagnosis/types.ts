@@ -84,14 +84,75 @@ type CreateProductDiagnosisActionResult =
     }
   | { status: "error"; error: "unauthorized" | "create_failed" };
 
+type ProductionDiagnosisInput = {
+  submissionId: string;
+  costCompositionEnabled: boolean;
+  productionUnitCost: string;
+  materialUnitCost: string;
+  packagingUnitCost: string;
+  directLaborUnitCost: string;
+  otherVariableUnitCost: string;
+  unitSalePrice: string;
+  fixedMonthlyExpenses: string;
+  monthlySalesVolume: string;
+  proLaboreIncluded: boolean;
+  proLabore: string;
+  taxRate: string;
+  cardFeeRate: string;
+};
+
+type ProductionDiagnosisValidatedInput = {
+  submissionId: string;
+  costCompositionEnabled: boolean;
+  productionUnitCostCents: number | null;
+  materialUnitCostCents: number | null;
+  packagingUnitCostCents: number | null;
+  directLaborUnitCostCents: number | null;
+  otherVariableUnitCostCents: number | null;
+  unitSalePriceCents: number;
+  fixedMonthlyExpensesCents: number;
+  monthlySalesVolume: number | null;
+  proLaboreIncluded: boolean;
+  proLaboreCents: number;
+  taxRateBasisPoints: number;
+  cardFeeRateBasisPoints: number;
+};
+
+type ProductionDiagnosisCommand = Omit<
+  ProductionDiagnosisValidatedInput,
+  "productionUnitCostCents"
+> & {
+  productionUnitCostCents: number;
+};
+
+type ProductionDiagnosisField = keyof ProductionDiagnosisInput;
+type ProductionDiagnosisFieldErrors = Partial<
+  Record<ProductionDiagnosisField, string[]>
+>;
+
+type CreateProductionDiagnosisActionResult =
+  | { status: "success"; diagnosisId: number }
+  | {
+      status: "error";
+      error: "invalid_input";
+      fieldErrors: ProductionDiagnosisFieldErrors;
+    }
+  | { status: "error"; error: "unauthorized" | "create_failed" };
+
 export {
   pricingMethods,
   type CreateProductDiagnosisActionResult,
+  type CreateProductionDiagnosisActionResult,
   type CreateServiceDiagnosisActionResult,
   type ProductDiagnosisCommand,
   type ProductDiagnosisField,
   type ProductDiagnosisFieldErrors,
   type ProductDiagnosisInput,
+  type ProductionDiagnosisCommand,
+  type ProductionDiagnosisField,
+  type ProductionDiagnosisFieldErrors,
+  type ProductionDiagnosisInput,
+  type ProductionDiagnosisValidatedInput,
   type ServiceDiagnosisCommand,
   type ServiceDiagnosisField,
   type ServiceDiagnosisFieldErrors,

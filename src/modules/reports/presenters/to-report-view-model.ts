@@ -7,6 +7,7 @@ import {
 } from "../formatters";
 import type {
   ProductReportSnapshotV1,
+  ProductionReportSnapshotV1,
   ReportDiscountSimulationBase,
   ReportSnapshot,
   ReportTone,
@@ -45,6 +46,7 @@ type ReportViewModel = {
   numbers: ReportNumberViewModel[];
   sections: ReportSectionViewModel[];
   discountSimulationBase: ReportDiscountSimulationBase;
+  discountSimulationContext: ReportSnapshot["category"];
 };
 
 const toneLabels: Record<ReportTone, string> = {
@@ -134,6 +136,44 @@ function toProductNumbers(
   ];
 }
 
+function toProductionNumbers(
+  snapshot: ProductionReportSnapshotV1,
+): ReportNumberViewModel[] {
+  const partial = snapshot.results.priceReferencesPartial;
+
+  return [
+    {
+      key: "price",
+      label: "Preço atual",
+      value: formatCurrency(snapshot.results.currentPriceCents),
+    },
+    {
+      key: "margin",
+      label: "Margem real",
+      value: optionalPercentage(snapshot.results.realMarginBasisPoints),
+    },
+    {
+      key: "profit",
+      label: partial ? "Contribuição por unidade" : "Lucro por unidade",
+      value: optionalCurrency(
+        partial
+          ? snapshot.results.unitContributionCents
+          : snapshot.results.unitProfitCents,
+      ),
+    },
+    {
+      key: "minimum",
+      label: partial ? "Preço mínimo (sem rateio fixo)" : "Preço mínimo",
+      value: optionalCurrency(snapshot.results.minimumPriceCents),
+    },
+    {
+      key: "target",
+      label: partial ? "Preço-alvo (sem rateio fixo)" : "Preço-alvo (20%)",
+      value: optionalCurrency(snapshot.results.targetPriceCents),
+    },
+  ];
+}
+
 function toReportViewModel({
   id,
   createdAt,
@@ -144,13 +184,33 @@ function toReportViewModel({
   snapshot: ReportSnapshot;
 }): ReportViewModel {
   const unitLabel = formatReportUnit(snapshot.unit);
-  const isProduct = snapshot.category === "product";
+  let title: string;
+  let categoryLabel: string;
+  let numbers: ReportNumberViewModel[];
+
+  switch (snapshot.category) {
+    case "service":
+      title = "Diagnóstico de Serviço";
+      categoryLabel = "Serviço";
+      numbers = toServiceNumbers(snapshot);
+      break;
+    case "product":
+      title = "Diagnóstico de Produto";
+      categoryLabel = "Produto";
+      numbers = toProductNumbers(snapshot);
+      break;
+    case "production":
+      title = "Diagnóstico de Produção";
+      categoryLabel = "Produção";
+      numbers = toProductionNumbers(snapshot);
+      break;
+  }
 
   return {
     identity: {
       id,
-      title: isProduct ? "Diagnóstico de Produto" : "Diagnóstico de Serviço",
-      categoryLabel: isProduct ? "Produto" : "Serviço",
+      title,
+      categoryLabel,
       scenarioLabel: formatReportScenario(snapshot.scenario),
       createdAtLabel: formatReportDate(createdAt),
       unitLabel,
@@ -162,14 +222,13 @@ function toReportViewModel({
         toneLabel: toneLabels[snapshot.executiveSummary.verdict.tone],
       },
     },
-    numbers: isProduct
-      ? toProductNumbers(snapshot)
-      : toServiceNumbers(snapshot),
+    numbers,
     sections: snapshot.sections.map((section) => ({
       ...section,
       toneLabel: toneLabels[section.tone],
     })),
     discountSimulationBase: snapshot.discountSimulationBase,
+    discountSimulationContext: snapshot.category,
   };
 }
 

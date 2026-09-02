@@ -19,6 +19,8 @@ import type { ReportDiscountSimulationBase } from "../types";
 type DiscountSimulationStatus =
   "unavailable" | "target" | "below_target" | "break_even" | "loss";
 
+type DiscountSimulationContext = "service" | "product" | "production";
+
 type DiscountSimulation = {
   discountPercent: number;
   discountedPriceCents: number | null;
@@ -126,26 +128,32 @@ function safetyMessage(
   simulation: DiscountSimulation,
   targetMarginBasisPoints: number,
   partial: boolean,
+  context: DiscountSimulationContext,
 ): string {
   const target = formatBasisPoints(targetMarginBasisPoints);
+  const partialCost =
+    context === "production" ? "custo de fabricação" : "custo de compra";
 
   if (partial) {
     switch (simulation.status) {
       case "unavailable":
-        return "Não foi possível simular descontos porque o preço mínimo ou o custo de compra está indisponível.";
+        return `Não foi possível simular descontos porque o preço mínimo ou o ${partialCost} está indisponível.`;
       case "target":
         return `Sua margem de contribuição continua na meta. Este desconto ainda preserva pelo menos ${target} de contribuição sobre o preço.`;
       case "below_target":
         return `Atenção: a contribuição continua positiva, mas sua margem de contribuição ficou abaixo da meta de ${target}.`;
       case "break_even":
-        return "Você chegou ao limite: este preço cobre apenas o custo de compra e as taxas, sem gerar contribuição.";
+        return `Você chegou ao limite: este preço cobre apenas o ${partialCost} e as taxas, sem gerar contribuição.`;
       case "loss":
-        return "Perigo: este preço não cobre o custo de compra e as taxas. Reduza o desconto antes de fechar a venda.";
+        return `Perigo: este preço não cobre o ${partialCost} e as taxas. Reduza o desconto antes de fechar a venda.`;
     }
   }
 
   switch (simulation.status) {
     case "unavailable":
+      if (context === "production") {
+        return "Não foi possível simular descontos porque o preço mínimo ou o custo de fabricação está indisponível.";
+      }
       return "Não foi possível simular descontos porque o preço mínimo ou o custo por venda está indisponível.";
     case "target":
       return `Sua margem continua na meta. Este desconto ainda preserva pelo menos ${target} de margem.`;
@@ -166,11 +174,17 @@ function optionalMargin(value: number | null): string {
   return value === null ? "Indisponível" : formatBasisPoints(value);
 }
 
-function DiscountSimulator({ base }: { base: ReportDiscountSimulationBase }) {
+function DiscountSimulator({
+  base,
+  context,
+}: {
+  base: ReportDiscountSimulationBase;
+  context: DiscountSimulationContext;
+}) {
   const inputId = useId();
   const [discountPercent, setDiscountPercent] = useState(10);
-  const isProduct = "partial" in base;
-  const partial = isProduct && base.partial;
+  const isUnitReport = context === "product" || context === "production";
+  const partial = isUnitReport && "partial" in base && base.partial;
   const simulation = simulateDiscount(base, discountPercent);
   const presentation = statusPresentation[simulation.status];
   const StatusIcon = presentation.icon;
@@ -255,7 +269,7 @@ function DiscountSimulator({ base }: { base: ReportDiscountSimulationBase }) {
               <dt className="text-muted-foreground text-xs">
                 {partial
                   ? "Margem de contribuição"
-                  : isProduct
+                  : isUnitReport
                     ? "Margem real"
                     : "Nova margem"}
               </dt>
@@ -267,7 +281,7 @@ function DiscountSimulator({ base }: { base: ReportDiscountSimulationBase }) {
               <dt className="text-muted-foreground text-xs">
                 {partial
                   ? "Contribuição por unidade"
-                  : isProduct
+                  : isUnitReport
                     ? "Lucro por unidade"
                     : "Lucro por venda"}
               </dt>
@@ -287,7 +301,12 @@ function DiscountSimulator({ base }: { base: ReportDiscountSimulationBase }) {
             )}
           >
             <StatusIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-            {safetyMessage(simulation, base.targetMarginBasisPoints, partial)}
+            {safetyMessage(
+              simulation,
+              base.targetMarginBasisPoints,
+              partial,
+              context,
+            )}
           </p>
         </div>
       </CardContent>
@@ -299,5 +318,6 @@ export {
   DiscountSimulator,
   simulateDiscount,
   type DiscountSimulation,
+  type DiscountSimulationContext,
   type DiscountSimulationStatus,
 };

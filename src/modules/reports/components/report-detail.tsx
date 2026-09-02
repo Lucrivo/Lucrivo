@@ -81,6 +81,7 @@ function ReportDetail({ viewModel }: { viewModel: ReportViewModel }) {
               <DiscountSimulator
                 key={section.key}
                 base={viewModel.discountSimulationBase}
+                context={viewModel.discountSimulationContext}
               />
             ) : (
               <ReportSectionCard key={section.key} section={section} />

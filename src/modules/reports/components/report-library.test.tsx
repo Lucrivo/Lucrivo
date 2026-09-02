@@ -31,6 +31,19 @@ const productReport = {
   unit: "unit",
 } satisfies OwnedReportSummary;
 
+const productionReport = {
+  id: 126,
+  businessCategory: "production",
+  scenario: "manufacturing",
+  createdAt: "2026-09-01T15:00:00.000Z",
+  currentPriceCents: 10_000,
+  realMarginBasisPoints: 1_200,
+  unitProfitCents: 1_200,
+  verdict: "tight_margin",
+  priority: "margin",
+  unit: "unit",
+} satisfies OwnedReportSummary;
+
 describe("ReportListCard", () => {
   it("presents the owned report identity, verdict, and summary metrics", () => {
     render(<ReportListCard report={report} />);
@@ -99,6 +112,25 @@ describe("ReportListCard", () => {
     expect(verdict.closest('[data-slot="badge"]')).toHaveClass(
       "text-destructive",
     );
+  });
+
+  it("presents a Production report without Service fallbacks", () => {
+    render(<ReportListCard report={productionReport} />);
+
+    const card = screen.getByRole("article", {
+      name: "Diagnóstico de Produção — Fabricação própria",
+    });
+    expect(
+      within(card).getByText("Diagnóstico de Produção"),
+    ).toBeInTheDocument();
+    expect(within(card).getByText("Produção")).toBeInTheDocument();
+    expect(within(card).getByText("Fabricação própria")).toBeInTheDocument();
+    expect(within(card).getByText("Margem apertada")).toBeInTheDocument();
+    expect(within(card).getByText("Lucro por unidade")).toBeInTheDocument();
+    expect(within(card).queryByText("Lucro por venda")).not.toBeInTheDocument();
+    expect(
+      within(card).getByRole("link", { name: "Abrir relatório" }),
+    ).toHaveAttribute("href", "/reports/126");
   });
 });
 

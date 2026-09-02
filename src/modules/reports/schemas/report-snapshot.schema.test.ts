@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { parseProductReportSnapshot } from "./product-report-snapshot.schema";
+import { parseProductionReportSnapshot } from "./production-report-snapshot.schema";
 import { parseReportSnapshot } from "./report-snapshot.schema";
 import { parseServiceReportSnapshot } from "./service-report-snapshot.schema";
 
@@ -222,6 +223,110 @@ const partialProductSnapshot = {
   },
 };
 
+const validProductionSnapshot = {
+  schemaVersion: 1,
+  calculationVersion: 1,
+  contentVersion: 1,
+  category: "production",
+  scenario: "manufacturing",
+  currency: "BRL",
+  unit: "unit",
+  policy: {
+    targetMarginBasisPoints: 2000,
+    weeklyDivisorHundredths: 433,
+    operatingDaysPerWeek: 6,
+    maximumDiscountPercent: 50,
+    proLaboreIncluded: true,
+  },
+  inputs: {
+    costCompositionEnabled: true,
+    productionUnitCostCents: 5000,
+    materialUnitCostCents: 3000,
+    packagingUnitCostCents: 500,
+    directLaborUnitCostCents: 1000,
+    otherVariableUnitCostCents: 500,
+    unitSalePriceCents: 10000,
+    fixedMonthlyExpensesCents: 100000,
+    monthlySalesVolume: 100,
+    proLaboreIncluded: true,
+    proLaboreCents: 200000,
+    taxRateBasisPoints: 600,
+    cardFeeRateBasisPoints: 200,
+  },
+  results: {
+    effectiveFixedCostCents: 300000,
+    productionUnitCostCents: 5000,
+    fixedAllocationCents: 3000,
+    totalUnitCostCents: 8000,
+    currentPriceCents: 10000,
+    netRevenueCents: 9200,
+    unitContributionCents: 4200,
+    unitProfitCents: 1200,
+    realMarginBasisPoints: 1200,
+    minimumPriceCents: 8696,
+    targetPriceCents: 11112,
+    priceReferencesPartial: false,
+    monthlySalesGoal: 72,
+    weeklySalesGoal: 17,
+    dailySalesGoal: 3,
+    breakEvenDiscountPercent: 13,
+    verdict: "tight_margin",
+    priority: "margin",
+  },
+  executiveSummary,
+  sections,
+  discountSimulationBase: {
+    originalPriceCents: 10000,
+    unitCostCents: 8000,
+    totalFeeBasisPoints: 800,
+    targetMarginBasisPoints: 2000,
+    minimumPriceCents: 8696,
+    partial: false,
+  },
+};
+
+const partialProductionSnapshot = {
+  ...validProductionSnapshot,
+  policy: {
+    ...validProductionSnapshot.policy,
+    proLaboreIncluded: false,
+  },
+  inputs: {
+    ...validProductionSnapshot.inputs,
+    costCompositionEnabled: false,
+    materialUnitCostCents: null,
+    packagingUnitCostCents: null,
+    directLaborUnitCostCents: null,
+    otherVariableUnitCostCents: null,
+    monthlySalesVolume: null,
+    proLaboreIncluded: false,
+    proLaboreCents: 0,
+  },
+  results: {
+    ...validProductionSnapshot.results,
+    effectiveFixedCostCents: 100000,
+    fixedAllocationCents: null,
+    totalUnitCostCents: null,
+    unitProfitCents: null,
+    realMarginBasisPoints: null,
+    minimumPriceCents: 5435,
+    targetPriceCents: 6945,
+    priceReferencesPartial: true,
+    monthlySalesGoal: 24,
+    weeklySalesGoal: 6,
+    dailySalesGoal: 1,
+    breakEvenDiscountPercent: 46,
+    verdict: "incomplete_volume",
+    priority: "data",
+  },
+  discountSimulationBase: {
+    ...validProductionSnapshot.discountSimulationBase,
+    unitCostCents: 5000,
+    minimumPriceCents: 5435,
+    partial: true,
+  },
+};
+
 describe("category-versioned report snapshots", () => {
   it("preserves the complete Service V2 shape", () => {
     expect(parseServiceReportSnapshot(validServiceSnapshot)).toEqual(
@@ -240,6 +345,21 @@ describe("category-versioned report snapshots", () => {
   it("parses a partial Product V1 snapshot", () => {
     expect(parseReportSnapshot(partialProductSnapshot)).toEqual(
       partialProductSnapshot,
+    );
+  });
+
+  it("parses a complete composed Production V1 snapshot", () => {
+    expect(parseProductionReportSnapshot(validProductionSnapshot)).toEqual(
+      validProductionSnapshot,
+    );
+    expect(parseReportSnapshot(validProductionSnapshot).category).toBe(
+      "production",
+    );
+  });
+
+  it("parses a summarized partial Production V1 snapshot", () => {
+    expect(parseReportSnapshot(partialProductionSnapshot)).toEqual(
+      partialProductionSnapshot,
     );
   });
 
@@ -356,4 +476,177 @@ describe("category-versioned report snapshots", () => {
       }),
     ).toThrow();
   });
+
+  it.each([
+    { ...validProductionSnapshot, schemaVersion: 2 },
+    { ...validProductionSnapshot, scenario: "resale" },
+    { ...validProductionSnapshot, category: "product" },
+    { ...validProductionSnapshot, unit: "hour" },
+    { ...validProductionSnapshot, unknownField: true },
+  ])("rejects unsupported Production top-level contract %#", (snapshot) => {
+    expect(() => parseReportSnapshot(snapshot)).toThrow();
+  });
+
+  it("rejects a Product snapshot relabeled as Production", () => {
+    expect(() =>
+      parseReportSnapshot({
+        ...validProductSnapshot,
+        category: "production",
+        scenario: "manufacturing",
+      }),
+    ).toThrow();
+  });
+
+  it("rejects noninteger Production money", () => {
+    expect(() =>
+      parseReportSnapshot({
+        ...validProductionSnapshot,
+        results: {
+          ...validProductionSnapshot.results,
+          currentPriceCents: 10000.5,
+        },
+      }),
+    ).toThrow();
+  });
+
+  it("rejects summarized Production with any component", () => {
+    expect(() =>
+      parseReportSnapshot({
+        ...partialProductionSnapshot,
+        inputs: {
+          ...partialProductionSnapshot.inputs,
+          materialUnitCostCents: 5000,
+        },
+      }),
+    ).toThrow();
+  });
+
+  it.each([{ materialUnitCostCents: null }, { packagingUnitCostCents: -1 }])(
+    "rejects invalid composed Production component %#",
+    (component) => {
+      expect(() =>
+        parseReportSnapshot({
+          ...validProductionSnapshot,
+          inputs: {
+            ...validProductionSnapshot.inputs,
+            ...component,
+          },
+        }),
+      ).toThrow();
+    },
+  );
+
+  it("rejects a mismatched composed Production total", () => {
+    expect(() =>
+      parseReportSnapshot({
+        ...validProductionSnapshot,
+        inputs: {
+          ...validProductionSnapshot.inputs,
+          otherVariableUnitCostCents: 501,
+        },
+      }),
+    ).toThrow();
+  });
+
+  it("rejects Production compensation inconsistencies", () => {
+    expect(() =>
+      parseReportSnapshot({
+        ...validProductionSnapshot,
+        inputs: {
+          ...validProductionSnapshot.inputs,
+          proLaboreIncluded: false,
+        },
+      }),
+    ).toThrow();
+
+    expect(() =>
+      parseReportSnapshot({
+        ...validProductionSnapshot,
+        policy: {
+          ...validProductionSnapshot.policy,
+          proLaboreIncluded: false,
+        },
+      }),
+    ).toThrow();
+  });
+
+  it("rejects Production result cost and price mismatches", () => {
+    expect(() =>
+      parseReportSnapshot({
+        ...validProductionSnapshot,
+        results: {
+          ...validProductionSnapshot.results,
+          productionUnitCostCents: 5001,
+        },
+      }),
+    ).toThrow();
+
+    expect(() =>
+      parseReportSnapshot({
+        ...validProductionSnapshot,
+        results: {
+          ...validProductionSnapshot.results,
+          currentPriceCents: 10001,
+        },
+      }),
+    ).toThrow();
+  });
+
+  it("rejects incomplete Production fields when volume is present", () => {
+    expect(() =>
+      parseReportSnapshot({
+        ...validProductionSnapshot,
+        results: {
+          ...validProductionSnapshot.results,
+          unitProfitCents: null,
+        },
+      }),
+    ).toThrow();
+  });
+
+  it("rejects complete Production fields when volume is absent", () => {
+    expect(() =>
+      parseReportSnapshot({
+        ...partialProductionSnapshot,
+        results: {
+          ...partialProductionSnapshot.results,
+          realMarginBasisPoints: 0,
+        },
+      }),
+    ).toThrow();
+  });
+
+  it("rejects a mismatched Production simulator base", () => {
+    expect(() =>
+      parseReportSnapshot({
+        ...validProductionSnapshot,
+        discountSimulationBase: {
+          ...validProductionSnapshot.discountSimulationBase,
+          unitCostCents: 5000,
+        },
+      }),
+    ).toThrow();
+  });
+
+  it.each(["sections", "facts", "answers"] as const)(
+    "rejects reordered or duplicated Production %s",
+    (field) => {
+      const snapshot = structuredClone(validProductionSnapshot);
+
+      if (field === "sections") {
+        snapshot.sections[1] = {
+          ...snapshot.sections[1],
+          key: "break_even",
+        };
+      } else {
+        snapshot.executiveSummary[field] = [
+          snapshot.executiveSummary[field][1],
+          snapshot.executiveSummary[field][0],
+          ...snapshot.executiveSummary[field].slice(2),
+        ] as never;
+      }
+
+      expect(() => parseReportSnapshot(snapshot)).toThrow();
+    },
+  );
 });

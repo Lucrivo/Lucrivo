@@ -149,7 +149,7 @@ describe("simulateDiscount", () => {
 
 describe("DiscountSimulator", () => {
   it("exposes an accessible range and starts at the approved ten percent", () => {
-    render(<DiscountSimulator base={base} />);
+    render(<DiscountSimulator base={base} context="service" />);
 
     const slider = screen.getByRole("slider", { name: "Desconto simulado" });
     expect(slider).toHaveValue("10");
@@ -158,7 +158,7 @@ describe("DiscountSimulator", () => {
   });
 
   it("updates price, profit, margin, and live safety copy at each boundary", () => {
-    render(<DiscountSimulator base={base} />);
+    render(<DiscountSimulator base={base} context="service" />);
     const simulator = screen.getByTestId("discount-simulator");
     const slider = within(simulator).getByRole("slider", {
       name: "Desconto simulado",
@@ -197,7 +197,12 @@ describe("DiscountSimulator", () => {
   });
 
   it("renders a stable explanation when simulation is unavailable", () => {
-    render(<DiscountSimulator base={{ ...base, unitCostCents: null }} />);
+    render(
+      <DiscountSimulator
+        base={{ ...base, unitCostCents: null }}
+        context="service"
+      />,
+    );
 
     expect(screen.getByTestId("discount-safety")).toHaveTextContent(
       "Não foi possível simular",
@@ -208,7 +213,7 @@ describe("DiscountSimulator", () => {
   });
 
   it("uses real profit language for a complete Product simulation", () => {
-    render(<DiscountSimulator base={completeProductBase} />);
+    render(<DiscountSimulator base={completeProductBase} context="product" />);
 
     expect(screen.getByText("Margem real")).toBeInTheDocument();
     expect(screen.getByText("Lucro por unidade")).toBeInTheDocument();
@@ -218,7 +223,7 @@ describe("DiscountSimulator", () => {
   });
 
   it("uses contribution language and a warning for a partial Product simulation", () => {
-    render(<DiscountSimulator base={partialProductBase} />);
+    render(<DiscountSimulator base={partialProductBase} context="product" />);
 
     expect(screen.getByText("Margem de contribuição")).toBeInTheDocument();
     expect(screen.getByText("Contribuição por unidade")).toBeInTheDocument();
@@ -229,15 +234,58 @@ describe("DiscountSimulator", () => {
     );
     expect(screen.queryByText("Lucro por unidade")).not.toBeInTheDocument();
     expect(screen.queryByText("Margem real")).not.toBeInTheDocument();
+
+    fireEvent.change(
+      screen.getByRole("slider", { name: "Desconto simulado" }),
+      { target: { value: "50" } },
+    );
+    expect(screen.getByTestId("discount-safety")).toHaveTextContent(
+      "não cobre o custo de compra e as taxas",
+    );
   });
 
   it("keeps immutable Service simulator copy unchanged", () => {
-    render(<DiscountSimulator base={base} />);
+    render(<DiscountSimulator base={base} context="service" />);
 
     expect(screen.getByText("Nova margem")).toBeInTheDocument();
     expect(screen.getByText("Lucro por venda")).toBeInTheDocument();
     expect(
       screen.queryByText("Simulação parcial", { exact: false }),
     ).not.toBeInTheDocument();
+    expect(screen.getByTestId("discount-safety")).toHaveTextContent(
+      "Atenção: você ainda não vende no prejuízo, mas a margem ficou abaixo da meta de 15%.",
+    );
+  });
+
+  it("uses unit profit and real margin for complete Production", () => {
+    render(
+      <DiscountSimulator base={completeProductBase} context="production" />,
+    );
+
+    expect(screen.getByText("Margem real")).toBeInTheDocument();
+    expect(screen.getByText("Lucro por unidade")).toBeInTheDocument();
+    expect(screen.queryByText("Lucro por venda")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Simulação parcial", { exact: false }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("uses manufacturing-cost copy for partial Production", () => {
+    render(
+      <DiscountSimulator base={partialProductBase} context="production" />,
+    );
+
+    expect(screen.getByText("Margem de contribuição")).toBeInTheDocument();
+    expect(screen.getByText("Contribuição por unidade")).toBeInTheDocument();
+    fireEvent.change(
+      screen.getByRole("slider", { name: "Desconto simulado" }),
+      { target: { value: "50" } },
+    );
+    expect(screen.getByTestId("discount-safety")).toHaveTextContent(
+      "não cobre o custo de fabricação e as taxas",
+    );
+    expect(screen.getByTestId("discount-safety")).not.toHaveTextContent(
+      "custo de compra",
+    );
   });
 });

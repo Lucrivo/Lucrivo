@@ -2,12 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import type {
   ProductDiagnosisCommand,
+  ProductionDiagnosisCommand,
   ServiceDiagnosisCommand,
 } from "@/modules/quick-diagnosis/types";
 
 import { buildProductReportSnapshot } from "../domain/build-product-report-snapshot";
+import { buildProductionReportSnapshot } from "../domain/build-production-report-snapshot";
 import { buildServiceReportSnapshot } from "../domain/build-service-report-snapshot";
 import { calculateProductReport } from "../domain/calculate-product-report";
+import { calculateProductionReport } from "../domain/calculate-production-report";
 import { calculateServiceReport } from "../domain/calculate-service-report";
 import { toReportViewModel } from "./to-report-view-model";
 
@@ -29,6 +32,23 @@ const command: ServiceDiagnosisCommand = {
 const productCommand: ProductDiagnosisCommand = {
   submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   purchaseUnitCostCents: 5000,
+  unitSalePriceCents: 10000,
+  fixedMonthlyExpensesCents: 100000,
+  monthlySalesVolume: 100,
+  proLaboreIncluded: true,
+  proLaboreCents: 200000,
+  taxRateBasisPoints: 600,
+  cardFeeRateBasisPoints: 200,
+};
+
+const productionCommand: ProductionDiagnosisCommand = {
+  submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  costCompositionEnabled: true,
+  productionUnitCostCents: 5000,
+  materialUnitCostCents: 3000,
+  packagingUnitCostCents: 500,
+  directLaborUnitCostCents: 1000,
+  otherVariableUnitCostCents: 500,
   unitSalePriceCents: 10000,
   fixedMonthlyExpensesCents: 100000,
   monthlySalesVolume: 100,
@@ -60,6 +80,21 @@ function presentProduct(input: ProductDiagnosisCommand = productCommand) {
   return toReportViewModel({
     id: 42,
     createdAt: "2026-08-31T15:00:00.000Z",
+    snapshot,
+  });
+}
+
+function presentProduction(
+  input: ProductionDiagnosisCommand = productionCommand,
+) {
+  const snapshot = buildProductionReportSnapshot(
+    input,
+    calculateProductionReport(input),
+  );
+
+  return toReportViewModel({
+    id: 126,
+    createdAt: "2026-09-01T15:00:00.000Z",
     snapshot,
   });
 }
@@ -160,6 +195,54 @@ describe("toReportViewModel", () => {
   it("presents partial Product references without inventing real profit", () => {
     const viewModel = presentProduct({
       ...productCommand,
+      monthlySalesVolume: null,
+    });
+
+    expect(viewModel.numbers).toEqual([
+      { key: "price", label: "Preço atual", value: "R$ 100,00" },
+      { key: "margin", label: "Margem real", value: "Indisponível" },
+      {
+        key: "profit",
+        label: "Contribuição por unidade",
+        value: "R$ 42,00",
+      },
+      {
+        key: "minimum",
+        label: "Preço mínimo (sem rateio fixo)",
+        value: "R$ 54,35",
+      },
+      {
+        key: "target",
+        label: "Preço-alvo (sem rateio fixo)",
+        value: "R$ 69,45",
+      },
+    ]);
+  });
+
+  it("presents a complete Production report with manufacturing identity", () => {
+    const viewModel = presentProduction();
+
+    expect(viewModel.identity).toEqual({
+      id: 126,
+      title: "Diagnóstico de Produção",
+      categoryLabel: "Produção",
+      scenarioLabel: "Fabricação própria",
+      createdAtLabel: "01/09/2026, 12:00",
+      unitLabel: "unidade",
+    });
+    expect(viewModel.numbers).toEqual([
+      { key: "price", label: "Preço atual", value: "R$ 100,00" },
+      { key: "margin", label: "Margem real", value: "12%" },
+      { key: "profit", label: "Lucro por unidade", value: "R$ 12,00" },
+      { key: "minimum", label: "Preço mínimo", value: "R$ 86,96" },
+      { key: "target", label: "Preço-alvo (20%)", value: "R$ 111,12" },
+    ]);
+    expect(viewModel.discountSimulationContext).toBe("production");
+  });
+
+  it("presents partial Production references without inventing real profit", () => {
+    const viewModel = presentProduction({
+      ...productionCommand,
       monthlySalesVolume: null,
     });
 

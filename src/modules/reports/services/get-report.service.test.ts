@@ -4,12 +4,15 @@ vi.mock("server-only", () => ({}));
 
 import type {
   ProductDiagnosisCommand,
+  ProductionDiagnosisCommand,
   ServiceDiagnosisCommand,
 } from "@/modules/quick-diagnosis/types";
 
 import { buildProductReportSnapshot } from "../domain/build-product-report-snapshot";
+import { buildProductionReportSnapshot } from "../domain/build-production-report-snapshot";
 import { buildServiceReportSnapshot } from "../domain/build-service-report-snapshot";
 import { calculateProductReport } from "../domain/calculate-product-report";
+import { calculateProductionReport } from "../domain/calculate-production-report";
 import { calculateServiceReport } from "../domain/calculate-service-report";
 import { getOwnedReport } from "./get-report.service";
 
@@ -45,6 +48,26 @@ const productCommand: ProductDiagnosisCommand = {
 const productSnapshot = buildProductReportSnapshot(
   productCommand,
   calculateProductReport(productCommand),
+);
+const productionCommand: ProductionDiagnosisCommand = {
+  submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  costCompositionEnabled: false,
+  productionUnitCostCents: 5000,
+  materialUnitCostCents: null,
+  packagingUnitCostCents: null,
+  directLaborUnitCostCents: null,
+  otherVariableUnitCostCents: null,
+  unitSalePriceCents: 10000,
+  fixedMonthlyExpensesCents: 100000,
+  monthlySalesVolume: null,
+  proLaboreIncluded: false,
+  proLaboreCents: 0,
+  taxRateBasisPoints: 600,
+  cardFeeRateBasisPoints: 200,
+};
+const productionSnapshot = buildProductionReportSnapshot(
+  productionCommand,
+  calculateProductionReport(productionCommand),
 );
 
 describe("getOwnedReport", () => {
@@ -195,6 +218,46 @@ describe("getOwnedReport", () => {
     await expect(get("84")).resolves.toEqual({
       status: "unavailable",
       report: { id: 84, createdAt: "2026-08-31T15:00:00.000Z" },
+    });
+  });
+
+  it("accepts a matching Production category and manufacturing scenario", async () => {
+    maybeSingle.mockResolvedValue({
+      data: {
+        id: 126,
+        business_category: "production",
+        scenario: "manufacturing",
+        created_at: "2026-09-01T15:00:00.000Z",
+        report_snapshot: productionSnapshot,
+      },
+      error: null,
+    });
+
+    await expect(get("126")).resolves.toEqual({
+      status: "found",
+      report: {
+        id: 126,
+        createdAt: "2026-09-01T15:00:00.000Z",
+        snapshot: productionSnapshot,
+      },
+    });
+  });
+
+  it("rejects mismatched Production identity without exposing its snapshot", async () => {
+    maybeSingle.mockResolvedValue({
+      data: {
+        id: 126,
+        business_category: "production",
+        scenario: "resale",
+        created_at: "2026-09-01T15:00:00.000Z",
+        report_snapshot: productionSnapshot,
+      },
+      error: null,
+    });
+
+    await expect(get("126")).resolves.toEqual({
+      status: "unavailable",
+      report: { id: 126, createdAt: "2026-09-01T15:00:00.000Z" },
     });
   });
 

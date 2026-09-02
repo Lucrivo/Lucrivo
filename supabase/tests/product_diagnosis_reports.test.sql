@@ -7,8 +7,8 @@ select no_plan();
 select enum_has_labels(
   'public',
   'business_category',
-  array['service', 'product'],
-  'business category contains Service and Product only'
+  array['service', 'product', 'production'],
+  'business category contains Service, Product, and Production'
 );
 select has_table('public', 'product_diagnoses', 'Product detail table exists');
 select columns_are(
