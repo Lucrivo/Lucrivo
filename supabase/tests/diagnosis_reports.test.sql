@@ -260,12 +260,15 @@ select has_function(
     'public.service_pricing_method',
     'bigint',
     'bigint',
+    'public.service_work_hours_period',
+    'integer',
     'integer',
     'smallint',
     'bigint',
     'bigint',
     'bigint',
     'integer',
+    'bigint',
     'integer',
     'integer',
     'smallint',
@@ -291,12 +294,15 @@ select ok(
       public.service_pricing_method,
       bigint,
       bigint,
+      public.service_work_hours_period,
+      integer,
       integer,
       smallint,
       bigint,
       bigint,
       bigint,
       integer,
+      bigint,
       integer,
       integer,
       smallint,
@@ -323,12 +329,15 @@ select ok(
       public.service_pricing_method,
       bigint,
       bigint,
+      public.service_work_hours_period,
+      integer,
       integer,
       smallint,
       bigint,
       bigint,
       bigint,
       integer,
+      bigint,
       integer,
       integer,
       smallint,
@@ -354,12 +363,15 @@ select ok(
       public.service_pricing_method,
       bigint,
       bigint,
+      public.service_work_hours_period,
+      integer,
       integer,
       smallint,
       bigint,
       bigint,
       bigint,
       integer,
+      bigint,
       integer,
       integer,
       smallint,
@@ -386,12 +398,15 @@ select ok(
       public.service_pricing_method,
       bigint,
       bigint,
+      public.service_work_hours_period,
+      integer,
       integer,
       smallint,
       bigint,
       bigint,
       bigint,
       integer,
+      bigint,
       integer,
       integer,
       smallint,
@@ -429,14 +444,20 @@ values
 create function pg_temp.create_hour_report(
   p_submission_id uuid,
   p_hourly_rate_cents bigint default 10000,
-  p_schema_version smallint default 2,
-  p_content_version smallint default 2,
+  p_schema_version smallint default 3,
+  p_content_version smallint default 3,
   p_report_snapshot jsonb default '{
-    "schemaVersion": 2,
-    "calculationVersion": 1,
-    "contentVersion": 2,
+    "schemaVersion": 3,
+    "calculationVersion": 2,
+    "contentVersion": 3,
     "category": "service",
     "scenario": "hour",
+    "inputs": {
+      "workHoursPeriod": "month",
+      "workPeriodMinutes": 6000,
+      "monthlyWorkMinutes": 6000,
+      "materialUnitCostCents": 0
+    },
     "executiveSummary": {"headline": "A verdade por trás do preço."},
     "marker": "first"
   }'::jsonb
@@ -449,16 +470,19 @@ as $$
     'hour'::public.service_pricing_method,
     400000,
     200000,
+    'month'::public.service_work_hours_period,
+    6000,
     6000,
     5::smallint,
     p_hourly_rate_cents,
     0,
     0,
     0,
+    0,
     600,
     200,
     p_schema_version,
-    1::smallint,
+    2::smallint,
     p_content_version,
     'hour',
     p_hourly_rate_cents,
@@ -525,6 +549,24 @@ select results_eq(
   array[1::bigint],
   'valid function call inserts one registry and one linked Service input'
 );
+select results_eq(
+  $$
+    select
+      work_hours_period,
+      work_period_minutes,
+      monthly_work_minutes,
+      material_unit_cost_cents
+    from public.service_diagnoses
+    where submission_id = '30000000-0000-4000-8000-000000000003'
+  $$,
+  $$ values (
+    'month'::public.service_work_hours_period,
+    6000::integer,
+    6000::integer,
+    0::bigint
+  ) $$,
+  'atomic function persists source capacity, normalized capacity, and material cost'
+);
 select throws_ok(
   $$ select pg_temp.create_hour_report(
     '30000000-0000-4000-8000-000000000010',
@@ -560,6 +602,50 @@ select throws_ok(
   '22023',
   'invalid report snapshot',
   'atomic function rejects version 2 without an executive summary object'
+);
+select throws_ok(
+  $$ select pg_temp.create_hour_report(
+    '30000000-0000-4000-8000-000000000012',
+    10000,
+    3::smallint,
+    3::smallint,
+    '{
+      "schemaVersion": 3,
+      "calculationVersion": 2,
+      "contentVersion": 3,
+      "category": "service",
+      "scenario": "hour",
+      "inputs": {
+        "workHoursPeriod": "month",
+        "workPeriodMinutes": 6000,
+        "monthlyWorkMinutes": 6000,
+        "materialUnitCostCents": 1
+      },
+      "executiveSummary": {"headline": "A verdade por trás do preço."}
+    }'::jsonb
+  ) $$,
+  '22023',
+  'invalid report snapshot',
+  'atomic function rejects snapshot scalars that differ from persisted inputs'
+);
+select throws_ok(
+  $$ select pg_temp.create_hour_report(
+    '30000000-0000-4000-8000-000000000013',
+    10000,
+    3::smallint,
+    3::smallint,
+    '{
+      "schemaVersion": 3,
+      "calculationVersion": 2,
+      "contentVersion": 3,
+      "category": "service",
+      "scenario": "hour",
+      "executiveSummary": {"headline": "A verdade por trás do preço."}
+    }'::jsonb
+  ) $$,
+  '22023',
+  'invalid report snapshot',
+  'atomic function rejects snapshots without persisted input scalars'
 );
 select results_eq(
   $$
@@ -601,14 +687,20 @@ select results_eq(
     select pg_temp.create_hour_report(
       '30000000-0000-4000-8000-000000000005',
       12000,
-      2::smallint,
-      2::smallint,
+      3::smallint,
+      3::smallint,
       '{
-        "schemaVersion": 2,
-        "calculationVersion": 1,
-        "contentVersion": 2,
+        "schemaVersion": 3,
+        "calculationVersion": 2,
+        "contentVersion": 3,
         "category": "service",
         "scenario": "hour",
+        "inputs": {
+          "workHoursPeriod": "month",
+          "workPeriodMinutes": 6000,
+          "monthlyWorkMinutes": 6000,
+          "materialUnitCostCents": 0
+        },
         "executiveSummary": {"headline": "A verdade por trás do preço."},
         "marker": "second"
       }'::jsonb

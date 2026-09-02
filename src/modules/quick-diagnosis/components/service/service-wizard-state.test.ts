@@ -18,10 +18,14 @@ function withHourlyValues(): ServiceWizardState {
       ...createInitialServiceWizardState(firstSubmissionId).values,
       pricingMethod: "hour",
       desiredMonthlyIncome: "5000",
+      workHoursPeriod: "month",
+      workHours: "160",
       hourlyRate: "125,90",
       minuteRate: "2,50",
       appointmentRate: "350",
       appointmentDurationMinutes: "90",
+      hasMaterialCost: true,
+      materialUnitCost: "30,50",
     },
   };
 }
@@ -35,12 +39,15 @@ describe("service wizard state", () => {
         pricingMethod: "",
         desiredMonthlyIncome: "",
         fixedMonthlyExpenses: "",
-        monthlyWorkHours: "",
+        workHoursPeriod: "month",
+        workHours: "",
         weeklyWorkDays: "",
         hourlyRate: "",
         minuteRate: "",
         appointmentRate: "",
         appointmentDurationMinutes: "",
+        hasMaterialCost: false,
+        materialUnitCost: "",
         taxRate: "",
         cardFeeRate: "",
       },
@@ -49,7 +56,16 @@ describe("service wizard state", () => {
       diagnosisId: null,
       submitError: null,
     });
-    expect(serviceWizardSteps).toHaveLength(7);
+    expect(serviceWizardSteps).toEqual([
+      "monthlyGoal",
+      "fixedExpenses",
+      "workRoutine",
+      "pricingMethod",
+      "currentPrice",
+      "materialCost",
+      "fees",
+      "review",
+    ]);
   });
 
   it("sets a field without changing the other answers", () => {
@@ -65,14 +81,20 @@ describe("service wizard state", () => {
   });
 
   it("clears all method-dependent values when pricing method changes", () => {
-    const state = withHourlyValues();
+    const state = {
+      ...withHourlyValues(),
+      fieldErrors: {
+        hourlyRate: ["Informe o preço."],
+        materialUnitCost: ["Informe o custo de material."],
+      },
+    } satisfies ServiceWizardState;
 
-    expect(
-      serviceWizardReducer(state, {
-        type: "setPricingMethod",
-        value: "minute",
-      }).values,
-    ).toEqual(
+    const next = serviceWizardReducer(state, {
+      type: "setPricingMethod",
+      value: "minute",
+    });
+
+    expect(next.values).toEqual(
       expect.objectContaining({
         pricingMethod: "minute",
         desiredMonthlyIncome: "5000",
@@ -80,8 +102,44 @@ describe("service wizard state", () => {
         minuteRate: "",
         appointmentRate: "",
         appointmentDurationMinutes: "",
+        hasMaterialCost: false,
+        materialUnitCost: "",
       }),
     );
+    expect(next.fieldErrors.hourlyRate).toBeUndefined();
+    expect(next.fieldErrors.materialUnitCost).toBeUndefined();
+  });
+
+  it("changes the work period while preserving hours and clearing its error", () => {
+    const state = {
+      ...withHourlyValues(),
+      fieldErrors: { workHours: ["Informe as horas faturáveis."] },
+    } satisfies ServiceWizardState;
+
+    const next = serviceWizardReducer(state, {
+      type: "setWorkHoursPeriod",
+      value: "day",
+    });
+
+    expect(next.values.workHoursPeriod).toBe("day");
+    expect(next.values.workHours).toBe("160");
+    expect(next.fieldErrors.workHours).toBeUndefined();
+  });
+
+  it("clears material value and errors when material cost is disabled", () => {
+    const state = {
+      ...withHourlyValues(),
+      fieldErrors: { materialUnitCost: ["Informe o custo de material."] },
+    } satisfies ServiceWizardState;
+
+    const next = serviceWizardReducer(state, {
+      type: "setHasMaterialCost",
+      value: false,
+    });
+
+    expect(next.values.hasMaterialCost).toBe(false);
+    expect(next.values.materialUnitCost).toBe("");
+    expect(next.fieldErrors.materialUnitCost).toBeUndefined();
   });
 
   it("sets and replaces field errors", () => {

@@ -22,6 +22,17 @@ select enum_has_labels(
   array['hour', 'minute', 'appointment'],
   'service pricing method contains the approved labels'
 );
+select has_type(
+  'public',
+  'service_work_hours_period',
+  'service work hours period enum exists'
+);
+select enum_has_labels(
+  'public',
+  'service_work_hours_period',
+  array['day', 'week', 'month'],
+  'service work hours period contains day, week, and month'
+);
 
 select has_table(
   'public',
@@ -48,7 +59,10 @@ select columns_are(
     'tax_rate_basis_points',
     'card_fee_rate_basis_points',
     'created_at',
-    'diagnosis_id'
+    'diagnosis_id',
+    'work_hours_period',
+    'work_period_minutes',
+    'material_unit_cost_cents'
   ],
   'service diagnoses exposes only the approved columns'
 );
@@ -97,7 +111,10 @@ select ok(
       ["tax_rate_basis_points", "pg_catalog", "int4"],
       ["card_fee_rate_basis_points", "pg_catalog", "int4"],
       ["created_at", "pg_catalog", "timestamptz"],
-      ["diagnosis_id", "pg_catalog", "int8"]
+      ["diagnosis_id", "pg_catalog", "int8"],
+      ["work_hours_period", "public", "service_work_hours_period"],
+      ["work_period_minutes", "pg_catalog", "int4"],
+      ["material_unit_cost_cents", "pg_catalog", "int8"]
     ]
   $json$::jsonb,
   'every service diagnosis column has the approved database type'
@@ -110,7 +127,7 @@ select results_eq(
       and table_name = 'service_diagnoses'
       and is_nullable = 'NO'
   $$,
-  array[16::bigint],
+  array[19::bigint],
   'legacy Service columns remain required while report link is nullable'
 );
 select ok(
@@ -133,7 +150,10 @@ select ok(
       "appointment_duration_minutes",
       "tax_rate_basis_points",
       "card_fee_rate_basis_points",
-      "created_at"
+      "created_at",
+      "work_hours_period",
+      "work_period_minutes",
+      "material_unit_cost_cents"
     ]
   $json$::jsonb,
   'approved optional values and created timestamp have defaults'
@@ -183,7 +203,8 @@ select ok(
       "service_diagnoses_pricing_shape_check",
       "service_diagnoses_tax_check",
       "service_diagnoses_work_days_check",
-      "service_diagnoses_work_minutes_check"
+      "service_diagnoses_work_minutes_check",
+      "service_diagnoses_work_period_check"
     ]
   $json$::jsonb,
   'all approved check constraints exist'
@@ -329,6 +350,9 @@ select results_eq(
       fixed_monthly_expenses_cents,
       monthly_work_minutes,
       weekly_work_days,
+      work_hours_period,
+      work_period_minutes,
+      material_unit_cost_cents,
       minute_rate_cents,
       appointment_rate_cents,
       appointment_duration_minutes,
@@ -344,6 +368,9 @@ select results_eq(
     0::bigint,
     0::integer,
     0::smallint,
+    'month'::public.service_work_hours_period,
+    0::integer,
+    0::bigint,
     0::bigint,
     0::bigint,
     0::integer,
@@ -729,13 +756,21 @@ select throws_ok(
 select throws_ok(
   $sql$
     insert into public.service_diagnoses
-      (submission_id, user_id, pricing_method, hourly_rate_cents, monthly_work_minutes)
+      (
+        submission_id,
+        user_id,
+        pricing_method,
+        hourly_rate_cents,
+        monthly_work_minutes,
+        work_period_minutes
+      )
     values
       (
         'cccccccc-cccc-4ccc-8ccc-ccccccccccc1',
         '11111111-1111-4111-8111-111111111111',
         'hour',
         100,
+        -1,
         -1
       )
   $sql$,
@@ -746,19 +781,160 @@ select throws_ok(
 select throws_ok(
   $sql$
     insert into public.service_diagnoses
-      (submission_id, user_id, pricing_method, hourly_rate_cents, monthly_work_minutes)
+      (
+        submission_id,
+        user_id,
+        pricing_method,
+        hourly_rate_cents,
+        monthly_work_minutes,
+        work_period_minutes
+      )
     values
       (
         'cccccccc-cccc-4ccc-8ccc-ccccccccccc2',
         '11111111-1111-4111-8111-111111111111',
         'hour',
         100,
+        44641,
         44641
       )
   $sql$,
   '23514',
   null,
   'monthly work minutes stop at 44640'
+);
+select throws_ok(
+  $sql$
+    insert into public.service_diagnoses
+      (
+        submission_id,
+        user_id,
+        pricing_method,
+        hourly_rate_cents,
+        work_hours_period,
+        work_period_minutes,
+        monthly_work_minutes,
+        weekly_work_days
+      )
+    values
+      (
+        'cccccccc-cccc-4ccc-8ccc-ccccccccccd1',
+        '11111111-1111-4111-8111-111111111111',
+        'hour',
+        100,
+        'day',
+        1500,
+        32475,
+        5
+      )
+  $sql$,
+  '23514',
+  null,
+  'daily work hours stop at 24'
+);
+select throws_ok(
+  $sql$
+    insert into public.service_diagnoses
+      (
+        submission_id,
+        user_id,
+        pricing_method,
+        hourly_rate_cents,
+        work_hours_period,
+        work_period_minutes,
+        monthly_work_minutes
+      )
+    values
+      (
+        'cccccccc-cccc-4ccc-8ccc-ccccccccccd2',
+        '11111111-1111-4111-8111-111111111111',
+        'hour',
+        100,
+        'week',
+        10140,
+        43906
+      )
+  $sql$,
+  '23514',
+  null,
+  'weekly work hours stop at 168'
+);
+select throws_ok(
+  $sql$
+    insert into public.service_diagnoses
+      (
+        submission_id,
+        user_id,
+        pricing_method,
+        hourly_rate_cents,
+        work_hours_period,
+        work_period_minutes,
+        monthly_work_minutes
+      )
+    values
+      (
+        'cccccccc-cccc-4ccc-8ccc-ccccccccccd3',
+        '11111111-1111-4111-8111-111111111111',
+        'hour',
+        100,
+        'month',
+        44700,
+        44700
+      )
+  $sql$,
+  '23514',
+  null,
+  'monthly work hours stop at 744'
+);
+select throws_ok(
+  $sql$
+    insert into public.service_diagnoses
+      (
+        submission_id,
+        user_id,
+        pricing_method,
+        hourly_rate_cents,
+        work_hours_period,
+        work_period_minutes,
+        monthly_work_minutes
+      )
+    values
+      (
+        'cccccccc-cccc-4ccc-8ccc-ccccccccccd4',
+        '11111111-1111-4111-8111-111111111111',
+        'hour',
+        100,
+        'week',
+        600,
+        2599
+      )
+  $sql$,
+  '23514',
+  null,
+  'monthly work minutes must match normalized source capacity'
+);
+select throws_ok(
+  $sql$
+    insert into public.service_diagnoses
+      (
+        submission_id,
+        user_id,
+        pricing_method,
+        hourly_rate_cents,
+        material_unit_cost_cents
+      )
+    values
+      (
+        'cccccccc-cccc-4ccc-8ccc-ccccccccccd5',
+        '11111111-1111-4111-8111-111111111111',
+        'hour',
+        100,
+        -1
+      )
+  $sql$,
+  '23514',
+  null,
+  'material unit cost cannot be negative'
 );
 select throws_ok(
   $sql$
@@ -872,6 +1048,7 @@ select lives_ok(
         pricing_method,
         hourly_rate_cents,
         monthly_work_minutes,
+        work_period_minutes,
         weekly_work_days,
         tax_rate_basis_points,
         card_fee_rate_basis_points
@@ -885,6 +1062,7 @@ select lives_ok(
         0,
         0,
         0,
+        0,
         0
       ),
       (
@@ -892,6 +1070,7 @@ select lives_ok(
         '11111111-1111-4111-8111-111111111111',
         'hour',
         100,
+        44640,
         44640,
         7,
         10000,

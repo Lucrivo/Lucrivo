@@ -997,17 +997,20 @@ select lives_ok(
       'hour'::public.service_pricing_method,
       400000,
       200000,
+      'month'::public.service_work_hours_period,
+      6000,
       6000,
       5::smallint,
       10000,
       0,
       0,
       0,
+      0,
       600,
       200,
+      3::smallint,
       2::smallint,
-      1::smallint,
-      2::smallint,
+      3::smallint,
       'hour',
       10000,
       1700,
@@ -1016,11 +1019,17 @@ select lives_ok(
       'volume',
       'hour',
       '{
-        "schemaVersion": 2,
-        "calculationVersion": 1,
-        "contentVersion": 2,
+        "schemaVersion": 3,
+        "calculationVersion": 2,
+        "contentVersion": 3,
         "category": "service",
         "scenario": "hour",
+        "inputs": {
+          "workHoursPeriod": "month",
+          "workPeriodMinutes": 6000,
+          "monthlyWorkMinutes": 6000,
+          "materialUnitCostCents": 0
+        },
         "executiveSummary": {"headline": "Diagnóstico de serviço"}
       }'::jsonb
     )

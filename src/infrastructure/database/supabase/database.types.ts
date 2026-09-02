@@ -193,6 +193,7 @@ export type Database = {
           fixed_monthly_expenses_cents: number;
           hourly_rate_cents: number;
           id: number;
+          material_unit_cost_cents: number;
           minute_rate_cents: number;
           monthly_work_minutes: number;
           pricing_method: Database["public"]["Enums"]["service_pricing_method"];
@@ -200,6 +201,8 @@ export type Database = {
           tax_rate_basis_points: number;
           user_id: string;
           weekly_work_days: number;
+          work_hours_period: Database["public"]["Enums"]["service_work_hours_period"];
+          work_period_minutes: number;
         };
         Insert: {
           appointment_duration_minutes?: number;
@@ -212,6 +215,7 @@ export type Database = {
           fixed_monthly_expenses_cents?: number;
           hourly_rate_cents?: number;
           id?: never;
+          material_unit_cost_cents?: number;
           minute_rate_cents?: number;
           monthly_work_minutes?: number;
           pricing_method: Database["public"]["Enums"]["service_pricing_method"];
@@ -219,6 +223,8 @@ export type Database = {
           tax_rate_basis_points?: number;
           user_id: string;
           weekly_work_days?: number;
+          work_hours_period?: Database["public"]["Enums"]["service_work_hours_period"];
+          work_period_minutes?: number;
         };
         Update: {
           appointment_duration_minutes?: number;
@@ -231,6 +237,7 @@ export type Database = {
           fixed_monthly_expenses_cents?: number;
           hourly_rate_cents?: number;
           id?: never;
+          material_unit_cost_cents?: number;
           minute_rate_cents?: number;
           monthly_work_minutes?: number;
           pricing_method?: Database["public"]["Enums"]["service_pricing_method"];
@@ -238,6 +245,8 @@ export type Database = {
           tax_rate_basis_points?: number;
           user_id?: string;
           weekly_work_days?: number;
+          work_hours_period?: Database["public"]["Enums"]["service_work_hours_period"];
+          work_period_minutes?: number;
         };
         Relationships: [
           {
@@ -320,6 +329,7 @@ export type Database = {
           p_desired_monthly_income_cents: number;
           p_fixed_monthly_expenses_cents: number;
           p_hourly_rate_cents: number;
+          p_material_unit_cost_cents: number;
           p_minute_rate_cents: number;
           p_monthly_work_minutes: number;
           p_pricing_method: Database["public"]["Enums"]["service_pricing_method"];
@@ -334,6 +344,8 @@ export type Database = {
           p_unit_profit_cents: number;
           p_verdict: string;
           p_weekly_work_days: number;
+          p_work_hours_period: Database["public"]["Enums"]["service_work_hours_period"];
+          p_work_period_minutes: number;
         };
         Returns: number;
       };
@@ -341,6 +353,7 @@ export type Database = {
     Enums: {
       business_category: "service" | "product" | "production";
       service_pricing_method: "hour" | "minute" | "appointment";
+      service_work_hours_period: "day" | "week" | "month";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -470,6 +483,7 @@ export const Constants = {
     Enums: {
       business_category: ["service", "product", "production"],
       service_pricing_method: ["hour", "minute", "appointment"],
+      service_work_hours_period: ["day", "week", "month"],
     },
   },
 } as const;

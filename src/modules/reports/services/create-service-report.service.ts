@@ -8,12 +8,12 @@ import type {
 } from "@/infrastructure/database/supabase/database.types";
 import type { ServiceDiagnosisCommand } from "@/modules/quick-diagnosis/types";
 
-import type { ServiceReportSnapshotV2 } from "../types";
+import type { ServiceReportSnapshotV3 } from "../types";
 
 type CreateServiceReportInput = {
   supabase: SupabaseClient<Database>;
   command: ServiceDiagnosisCommand;
-  snapshot: ServiceReportSnapshotV2;
+  snapshot: ServiceReportSnapshotV3;
 };
 
 type CreateServiceReportResult =
@@ -33,19 +33,22 @@ type ServiceReportRpcArgs = Omit<
 
 function toRpcArgs(
   command: ServiceDiagnosisCommand,
-  snapshot: ServiceReportSnapshotV2,
+  snapshot: ServiceReportSnapshotV3,
 ): ServiceReportRpcArgs {
   return {
     p_submission_id: command.submissionId,
     p_pricing_method: command.pricingMethod,
     p_desired_monthly_income_cents: command.desiredMonthlyIncomeCents,
     p_fixed_monthly_expenses_cents: command.fixedMonthlyExpensesCents,
+    p_work_hours_period: command.workHoursPeriod,
+    p_work_period_minutes: command.workPeriodMinutes,
     p_monthly_work_minutes: command.monthlyWorkMinutes,
     p_weekly_work_days: command.weeklyWorkDays,
     p_hourly_rate_cents: command.hourlyRateCents,
     p_minute_rate_cents: command.minuteRateCents,
     p_appointment_rate_cents: command.appointmentRateCents,
     p_appointment_duration_minutes: command.appointmentDurationMinutes,
+    p_material_unit_cost_cents: command.materialUnitCostCents,
     p_tax_rate_basis_points: command.taxRateBasisPoints,
     p_card_fee_rate_basis_points: command.cardFeeRateBasisPoints,
     p_schema_version: snapshot.schemaVersion,

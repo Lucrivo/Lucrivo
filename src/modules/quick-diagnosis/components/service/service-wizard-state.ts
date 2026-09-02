@@ -3,6 +3,7 @@ import type {
   ServiceDiagnosisFieldErrors,
   ServiceDiagnosisInput,
   ServicePricingMethod,
+  ServiceWorkPeriod,
 } from "../../types";
 
 const serviceWizardSteps = [
@@ -11,6 +12,7 @@ const serviceWizardSteps = [
   "workRoutine",
   "pricingMethod",
   "currentPrice",
+  "materialCost",
   "fees",
   "review",
 ] as const;
@@ -33,6 +35,8 @@ type ServiceWizardAction =
       value: string;
     }
   | { type: "setPricingMethod"; value: ServicePricingMethod }
+  | { type: "setWorkHoursPeriod"; value: ServiceWorkPeriod }
+  | { type: "setHasMaterialCost"; value: boolean }
   | {
       type: "setFieldErrors";
       fieldErrors: ServiceDiagnosisFieldErrors;
@@ -53,6 +57,8 @@ const methodDependentFields = [
   "minuteRate",
   "appointmentRate",
   "appointmentDurationMinutes",
+  "hasMaterialCost",
+  "materialUnitCost",
 ] as const satisfies readonly ServiceDiagnosisField[];
 
 function createInitialServiceWizardState(
@@ -65,12 +71,15 @@ function createInitialServiceWizardState(
       pricingMethod: "",
       desiredMonthlyIncome: "",
       fixedMonthlyExpenses: "",
-      monthlyWorkHours: "",
+      workHoursPeriod: "month",
+      workHours: "",
       weeklyWorkDays: "",
       hourlyRate: "",
       minuteRate: "",
       appointmentRate: "",
       appointmentDurationMinutes: "",
+      hasMaterialCost: false,
+      materialUnitCost: "",
       taxRate: "",
       cardFeeRate: "",
     },
@@ -123,6 +132,34 @@ function serviceWizardReducer(
           minuteRate: "",
           appointmentRate: "",
           appointmentDurationMinutes: "",
+          hasMaterialCost: false,
+          materialUnitCost: "",
+        },
+        fieldErrors,
+      };
+    }
+    case "setWorkHoursPeriod": {
+      const fieldErrors = { ...state.fieldErrors };
+      delete fieldErrors.workHoursPeriod;
+      delete fieldErrors.workHours;
+
+      return {
+        ...state,
+        values: { ...state.values, workHoursPeriod: action.value },
+        fieldErrors,
+      };
+    }
+    case "setHasMaterialCost": {
+      const fieldErrors = { ...state.fieldErrors };
+      delete fieldErrors.hasMaterialCost;
+      delete fieldErrors.materialUnitCost;
+
+      return {
+        ...state,
+        values: {
+          ...state.values,
+          hasMaterialCost: action.value,
+          materialUnitCost: action.value ? state.values.materialUnitCost : "",
         },
         fieldErrors,
       };

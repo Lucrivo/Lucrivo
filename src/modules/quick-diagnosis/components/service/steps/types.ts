@@ -2,6 +2,7 @@ import type {
   ServiceDiagnosisField,
   ServiceDiagnosisFieldErrors,
   ServiceDiagnosisInput,
+  ServiceWorkPeriod,
 } from "../../../types";
 
 type ServiceStepProps = {
@@ -10,4 +11,16 @@ type ServiceStepProps = {
   onChange: (field: ServiceDiagnosisField, value: string) => void;
 };
 
-export type { ServiceStepProps };
+type ServiceWorkRoutineStepProps = ServiceStepProps & {
+  onWorkHoursPeriodChange: (value: ServiceWorkPeriod) => void;
+};
+
+type ServiceMaterialCostStepProps = ServiceStepProps & {
+  onHasMaterialCostChange: (value: boolean) => void;
+};
+
+export type {
+  ServiceMaterialCostStepProps,
+  ServiceStepProps,
+  ServiceWorkRoutineStepProps,
+};
