@@ -1,4 +1,5 @@
 import { createProductDiagnosis } from "@/modules/quick-diagnosis/actions/create-product-diagnosis.action";
+import { createProductionDiagnosis } from "@/modules/quick-diagnosis/actions/create-production-diagnosis.action";
 import { createServiceDiagnosis } from "@/modules/quick-diagnosis/actions/create-service-diagnosis.action";
 import { QuickDiagnosisWizard } from "@/modules/quick-diagnosis/components/quick-diagnosis-wizard";
 
@@ -9,6 +10,7 @@ export default function QuickDiagnosisPage() {
       <QuickDiagnosisWizard
         createServiceDiagnosis={createServiceDiagnosis}
         createProductDiagnosis={createProductDiagnosis}
+        createProductionDiagnosis={createProductionDiagnosis}
       />
     </main>
   );

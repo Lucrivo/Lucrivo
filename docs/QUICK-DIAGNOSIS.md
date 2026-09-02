@@ -33,7 +33,7 @@ Escolha do que será analisado
         |
         +--> Produção
                +--> diagnóstico rápido de uma unidade
-               +--> sair do rápido e abrir análise detalhada/ficha técnica
+               +--> análise detalhada/ficha técnica (Em breve)
         |
         v
 Perguntas sobre custo, preço, capacidade e despesas
@@ -103,7 +103,14 @@ No caminho rápido de revenda, são solicitados:
 
 O caminho é semelhante ao da revenda, mas o custo informado representa o valor necessário para fabricar uma unidade.
 
-No diagnóstico rápido guiado, o usuário informa diretamente o **custo de uma unidade pronta**. O cálculo detalhado por ingredientes, rendimento e desperdício pertence ao aprofundamento posterior. Depois do primeiro resultado, os dados podem ser refinados no painel completo.
+No diagnóstico rápido guiado, o usuário escolhe uma destas formas de informar o custo:
+
+- **custo resumido:** um único valor positivo para o custo da unidade pronta;
+- **custo composto:** soma de materiais, embalagem, mão de obra direta e outros custos variáveis por unidade.
+
+A composição fixa de quatro categorias não é uma ficha técnica: ela não cadastra ingredientes, receita, lote, estoque, rendimento ou desperdício. Esses detalhamentos permanecem reservados para uma análise futura.
+
+O volume mensal significa **unidades vendidas**, não unidades apenas produzidas. A mão de obra direta representa o trabalho variável necessário para fabricar cada unidade e não deve repetir a remuneração mensal do dono, que é informada separadamente como pró-labore.
 
 ---
 
@@ -127,11 +134,12 @@ No diagnóstico rápido guiado, o usuário informa diretamente o **custo de uma 
 | Parâmetro                   | Significado                                            | Observação                                   |
 | --------------------------- | ------------------------------------------------------ | -------------------------------------------- |
 | Custo de compra             | Valor pago ao fornecedor por unidade                   | Usado na revenda                             |
-| Custo de produção           | Ingredientes ou materiais necessários para uma unidade | Usado na produção própria                    |
-| Frete/embalagem por unidade | Custo para colocar uma unidade nas mãos do cliente     | Pode ser acrescentado depois do fluxo guiado |
-| Volume mensal               | Quantidade média vendida no mês                        | Permite dividir o custo fixo por unidade     |
-| Rendimento                  | Quantas unidades uma receita ou lote produz            | Usado quando a produção é detalhada          |
-| Perda/desperdício           | Parte da produção que não vira venda                   | Eleva o custo real de cada unidade vendável  |
+| Custo de produção           | Custo resumido da unidade pronta ou soma da composição fixa | Usado na produção própria                 |
+| Embalagem por unidade       | Embalagem consumida para fabricar uma unidade               | Uma das quatro categorias da composição   |
+| Mão de obra direta          | Trabalho variável necessário para fabricar uma unidade      | Não deve duplicar o pró-labore mensal     |
+| Volume mensal               | Quantidade média de unidades vendidas no mês                 | Permite dividir o custo fixo por unidade  |
+| Rendimento                  | Quantas unidades uma receita ou lote produz                  | Fora do diagnóstico rápido; escopo futuro |
+| Perda/desperdício           | Parte da produção que não vira venda                        | Fora do diagnóstico rápido; escopo futuro |
 
 ### 4.3 Parâmetros de serviços
 
@@ -145,12 +153,12 @@ No diagnóstico rápido guiado, o usuário informa diretamente o **custo de uma 
 
 O comportamento atual começa com alguns valores predefinidos:
 
-- meta de margem de **20% para produtos**;
+- meta de margem de **20% para produtos e produção própria**;
 - meta de margem de **15% para serviços**;
 - simulação inicial de **10% de desconto**;
-- referência de **6 dias por semana para produtos**;
+- referência de **6 dias por semana para produtos e produção própria**;
 - referência de **5 dias por semana para serviços**;
-- pró-labore inicialmente desligado para produtos;
+- pró-labore inicialmente desligado para produtos e produção própria;
 - pró-labore inicialmente ligado para serviços.
 
 No fluxo rápido atual, a meta de margem não é perguntada e também não há um controle visível para alterá-la na tela de resultado. Assim, o preço-alvo e a classificação usam automaticamente 20% ou 15%, conforme a trilha. O motor possui suporte para outras metas, mas essa escolha ainda não está exposta nessa jornada.
@@ -166,7 +174,7 @@ Campos numéricos vazios ou inválidos são tratados como **zero**. Isso permite
 É o custo que aparece porque uma venda aconteceu.
 
 - Na revenda: custo pago ao fornecedor.
-- Na produção: custo dos materiais ou ingredientes.
+- Na produção rápida: custo resumido da unidade pronta ou soma de materiais, embalagem, mão de obra direta e outros custos variáveis.
 - Pode incluir frete ou embalagem por unidade.
 - Imposto, cartão e comissão também variam com a venda, mas são tratados como percentuais sobre o preço.
 
@@ -242,10 +250,14 @@ CD = custo de compra por unidade
 Na produção rápida:
 
 ```text
-CD = custo informado para fabricar uma unidade
+CD = custo resumido informado para fabricar uma unidade
+
+ou
+
+CD = materiais + embalagem + mão de obra direta + outros custos variáveis
 ```
 
-Quando a produção é posteriormente detalhada:
+Na composição, a mão de obra direta é variável por unidade e não inclui o pró-labore mensal do dono. Um cálculo por ingredientes, rendimento e desperdício pertence à futura análise detalhada e não é realizado pelo diagnóstico rápido atual:
 
 ```text
 Custo dos insumos da receita = soma de (quantidade × custo unitário de cada insumo)
@@ -317,7 +329,7 @@ Nesse valor, a margem é zero. Abaixo dele, há prejuízo; acima dele, existe al
 Preço-alvo = custo total por unidade ÷ (1 - T - M)
 ```
 
-O preço-alvo é o necessário para atingir a meta de referência. No fluxo rápido atual, essa referência é 20% para produto. Ele só é possível quando a soma das taxas e da meta é menor que 100%.
+O preço-alvo é o necessário para atingir a meta de referência. No fluxo rápido atual, essa referência é 20% para produto e produção própria. Ele só é possível quando a soma das taxas e da meta é menor que 100%.
 
 ### 6.10 Quantidade necessária para cobrir o mês
 
@@ -550,7 +562,7 @@ O motor foi preparado para trabalhar com a meta de duas formas, embora os contro
 
 O usuário informa diretamente o percentual desejado. Exemplos: 15%, 20% ou 30%.
 
-No comportamento visível atual, são aplicados automaticamente 20% para produto e 15% para serviço.
+No comportamento visível atual, são aplicados automaticamente 20% para produto e produção própria e 15% para serviço.
 
 ### Opção B — lucro desejado em reais
 
@@ -587,13 +599,13 @@ No protótipo fora do ambiente original, o salvamento pode não persistir após 
 ## 15. Premissas, limites e cuidados de interpretação
 
 1. **A qualidade do resultado depende dos dados informados.** Um custo omitido é interpretado como zero.
-2. **Produto sem volume mensal gera análise parcial.** O custo fixo não é dividido por unidade, deixando a margem aparentemente maior.
+2. **Produto ou produção sem volume mensal gera análise parcial.** O custo fixo não é dividido por unidade, deixando a margem aparentemente maior.
 3. **Serviço sem horas faturáveis também fica incompleto.** O custo da hora passa a zero, tornando o resultado irreal.
 4. **Imposto e cartão em branco são considerados zero.** Isso pode superestimar a margem.
 5. **O sistema não avalia demanda ou concorrência.** Um preço financeiramente saudável ainda pode não ser aceito pelo mercado.
-6. **A meta atual é uma referência predefinida, não uma recomendação setorial.** Os 20% de produto e 15% de serviço não garantem adequação ao ramo, à região ou ao mercado.
+6. **A meta atual é uma referência predefinida, não uma recomendação setorial.** Os 20% de produto e produção e os 15% de serviço não garantem adequação ao ramo, à região ou ao mercado.
 7. **Taxas mais meta precisam somar menos de 100%.** Caso contrário, não existe preço-alvo matematicamente possível.
-8. **Perda de produção deve ser menor que 100%.** Uma perda igual ou superior a 100% torna impossível obter uma unidade vendável.
+8. **Rendimento e perda de produção não fazem parte do diagnóstico rápido atual.** Essas informações serão tratadas apenas na futura análise detalhada/ficha técnica.
 9. **O ponto de equilíbrio não representa necessariamente crescimento.** Ele mostra o mínimo para cobrir a estrutura; lucro adicional exige margem ou volume superior.
 10. **O teto de desconto significa lucro zero, não margem saudável.** A empresa pode continuar no azul e, ainda assim, ficar abaixo da meta.
 

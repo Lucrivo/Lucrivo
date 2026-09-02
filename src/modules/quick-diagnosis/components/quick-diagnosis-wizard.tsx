@@ -13,6 +13,16 @@ import {
   type ProductWizardState,
 } from "./product/product-wizard-state";
 import {
+  ProductionDiagnosisWizard,
+  type CreateProductionDiagnosisAction,
+} from "./production/production-diagnosis-wizard";
+import {
+  createInitialProductionWizardState,
+  productionWizardReducer,
+  type ProductionWizardAction,
+  type ProductionWizardState,
+} from "./production/production-wizard-state";
+import {
   ServiceDiagnosisWizard,
   type CreateServiceDiagnosisAction,
 } from "./service/service-diagnosis-wizard";
@@ -30,17 +40,20 @@ import {
 
 type ActiveDiagnosisBranch =
   | { type: "service"; state: ServiceWizardState }
-  | { type: "product"; state: ProductWizardState };
+  | { type: "product"; state: ProductWizardState }
+  | { type: "production"; state: ProductionWizardState };
 
 type QuickDiagnosisWizardProps = {
   createServiceDiagnosis: CreateServiceDiagnosisAction;
   createProductDiagnosis: CreateProductDiagnosisAction;
+  createProductionDiagnosis: CreateProductionDiagnosisAction;
   createSubmissionId?: () => string;
 };
 
 function QuickDiagnosisWizard({
   createServiceDiagnosis,
   createProductDiagnosis,
+  createProductionDiagnosis,
   createSubmissionId = () => crypto.randomUUID(),
 }: QuickDiagnosisWizardProps) {
   const [diagnosisType, setDiagnosisType] = useState<DiagnosisType | "">("");
@@ -73,30 +86,50 @@ function QuickDiagnosisWizard({
     );
   };
 
+  const productionDispatch: Dispatch<ProductionWizardAction> = (action) => {
+    setActiveBranch((branch) =>
+      branch?.type === "production"
+        ? {
+            type: "production",
+            state: productionWizardReducer(branch.state, action),
+          }
+        : branch,
+    );
+  };
+
   function selectDiagnosisType(value: DiagnosisType) {
     setDiagnosisType(value);
     setDiagnosisTypeError(null);
   }
 
   function continueToBranch() {
-    if (diagnosisType !== "service" && diagnosisType !== "product") {
+    if (!diagnosisType) {
       setDiagnosisTypeError("Selecione o que você quer analisar.");
       return;
     }
 
     if (activeBranch?.type !== diagnosisType) {
       const submissionId = createSubmissionId();
-      setActiveBranch(
-        diagnosisType === "service"
-          ? {
-              type: "service",
-              state: createInitialServiceWizardState(submissionId),
-            }
-          : {
-              type: "product",
-              state: createInitialProductWizardState(submissionId),
-            },
-      );
+      switch (diagnosisType) {
+        case "service":
+          setActiveBranch({
+            type: "service",
+            state: createInitialServiceWizardState(submissionId),
+          });
+          break;
+        case "product":
+          setActiveBranch({
+            type: "product",
+            state: createInitialProductWizardState(submissionId),
+          });
+          break;
+        case "production":
+          setActiveBranch({
+            type: "production",
+            state: createInitialProductionWizardState(submissionId),
+          });
+          break;
+      }
     }
 
     setShowCategory(false);
@@ -126,6 +159,18 @@ function QuickDiagnosisWizard({
     );
   }
 
+  if (!showCategory && activeBranch?.type === "production") {
+    return (
+      <ProductionDiagnosisWizard
+        state={activeBranch.state}
+        dispatch={productionDispatch}
+        createDiagnosis={createProductionDiagnosis}
+        createSubmissionId={createSubmissionId}
+        onBackToType={() => setShowCategory(true)}
+      />
+    );
+  }
+
   return (
     <WizardShell
       stepNumber={1}
@@ -148,6 +193,7 @@ export {
   QuickDiagnosisWizard,
   type ActiveDiagnosisBranch,
   type CreateProductDiagnosisAction,
+  type CreateProductionDiagnosisAction,
   type CreateServiceDiagnosisAction,
   type QuickDiagnosisWizardProps,
 };

@@ -30,7 +30,7 @@ const options = [
     label: "Produção",
     detail: "Para itens fabricados pelo próprio negócio",
     icon: FactoryIcon,
-    disabled: true,
+    disabled: false,
   },
 ] as const;
 
@@ -43,7 +43,11 @@ function DiagnosisTypeStep({ value, error, onChange }: DiagnosisTypeStepProps) {
         aria-invalid={Boolean(error)}
         aria-describedby={error ? "diagnosisType-error" : undefined}
         onValueChange={(nextValue) => {
-          if (nextValue === "service" || nextValue === "product") {
+          if (
+            nextValue === "service" ||
+            nextValue === "product" ||
+            nextValue === "production"
+          ) {
             onChange(nextValue);
           }
         }}
