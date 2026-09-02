@@ -40,7 +40,7 @@ function StepField<Field extends string>({
     .join(" ");
 
   return (
-    <div className="grid gap-2">
+    <div className="grid content-start gap-2">
       <Label htmlFor={field}>{label}</Label>
       <InputGroup className="bg-background h-11 shadow-xs">
         {prefix ? (
