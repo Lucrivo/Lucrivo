@@ -435,6 +435,24 @@ select results_eq(
 
 select throws_ok(
   $$ select pg_temp.create_product_report(
+    p_submission_id => '50000000-0000-4000-8000-000000000009',
+    p_purchase_unit_cost_cents => -1,
+    p_report_snapshot => jsonb_set(
+      jsonb_set(
+        pg_temp.complete_product_snapshot(),
+        '{inputs,purchaseUnitCostCents}',
+        '-1'::jsonb
+      ),
+      '{results,purchaseUnitCostCents}',
+      '-1'::jsonb
+    )
+  ) $$,
+  '23514',
+  null,
+  'purchase cost cannot be negative'
+);
+select lives_ok(
+  $$ select pg_temp.create_product_report(
     p_submission_id => '50000000-0000-4000-8000-000000000010',
     p_purchase_unit_cost_cents => 0,
     p_report_snapshot => jsonb_set(
@@ -447,9 +465,16 @@ select throws_ok(
       '0'::jsonb
     )
   ) $$,
-  '23514',
-  null,
-  'purchase cost must be positive'
+  'purchase cost can be zero for products without direct cost'
+);
+select results_eq(
+  $$
+    select purchase_unit_cost_cents
+    from public.product_diagnoses
+    where submission_id = '50000000-0000-4000-8000-000000000010'
+  $$,
+  array[0::bigint],
+  'zero purchase cost is persisted exactly'
 );
 select throws_ok(
   $$ select pg_temp.create_product_report(
@@ -593,7 +618,7 @@ select results_eq(
     select count(*)::bigint
     from public.diagnoses
     where submission_id between
-      '50000000-0000-4000-8000-000000000010' and
+      '50000000-0000-4000-8000-000000000011' and
       '50000000-0000-4000-8000-000000000019'
   $$,
   array[0::bigint],

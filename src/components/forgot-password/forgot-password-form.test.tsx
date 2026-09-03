@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/shared/auth/turnstile-field", () => ({
   TurnstileField: () => (
@@ -13,6 +13,10 @@ import type { PasswordRecoveryActionState } from "@/modules/auth/actions/request
 import { ForgotPasswordForm } from "./forgot-password-form";
 
 describe("ForgotPasswordForm", () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
   it("submits the email and shows the neutral acknowledgement", async () => {
     const user = userEvent.setup();
     const action = vi.fn(async (): Promise<PasswordRecoveryActionState> => ({
@@ -29,6 +33,7 @@ describe("ForgotPasswordForm", () => {
     expect(await screen.findByRole("status")).toHaveTextContent(
       "Se existir uma conta para este e-mail",
     );
+    expect(screen.getByLabelText("E-mail")).toHaveValue("usuario@lucrivo.com");
   });
 
   it.each([
@@ -47,6 +52,7 @@ describe("ForgotPasswordForm", () => {
     await user.click(screen.getByRole("button", { name: "Enviar instruções" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(message);
+    expect(screen.getByLabelText("E-mail")).toHaveValue("usuario@lucrivo.com");
   });
 
   it("links back to login without offering a social provider", () => {

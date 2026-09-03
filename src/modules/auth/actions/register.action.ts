@@ -54,9 +54,16 @@ async function register(
     const passwordMismatch = parsed.error.issues.some(
       (issue) => issue.path[0] === "confirmPassword" && issue.code === "custom",
     );
+    const weakPassword = parsed.error.issues.some(
+      (issue) => issue.path[0] === "password",
+    );
     return {
       status: "error",
-      error: passwordMismatch ? "password_mismatch" : "invalid_fields",
+      error: passwordMismatch
+        ? "password_mismatch"
+        : weakPassword
+          ? "weak_password"
+          : "invalid_fields",
     };
   }
 

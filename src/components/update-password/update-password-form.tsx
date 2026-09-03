@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import {
   AuthFeedback,
@@ -9,12 +9,15 @@ import {
   AuthPasswordField,
   AuthSubmitButton,
 } from "@/components/shared/auth/auth-form";
+import { PasswordRequirements } from "@/components/shared/auth/password-requirements";
 import type { UpdatePasswordActionState } from "@/modules/auth/actions/update-password.action";
 
 const errorMessages = {
   invalid_fields:
     "Use uma senha de 10 a 72 caracteres, com pelo menos uma letra e um número.",
   password_mismatch: "As senhas não coincidem. Verifique e tente novamente.",
+  weak_password:
+    "Use uma senha mais forte, com 10 a 72 caracteres, pelo menos uma letra e um número.",
   update_failed:
     "Não foi possível atualizar sua senha agora. Solicite um novo link e tente novamente.",
 } as const;
@@ -28,6 +31,8 @@ type UpdatePasswordFormProps = {
 
 function UpdatePasswordForm({ action }: UpdatePasswordFormProps) {
   const [state, formAction] = useActionState(action, null);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const hasError = state?.status === "error";
 
   return (
@@ -42,7 +47,10 @@ function UpdatePasswordForm({ action }: UpdatePasswordFormProps) {
           autoComplete="new-password"
           invalid={hasError}
           describedBy="password-requirements"
+          value={password}
+          onValueChange={setPassword}
         />
+        <PasswordRequirements id="password-requirements" password={password} />
         <AuthPasswordField
           id="confirmPassword"
           name="confirmPassword"
@@ -51,14 +59,9 @@ function UpdatePasswordForm({ action }: UpdatePasswordFormProps) {
           autoComplete="new-password"
           invalid={hasError}
           describedBy="password-requirements"
+          value={confirmPassword}
+          onValueChange={setConfirmPassword}
         />
-
-        <p
-          id="password-requirements"
-          className="text-muted-foreground text-sm leading-relaxed"
-        >
-          Use de 10 a 72 caracteres, incluindo pelo menos uma letra e um número.
-        </p>
 
         {hasError && <AuthFeedback>{errorMessages[state.error]}</AuthFeedback>}
 

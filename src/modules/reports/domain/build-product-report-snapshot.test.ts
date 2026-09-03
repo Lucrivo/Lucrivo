@@ -114,6 +114,25 @@ describe("buildProductReportSnapshot", () => {
     expect(parseProductReportSnapshot(snapshot)).toEqual(snapshot);
   });
 
+  it.each([100, null] as const)(
+    "accepts a zero-cost digital Product snapshot with volume %s",
+    (monthlySalesVolume) => {
+      const snapshot = build({
+        ...completeCommand,
+        purchaseUnitCostCents: 0,
+        fixedMonthlyExpensesCents: 0,
+        monthlySalesVolume,
+        proLaboreIncluded: false,
+        proLaboreCents: 0,
+      });
+
+      expect(snapshot.inputs.purchaseUnitCostCents).toBe(0);
+      expect(snapshot.results.purchaseUnitCostCents).toBe(0);
+      expect(snapshot.discountSimulationBase.unitCostCents).toBe(0);
+      expect(parseProductReportSnapshot(snapshot)).toEqual(snapshot);
+    },
+  );
+
   it.each([
     [completeCommand, false],
     [{ ...completeCommand, monthlySalesVolume: null }, true],

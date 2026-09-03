@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/shared/auth/turnstile-field", () => ({
   TurnstileField: () => (
@@ -13,6 +13,10 @@ import type { LoginActionState } from "@/modules/auth/actions/login.action";
 import { LoginForm } from "./login-form";
 
 describe("LoginForm", () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
   it("links to password recovery", () => {
     const action = vi.fn(async (): Promise<LoginActionState> => null);
 
@@ -40,8 +44,12 @@ describe("LoginForm", () => {
       "E-mail ou senha inválidos",
     );
 
+    expect(screen.getByLabelText("E-mail")).toHaveValue("usuario@lucrivo.com");
     const password = screen.getByLabelText("Senha");
+    expect(password).toHaveValue("senha-segura");
     expect(password).toHaveAttribute("type", "password");
+    expect(password).not.toHaveAttribute("minlength");
+    expect(password).not.toHaveAttribute("maxlength");
 
     await user.click(screen.getByRole("button", { name: "Mostrar senha" }));
 

@@ -66,6 +66,29 @@ describe("calculateProductReport", () => {
     );
   });
 
+  it("calculates a digital product without purchase or fixed costs", () => {
+    expect(
+      calculateProductReport({
+        ...completeCommand,
+        purchaseUnitCostCents: 0,
+        fixedMonthlyExpensesCents: 0,
+        proLaboreIncluded: false,
+        proLaboreCents: 0,
+      }),
+    ).toEqual(
+      expect.objectContaining({
+        purchaseUnitCostCents: 0,
+        fixedAllocationCents: 0,
+        totalUnitCostCents: 0,
+        unitContributionCents: 9200,
+        unitProfitCents: 9200,
+        realMarginBasisPoints: 9200,
+        minimumPriceCents: 0,
+        targetPriceCents: 0,
+      }),
+    );
+  });
+
   it("gives direct loss precedence and suppresses sales goals", () => {
     expect(
       calculateProductReport({

@@ -64,14 +64,6 @@ const productDiagnosisSchema: z.ZodType<
   ProductDiagnosisInput
 > = rawProductDiagnosisSchema
   .superRefine((input, context) => {
-    if (input.purchaseUnitCost <= 0) {
-      context.addIssue({
-        code: "custom",
-        path: ["purchaseUnitCost"],
-        message: "Informe um custo de compra maior que zero.",
-      });
-    }
-
     if (input.unitSalePrice <= 0) {
       context.addIssue({
         code: "custom",

@@ -61,7 +61,7 @@ describe("Product diagnosis steps", () => {
     expect(purchaseCost).toHaveAttribute("aria-invalid", "true");
     expect(purchaseCost).toHaveAttribute(
       "aria-describedby",
-      "purchaseUnitCost-error",
+      "purchaseUnitCost-description purchaseUnitCost-error",
     );
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Informe um custo válido.",
@@ -71,6 +71,25 @@ describe("Product diagnosis steps", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(/hora faturável/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/atendimento/i)).not.toBeInTheDocument();
+  });
+
+  it("marks purchase cost as optional and explains the zero-cost case", () => {
+    render(
+      <ProductValuesStep
+        values={{ ...values, purchaseUnitCost: "" }}
+        errors={{}}
+        onChange={onChange}
+      />,
+    );
+
+    expect(screen.getByLabelText("Custo de compra por unidade")).toHaveValue(
+      "",
+    );
+    expect(
+      screen.getByText(
+        "Opcional. Deixe em branco se o produto não tiver custo direto.",
+      ),
+    ).toBeVisible();
   });
 
   it("accepts zero fixed expenses and marks monthly volume as optional", () => {

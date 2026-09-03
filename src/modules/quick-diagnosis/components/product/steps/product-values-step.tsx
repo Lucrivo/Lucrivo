@@ -10,6 +10,7 @@ function ProductValuesStep(props: ProductStepProps) {
         label="Custo de compra por unidade"
         value={props.values.purchaseUnitCost}
         prefix="R$"
+        description="Opcional. Deixe em branco se o produto não tiver custo direto."
       />
       <StepField
         {...props}
