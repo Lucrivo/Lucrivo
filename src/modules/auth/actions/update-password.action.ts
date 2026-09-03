@@ -7,7 +7,8 @@ import { passwordUpdateSchema } from "@/schemas/auth/password-recovery.schema";
 
 type UpdatePasswordActionState = {
   status: "error";
-  error: "invalid_fields" | "password_mismatch" | "update_failed";
+  error:
+    "invalid_fields" | "password_mismatch" | "weak_password" | "update_failed";
 } | null;
 
 async function submitPasswordUpdate(
@@ -23,10 +24,17 @@ async function submitPasswordUpdate(
     const passwordMismatch = parsed.error.issues.some(
       (issue) => issue.path[0] === "confirmPassword" && issue.code === "custom",
     );
+    const weakPassword = parsed.error.issues.some(
+      (issue) => issue.path[0] === "password",
+    );
 
     return {
       status: "error",
-      error: passwordMismatch ? "password_mismatch" : "invalid_fields",
+      error: passwordMismatch
+        ? "password_mismatch"
+        : weakPassword
+          ? "weak_password"
+          : "invalid_fields",
     };
   }
 
@@ -38,6 +46,10 @@ async function submitPasswordUpdate(
 
   if (result.status === "update_failed") {
     return { status: "error", error: "update_failed" };
+  }
+
+  if (result.status === "weak_password") {
+    return { status: "error", error: "weak_password" };
   }
 
   if (result.status === "updated_revocation_failed") {

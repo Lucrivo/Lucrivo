@@ -76,6 +76,10 @@ describe("UpdatePasswordForm", () => {
 
     expect(action).toHaveBeenCalledOnce();
     expect(await screen.findByRole("alert")).toHaveTextContent(message);
+    expect(screen.getByLabelText("Nova senha")).toHaveValue("nova-senha1");
+    expect(screen.getByLabelText("Confirmação da senha")).toHaveValue(
+      "nova-senha1",
+    );
   });
 
   it("links to requesting another recovery email", () => {

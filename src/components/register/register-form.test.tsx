@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/shared/auth/turnstile-field", () => ({
   TurnstileField: () => (
@@ -19,6 +19,10 @@ async function fillRegisterForm(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe("RegisterForm", () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
   it("does not show an inoperable Google registration", () => {
     const action = vi.fn(async (): Promise<RegisterActionState> => null);
 
@@ -41,6 +45,31 @@ describe("RegisterForm", () => {
     );
   });
 
+  it("shows password requirements as they are met", async () => {
+    const user = userEvent.setup();
+    const action = vi.fn(async (): Promise<RegisterActionState> => null);
+
+    render(<RegisterForm action={action} />);
+
+    const progress = screen.getByRole("progressbar", {
+      name: "Requisitos da senha",
+    });
+    expect(progress).toHaveAttribute("aria-valuenow", "0");
+
+    await user.type(screen.getByLabelText("Senha"), "senha-segura1");
+
+    expect(progress).toHaveAttribute("aria-valuenow", "3");
+    expect(
+      screen.getByText("10 a 72 caracteres").closest("li"),
+    ).toHaveAttribute("data-met", "true");
+    expect(
+      screen.getByText("Pelo menos uma letra").closest("li"),
+    ).toHaveAttribute("data-met", "true");
+    expect(
+      screen.getByText("Pelo menos um número").closest("li"),
+    ).toHaveAttribute("data-met", "true");
+  });
+
   it("describes the complete password policy after a weak password response", async () => {
     const user = userEvent.setup();
     const action = vi.fn(async (): Promise<RegisterActionState> => ({
@@ -53,7 +82,12 @@ describe("RegisterForm", () => {
     await user.click(screen.getByRole("button", { name: "Criar conta" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "10 caracteres, uma letra e um número",
+      "10 a 72 caracteres, pelo menos uma letra e um número",
+    );
+    expect(screen.getByLabelText("E-mail")).toHaveValue("usuario@lucrivo.com");
+    expect(screen.getByLabelText("Senha")).toHaveValue("senha-segura");
+    expect(screen.getByLabelText("Confirme sua senha")).toHaveValue(
+      "senha-segura",
     );
   });
 
@@ -88,6 +122,11 @@ describe("RegisterForm", () => {
     expect(await screen.findByRole("status")).toHaveTextContent(
       "Se o cadastro puder ser concluído, enviaremos uma confirmação para o e-mail informado.",
     );
+    expect(screen.getByLabelText("E-mail")).toHaveValue("usuario@lucrivo.com");
+    await waitFor(() => {
+      expect(screen.getByLabelText("Senha")).toHaveValue("");
+      expect(screen.getByLabelText("Confirme sua senha")).toHaveValue("");
+    });
     expect(action).toHaveBeenCalledOnce();
   });
 });

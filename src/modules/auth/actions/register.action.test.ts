@@ -81,4 +81,17 @@ describe("register", () => {
       "captcha-token",
     );
   });
+
+  it("distinguishes a password that does not meet the policy", async () => {
+    vi.stubEnv("AUTH_SIGNUP_ENABLED", "true");
+    vi.stubEnv("AUTH_CAPTCHA_ENABLED", "false");
+    const formData = registerFormData();
+    formData.set("password", "senha-fraca");
+    formData.set("confirmPassword", "senha-fraca");
+
+    const result = await register(null, formData);
+
+    expect(signup).not.toHaveBeenCalled();
+    expect(result).toEqual({ status: "error", error: "weak_password" });
+  });
 });

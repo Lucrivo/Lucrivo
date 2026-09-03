@@ -32,7 +32,7 @@ describe("submitPasswordUpdate", () => {
     );
 
     expect(updatePassword).not.toHaveBeenCalled();
-    expect(result).toEqual({ status: "error", error: "invalid_fields" });
+    expect(result).toEqual({ status: "error", error: "weak_password" });
   });
 
   it("distinguishes a mismatched password confirmation", async () => {
@@ -72,6 +72,18 @@ describe("submitPasswordUpdate", () => {
 
     expect(redirect).not.toHaveBeenCalled();
     expect(result).toEqual({ status: "error", error: "update_failed" });
+  });
+
+  it("preserves a weak-password error returned by Supabase", async () => {
+    updatePassword.mockResolvedValue({ status: "weak_password" });
+
+    const result = await submitPasswordUpdate(
+      null,
+      passwordFormData("nova-senha1"),
+    );
+
+    expect(redirect).not.toHaveBeenCalled();
+    expect(result).toEqual({ status: "error", error: "weak_password" });
   });
 
   it("warns when the password changed but global revocation failed", async () => {

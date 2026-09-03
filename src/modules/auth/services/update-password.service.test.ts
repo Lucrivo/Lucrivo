@@ -70,6 +70,17 @@ describe("updatePassword", () => {
     expect(result).toEqual({ status: "update_failed" });
   });
 
+  it("identifies a weak password rejected by Supabase", async () => {
+    updateUser.mockResolvedValue({
+      error: { code: "weak_password", message: "weak password" },
+    });
+
+    const result = await updatePassword("nova-senha1");
+
+    expect(signOut).not.toHaveBeenCalled();
+    expect(result).toEqual({ status: "weak_password" });
+  });
+
   it("reports partial success and attempts local cleanup after revocation fails", async () => {
     const consoleError = vi
       .spyOn(console, "error")
