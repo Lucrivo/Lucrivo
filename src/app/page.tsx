@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-import { LandingPage } from "@/components/landing/landing-page";
+// import { LandingPage } from "@/components/landing/landing-page";
+import { LandingExperience } from "@/components/landing/landing-experience";
 
 export const metadata: Metadata = {
   title: "Lucrivo — Descubra se o preço que você cobra faz a conta fechar",
@@ -9,5 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <LandingPage />;
+  return <LandingExperience />;
 }
