@@ -560,10 +560,7 @@ export function LandingExperience() {
           Se você vende, produz ou presta serviços, o Lucrivo pode ajudar. Crie
           sua conta e receba um diagnóstico personalizado, sem cartão.
         </p>
-        <a
-          className="button button-primary button-large"
-          href="mailto:ola@lucrivo.com.br?subject=Quero%20começar%20meu%20diagnóstico"
-        >
+        <a className="button button-primary button-large" href="/register">
           Fazer meu diagnóstico gratuito{" "}
           <ArrowRightIcon size={20} weight="bold" />
         </a>
