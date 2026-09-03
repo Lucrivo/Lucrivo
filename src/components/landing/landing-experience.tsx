@@ -422,8 +422,7 @@ export function LandingExperience() {
             <p className="eyebrow">Três passos. Poucos minutos.</p>
             <h2>
               O motor calcula.
-              <br />
-              A inteligência <span className="inline-image" /> interpreta.
+              <br />A inteligência interpreta.
             </h2>
           </div>
           <div className="method-steps">
