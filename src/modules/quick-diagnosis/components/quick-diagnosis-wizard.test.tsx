@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -12,7 +12,6 @@ import {
   QuickDiagnosisWizard,
   type CreateProductDiagnosisAction,
   type CreateProductionDiagnosisAction,
-  type CreateServiceDiagnosisAction,
 } from "./quick-diagnosis-wizard";
 
 const submissionIds = [
@@ -29,12 +28,9 @@ describe("QuickDiagnosisWizard category orchestration", () => {
   });
 
   function renderWizard(options?: {
-    createServiceDiagnosis?: CreateServiceDiagnosisAction;
     createProductDiagnosis?: CreateProductDiagnosisAction;
     createProductionDiagnosis?: CreateProductionDiagnosisAction;
   }) {
-    const createServiceDiagnosis =
-      options?.createServiceDiagnosis ?? vi.fn<CreateServiceDiagnosisAction>();
     const createProductDiagnosis =
       options?.createProductDiagnosis ?? vi.fn<CreateProductDiagnosisAction>();
     const createProductionDiagnosis =
@@ -50,7 +46,6 @@ describe("QuickDiagnosisWizard category orchestration", () => {
 
     render(
       <QuickDiagnosisWizard
-        createServiceDiagnosis={createServiceDiagnosis}
         createProductDiagnosis={createProductDiagnosis}
         createProductionDiagnosis={createProductionDiagnosis}
         createSubmissionId={createSubmissionId}
@@ -58,7 +53,6 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     );
 
     return {
-      createServiceDiagnosis,
       createProductDiagnosis,
       createProductionDiagnosis,
       createSubmissionId,
@@ -100,29 +94,40 @@ describe("QuickDiagnosisWizard category orchestration", () => {
   async function completeServiceDiagnosis(
     user: ReturnType<typeof userEvent.setup>,
   ) {
-    await user.type(screen.getByLabelText("Pró-labore mensal"), "5000");
-    await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Contas fixas mensais"), "1200");
+    await user.type(screen.getByLabelText("Ganho mensal desejado"), "5000");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(
-      screen.getByLabelText("Quantas horas faturáveis por mês?"),
-      "160",
-    );
-    await user.type(
-      screen.getByLabelText("Quantos dias por semana você trabalha?"),
-      "5",
+      screen.getByLabelText("Total dos custos fixos mensais"),
+      "1200",
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(screen.getByRole("radio", { name: "Por hora" }));
-    await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(
       screen.getByLabelText("Quanto você cobra por hora?"),
       "125,90",
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.type(screen.getByLabelText("Quantas horas por dia?"), "8");
+    await user.type(screen.getByLabelText("Quantos dias por semana?"), "5");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Impostos"), "6,25");
-    await user.type(screen.getByLabelText("Taxa do cartão"), "3,50");
+    const material = screen.getByRole("radiogroup", {
+      name: "Você possui algum custo para realizar o serviço?",
+    });
+    await user.click(within(material).getByRole("radio", { name: "Não" }));
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    const tax = screen.getByRole("radiogroup", {
+      name: "Você paga imposto sobre o faturamento?",
+    });
+    await user.click(within(tax).getByRole("radio", { name: "Sim" }));
+    await user.type(
+      screen.getByLabelText("Percentual médio de imposto"),
+      "6,25",
+    );
+    const fee = screen.getByRole("radiogroup", {
+      name: "Você recebe por cartão ou plataforma que cobra taxa?",
+    });
+    await user.click(within(fee).getByRole("radio", { name: "Sim" }));
+    await user.type(screen.getByLabelText("Percentual médio da taxa"), "3,50");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
   }
 
@@ -184,11 +189,9 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     const createProductionDiagnosis = vi
       .fn<CreateProductionDiagnosisAction>()
       .mockResolvedValue({ status: "success", diagnosisId: 126 });
-    const {
-      createServiceDiagnosis,
-      createProductDiagnosis,
-      createSubmissionId,
-    } = renderWizard({ createProductionDiagnosis });
+    const { createProductDiagnosis, createSubmissionId } = renderWizard({
+      createProductionDiagnosis,
+    });
 
     await user.click(screen.getByRole("radio", { name: "Produção" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
@@ -242,7 +245,6 @@ describe("QuickDiagnosisWizard category orchestration", () => {
       taxRate: "6,25",
       cardFeeRate: "3,50",
     });
-    expect(createServiceDiagnosis).not.toHaveBeenCalled();
     expect(createProductDiagnosis).not.toHaveBeenCalled();
   });
 
@@ -267,26 +269,30 @@ describe("QuickDiagnosisWizard category orchestration", () => {
         await user.click(screen.getByRole("button", { name: "Voltar" }));
         await user.click(screen.getByRole("button", { name: "Voltar" }));
       } else {
-        await user.type(screen.getByLabelText("Pró-labore mensal"), "5000");
+        await user.type(screen.getByLabelText("Ganho mensal desejado"), "5000");
         await user.click(screen.getByRole("button", { name: "Voltar" }));
       }
 
       await user.click(screen.getByRole("radio", { name: "Produção" }));
       await user.click(screen.getByRole("button", { name: "Continuar" }));
-      expect(createSubmissionId).toHaveBeenCalledTimes(2);
+      expect(createSubmissionId).toHaveBeenCalledTimes(
+        initialCategory === "Produto" ? 2 : 1,
+      );
       expect(screen.getByText("2 de 8")).toBeInTheDocument();
       await user.click(screen.getByRole("button", { name: "Voltar" }));
 
       await user.click(screen.getByRole("radio", { name: initialCategory }));
       await user.click(screen.getByRole("button", { name: "Continuar" }));
-      expect(createSubmissionId).toHaveBeenCalledTimes(3);
+      expect(createSubmissionId).toHaveBeenCalledTimes(
+        initialCategory === "Produto" ? 3 : 1,
+      );
 
       if (initialCategory === "Produto") {
         expect(
           screen.getByRole("radio", { name: "Diagnóstico rápido" }),
         ).not.toBeChecked();
       } else {
-        expect(screen.getByLabelText("Pró-labore mensal")).toHaveValue("");
+        expect(screen.getByLabelText("Ganho mensal desejado")).toHaveValue("");
       }
     },
   );
@@ -309,11 +315,9 @@ describe("QuickDiagnosisWizard category orchestration", () => {
       .fn()
       .mockResolvedValueOnce({ status: "error", error: "create_failed" })
       .mockResolvedValueOnce({ status: "success", diagnosisId: 42 });
-    const {
-      createServiceDiagnosis,
-      createProductionDiagnosis,
-      createSubmissionId,
-    } = renderWizard({ createProductDiagnosis });
+    const { createProductionDiagnosis, createSubmissionId } = renderWizard({
+      createProductDiagnosis,
+    });
 
     await user.click(screen.getByRole("radio", { name: "Produto" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
@@ -339,12 +343,12 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     await openCategoryFromProductValues(user);
     await user.click(screen.getByRole("radio", { name: "Serviço" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    expect(createSubmissionId).toHaveBeenCalledTimes(2);
+    expect(createSubmissionId).toHaveBeenCalledTimes(1);
     await user.click(screen.getByRole("button", { name: "Voltar" }));
 
     await user.click(screen.getByRole("radio", { name: "Produto" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    expect(createSubmissionId).toHaveBeenCalledTimes(3);
+    expect(createSubmissionId).toHaveBeenCalledTimes(2);
     await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(screen.getByLabelText("Custo de compra por unidade")).toHaveValue(
@@ -367,50 +371,30 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     expect(createProductDiagnosis).toHaveBeenCalledTimes(2);
     expect(createProductDiagnosis).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ submissionId: submissionIds[2] }),
+      expect.objectContaining({ submissionId: submissionIds[1] }),
     );
     expect(createProductDiagnosis).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({ submissionId: submissionIds[2] }),
+      expect.objectContaining({ submissionId: submissionIds[1] }),
     );
-    expect(createServiceDiagnosis).not.toHaveBeenCalled();
     expect(createProductionDiagnosis).not.toHaveBeenCalled();
   });
 
-  it("submits the unchanged Service payload only to the Service action", async () => {
+  it("keeps the new Service flow isolated and disables its report action", async () => {
     const user = userEvent.setup();
-    const createServiceDiagnosis = vi
-      .fn()
-      .mockResolvedValue({ status: "success", diagnosisId: 42 });
-    const { createProductDiagnosis, createProductionDiagnosis } = renderWizard({
-      createServiceDiagnosis,
-    });
+    const { createProductDiagnosis, createProductionDiagnosis } =
+      renderWizard();
 
     await user.click(screen.getByRole("radio", { name: "Serviço" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await completeServiceDiagnosis(user);
-    await user.click(
-      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
-    );
 
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/reports/42"));
-    expect(createServiceDiagnosis).toHaveBeenCalledWith({
-      submissionId: submissionIds[0],
-      pricingMethod: "hour",
-      desiredMonthlyIncome: "5000",
-      fixedMonthlyExpenses: "1200",
-      workHoursPeriod: "month",
-      workHours: "160",
-      weeklyWorkDays: "5",
-      hourlyRate: "125,90",
-      minuteRate: "",
-      appointmentRate: "",
-      appointmentDurationMinutes: "",
-      hasMaterialCost: false,
-      materialUnitCost: "",
-      taxRate: "6,25",
-      cardFeeRate: "3,50",
-    });
+    expect(
+      screen.getByRole("button", {
+        name: "Gerar relatório temporariamente indisponível",
+      }),
+    ).toBeDisabled();
+    expect(replace).not.toHaveBeenCalled();
     expect(createProductDiagnosis).not.toHaveBeenCalled();
     expect(createProductionDiagnosis).not.toHaveBeenCalled();
   });

@@ -1,89 +1,50 @@
-import Link from "next/link";
-import { CheckIcon, PencilIcon } from "lucide-react";
+import { InfoIcon, PencilIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-import type {
-  ServiceDiagnosisFieldErrors,
-  ServiceDiagnosisInput,
-  ServiceWorkPeriod,
-} from "../../../types";
 import {
-  normalizeMonthlyWorkMinutes,
-  parseServiceWorkPeriodMinutes,
-} from "../../../schemas/service-work-capacity";
+  calculateServiceFlowPreview,
+  type ServiceFlowInput,
+} from "../../../domain/service-flow";
+import { canonicalDecimal } from "../../../schemas/decimal-input";
 import type { ServiceWizardStep } from "../service-wizard-state";
 
 type ReviewStepProps = {
-  values: ServiceDiagnosisInput;
-  errors: ServiceDiagnosisFieldErrors;
-  pending: boolean;
-  submitError: "unauthorized" | "create_failed" | null;
+  values: ServiceFlowInput;
   onEdit: (step: ServiceWizardStep) => void;
   onBackToType: () => void;
-  onSubmit: () => void;
 };
 
-const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+const currency = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
 });
-
-const pricingMethodLabels = {
-  hour: "Por hora",
-  minute: "Por minuto",
-  appointment: "Por atendimento",
-} as const;
-
-const workPeriodLabels = {
-  day: "dia",
-  week: "semana",
-  month: "mês",
-} satisfies Record<ServiceWorkPeriod, string>;
-
-const decimalFormatter = new Intl.NumberFormat("pt-BR", {
+const decimal = new Intl.NumberFormat("pt-BR", {
   maximumFractionDigits: 2,
 });
 
-function decimalNumber(value: string): number {
-  const compact = value
-    .trim()
-    .replace(/^R\$\s*/, "")
-    .replace(/\s/g, "");
-  const canonical = compact.includes(",")
-    ? compact.replace(/\./g, "").replace(",", ".")
-    : compact;
+const pricingLabels = {
+  appointment: "Por atendimento/serviço",
+  minute: "Por minuto",
+  hour: "Por hora",
+  day: "Por diária",
+  week: "Por semana",
+  month: "Por mês",
+} as const;
 
-  return Number(canonical);
+const materialUnitLabels = {
+  appointment: "atendimento/serviço",
+  hour: "hora",
+  day: "dia",
+  month: "mês",
+} as const;
+
+function numberValue(value: string): number {
+  return Number(canonicalDecimal(value));
 }
 
-function formatMoney(value: string): string {
-  return currencyFormatter.format(decimalNumber(value));
-}
-
-function formatCapacity(values: ServiceDiagnosisInput): {
-  original: string;
-  monthly: string;
-} {
-  const period = values.workHoursPeriod as ServiceWorkPeriod;
-  const periodMinutes = parseServiceWorkPeriodMinutes(values.workHours, period);
-  const monthlyMinutes = normalizeMonthlyWorkMinutes(
-    period,
-    periodMinutes,
-    Number(values.weeklyWorkDays),
-  );
-
-  return {
-    original: `${decimalFormatter.format(decimalNumber(values.workHours))} horas faturáveis por ${workPeriodLabels[period]}`,
-    monthly: `${decimalFormatter.format(monthlyMinutes / 60)} horas faturáveis por mês`,
-  };
-}
-
-function formatMaterialCost(values: ServiceDiagnosisInput): string {
-  if (!values.hasMaterialCost) return "Sem custo de material";
-
-  const unit = values.pricingMethod === "hour" ? "hora" : "atendimento";
-  return `${formatMoney(values.materialUnitCost)} por ${unit}`;
+function money(value: string): string {
+  return currency.format(numberValue(value));
 }
 
 function ReviewItem({ label, value }: { label: string; value: string }) {
@@ -127,23 +88,11 @@ function ReviewGroup({
   );
 }
 
-function ReviewStep({
-  values,
-  pending,
-  submitError,
-  onEdit,
-  onBackToType,
-  onSubmit,
-}: ReviewStepProps) {
-  const currentPrice =
-    values.pricingMethod === "hour"
-      ? ["Valor por hora", values.hourlyRate]
-      : values.pricingMethod === "minute"
-        ? ["Valor por minuto", values.minuteRate]
-        : ["Valor por atendimento", values.appointmentRate];
-  const requiresDuration =
-    values.pricingMethod === "minute" || values.pricingMethod === "appointment";
-  const capacity = formatCapacity(values);
+function ReviewStep({ values, onEdit, onBackToType }: ReviewStepProps) {
+  const preview = calculateServiceFlowPreview(values);
+  const pricingMethod = values.pricingMethod as keyof typeof pricingLabels;
+  const materialUnit =
+    values.materialCostUnit as keyof typeof materialUnitLabels;
 
   return (
     <div className="grid gap-5">
@@ -157,75 +106,35 @@ function ReviewStep({
         </ReviewGroup>
 
         <ReviewGroup
-          title="Forma de cobrança"
-          editName="Editar forma de cobrança"
-          onEdit={() => onEdit("pricingMethod")}
-        >
-          <ReviewItem
-            label="Método"
-            value={
-              pricingMethodLabels[
-                values.pricingMethod as keyof typeof pricingMethodLabels
-              ]
-            }
-          />
-        </ReviewGroup>
-
-        <ReviewGroup
-          title="Meta mensal"
-          editName="Editar meta mensal"
+          title="Objetivo mensal"
+          editName="Editar ganho mensal"
           onEdit={() => onEdit("monthlyGoal")}
         >
           <ReviewItem
-            label="Pró-labore"
-            value={formatMoney(values.desiredMonthlyIncome)}
+            label="Quanto você quer ganhar"
+            value={money(values.desiredMonthlyIncome)}
+          />
+          <ReviewItem
+            label="Custos fixos"
+            value={money(values.fixedMonthlyExpenses)}
+          />
+          <ReviewItem
+            label="A atividade precisa gerar"
+            value={currency.format(preview.monthlyRevenueTargetCents / 100)}
           />
         </ReviewGroup>
 
         <ReviewGroup
-          title="Despesas fixas"
-          editName="Editar despesas fixas"
-          onEdit={() => onEdit("fixedExpenses")}
+          title="Forma e preço"
+          editName="Editar forma e preço"
+          onEdit={() => onEdit("pricingMethod")}
         >
           <ReviewItem
-            label="Contas fixas mensais"
-            value={formatMoney(values.fixedMonthlyExpenses)}
+            label="Como você cobra"
+            value={pricingLabels[pricingMethod]}
           />
-        </ReviewGroup>
-
-        <ReviewGroup
-          title="Rotina"
-          editName="Editar rotina"
-          onEdit={() => onEdit("workRoutine")}
-        >
-          <ReviewItem label="Capacidade informada" value={capacity.original} />
-          {values.workHoursPeriod !== "month" ? (
-            <ReviewItem label="Equivalente mensal" value={capacity.monthly} />
-          ) : null}
-          <ReviewItem
-            label="Frequência"
-            value={`${values.weeklyWorkDays} dias por semana`}
-          />
-        </ReviewGroup>
-
-        <ReviewGroup
-          title="Material"
-          editName="Editar custo de material"
-          onEdit={() => onEdit("materialCost")}
-        >
-          <ReviewItem label="Custo direto" value={formatMaterialCost(values)} />
-        </ReviewGroup>
-
-        <ReviewGroup
-          title="Preço atual"
-          editName="Editar preço atual"
-          onEdit={() => onEdit("currentPrice")}
-        >
-          <ReviewItem
-            label={currentPrice[0]}
-            value={formatMoney(currentPrice[1])}
-          />
-          {requiresDuration ? (
+          <ReviewItem label="Preço atual" value={money(values.currentPrice)} />
+          {pricingMethod === "appointment" ? (
             <ReviewItem
               label="Duração média"
               value={`${values.appointmentDurationMinutes} minutos`}
@@ -234,54 +143,106 @@ function ReviewStep({
         </ReviewGroup>
 
         <ReviewGroup
-          title="Taxas"
-          editName="Editar taxas"
+          title="Rotina de trabalho"
+          editName="Editar rotina"
+          onEdit={() => onEdit("workRoutine")}
+        >
+          <ReviewItem
+            label="Horas por dia"
+            value={`${values.dailyWorkHours} horas`}
+          />
+          <ReviewItem
+            label="Dias por semana"
+            value={`${values.weeklyWorkDays} dias`}
+          />
+          <ReviewItem
+            label="Capacidade mensal estimada"
+            value={`${decimal.format(preview.monthlyWorkMinutes / 60)} horas`}
+          />
+        </ReviewGroup>
+
+        <ReviewGroup
+          title="Material ou insumo"
+          editName="Editar custo de material"
+          onEdit={() => onEdit("materialCost")}
+        >
+          <ReviewItem
+            label="Custo"
+            value={
+              values.hasMaterialCost
+                ? `${money(values.materialCost)} por ${materialUnitLabels[materialUnit]}`
+                : "Sem custo informado"
+            }
+          />
+        </ReviewGroup>
+
+        <ReviewGroup
+          title="Impostos e taxas"
+          editName="Editar impostos e taxas"
           onEdit={() => onEdit("fees")}
         >
-          <ReviewItem label="Impostos" value={`${values.taxRate}%`} />
-          <ReviewItem label="Taxa do cartão" value={`${values.cardFeeRate}%`} />
+          <ReviewItem
+            label="Imposto sobre faturamento"
+            value={values.paysRevenueTax ? `${values.taxRate}%` : "Não paga"}
+          />
+          <ReviewItem
+            label="Cartão ou plataforma"
+            value={
+              values.hasPaymentFee ? `${values.paymentFeeRate}%` : "Sem taxa"
+            }
+          />
         </ReviewGroup>
       </div>
 
-      {submitError ? (
-        <div
-          role="alert"
-          className="border-destructive/25 bg-destructive/5 text-destructive rounded-lg border p-3 text-sm"
-        >
-          {submitError === "unauthorized" ? (
-            <>
-              Sua sessão expirou. Entre novamente para continuar.{" "}
-              <Link
-                href="/login"
-                className="font-semibold underline underline-offset-4"
-              >
-                Entrar novamente
-              </Link>
-            </>
-          ) : (
-            "Não foi possível salvar o diagnóstico. Tente novamente."
-          )}
+      {preview.requiredHourlyRateCents !== null &&
+      preview.currentEquivalentHourlyRateCents !== null ? (
+        <div className="border-primary/20 bg-primary/5 grid gap-3 rounded-xl border p-4">
+          <h3 className="font-semibold">Base econômica comum</h3>
+          <dl className="grid gap-3 sm:grid-cols-2">
+            <ReviewItem
+              label="Valor necessário por hora"
+              value={currency.format(preview.requiredHourlyRateCents / 100)}
+            />
+            <ReviewItem
+              label="Preço atual equivalente por hora"
+              value={currency.format(
+                preview.currentEquivalentHourlyRateCents / 100,
+              )}
+            />
+          </dl>
         </div>
       ) : null}
 
-      <Button
-        type="button"
-        size="lg"
-        disabled={pending}
-        onClick={onSubmit}
-        className="w-full motion-reduce:transition-none"
+      <div
+        className="border-border bg-muted/40 grid gap-3 rounded-xl border p-4"
+        role="status"
       >
-        {pending ? (
-          "Preparando relatório..."
-        ) : (
-          <>
-            <CheckIcon aria-hidden="true" />
-            Confirmar diagnóstico
-          </>
-        )}
-      </Button>
+        <div className="flex items-start gap-3">
+          <InfoIcon
+            aria-hidden="true"
+            className="text-primary mt-0.5 size-5 shrink-0"
+          />
+          <div className="grid gap-1">
+            <h3 className="font-semibold">
+              Relatório de Serviço em atualização
+            </h3>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Suas respostas podem ser revisadas, mas ainda não serão salvas. O
+              relatório será reativado quando estiver adaptado às novas formas
+              de cobrança e unidades de custo.
+            </p>
+          </div>
+        </div>
+        <Button
+          type="button"
+          disabled
+          className="w-full sm:w-auto sm:justify-self-end"
+        >
+          Gerar relatório temporariamente indisponível
+        </Button>
+      </div>
     </div>
   );
 }
 
-export { ReviewStep, type ReviewStepProps };
+export { ReviewStep };

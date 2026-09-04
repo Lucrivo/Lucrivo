@@ -1,79 +1,99 @@
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-import type { ServiceDiagnosisInput } from "../../../types";
+import {
+  isServiceMaterialCostUnit,
+  serviceMaterialCostUnits,
+  type ServiceMaterialCostUnit,
+} from "../../../domain/service-flow";
 import { StepField } from "../../shared/step-field";
 import type { ServiceMaterialCostStepProps } from "./types";
+import { YesNoChoice } from "./yes-no-choice";
 
-function usesHourlyMaterialUnit(values: ServiceDiagnosisInput): boolean {
-  return values.pricingMethod === "hour";
-}
-
-function getMaterialCostQuestion(values: ServiceDiagnosisInput): string {
-  return usesHourlyMaterialUnit(values)
-    ? "Você tem algum custo de material por hora trabalhada?"
-    : "Você tem algum custo de material por atendimento?";
-}
-
-function getMaterialCostFieldLabel(values: ServiceDiagnosisInput): string {
-  return usesHourlyMaterialUnit(values)
-    ? "Custo de material por hora"
-    : "Custo de material por atendimento";
-}
+const unitLabels = {
+  appointment: "Por atendimento/serviço",
+  hour: "Por hora",
+  day: "Por dia",
+  month: "Por mês",
+} satisfies Record<ServiceMaterialCostUnit, string>;
 
 function MaterialCostStep({
   values,
   errors,
   onChange,
   onHasMaterialCostChange,
+  onMaterialCostUnitChange,
 }: ServiceMaterialCostStepProps) {
-  const indicatorError = errors.hasMaterialCost?.[0];
-  const indicatorErrorId = "hasMaterialCost-error";
-  const helpId = "hasMaterialCost-help";
+  const unitError = errors.materialCostUnit?.[0];
 
   return (
     <div className="grid gap-5">
-      <div className="border-border bg-background flex items-center justify-between gap-5 rounded-xl border p-4 shadow-xs">
-        <div className="grid gap-1">
-          <Label htmlFor="hasMaterialCost">
-            {getMaterialCostQuestion(values)}
-          </Label>
-          <p id={helpId} className="text-muted-foreground text-sm">
-            Informe somente o material consumido diretamente para prestar o
-            serviço.
-          </p>
-          {indicatorError ? (
-            <p
-              id={indicatorErrorId}
-              role="alert"
-              className="text-destructive text-sm"
-            >
-              {indicatorError}
-            </p>
-          ) : null}
-        </div>
-        <Switch
-          id="hasMaterialCost"
-          checked={values.hasMaterialCost}
-          aria-invalid={Boolean(indicatorError)}
-          aria-describedby={indicatorError ? indicatorErrorId : helpId}
-          onCheckedChange={onHasMaterialCostChange}
-          className="motion-reduce:transition-none [&_[data-slot=switch-thumb]]:motion-reduce:transform-none"
-        />
-      </div>
+      <YesNoChoice
+        question="Você possui algum custo para realizar o serviço?"
+        field="hasMaterialCost"
+        value={values.hasMaterialCost}
+        error={errors.hasMaterialCost?.[0]}
+        onChange={onHasMaterialCostChange}
+      />
 
       {values.hasMaterialCost ? (
-        <StepField
-          field="materialUnitCost"
-          label={getMaterialCostFieldLabel(values)}
-          value={values.materialUnitCost}
-          errors={errors}
-          onChange={onChange}
-          prefix="R$"
-        />
+        <div className="grid gap-5 sm:grid-cols-2">
+          <StepField
+            field="materialCost"
+            label="Quanto custa, em média, o material ou insumo utilizado?"
+            value={values.materialCost}
+            errors={errors}
+            onChange={onChange}
+            prefix="R$"
+          />
+          <div className="grid content-start gap-2">
+            <Label htmlFor="materialCostUnit">Esse custo acontece</Label>
+            <Select
+              value={values.materialCostUnit}
+              onValueChange={(value) => {
+                if (isServiceMaterialCostUnit(value)) {
+                  onMaterialCostUnitChange(value);
+                }
+              }}
+            >
+              <SelectTrigger
+                id="materialCostUnit"
+                className="bg-background h-11 w-full shadow-xs"
+                aria-invalid={Boolean(unitError)}
+                aria-describedby={
+                  unitError ? "materialCostUnit-error" : undefined
+                }
+              >
+                <SelectValue placeholder="Selecione a unidade" />
+              </SelectTrigger>
+              <SelectContent align="start">
+                {serviceMaterialCostUnits.map((unit) => (
+                  <SelectItem key={unit} value={unit}>
+                    {unitLabels[unit]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {unitError ? (
+              <p
+                id="materialCostUnit-error"
+                role="alert"
+                className="text-destructive text-sm"
+              >
+                {unitError}
+              </p>
+            ) : null}
+          </div>
+        </div>
       ) : null}
     </div>
   );
 }
 
-export { getMaterialCostFieldLabel, getMaterialCostQuestion, MaterialCostStep };
+export { MaterialCostStep };

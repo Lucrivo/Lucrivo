@@ -1,151 +1,162 @@
 import { useState } from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import type { ServiceDiagnosisInput, ServiceWorkPeriod } from "../../../types";
-import { CurrentPriceStep } from "./current-price-step";
+import type {
+  ServiceFlowInput,
+  ServiceMaterialCostUnit,
+} from "../../../domain/service-flow";
+import { FeesStep } from "./fees-step";
 import { MaterialCostStep } from "./material-cost-step";
+import { PricingAndPriceStep } from "./pricing-and-price-step";
+import { ServiceDurationStep } from "./service-duration-step";
 import { WorkRoutineStep } from "./work-routine-step";
 
-const values: ServiceDiagnosisInput = {
-  submissionId: "550e8400-e29b-41d4-a716-446655440000",
-  pricingMethod: "hour",
+const values: ServiceFlowInput = {
   desiredMonthlyIncome: "5000",
-  fixedMonthlyExpenses: "1200",
-  workHoursPeriod: "month",
-  workHours: "160",
+  fixedMonthlyExpenses: "2000",
+  pricingMethod: "hour",
+  currentPrice: "50",
+  dailyWorkHours: "8",
   weeklyWorkDays: "5",
-  hourlyRate: "125,90",
-  minuteRate: "",
-  appointmentRate: "",
   appointmentDurationMinutes: "",
   hasMaterialCost: false,
-  materialUnitCost: "",
-  taxRate: "6,25",
-  cardFeeRate: "3,50",
+  materialCost: "",
+  materialCostUnit: "",
+  paysRevenueTax: false,
+  taxRate: "",
+  hasPaymentFee: false,
+  paymentFeeRate: "",
 };
 
-describe("Service diagnosis steps", () => {
-  it("selects the billable-hours period and adapts the hours question", async () => {
-    const user = userEvent.setup();
-    const onWorkHoursPeriodChange = vi.fn();
+describe("service diagnosis steps", () => {
+  it.each([
+    ["appointment", "Quanto você cobra por atendimento?"],
+    ["minute", "Quanto você cobra por minuto?"],
+    ["hour", "Quanto você cobra por hora?"],
+    ["day", "Quanto você cobra por diária?"],
+    ["week", "Quanto você cobra por semana?"],
+    ["month", "Quanto você cobra por mês?"],
+  ] as const)("pairs %s pricing with its current price", (method, label) => {
+    render(
+      <PricingAndPriceStep
+        values={{ ...values, pricingMethod: method }}
+        errors={{}}
+        onChange={vi.fn()}
+        onPricingMethodChange={vi.fn()}
+      />,
+    );
 
-    function WorkRoutineHarness() {
-      const [workHoursPeriod, setWorkHoursPeriod] =
-        useState<ServiceWorkPeriod>("month");
-
-      return (
-        <WorkRoutineStep
-          values={{ ...values, workHoursPeriod }}
-          errors={{}}
-          onChange={vi.fn()}
-          onWorkHoursPeriodChange={(period) => {
-            onWorkHoursPeriodChange(period);
-            setWorkHoursPeriod(period);
-          }}
-        />
-      );
-    }
-
-    render(<WorkRoutineHarness />);
-
-    const period = screen.getByRole("combobox", {
-      name: "Horas faturáveis por",
-    });
-    expect(period).toHaveTextContent("Mês");
+    expect(screen.getByLabelText(label)).toBeInTheDocument();
     expect(
-      screen.getByLabelText("Quantas horas faturáveis por mês?"),
-    ).toHaveValue("160");
-
-    await user.click(period);
-    await user.click(await screen.findByRole("option", { name: "Dia" }));
-
-    expect(onWorkHoursPeriodChange).toHaveBeenCalledWith("day");
-    expect(
-      screen.getByLabelText("Quantas horas faturáveis por dia?"),
-    ).toBeInTheDocument();
-
-    const guidance = screen.getByText(/considere apenas horas/i);
-    expect(guidance).toHaveTextContent(/administração/i);
-    expect(guidance).toHaveTextContent(/estudo/i);
-    expect(guidance).toHaveTextContent(/deslocamento/i);
+      screen.queryByText(/quantas horas por dia/i),
+    ).not.toBeInTheDocument();
   });
 
-  it("asks duration before the appointment price", () => {
+  it("shows monthly capacity and hourly comparisons after routine input", () => {
+    render(<WorkRoutineStep values={values} errors={{}} onChange={vi.fn()} />);
+
+    expect(screen.getByLabelText("Quantas horas por dia?")).toHaveValue("8");
+    expect(screen.getByLabelText("Quantos dias por semana?")).toHaveValue("5");
+    expect(screen.getByText("173,2 horas por mês")).toBeInTheDocument();
+    expect(screen.getByText(/R\$ 40,42/)).toBeInTheDocument();
+    expect(screen.getByText(/R\$ 50,00 por hora/)).toBeInTheDocument();
+  });
+
+  it("converts appointment price only after duration is informed", () => {
     render(
-      <CurrentPriceStep
-        values={{ ...values, pricingMethod: "appointment" }}
+      <ServiceDurationStep
+        values={{
+          ...values,
+          pricingMethod: "appointment",
+          appointmentDurationMinutes: "45",
+        }}
         errors={{}}
         onChange={vi.fn()}
       />,
     );
 
-    const duration = screen.getByLabelText("Quanto dura cada atendimento?");
-    const price = screen.getByLabelText("Quanto você cobra por atendimento?");
-
     expect(
-      duration.compareDocumentPosition(price) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+      screen.getByLabelText("Duração média do atendimento/serviço"),
+    ).toHaveValue("45");
+    expect(screen.getByText(/R\$ 66,67 por hora/)).toBeInTheDocument();
   });
 
-  it("shows only the hourly price when time is sold by hour", () => {
-    render(<CurrentPriceStep values={values} errors={{}} onChange={vi.fn()} />);
+  it("collects material value and unit only after yes", async () => {
+    const user = userEvent.setup();
+
+    function Harness() {
+      const [input, setInput] = useState(values);
+      return (
+        <MaterialCostStep
+          values={input}
+          errors={{}}
+          onChange={(field, value) =>
+            setInput((old) => ({ ...old, [field]: value }))
+          }
+          onHasMaterialCostChange={(hasMaterialCost) =>
+            setInput((old) => ({ ...old, hasMaterialCost }))
+          }
+          onMaterialCostUnitChange={(
+            materialCostUnit: ServiceMaterialCostUnit,
+          ) => setInput((old) => ({ ...old, materialCostUnit }))}
+        />
+      );
+    }
+
+    render(<Harness />);
+    const question = screen.getByRole("radiogroup", {
+      name: "Você possui algum custo para realizar o serviço?",
+    });
+    await user.click(within(question).getByRole("radio", { name: "Sim" }));
 
     expect(
-      screen.getByLabelText("Quanto você cobra por hora?"),
+      screen.getByLabelText(
+        "Quanto custa, em média, o material ou insumo utilizado?",
+      ),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("combobox", { name: "Esse custo acontece" }),
+    );
+    expect(
+      await screen.findByRole("option", { name: "Por mês" }),
+    ).toBeInTheDocument();
+  });
+
+  it("reveals tax and platform percentages independently", async () => {
+    const user = userEvent.setup();
+
+    function Harness() {
+      const [input, setInput] = useState(values);
+      return (
+        <FeesStep
+          values={input}
+          errors={{}}
+          onChange={(field, value) =>
+            setInput((old) => ({ ...old, [field]: value }))
+          }
+          onPaysRevenueTaxChange={(paysRevenueTax) =>
+            setInput((old) => ({ ...old, paysRevenueTax }))
+          }
+          onHasPaymentFeeChange={(hasPaymentFee) =>
+            setInput((old) => ({ ...old, hasPaymentFee }))
+          }
+        />
+      );
+    }
+
+    render(<Harness />);
+    const tax = screen.getByRole("radiogroup", {
+      name: "Você paga imposto sobre o faturamento?",
+    });
+    await user.click(within(tax).getByRole("radio", { name: "Sim" }));
+
+    expect(
+      screen.getByLabelText("Percentual médio de imposto"),
     ).toBeInTheDocument();
     expect(
-      screen.queryByLabelText("Quanto dura cada atendimento?"),
+      screen.queryByLabelText("Percentual médio da taxa"),
     ).not.toBeInTheDocument();
   });
-
-  it.each([
-    [
-      "hour",
-      "Você tem algum custo de material por hora trabalhada?",
-      "Custo de material por hora",
-    ],
-    [
-      "minute",
-      "Você tem algum custo de material por atendimento?",
-      "Custo de material por atendimento",
-    ],
-    [
-      "appointment",
-      "Você tem algum custo de material por atendimento?",
-      "Custo de material por atendimento",
-    ],
-  ] as const)(
-    "collects material in the unit used by %s pricing",
-    async (pricingMethod, question, fieldLabel) => {
-      const user = userEvent.setup();
-
-      function MaterialHarness() {
-        const [hasMaterialCost, setHasMaterialCost] = useState(false);
-
-        return (
-          <MaterialCostStep
-            values={{ ...values, pricingMethod, hasMaterialCost }}
-            errors={{}}
-            onChange={vi.fn()}
-            onHasMaterialCostChange={setHasMaterialCost}
-          />
-        );
-      }
-
-      render(<MaterialHarness />);
-
-      const material = screen.getByRole("switch", { name: question });
-      expect(material).not.toBeChecked();
-      expect(screen.queryByLabelText(fieldLabel)).not.toBeInTheDocument();
-
-      material.focus();
-      await user.keyboard(" ");
-
-      expect(material).toBeChecked();
-      expect(screen.getByLabelText(fieldLabel)).toBeInTheDocument();
-    },
-  );
 });
