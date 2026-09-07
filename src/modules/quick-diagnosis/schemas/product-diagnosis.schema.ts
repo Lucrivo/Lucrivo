@@ -24,8 +24,7 @@ const monthlySalesVolumeSchema: z.ZodType<number | null, string> = z
     } catch {
       context.addIssue({
         code: "custom",
-        message:
-          "Informe um volume mensal inteiro entre 1 e 2147483647 unidades.",
+        message: "Informe quantas unidades você vende em um mês comum.",
       });
       return z.NEVER;
     }
@@ -68,7 +67,7 @@ const productDiagnosisSchema: z.ZodType<
       context.addIssue({
         code: "custom",
         path: ["unitSalePrice"],
-        message: "Informe um preço de venda maior que zero.",
+        message: "Informe por quanto você vende cada unidade.",
       });
     }
 
@@ -79,7 +78,7 @@ const productDiagnosisSchema: z.ZodType<
         context.addIssue({
           code: "custom",
           path: ["proLabore"],
-          message: "Informe um pró-labore maior que zero.",
+          message: "Informe quanto você quer receber por mês.",
         });
       }
     }
