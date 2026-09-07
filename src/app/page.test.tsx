@@ -1,5 +1,22 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { render, screen, within } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+
+vi.hoisted(() => {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: query === "(prefers-reduced-motion: reduce)",
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+});
 
 import Home from "@/app/page";
 
@@ -13,7 +30,7 @@ describe("Home", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: "Você sabe se o preço que cobra realmente dá lucro?",
+        name: /Você sabe se o preço que\s*cobra realmente dá lucro\?/,
       }),
     ).toBeInTheDocument();
   });
@@ -21,42 +38,33 @@ describe("Home", () => {
   it("explains every part considered when pricing", () => {
     render(<Home />);
 
-    const pricingFactors = [
-      "Custos",
-      "Impostos",
-      "Taxas",
-      "Tempo",
-      "Estrutura",
-      "O quanto você quer ganhar",
-    ];
-
-    for (const factor of pricingFactors) {
-      expect(
-        screen.getAllByText(factor, { exact: true }).length,
-      ).toBeGreaterThan(0);
-    }
+    expect(screen.getByRole("main")).toHaveTextContent(
+      /custos, impostos, taxas, estrutura, tempo de trabalho e o quanto você quer ganhar/i,
+    );
   });
 
   it("covers all supported business contexts", () => {
     render(<Home />);
 
-    for (const context of ["Revenda", "Produção", "Serviço"]) {
-      expect(
-        screen.getAllByText(context, { exact: true }).length,
-      ).toBeGreaterThan(0);
-    }
+    expect(screen.getByRole("main")).toHaveTextContent(
+      /Para revenda, produção ou serviço/i,
+    );
+    expect(
+      screen.getByRole("heading", {
+        name: "Você vende, produz ou presta serviço?",
+      }),
+    ).toBeInTheDocument();
   });
 
-  it("shows the diagnosis result vocabulary and illustrative-data notice", () => {
+  it("shows the financial references produced by the diagnosis", () => {
     render(<Home />);
 
     const resultLabels = [
-      "Item analisado",
-      "Preço cobrado",
-      "Custos",
-      "Quanto sobra",
-      "Preço sugerido",
-      "Situação",
+      "Margem real",
+      "Preço-alvo",
+      "Ponto de equilíbrio",
+      "Desconto seguro",
+      "Orientação prática",
     ];
 
     for (const label of resultLabels) {
@@ -65,34 +73,35 @@ describe("Home", () => {
       ).toBeGreaterThan(0);
     }
 
-    for (const status of ["Saudável", "Atenção", "Risco"]) {
-      expect(
-        screen.getAllByText(status, { exact: true }).length,
-      ).toBeGreaterThan(0);
-    }
-
     expect(
-      screen.getAllByText("Exemplo ilustrativo com números fictícios.", {
-        exact: true,
-      }).length,
-    ).toBeGreaterThan(0);
+      screen.getByRole("heading", {
+        name: "Veja quanto sobra depois de considerar todos os custos.",
+      }),
+    ).toBeInTheDocument();
   });
 
-  it("routes calls to action through the existing authentication flow", () => {
+  it("routes landing calls to action through the final registration step", () => {
     render(<Home />);
 
-    const registrationLinks = screen.getAllByRole("link", {
-      name: /diagnóstico gratuito|começar grátis|ver no meu negócio|quero descobrir meu preço/i,
-    });
-
-    for (const link of registrationLinks) {
-      expect(link).toHaveAttribute("href", "/register");
+    for (const name of [
+      "Diagnóstico grátis",
+      "Fazer diagnóstico",
+      "Começar gratuitamente",
+      "Conhecer o plano",
+    ]) {
+      expect(screen.getByRole("link", { name })).toHaveAttribute(
+        "href",
+        "#diagnostico",
+      );
     }
 
-    const signInLinks = screen.getAllByRole("link", { name: "Entrar" });
+    const finalStep = document.querySelector("#diagnostico");
+    expect(finalStep).not.toBeNull();
 
-    for (const link of signInLinks) {
-      expect(link).toHaveAttribute("href", "/login");
-    }
+    expect(
+      within(finalStep as HTMLElement).getByRole("link", {
+        name: "Fazer meu diagnóstico gratuito",
+      }),
+    ).toHaveAttribute("href", "/register");
   });
 });
