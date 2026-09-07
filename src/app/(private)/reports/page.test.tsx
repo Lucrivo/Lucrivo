@@ -18,9 +18,14 @@ vi.mock("@/modules/reports/components/report-list-card", () => ({
   ReportListCard: ({
     report,
   }: {
-    report: { id: number; businessCategory: string; scenario: string };
+    report: {
+      id: number;
+      businessCategory: string;
+      scenario: string;
+      contentVersion: number;
+    };
   }) => (
-    <article>
+    <article data-content-version={report.contentVersion}>
       Relatório {report.id} — {report.businessCategory} — {report.scenario}
     </article>
   ),
@@ -113,6 +118,7 @@ describe("ReportsPage", () => {
           verdict: "incomplete_volume",
           priority: "data",
           unit: "unit",
+          contentVersion: 2,
         },
       ],
       nextCursor: null,
@@ -120,9 +126,10 @@ describe("ReportsPage", () => {
 
     await renderPage();
 
-    expect(
-      screen.getByText("Relatório 84 — product — resale"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Relatório 84 — product — resale")).toHaveAttribute(
+      "data-content-version",
+      "2",
+    );
   });
 
   it("accepts a valid cursor and links to the next opaque page", async () => {

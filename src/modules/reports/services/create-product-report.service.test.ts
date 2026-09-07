@@ -62,7 +62,7 @@ describe("createProductReport", () => {
       p_card_fee_rate_basis_points: completeCommand.cardFeeRateBasisPoints,
       p_schema_version: 1,
       p_calculation_version: 1,
-      p_content_version: 1,
+      p_content_version: 2,
       p_scenario: "resale",
       p_current_price_cents: snapshot.results.currentPriceCents,
       p_real_margin_basis_points: snapshot.results.realMarginBasisPoints,

@@ -1,20 +1,21 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const {
-  getOwnedReport,
-  notFound,
-  ReportDetail,
-  requireUser,
-  toReportViewModel,
-} = vi.hoisted(() => ({
+import type {
+  ProductDiagnosisCommand,
+  ServiceDiagnosisCommand,
+} from "@/modules/quick-diagnosis/types";
+import { buildProductReportSnapshot } from "@/modules/reports/domain/build-product-report-snapshot";
+import { buildServiceReportSnapshot } from "@/modules/reports/domain/build-service-report-snapshot";
+import { calculateProductReport } from "@/modules/reports/domain/calculate-product-report";
+import { calculateServiceReport } from "@/modules/reports/domain/calculate-service-report";
+
+const { getOwnedReport, notFound, requireUser } = vi.hoisted(() => ({
   getOwnedReport: vi.fn(),
   notFound: vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
   }),
-  ReportDetail: vi.fn(() => <div>Detalhe renderizado</div>),
   requireUser: vi.fn(),
-  toReportViewModel: vi.fn(() => ({ identity: { id: 42 } })),
 }));
 
 vi.mock("next/navigation", () => ({ notFound }));
@@ -27,18 +28,52 @@ vi.mock("@/modules/reports/services/get-report.service", () => ({
     return Number.isSafeInteger(parsed) ? parsed : null;
   },
 }));
-vi.mock("@/modules/reports/presenters/to-report-view-model", () => ({
-  toReportViewModel,
-}));
-vi.mock("@/modules/reports/components/report-detail", () => ({
-  ReportDetail,
-}));
-
 import ReportPage from "./page";
+
+const serviceCommand: ServiceDiagnosisCommand = {
+  submissionId: "550e8400-e29b-41d4-a716-446655440000",
+  pricingMethod: "hour",
+  desiredMonthlyIncomeCents: 400000,
+  fixedMonthlyExpensesCents: 200000,
+  workHoursPeriod: "month",
+  workPeriodMinutes: 6000,
+  monthlyWorkMinutes: 6000,
+  weeklyWorkDays: 5,
+  hourlyRateCents: 8000,
+  minuteRateCents: 0,
+  appointmentRateCents: 0,
+  appointmentDurationMinutes: 0,
+  materialUnitCostCents: 0,
+  taxRateBasisPoints: 600,
+  cardFeeRateBasisPoints: 200,
+};
+const legacyServiceSnapshot = {
+  ...buildServiceReportSnapshot(
+    serviceCommand,
+    calculateServiceReport(serviceCommand),
+  ),
+  contentVersion: 3 as const,
+};
+
+const productCommand: ProductDiagnosisCommand = {
+  submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  purchaseUnitCostCents: 5000,
+  unitSalePriceCents: 10000,
+  fixedMonthlyExpensesCents: 100000,
+  monthlySalesVolume: 100,
+  proLaboreIncluded: true,
+  proLaboreCents: 200000,
+  taxRateBasisPoints: 600,
+  cardFeeRateBasisPoints: 200,
+};
+const currentProductSnapshot = buildProductReportSnapshot(
+  productCommand,
+  calculateProductReport(productCommand),
+);
 
 describe("ReportPage", () => {
   const supabase = { from: vi.fn() };
-  const snapshot = { schemaVersion: 1, category: "service" };
+  const snapshot = legacyServiceSnapshot;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -57,50 +92,33 @@ describe("ReportPage", () => {
     render(await ReportPage({ params: Promise.resolve({ id }) }));
   }
 
-  it("loads the owned snapshot and renders the formatted detail", async () => {
+  it("renders an owned legacy Service snapshot with legacy labels", async () => {
     await renderPage();
 
-    expect(screen.getByText("Detalhe renderizado")).toBeInTheDocument();
+    expect(screen.getByText("Seu relatório financeiro")).toBeInTheDocument();
     expect(requireUser).toHaveBeenCalledOnce();
     expect(getOwnedReport).toHaveBeenCalledWith({
       supabase,
       userId: "trusted-user",
       diagnosisId: "42",
     });
-    expect(toReportViewModel).toHaveBeenCalledWith({
-      id: 42,
-      createdAt: "2026-08-28T22:30:00.000Z",
-      snapshot,
-    });
-    expect(ReportDetail).toHaveBeenCalledWith(
-      { viewModel: { identity: { id: 42 } } },
-      undefined,
-    );
   });
 
-  it("passes a Product snapshot through the same safe report route", async () => {
-    const productSnapshot = {
-      schemaVersion: 1,
-      category: "product",
-      scenario: "resale",
-    };
+  it("renders an owned current Product snapshot with plain labels", async () => {
     getOwnedReport.mockResolvedValue({
       status: "found",
       report: {
         id: 84,
         createdAt: "2026-08-31T15:00:00.000Z",
-        snapshot: productSnapshot,
+        snapshot: currentProductSnapshot,
       },
     });
 
     await renderPage("84");
 
-    expect(toReportViewModel).toHaveBeenCalledWith({
-      id: 84,
-      createdAt: "2026-08-31T15:00:00.000Z",
-      snapshot: productSnapshot,
-    });
-    expect(screen.getByText("Detalhe renderizado")).toBeInTheDocument();
+    expect(
+      screen.getByText("Resultado do seu diagnóstico"),
+    ).toBeInTheDocument();
   });
 
   it.each(["abc", "0"])("calls notFound for malformed id %s", async (id) => {
@@ -137,7 +155,6 @@ describe("ReportPage", () => {
     expect(
       screen.getByRole("link", { name: "Novo diagnóstico" }),
     ).toHaveAttribute("href", "/quick-diagnosis");
-    expect(ReportDetail).not.toHaveBeenCalled();
   });
 
   it("throws a safe route error for a transient read failure", async () => {

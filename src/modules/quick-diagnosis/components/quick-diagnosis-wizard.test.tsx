@@ -71,33 +71,62 @@ describe("QuickDiagnosisWizard category orchestration", () => {
   ) {
     await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Custo de compra por unidade"), "50");
-    await user.type(screen.getByLabelText("Preço de venda por unidade"), "100");
-    await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Despesas fixas mensais"), "1000");
+    await user.type(
+      screen.getByLabelText("Quanto você paga por unidade?"),
+      "50",
+    );
+    await user.type(
+      screen.getByLabelText("Por quanto você vende cada unidade?"),
+      "100",
+    );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(
-      screen.getByLabelText("Volume médio mensal de vendas"),
+      screen.getByLabelText("Gastos que existem todo mês"),
+      "1000",
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.type(
+      screen.getByLabelText("Quantas unidades você vende em um mês comum?"),
       "100",
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(
-      screen.getByRole("switch", { name: "Incluir pró-labore" }),
+      screen.getByRole("switch", {
+        name: "Você quer incluir o valor que recebe pelo seu trabalho?",
+      }),
     );
-    await user.type(screen.getByLabelText("Pró-labore mensal"), "2000");
+    await user.type(
+      screen.getByRole("textbox", {
+        name: "Quanto você quer receber por mês?",
+      }),
+      "2000",
+    );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Impostos"), "6,25");
-    await user.type(screen.getByLabelText("Taxa do cartão"), "3,50");
+    await user.type(
+      screen.getByLabelText("Qual porcentagem da venda vai para impostos?"),
+      "6,25",
+    );
+    await user.type(
+      screen.getByLabelText(
+        "Qual porcentagem fica com o cartão ou a plataforma?",
+      ),
+      "3,50",
+    );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
   }
 
   async function completeServiceDiagnosis(
     user: ReturnType<typeof userEvent.setup>,
   ) {
-    await user.type(screen.getByLabelText("Ganho mensal desejado"), "5000");
+    await user.type(
+      screen.getByRole("textbox", {
+        name: "Quanto você quer receber por mês?",
+      }),
+      "5000",
+    );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(
-      screen.getByLabelText("Total dos custos fixos mensais"),
+      screen.getByLabelText("Gastos que existem todo mês"),
       "1200",
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
@@ -111,23 +140,30 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     await user.type(screen.getByLabelText("Quantos dias por semana?"), "5");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     const material = screen.getByRole("radiogroup", {
-      name: "Você possui algum custo para realizar o serviço?",
+      name: "Você gasta com materiais ou produtos para fazer este serviço?",
     });
     await user.click(within(material).getByRole("radio", { name: "Não" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     const tax = screen.getByRole("radiogroup", {
-      name: "Você paga imposto sobre o faturamento?",
+      name: "Você paga impostos sobre o valor recebido?",
     });
     await user.click(within(tax).getByRole("radio", { name: "Sim" }));
     await user.type(
-      screen.getByLabelText("Percentual médio de imposto"),
+      screen.getByLabelText(
+        "Qual porcentagem do valor recebido vai para impostos?",
+      ),
       "6,25",
     );
     const fee = screen.getByRole("radiogroup", {
       name: "Você recebe por cartão ou plataforma que cobra taxa?",
     });
     await user.click(within(fee).getByRole("radio", { name: "Sim" }));
-    await user.type(screen.getByLabelText("Percentual médio da taxa"), "3,50");
+    await user.type(
+      screen.getByLabelText(
+        "Qual porcentagem fica com o cartão ou a plataforma?",
+      ),
+      "3,50",
+    );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
   }
 
@@ -137,9 +173,11 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     const productionCost = screen.getByLabelText(
-      "Custo de fabricação por unidade",
+      "Quanto custa produzir uma unidade?",
     );
-    const salePrice = screen.getByLabelText("Preço de venda por unidade");
+    const salePrice = screen.getByLabelText(
+      "Por quanto você vende cada unidade?",
+    );
     if ((productionCost as HTMLInputElement).value === "") {
       await user.type(productionCost, "50");
     }
@@ -147,20 +185,38 @@ describe("QuickDiagnosisWizard category orchestration", () => {
       await user.type(salePrice, "100");
     }
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Despesas fixas mensais"), "1000");
+    await user.type(
+      screen.getByLabelText("Gastos que existem todo mês"),
+      "1000",
+    );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(
-      screen.getByLabelText("Volume médio mensal de unidades vendidas"),
+      screen.getByLabelText("Quantas unidades você vende em um mês comum?"),
       "100",
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(
-      screen.getByRole("switch", { name: "Incluir pró-labore" }),
+      screen.getByRole("switch", {
+        name: "Você quer incluir o valor que recebe pelo seu trabalho?",
+      }),
     );
-    await user.type(screen.getByLabelText("Pró-labore mensal"), "2000");
+    await user.type(
+      screen.getByRole("textbox", {
+        name: "Quanto você quer receber por mês?",
+      }),
+      "2000",
+    );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Impostos"), "6,25");
-    await user.type(screen.getByLabelText("Taxa do cartão"), "3,50");
+    await user.type(
+      screen.getByLabelText("Qual porcentagem da venda vai para impostos?"),
+      "6,25",
+    );
+    await user.type(
+      screen.getByLabelText(
+        "Qual porcentagem fica com o cartão ou a plataforma?",
+      ),
+      "3,50",
+    );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
   }
 
@@ -184,6 +240,42 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     expect(screen.getByRole("radio", { name: "Produto" })).toBeChecked();
   });
 
+  it.each([
+    {
+      category: "Serviço",
+      firstTitle: "Quanto você quer receber por mês?",
+      requiresModeChoice: false,
+    },
+    {
+      category: "Produto",
+      firstTitle: "Quanto você paga e por quanto vende?",
+      requiresModeChoice: true,
+    },
+    {
+      category: "Produção",
+      firstTitle: "Quanto custa produzir e por quanto você vende?",
+      requiresModeChoice: true,
+    },
+  ] as const)(
+    "opens the $category flow with its plain-language first title",
+    async ({ category, firstTitle, requiresModeChoice }) => {
+      const user = userEvent.setup();
+      renderWizard();
+
+      await user.click(screen.getByRole("radio", { name: category }));
+      await user.click(screen.getByRole("button", { name: "Continuar" }));
+
+      if (requiresModeChoice) {
+        await user.click(
+          screen.getByRole("radio", { name: "Diagnóstico rápido" }),
+        );
+        await user.click(screen.getByRole("button", { name: "Continuar" }));
+      }
+
+      expect(screen.getByRole("heading", { name: firstTitle })).toHaveFocus();
+    },
+  );
+
   it("preserves one Production branch and submits only to its Action", async () => {
     const user = userEvent.setup();
     const createProductionDiagnosis = vi
@@ -197,17 +289,22 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(screen.getByText("2 de 8")).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Qual análise você quer fazer?" }),
+      screen.getByRole("heading", {
+        name: "Que tipo de resultado você quer ver?",
+      }),
     ).toHaveFocus();
     expect(createSubmissionId).toHaveBeenCalledOnce();
 
     await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(
-      screen.getByLabelText("Custo de fabricação por unidade"),
+      screen.getByLabelText("Quanto custa produzir uma unidade?"),
       "50",
     );
-    await user.type(screen.getByLabelText("Preço de venda por unidade"), "100");
+    await user.type(
+      screen.getByLabelText("Por quanto você vende cada unidade?"),
+      "100",
+    );
     await user.click(screen.getByRole("button", { name: "Voltar" }));
     await user.click(screen.getByRole("button", { name: "Voltar" }));
 
@@ -215,11 +312,11 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(
-      screen.getByLabelText("Custo de fabricação por unidade"),
+      screen.getByLabelText("Quanto custa produzir uma unidade?"),
     ).toHaveValue("50");
-    expect(screen.getByLabelText("Preço de venda por unidade")).toHaveValue(
-      "100",
-    );
+    expect(
+      screen.getByLabelText("Por quanto você vende cada unidade?"),
+    ).toHaveValue("100");
     expect(createSubmissionId).toHaveBeenCalledOnce();
 
     await user.click(screen.getByRole("button", { name: "Voltar" }));
@@ -263,13 +360,18 @@ describe("QuickDiagnosisWizard category orchestration", () => {
         );
         await user.click(screen.getByRole("button", { name: "Continuar" }));
         await user.type(
-          screen.getByLabelText("Custo de compra por unidade"),
+          screen.getByLabelText("Quanto você paga por unidade?"),
           "77",
         );
         await user.click(screen.getByRole("button", { name: "Voltar" }));
         await user.click(screen.getByRole("button", { name: "Voltar" }));
       } else {
-        await user.type(screen.getByLabelText("Ganho mensal desejado"), "5000");
+        await user.type(
+          screen.getByRole("textbox", {
+            name: "Quanto você quer receber por mês?",
+          }),
+          "5000",
+        );
         await user.click(screen.getByRole("button", { name: "Voltar" }));
       }
 
@@ -292,7 +394,11 @@ describe("QuickDiagnosisWizard category orchestration", () => {
           screen.getByRole("radio", { name: "Diagnóstico rápido" }),
         ).not.toBeChecked();
       } else {
-        expect(screen.getByLabelText("Ganho mensal desejado")).toHaveValue("");
+        expect(
+          screen.getByRole("textbox", {
+            name: "Quanto você quer receber por mês?",
+          }),
+        ).toHaveValue("");
       }
     },
   );
@@ -325,19 +431,25 @@ describe("QuickDiagnosisWizard category orchestration", () => {
 
     await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Custo de compra por unidade"), "50");
-    await user.type(screen.getByLabelText("Preço de venda por unidade"), "100");
+    await user.type(
+      screen.getByLabelText("Quanto você paga por unidade?"),
+      "50",
+    );
+    await user.type(
+      screen.getByLabelText("Por quanto você vende cada unidade?"),
+      "100",
+    );
     await openCategoryFromProductValues(user);
 
     expect(screen.getByRole("radio", { name: "Produto" })).toBeChecked();
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    expect(screen.getByLabelText("Custo de compra por unidade")).toHaveValue(
+    expect(screen.getByLabelText("Quanto você paga por unidade?")).toHaveValue(
       "50",
     );
-    expect(screen.getByLabelText("Preço de venda por unidade")).toHaveValue(
-      "100",
-    );
+    expect(
+      screen.getByLabelText("Por quanto você vende cada unidade?"),
+    ).toHaveValue("100");
     expect(createSubmissionId).toHaveBeenCalledTimes(1);
 
     await openCategoryFromProductValues(user);
@@ -351,7 +463,7 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     expect(createSubmissionId).toHaveBeenCalledTimes(2);
     await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    expect(screen.getByLabelText("Custo de compra por unidade")).toHaveValue(
+    expect(screen.getByLabelText("Quanto você paga por unidade?")).toHaveValue(
       "",
     );
 

@@ -96,15 +96,15 @@ the market's correct price.
 
 The initial shared vocabulary is:
 
-| Current primary term | New primary language |
-| --- | --- |
-| Pró-labore | Quanto você quer receber por mês |
-| Custos fixos | Gastos que existem todo mês |
-| Margem real | Quanto sobra da venda |
-| Preço-alvo | Preço para alcançar a meta |
-| Rateio dos custos fixos | Parte dos gastos mensais em cada venda |
+| Current primary term       | New primary language                           |
+| -------------------------- | ---------------------------------------------- |
+| Pró-labore                 | Quanto você quer receber por mês               |
+| Custos fixos               | Gastos que existem todo mês                    |
+| Margem real                | Quanto sobra da venda                          |
+| Preço-alvo                 | Preço para alcançar a meta                     |
+| Rateio dos custos fixos    | Parte dos gastos mensais em cada venda         |
 | Capacidade mensal estimada | Quanto você consegue vender ou atender por mês |
-| Referência financeira | Valor calculado com seus gastos e sua meta |
+| Referência financeira      | Valor calculado com seus gastos e sua meta     |
 
 The implementation uses natural Portuguese for each context rather than
 mechanically substituting phrases. For example, service may say "atender" and
@@ -138,11 +138,11 @@ knowledge.
 
 New reports use these shared directions:
 
-| Current label | New label |
-| --- | --- |
-| Seu relatório financeiro | Resultado do seu diagnóstico |
-| Principal ponto a corrigir | Comece por aqui |
-| Entenda seus números | Como chegamos a esse resultado |
+| Current label                             | New label                                  |
+| ----------------------------------------- | ------------------------------------------ |
+| Seu relatório financeiro                  | Resultado do seu diagnóstico               |
+| Principal ponto a corrigir                | Comece por aqui                            |
+| Entenda seus números                      | Como chegamos a esse resultado             |
 | Referências financeiras deste diagnóstico | Valores calculados com o que você informou |
 
 The tone labels also use short, actionable language. Their exact wording is
@@ -189,11 +189,11 @@ An example explanation is:
 
 Newly created reports use:
 
-| Category | Schema version | Calculation version | Content version |
-| --- | ---: | ---: | ---: |
-| Service | 3 | 2 | 4 |
-| Product/resale | 1 | 1 | 2 |
-| Production | 1 | 1 | 2 |
+| Category       | Schema version | Calculation version | Content version |
+| -------------- | -------------: | ------------------: | --------------: |
+| Service        |              3 |                   2 |               4 |
+| Product/resale |              1 |                   1 |               2 |
+| Production     |              1 |                   1 |               2 |
 
 The existing tuples remain readable:
 
