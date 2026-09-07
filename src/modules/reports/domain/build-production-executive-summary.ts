@@ -12,33 +12,33 @@ const productionVerdictContent: Record<
   { label: string; body: string; tone: ReportTone }
 > = {
   direct_loss: {
-    label: "Prejuízo direto",
-    body: "A receita líquida da venda não cobre o custo de fabricação. Cada nova unidade vendida repete essa perda antes mesmo dos custos fixos.",
+    label: "Venda com prejuízo",
+    body: "O valor recebido, depois das taxas, não paga o custo de fabricação. Vender mais nessas condições aumenta o prejuízo.",
     tone: "critical",
   },
   incomplete_volume: {
-    label: "Complete o diagnóstico",
-    body: "A contribuição por unidade é positiva, mas os custos fixos e o pró-labore ainda não foram rateados porque falta o volume médio mensal.",
+    label: "Falta informar as vendas",
+    body: "A venda paga o custo de fabricação, mas falta informar quantas unidades você vende por mês para incluir os gastos mensais.",
     tone: "neutral",
   },
   operational_loss: {
-    label: "Prejuízo operacional",
-    body: "A venda cobre o custo de fabricação, mas não cobre todo o custo operacional alocado à unidade.",
+    label: "Preço abaixo dos gastos",
+    body: "A venda paga o custo de fabricação, mas não cobre a parte dos gastos mensais de cada unidade.",
     tone: "critical",
   },
   tight_margin: {
-    label: "Margem apertada",
-    body: "A produção gera lucro por unidade, mas a margem real ainda está abaixo da meta financeira de 20%.",
+    label: "Abaixo da meta",
+    body: "Cada unidade dá lucro, mas ainda sobra menos que a meta de 20%.",
     tone: "warning",
   },
   adequate_margin: {
-    label: "Margem adequada",
-    body: "A produção cobre seus custos e alcança a meta financeira de 20%. O resultado depende de manter o volume necessário.",
+    label: "Meta alcançada",
+    body: "O preço paga todos os gastos e alcança a meta de 20%. Agora mantenha a quantidade de vendas usada no cálculo.",
     tone: "positive",
   },
   above_target: {
     label: "Acima da meta",
-    body: "A produção cobre seus custos e supera a meta financeira de 20%. Valide a aceitação do mercado e preserve o volume.",
+    body: "O preço paga todos os gastos e passa da meta de 20%. Acompanhe se seus clientes aceitam o preço e mantenha as vendas.",
     tone: "positive",
   },
 };
@@ -48,24 +48,24 @@ const productionPriorityContent: Record<
   { label: string; body: string }
 > = {
   cost: {
-    label: "Custo",
-    body: "O custo de fabricação consome toda a receita líquida da venda. Corrija essa relação antes de pensar em volume.",
+    label: "Custo de fabricação",
+    body: "O custo de fabricação usa todo o valor que sobra da venda. Tente reduzir esse custo ou aumentar o preço antes de vender mais.",
   },
   data: {
-    label: "Dados",
-    body: "Informe o volume médio mensal para ratear os custos fixos e descobrir o lucro e a margem reais.",
+    label: "Quantidade de vendas",
+    body: "Informe quantas unidades você vende por mês. Assim, conseguimos incluir os gastos mensais e mostrar quanto realmente sobra.",
   },
   price: {
     label: "Preço",
-    body: "O preço não cobre toda a operação alocada à unidade. Corrija o preço ou o custo operacional.",
+    body: "O preço não paga todos os gastos de uma unidade. Reveja o preço ou reduza os gastos.",
   },
   margin: {
-    label: "Margem",
-    body: "Existe lucro, mas falta espaço até a meta de 20%. Trabalhe preço e custos em conjunto.",
+    label: "Quanto sobra",
+    body: "A venda dá lucro, mas ainda sobra menos que a meta de 20%. Reveja o preço e os gastos em conjunto.",
   },
   volume: {
-    label: "Volume",
-    body: "Preço e margem sustentam a operação. Mantenha o volume necessário e acompanhe a aceitação do mercado.",
+    label: "Quantidade de vendas",
+    body: "O preço alcança a meta. Agora mantenha a quantidade de vendas usada no cálculo.",
   },
 };
 
@@ -81,7 +81,7 @@ function buildProductionFacts(
   return [
     {
       key: "margin",
-      currentLabel: "Margem atual",
+      currentLabel: "Quanto sobra a cada R$ 100",
       currentValue:
         calculation.realMarginBasisPoints === null
           ? "Indisponível"
@@ -94,8 +94,8 @@ function buildProductionFacts(
       currentLabel: "Preço atual",
       currentValue: formatCurrency(calculation.currentPriceCents),
       referenceLabel: calculation.priceReferencesPartial
-        ? "Preço-alvo sem rateio fixo"
-        : "Preço-alvo",
+        ? "Preço para a meta, sem gastos mensais"
+        : "Preço para alcançar a meta",
       referenceValue:
         calculation.targetPriceCents === null
           ? "Indisponível"
@@ -116,17 +116,19 @@ function buildProductionProfitabilityAnswer(
   let answer: string;
 
   if (calculation.verdict === "direct_loss") {
-    answer = `Não — a contribuição por unidade é ${formatCurrency(calculation.unitContributionCents)} e não cobre o custo de fabricação.`;
+    answer = `Não — faltam ${formatCurrency(Math.abs(calculation.unitContributionCents))} por unidade para pagar os gastos considerados.`;
   } else if (calculation.verdict === "incomplete_volume") {
-    answer = `Ainda não é possível afirmar o lucro real: a contribuição por unidade é positiva em ${formatCurrency(calculation.unitContributionCents)}, mas falta ratear os custos fixos.`;
+    answer =
+      "Ainda não dá para saber quanto sobra de verdade. Informe quantas unidades você vende por mês para incluir os gastos mensais.";
   } else if (calculation.unitProfitCents === null) {
-    answer = "Ainda não é possível calcular o lucro por unidade.";
+    answer = "Ainda não dá para calcular esse valor com os dados informados.";
   } else if (calculation.unitProfitCents < 0) {
-    answer = `Não — o prejuízo por unidade é ${formatCurrency(Math.abs(calculation.unitProfitCents))}.`;
+    answer = `Não — faltam ${formatCurrency(Math.abs(calculation.unitProfitCents))} por unidade para pagar os gastos considerados.`;
   } else if (calculation.unitProfitCents === 0) {
-    answer = "Não — a unidade apenas cobre os custos, sem gerar lucro.";
+    answer =
+      "Não — o valor recebido apenas paga os gastos, sem deixar dinheiro.";
   } else {
-    answer = `Sim — o lucro por unidade é ${formatCurrency(calculation.unitProfitCents)} após os custos considerados.`;
+    answer = `Sim — sobram ${formatCurrency(calculation.unitProfitCents)} por unidade depois de pagar os gastos considerados.`;
   }
 
   return {
@@ -145,17 +147,16 @@ function buildProductionPriceAnswer(
     calculation.minimumPriceCents === null ||
     calculation.targetPriceCents === null
   ) {
-    answer =
-      "Ainda não é possível calcular uma referência financeira segura com as taxas informadas.";
+    answer = "Ainda não dá para calcular esse valor com os dados informados.";
   } else if (calculation.priceReferencesPartial) {
-    answer = `A referência ainda é parcial: ${formatCurrency(calculation.targetPriceCents)} considera o custo de fabricação e as taxas, mas ainda não inclui o rateio fixo.`;
+    answer = `Ainda é uma estimativa: ${formatCurrency(calculation.targetPriceCents)} inclui o custo de fabricação e as taxas, mas não os gastos mensais.`;
   } else if (calculation.currentPriceCents < calculation.minimumPriceCents) {
-    answer = `Não — está abaixo do mínimo financeiro de ${formatCurrency(calculation.minimumPriceCents)}.`;
+    answer = `Não — para pagar todos os gastos, o preço precisa ser pelo menos ${formatCurrency(calculation.minimumPriceCents)}.`;
   } else if (calculation.currentPriceCents < calculation.targetPriceCents) {
     answer =
-      "Parcialmente — cobre os custos, mas ainda não alcança a meta de 20%.";
+      "Quase — o preço paga os gastos, mas ainda não alcança a meta de 20%.";
   } else {
-    answer = "Sim — alcança a referência financeira para a meta de 20%.";
+    answer = "Sim — seu preço alcança o valor calculado para a meta de 20%.";
   }
 
   return {
@@ -170,16 +171,14 @@ function buildProductionImmediateActionAnswer(
 ): ReportExecutiveSummary["answers"][number] {
   const actionByVerdict: Record<ProductionReportVerdict, string> = {
     direct_loss:
-      "Revise o custo de fabricação ou aumente o preço antes de buscar volume.",
+      "Reduza o custo de fabricação ou aumente o preço antes de vender mais.",
     incomplete_volume:
-      "Informe o volume médio mensal para concluir o diagnóstico.",
-    operational_loss:
-      "Corrija o preço ou o custo operacional rateado antes de avançar.",
-    tight_margin: "Aproxime preço e custo da meta financeira de 20%.",
-    adequate_margin:
-      "Mantenha o volume de vendas necessário para sustentar o resultado.",
+      "Informe quantas unidades você vende por mês para concluir o diagnóstico.",
+    operational_loss: "Aumente o preço ou reduza os gastos de cada unidade.",
+    tight_margin: "Ajuste o preço ou os gastos para chegar à meta de 20%.",
+    adequate_margin: "Mantenha a quantidade de vendas usada no cálculo.",
     above_target:
-      "Valide a aceitação do mercado e mantenha o volume de vendas.",
+      "Acompanhe se seus clientes aceitam o preço e mantenha as vendas.",
   };
 
   return {
@@ -193,9 +192,9 @@ function buildProductionExecutiveSummary(
   calculation: ProductionReportCalculation,
 ): ReportExecutiveSummary {
   return {
-    headline: "A verdade por trás do preço da sua produção.",
+    headline: "Sua produção dá lucro?",
     introduction:
-      "O Lucrivo mostra o que cada venda fabricada deixa após o custo de fabricação, como os custos fixos afetam a unidade e qual ajuste merece prioridade.",
+      "Veja quanto sobra de cada unidade vendida e o que merece sua atenção primeiro.",
     verdict: buildProductionVerdict(calculation),
     facts: buildProductionFacts(calculation),
     priority: buildProductionPriority(calculation),

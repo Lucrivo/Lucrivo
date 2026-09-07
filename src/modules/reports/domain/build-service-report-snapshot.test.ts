@@ -203,9 +203,12 @@ describe("buildServiceReportSnapshot", () => {
     });
 
     expect(snapshot.executiveSummary.verdict).toEqual(
-      expect.objectContaining({ label: "Prejuízo direto", tone: "critical" }),
+      expect.objectContaining({
+        label: "Venda com prejuízo",
+        tone: "critical",
+      }),
     );
-    expect(snapshot.executiveSummary.priority.label).toBe("Custo");
+    expect(snapshot.executiveSummary.priority.label).toBe("Gastos");
     expect(snapshot.sections[3].body).toContain("material e as taxas");
     expect(snapshot.sections[3].body).not.toContain("sua meta é de");
   });
