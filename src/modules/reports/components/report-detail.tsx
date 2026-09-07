@@ -49,7 +49,7 @@ function ReportDetail({ viewModel }: { viewModel: ReportViewModel }) {
             </div>
             <div className="grid gap-2">
               <p className="text-primary text-xs font-semibold tracking-[0.18em] uppercase">
-                Seu relatório financeiro
+                {viewModel.language.reportEyebrow}
               </p>
               <h1>{viewModel.identity.title}</h1>
               <p className="text-muted-foreground flex items-center gap-2 text-sm">
@@ -61,19 +61,28 @@ function ReportDetail({ viewModel }: { viewModel: ReportViewModel }) {
         </div>
       </header>
 
-      <ReportExecutiveSummary summary={viewModel.executiveSummary} />
+      <ReportExecutiveSummary
+        summary={viewModel.executiveSummary}
+        priorityEyebrow={viewModel.language.priorityEyebrow}
+      />
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)]">
-        <ReportNumbers numbers={viewModel.numbers} />
-        <section aria-label="Análise detalhada" className="grid gap-4">
+        <ReportNumbers
+          numbers={viewModel.numbers}
+          title={viewModel.language.numbersTitle}
+          description={viewModel.language.numbersDescription}
+        />
+        <section
+          aria-label={viewModel.language.analysisAriaLabel}
+          className="grid gap-4"
+        >
           <div className="mb-1 grid gap-1 px-1">
             <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
-              Como chegamos aqui
+              {viewModel.language.analysisEyebrow}
             </p>
-            <h2 className="text-2xl">Entenda seus números</h2>
+            <h2 className="text-2xl">{viewModel.language.analysisTitle}</h2>
             <p className="text-muted-foreground max-w-2xl text-sm leading-6">
-              Leia na ordem: primeiro proteja o custo, depois avalie margem e
-              volume.
+              {viewModel.language.analysisDescription}
             </p>
           </div>
           {viewModel.sections.map((section) =>

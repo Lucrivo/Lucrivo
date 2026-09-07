@@ -53,8 +53,10 @@ const tonePresentation = {
 
 function ReportExecutiveSummary({
   summary,
+  priorityEyebrow,
 }: {
   summary: ReportExecutiveSummaryViewModel;
+  priorityEyebrow: string;
 }) {
   const presentation = tonePresentation[summary.verdict.tone];
   const VerdictIcon = presentation.icon;
@@ -134,7 +136,7 @@ function ReportExecutiveSummary({
 
         <div className="border-l-primary bg-primary/7 grid gap-2 rounded-2xl border-l-4 p-4 sm:p-5">
           <p className="text-primary text-xs font-semibold tracking-[0.14em] uppercase">
-            Principal ponto a corrigir
+            {priorityEyebrow}
           </p>
           <h3 className="text-lg font-semibold">{summary.priority.label}</h3>
           <p className="text-foreground/86 leading-6">

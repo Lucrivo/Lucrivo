@@ -38,23 +38,28 @@ const viewModel = toReportViewModel({
 
 describe("ReportExecutiveSummary", () => {
   it("renders the persisted verdict, correction, and three ordered answers", () => {
-    render(<ReportExecutiveSummary summary={viewModel.executiveSummary} />);
+    render(
+      <ReportExecutiveSummary
+        summary={viewModel.executiveSummary}
+        priorityEyebrow={viewModel.language.priorityEyebrow}
+      />,
+    );
     const summary = screen.getByRole("region", {
-      name: "A verdade por trás do preço.",
+      name: "Seu serviço dá lucro?",
     });
 
     expect(
       within(summary).getByRole("heading", {
         level: 2,
-        name: "A verdade por trás do preço.",
+        name: "Seu serviço dá lucro?",
       }),
     ).toBeInTheDocument();
-    expect(within(summary).getByText("Margem adequada")).toBeInTheDocument();
-    expect(within(summary).getByText("Situação positiva")).toBeInTheDocument();
+    expect(within(summary).getByText("Meta alcançada")).toBeInTheDocument();
+    expect(within(summary).getByText("Bom resultado")).toBeInTheDocument();
+    expect(within(summary).getByText("Comece por aqui")).toBeInTheDocument();
     expect(
-      within(summary).getByText("Principal ponto a corrigir"),
+      within(summary).getByText("Quantidade de serviços"),
     ).toBeInTheDocument();
-    expect(within(summary).getByText("Volume")).toBeInTheDocument();
 
     const answers = within(summary).getAllByRole("listitem");
     expect(answers).toHaveLength(3);
@@ -67,9 +72,9 @@ describe("ReportExecutiveSummary", () => {
 
   it.each([
     ["neutral", "Informação"],
-    ["warning", "Ponto de atenção"],
-    ["critical", "Ação necessária"],
-    ["positive", "Situação positiva"],
+    ["warning", "Fique de olho"],
+    ["critical", "Precisa de atenção"],
+    ["positive", "Bom resultado"],
   ] as const)("keeps a visible label for the %s tone", (tone, toneLabel) => {
     render(
       <ReportExecutiveSummary
@@ -77,6 +82,7 @@ describe("ReportExecutiveSummary", () => {
           ...viewModel.executiveSummary,
           verdict: { ...viewModel.executiveSummary.verdict, tone, toneLabel },
         }}
+        priorityEyebrow="Comece por aqui"
       />,
     );
 

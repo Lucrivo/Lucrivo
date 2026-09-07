@@ -16,6 +16,7 @@ const report = {
   verdict: "adequate_margin",
   priority: "volume",
   unit: "hour",
+  contentVersion: 3,
 } satisfies OwnedReportSummary;
 
 const productReport = {
@@ -29,6 +30,7 @@ const productReport = {
   verdict: "incomplete_volume",
   priority: "data",
   unit: "unit",
+  contentVersion: 2,
 } satisfies OwnedReportSummary;
 
 const productionReport = {
@@ -42,6 +44,7 @@ const productionReport = {
   verdict: "tight_margin",
   priority: "margin",
   unit: "unit",
+  contentVersion: 2,
 } satisfies OwnedReportSummary;
 
 describe("ReportListCard", () => {
@@ -90,10 +93,12 @@ describe("ReportListCard", () => {
     ).toBeInTheDocument();
     expect(within(card).getByText("Produto")).toBeInTheDocument();
     expect(within(card).getByText("Revenda")).toBeInTheDocument();
-    const verdict = within(card).getByText("Complete o diagnóstico");
+    const verdict = within(card).getByText("Falta informar as vendas");
     expect(verdict).toBeInTheDocument();
     expect(verdict.closest('[data-slot="badge"]')).toHaveClass("text-info");
-    expect(within(card).getByText("Lucro por unidade")).toBeInTheDocument();
+    expect(
+      within(card).getByText("Quanto sobra por unidade"),
+    ).toBeInTheDocument();
     expect(within(card).queryByText("Lucro por venda")).not.toBeInTheDocument();
   });
 
@@ -108,7 +113,7 @@ describe("ReportListCard", () => {
       />,
     );
 
-    const verdict = screen.getByText("Prejuízo direto");
+    const verdict = screen.getByText("Venda com prejuízo");
     expect(verdict.closest('[data-slot="badge"]')).toHaveClass(
       "text-destructive",
     );
@@ -125,12 +130,29 @@ describe("ReportListCard", () => {
     ).toBeInTheDocument();
     expect(within(card).getByText("Produção")).toBeInTheDocument();
     expect(within(card).getByText("Fabricação própria")).toBeInTheDocument();
-    expect(within(card).getByText("Margem apertada")).toBeInTheDocument();
-    expect(within(card).getByText("Lucro por unidade")).toBeInTheDocument();
+    expect(within(card).getByText("Abaixo da meta")).toBeInTheDocument();
+    expect(
+      within(card).getByText("Quanto sobra por unidade"),
+    ).toBeInTheDocument();
     expect(within(card).queryByText("Lucro por venda")).not.toBeInTheDocument();
     expect(
       within(card).getByRole("link", { name: "Abrir relatório" }),
     ).toHaveAttribute("href", "/reports/126");
+  });
+
+  it("uses the saved plain-language labels for a current Service report", () => {
+    render(
+      <ReportListCard
+        report={{ ...report, contentVersion: 4, unit: "appointment" }}
+      />,
+    );
+
+    expect(screen.getByText("Meta alcançada")).toBeInTheDocument();
+    expect(screen.getByText("Quanto sobra a cada R$ 100")).toBeInTheDocument();
+    expect(
+      screen.getByText("Quanto sobra por atendimento"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Diagnóstico salvo")).toBeInTheDocument();
   });
 });
 
@@ -139,7 +161,7 @@ describe("ReportsEmptyState", () => {
     render(<ReportsEmptyState />);
 
     expect(
-      screen.getByRole("heading", { name: "Seu histórico começa aqui" }),
+      screen.getByRole("heading", { name: "Diagnósticos salvos" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Criar primeiro diagnóstico" }),

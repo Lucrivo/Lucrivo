@@ -42,6 +42,7 @@ const report = {
   verdict: "adequate_margin",
   priority: "volume",
   unit: "hour",
+  contentVersion: 4,
 };
 
 describe("ReportsPage", () => {
@@ -70,7 +71,7 @@ describe("ReportsPage", () => {
     await renderPage();
 
     expect(
-      screen.getByRole("heading", { name: "Seus diagnósticos" }),
+      screen.getByRole("heading", { name: "Seus resultados" }),
     ).toBeInTheDocument();
     expect(screen.getByText(/Relatório 42/)).toBeInTheDocument();
     expect(

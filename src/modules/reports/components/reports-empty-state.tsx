@@ -23,14 +23,14 @@ function ReportsEmptyState() {
           </div>
           <div className="grid gap-2">
             <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
-              Biblioteca de decisões
+              Seus resultados
             </p>
             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Seu histórico começa aqui
+              Diagnósticos salvos
             </h2>
             <p className="text-muted-foreground leading-7">
-              Faça um diagnóstico para registrar seus números, entender a margem
-              e voltar ao relatório sempre que precisar.
+              Faça um diagnóstico para salvar seus números, ver quanto sobra e
+              consultar o resultado depois.
             </p>
           </div>
           <Link
