@@ -90,7 +90,7 @@ function ProductionCostReview({
   if (!values.costCompositionEnabled) {
     return (
       <ReviewItem
-        label="Custo de fabricação por unidade"
+        label="Quanto custa produzir uma unidade?"
         value={formatMoney(values.productionUnitCost)}
       />
     );
@@ -101,23 +101,23 @@ function ProductionCostReview({
   return (
     <>
       <ReviewItem
-        label="Custo composto"
+        label="Quanto custa produzir uma unidade?"
         value={total === null ? "Indisponível" : `R$ ${total}`}
       />
       <ReviewItem
-        label="Materiais por unidade"
+        label="Materiais"
         value={formatMoney(values.materialUnitCost)}
       />
       <ReviewItem
-        label="Embalagem por unidade"
+        label="Embalagem"
         value={formatMoney(values.packagingUnitCost)}
       />
       <ReviewItem
-        label="Mão de obra direta por unidade"
+        label="Seu tempo de produção"
         value={formatMoney(values.directLaborUnitCost)}
       />
       <ReviewItem
-        label="Outros custos variáveis por unidade"
+        label="Outros gastos por unidade"
         value={formatMoney(values.otherVariableUnitCost)}
       />
     </>
@@ -160,29 +160,29 @@ function ProductionReviewStep({
         >
           <ProductionCostReview values={values} />
           <ReviewItem
-            label="Preço de venda por unidade"
+            label="Por quanto você vende cada unidade?"
             value={formatMoney(values.unitSalePrice)}
           />
         </ReviewGroup>
 
         <ReviewGroup
-          title="Despesas fixas"
-          editName="Editar despesas fixas"
+          title="Gastos que existem todo mês"
+          editName="Editar gastos mensais"
           onEdit={() => onEdit("fixedExpenses")}
         >
           <ReviewItem
-            label="Total mensal"
+            label="Gastos que existem todo mês"
             value={formatMoney(values.fixedMonthlyExpenses)}
           />
         </ReviewGroup>
 
         <ReviewGroup
-          title="Volume mensal"
-          editName="Editar volume mensal"
+          title="Quantidade de vendas"
+          editName="Editar quantidade de vendas"
           onEdit={() => onEdit("monthlyVolume")}
         >
           <ReviewItem
-            label="Unidades vendidas"
+            label="Quantas unidades você vende em um mês comum?"
             value={
               hasMonthlyVolume
                 ? `${values.monthlySalesVolume} unidades vendidas por mês`
@@ -192,12 +192,12 @@ function ProductionReviewStep({
         </ReviewGroup>
 
         <ReviewGroup
-          title="Pró-labore"
-          editName="Editar pró-labore"
+          title="Quanto você quer receber"
+          editName="Editar quanto você quer receber"
           onEdit={() => onEdit("ownerCompensation")}
         >
           <ReviewItem
-            label="Remuneração mensal"
+            label="Quanto você quer receber por mês?"
             value={
               values.proLaboreIncluded
                 ? formatMoney(values.proLabore)
@@ -207,12 +207,18 @@ function ProductionReviewStep({
         </ReviewGroup>
 
         <ReviewGroup
-          title="Taxas"
-          editName="Editar taxas"
+          title="Descontos de cada venda"
+          editName="Editar descontos da venda"
           onEdit={() => onEdit("fees")}
         >
-          <ReviewItem label="Impostos" value={`${values.taxRate}%`} />
-          <ReviewItem label="Taxa do cartão" value={`${values.cardFeeRate}%`} />
+          <ReviewItem
+            label="Porcentagem da venda destinada a impostos"
+            value={`${values.taxRate}%`}
+          />
+          <ReviewItem
+            label="Porcentagem cobrada pelo cartão ou plataforma"
+            value={`${values.cardFeeRate}%`}
+          />
         </ReviewGroup>
       </div>
 
@@ -226,9 +232,8 @@ function ProductionReviewStep({
             className="mt-0.5 size-4 shrink-0"
           />
           <p>
-            Sem o volume mensal, os custos fixos não podem ser rateados por
-            unidade. O relatório será parcial e não classificará sua margem como
-            adequada.
+            Sem essa quantidade, o resultado não consegue incluir os gastos
+            mensais em cada unidade.
           </p>
         </div>
       ) : null}

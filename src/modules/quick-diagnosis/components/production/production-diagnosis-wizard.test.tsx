@@ -70,7 +70,9 @@ describe("ProductionDiagnosisWizard", () => {
 
     expect(screen.getByText("2 de 8")).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Qual análise você quer fazer?" }),
+      screen.getByRole("heading", {
+        name: "Que tipo de resultado você quer ver?",
+      }),
     ).toHaveFocus();
 
     await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
@@ -78,41 +80,43 @@ describe("ProductionDiagnosisWizard", () => {
     expect(screen.getByText("3 de 8")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
-        name: "Quanto custa fabricar e por quanto você vende?",
+        name: "Quanto custa produzir e por quanto você vende?",
       }),
     ).toHaveFocus();
 
     if (mode === "composed") {
       await user.click(
-        screen.getByRole("switch", { name: "Compor custo de fabricação" }),
+        screen.getByRole("switch", {
+          name: "Quer somar os gastos de produção por partes?",
+        }),
       );
-      await user.type(screen.getByLabelText("Materiais por unidade"), "30");
-      await user.type(screen.getByLabelText("Embalagem por unidade"), "5");
-      await user.type(
-        screen.getByLabelText("Mão de obra direta por unidade"),
-        "10",
-      );
-      await user.type(
-        screen.getByLabelText("Outros custos variáveis por unidade"),
-        "5",
-      );
+      await user.type(screen.getByLabelText("Materiais"), "30");
+      await user.type(screen.getByLabelText("Embalagem"), "5");
+      await user.type(screen.getByLabelText("Seu tempo de produção"), "10");
+      await user.type(screen.getByLabelText("Outros gastos por unidade"), "5");
       expect(screen.getByRole("status")).toHaveTextContent("R$ 50,00");
     } else {
       await user.type(
-        screen.getByLabelText("Custo de fabricação por unidade"),
+        screen.getByLabelText("Quanto custa produzir uma unidade?"),
         "50",
       );
     }
-    await user.type(screen.getByLabelText("Preço de venda por unidade"), "100");
+    await user.type(
+      screen.getByLabelText("Por quanto você vende cada unidade?"),
+      "100",
+    );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
     expect(screen.getByText("4 de 8")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
-        name: "Quais são as despesas fixas mensais?",
+        name: "Quais gastos você tem todo mês?",
       }),
     ).toHaveFocus();
-    await user.type(screen.getByLabelText("Despesas fixas mensais"), "1000");
+    await user.type(
+      screen.getByLabelText("Gastos que existem todo mês"),
+      "1000",
+    );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
     expect(screen.getByText("5 de 8")).toBeInTheDocument();
@@ -123,7 +127,7 @@ describe("ProductionDiagnosisWizard", () => {
     ).toHaveFocus();
     if (volume) {
       await user.type(
-        screen.getByLabelText("Volume médio mensal de unidades vendidas"),
+        screen.getByLabelText("Quantas unidades você vende em um mês comum?"),
         "100",
       );
     }
@@ -132,31 +136,46 @@ describe("ProductionDiagnosisWizard", () => {
     expect(screen.getByText("6 de 8")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
-        name: "Você quer incluir seu pró-labore?",
+        name: "Quanto você quer receber por mês?",
       }),
     ).toHaveFocus();
     if (compensation) {
       await user.click(
-        screen.getByRole("switch", { name: "Incluir pró-labore" }),
+        screen.getByRole("switch", {
+          name: "Você quer incluir o valor que recebe pelo seu trabalho?",
+        }),
       );
-      await user.type(screen.getByLabelText("Pró-labore mensal"), "2000");
+      await user.type(
+        screen.getByLabelText("Quanto você quer receber por mês?", {
+          selector: "input",
+        }),
+        "2000",
+      );
     }
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
     expect(screen.getByText("7 de 8")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
-        name: "Quais taxas incidem nas vendas?",
+        name: "O que é descontado de cada venda?",
       }),
     ).toHaveFocus();
-    await user.type(screen.getByLabelText("Impostos"), "6,25");
-    await user.type(screen.getByLabelText("Taxa do cartão"), "3,50");
+    await user.type(
+      screen.getByLabelText("Qual porcentagem da venda vai para impostos?"),
+      "6,25",
+    );
+    await user.type(
+      screen.getByLabelText(
+        "Qual porcentagem fica com o cartão ou a plataforma?",
+      ),
+      "3,50",
+    );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
     expect(screen.getByText("8 de 8")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
-        name: "Revise as informações da produção",
+        name: "Confira as informações da produção",
       }),
     ).toHaveFocus();
 
@@ -180,10 +199,10 @@ describe("ProductionDiagnosisWizard", () => {
     expect(screen.getByText("3 de 8")).toBeInTheDocument();
     expect(screen.getAllByRole("alert")).toHaveLength(2);
     expect(
-      screen.getByText("Informe um custo de produção maior que zero."),
+      screen.getByText("Informe quanto custa produzir uma unidade."),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Informe um preço de venda maior que zero."),
+      screen.getByText("Informe por quanto você vende cada unidade."),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Voltar" }));
@@ -201,10 +220,9 @@ describe("ProductionDiagnosisWizard", () => {
     expect(screen.getByText("Produção")).toBeInTheDocument();
     expect(screen.getByText("Diagnóstico rápido")).toBeInTheDocument();
     expect(
-      screen.getByText("Custo de fabricação por unidade"),
+      screen.getByText("Quanto custa produzir uma unidade?"),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Custo composto")).not.toBeInTheDocument();
-    expect(screen.queryByText("Materiais por unidade")).not.toBeInTheDocument();
+    expect(screen.queryByText("Materiais")).not.toBeInTheDocument();
     expect(screen.getByText("R$ 50,00")).toBeInTheDocument();
     expect(screen.getByText("R$ 100,00")).toBeInTheDocument();
     expect(screen.getByText("R$ 1.000,00")).toBeInTheDocument();
@@ -217,15 +235,15 @@ describe("ProductionDiagnosisWizard", () => {
     expect(createDiagnosis).not.toHaveBeenCalled();
 
     const edits = [
-      ["Editar modalidade", "Qual análise você quer fazer?"],
+      ["Editar modalidade", "Que tipo de resultado você quer ver?"],
       [
         "Editar valores da produção",
-        "Quanto custa fabricar e por quanto você vende?",
+        "Quanto custa produzir e por quanto você vende?",
       ],
-      ["Editar despesas fixas", "Quais são as despesas fixas mensais?"],
-      ["Editar volume mensal", "Quantas unidades você vende por mês?"],
-      ["Editar pró-labore", "Você quer incluir seu pró-labore?"],
-      ["Editar taxas", "Quais taxas incidem nas vendas?"],
+      ["Editar gastos mensais", "Quais gastos você tem todo mês?"],
+      ["Editar quantidade de vendas", "Quantas unidades você vende por mês?"],
+      ["Editar quanto você quer receber", "Quanto você quer receber por mês?"],
+      ["Editar descontos da venda", "O que é descontado de cada venda?"],
     ] as const;
 
     for (const [buttonName, heading] of edits) {
@@ -234,14 +252,16 @@ describe("ProductionDiagnosisWizard", () => {
 
       if (buttonName === "Editar valores da produção") {
         expect(
-          screen.getByRole("switch", { name: "Compor custo de fabricação" }),
+          screen.getByRole("switch", {
+            name: "Quer somar os gastos de produção por partes?",
+          }),
         ).not.toBeChecked();
         expect(
-          screen.getByLabelText("Custo de fabricação por unidade"),
+          screen.getByLabelText("Quanto custa produzir uma unidade?"),
         ).toHaveValue("50");
-        expect(screen.getByLabelText("Preço de venda por unidade")).toHaveValue(
-          "100",
-        );
+        expect(
+          screen.getByLabelText("Por quanto você vende cada unidade?"),
+        ).toHaveValue("100");
       }
 
       while (!screen.queryByText("8 de 8")) {
@@ -260,15 +280,10 @@ describe("ProductionDiagnosisWizard", () => {
     renderWizard();
     const user = await completeValidDiagnosis({ mode: "composed" });
 
-    expect(screen.getByText("Custo composto")).toBeInTheDocument();
-    expect(screen.getByText("Materiais por unidade")).toBeInTheDocument();
-    expect(screen.getByText("Embalagem por unidade")).toBeInTheDocument();
-    expect(
-      screen.getByText("Mão de obra direta por unidade"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Outros custos variáveis por unidade"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Materiais")).toBeInTheDocument();
+    expect(screen.getByText("Embalagem")).toBeInTheDocument();
+    expect(screen.getByText("Seu tempo de produção")).toBeInTheDocument();
+    expect(screen.getByText("Outros gastos por unidade")).toBeInTheDocument();
     expect(screen.getAllByText("R$ 5,00")).toHaveLength(2);
     expect(screen.getByText("R$ 10,00")).toBeInTheDocument();
     expect(screen.getByText("R$ 30,00")).toBeInTheDocument();
@@ -278,16 +293,14 @@ describe("ProductionDiagnosisWizard", () => {
       screen.getByRole("button", { name: "Editar valores da produção" }),
     );
     expect(
-      screen.getByRole("switch", { name: "Compor custo de fabricação" }),
+      screen.getByRole("switch", {
+        name: "Quer somar os gastos de produção por partes?",
+      }),
     ).toBeChecked();
-    expect(screen.getByLabelText("Materiais por unidade")).toHaveValue("30");
-    expect(screen.getByLabelText("Embalagem por unidade")).toHaveValue("5");
-    expect(screen.getByLabelText("Mão de obra direta por unidade")).toHaveValue(
-      "10",
-    );
-    expect(
-      screen.getByLabelText("Outros custos variáveis por unidade"),
-    ).toHaveValue("5");
+    expect(screen.getByLabelText("Materiais")).toHaveValue("30");
+    expect(screen.getByLabelText("Embalagem")).toHaveValue("5");
+    expect(screen.getByLabelText("Seu tempo de produção")).toHaveValue("10");
+    expect(screen.getByLabelText("Outros gastos por unidade")).toHaveValue("5");
   });
 
   it("shows the exact partial warning, absent volume and disabled compensation", async () => {
@@ -298,8 +311,14 @@ describe("ProductionDiagnosisWizard", () => {
     expect(screen.getByText("Não incluído")).toBeInTheDocument();
     expect(screen.queryByText("R$ 2.000,00")).not.toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Sem o volume mensal, os custos fixos não podem ser rateados por unidade. O relatório será parcial e não classificará sua margem como adequada.",
+      "Sem essa quantidade, o resultado não consegue incluir os gastos mensais em cada unidade.",
     );
+    expect(screen.getByText("Quanto você quer receber")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Gastos que existem todo mês").length,
+    ).toBeGreaterThan(0);
+    expect(container).not.toHaveTextContent("Pró-labore");
+    expect(container).not.toHaveTextContent("custos fixos");
 
     const markup = container.innerHTML;
     expect(markup).toContain("grid");
@@ -326,11 +345,13 @@ describe("ProductionDiagnosisWizard", () => {
       screen.getByRole("button", { name: "Editar valores da produção" }),
     );
     await user.click(
-      screen.getByRole("switch", { name: "Compor custo de fabricação" }),
+      screen.getByRole("switch", {
+        name: "Quer somar os gastos de produção por partes?",
+      }),
     );
 
     expect(
-      screen.getByLabelText("Custo de fabricação por unidade"),
+      screen.getByLabelText("Quanto custa produzir uma unidade?"),
     ).toHaveValue("50,00");
 
     while (!screen.queryByText("8 de 8")) {
@@ -378,7 +399,7 @@ describe("ProductionDiagnosisWizard", () => {
       screen.getByRole("button", { name: "Confirmar diagnóstico" }),
     );
 
-    expect(await screen.findByLabelText("Materiais por unidade")).toHaveFocus();
+    expect(await screen.findByLabelText("Materiais")).toHaveFocus();
     expect(screen.getByRole("alert")).toHaveTextContent("Composição inválida.");
     expect(replace).not.toHaveBeenCalled();
   });
@@ -402,7 +423,7 @@ describe("ProductionDiagnosisWizard", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Qual análise você quer fazer?",
+        name: "Que tipo de resultado você quer ver?",
       }),
     ).toHaveFocus();
     expect(screen.getByText("2 de 8")).toBeInTheDocument();
