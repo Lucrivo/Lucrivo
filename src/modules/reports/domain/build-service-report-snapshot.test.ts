@@ -83,7 +83,7 @@ describe("buildServiceReportSnapshot", () => {
         expect.objectContaining({
           schemaVersion: 3,
           calculationVersion: 2,
-          contentVersion: 3,
+          contentVersion: 4,
           category: "service",
           scenario: command.pricingMethod,
           currency: "BRL",

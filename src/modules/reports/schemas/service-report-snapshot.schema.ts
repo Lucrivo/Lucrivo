@@ -156,27 +156,38 @@ const serviceReportSnapshotV2Schema = z
   })
   .superRefine(validateOrderedContent);
 
-const serviceReportSnapshotV3Schema = z
-  .strictObject({
-    schemaVersion: z.literal(SERVICE_REPORT_SCHEMA_VERSION),
-    calculationVersion: z.literal(SERVICE_CALCULATION_VERSION),
-    contentVersion: z.literal(SERVICE_CONTENT_VERSION),
-    category: z.literal("service"),
-    scenario: z.enum(pricingMethods),
-    currency: z.literal("BRL"),
-    unit: z.enum(serviceReportUnits),
-    policy: serviceReportPolicySchema,
-    inputs: serviceReportInputsV3Schema,
-    results: serviceReportResultsV3Schema,
-    executiveSummary: reportExecutiveSummarySchema,
-    sections: z.array(reportSectionSchema).length(reportSectionKeys.length),
-    discountSimulationBase: serviceReportDiscountSimulationBaseSchema,
-  })
-  .superRefine(validateOrderedContent);
+const serviceReportSnapshotV3CoreSchema = z.strictObject({
+  category: z.literal("service"),
+  scenario: z.enum(pricingMethods),
+  currency: z.literal("BRL"),
+  unit: z.enum(serviceReportUnits),
+  policy: serviceReportPolicySchema,
+  inputs: serviceReportInputsV3Schema,
+  results: serviceReportResultsV3Schema,
+  executiveSummary: reportExecutiveSummarySchema,
+  sections: z.array(reportSectionSchema).length(reportSectionKeys.length),
+  discountSimulationBase: serviceReportDiscountSimulationBaseSchema,
+});
+
+function createServiceReportSnapshotV3Schema(contentVersion: 3 | 4) {
+  return serviceReportSnapshotV3CoreSchema
+    .extend({
+      schemaVersion: z.literal(SERVICE_REPORT_SCHEMA_VERSION),
+      calculationVersion: z.literal(SERVICE_CALCULATION_VERSION),
+      contentVersion: z.literal(contentVersion),
+    })
+    .superRefine(validateOrderedContent);
+}
+
+const serviceReportSnapshotV3Schema = createServiceReportSnapshotV3Schema(3);
+const serviceReportSnapshotV4Schema = createServiceReportSnapshotV3Schema(
+  SERVICE_CONTENT_VERSION,
+);
 
 const serviceReportSnapshotSchema = z.union([
   serviceReportSnapshotV2Schema,
   serviceReportSnapshotV3Schema,
+  serviceReportSnapshotV4Schema,
 ]);
 
 const serviceReportInputsSchema = serviceReportInputsV3Schema;
@@ -187,27 +198,35 @@ type ServiceReportDiscountSimulationBase = z.infer<
 >;
 type ServiceReportSnapshotV2 = z.infer<typeof serviceReportSnapshotV2Schema>;
 type ServiceReportSnapshotV3 = z.infer<typeof serviceReportSnapshotV3Schema>;
+type ServiceReportSnapshotV4 = z.infer<typeof serviceReportSnapshotV4Schema>;
 type ServiceReportSnapshot = z.infer<typeof serviceReportSnapshotSchema>;
+type CurrentServiceReportSnapshot = ServiceReportSnapshotV4;
 
 function parseServiceReportSnapshot(value: unknown): ServiceReportSnapshot {
   return serviceReportSnapshotSchema.parse(value);
 }
 
-function parseServiceReportSnapshotV3(value: unknown): ServiceReportSnapshotV3 {
-  return serviceReportSnapshotV3Schema.parse(value);
+function parseCurrentServiceReportSnapshot(
+  value: unknown,
+): CurrentServiceReportSnapshot {
+  return serviceReportSnapshotV4Schema.parse(value);
 }
 
 export {
+  parseCurrentServiceReportSnapshot,
   parseServiceReportSnapshot,
-  parseServiceReportSnapshotV3,
   serviceReportDiscountSimulationBaseSchema,
   serviceReportInputsSchema,
   serviceReportPolicySchema,
   serviceReportResultsSchema,
+  serviceReportSnapshotSchema,
   serviceReportSnapshotV2Schema,
   serviceReportSnapshotV3Schema,
+  serviceReportSnapshotV4Schema,
+  type CurrentServiceReportSnapshot,
   type ServiceReportSnapshot,
   type ServiceReportDiscountSimulationBase,
   type ServiceReportSnapshotV2,
   type ServiceReportSnapshotV3,
+  type ServiceReportSnapshotV4,
 };

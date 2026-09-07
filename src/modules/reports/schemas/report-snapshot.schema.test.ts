@@ -1,9 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import { parseProductReportSnapshot } from "./product-report-snapshot.schema";
-import { parseProductionReportSnapshot } from "./production-report-snapshot.schema";
+import {
+  parseCurrentProductReportSnapshot,
+  parseProductReportSnapshot,
+} from "./product-report-snapshot.schema";
+import {
+  parseCurrentProductionReportSnapshot,
+  parseProductionReportSnapshot,
+} from "./production-report-snapshot.schema";
 import { parseReportSnapshot } from "./report-snapshot.schema";
-import { parseServiceReportSnapshot } from "./service-report-snapshot.schema";
+import {
+  parseCurrentServiceReportSnapshot,
+  parseServiceReportSnapshot,
+} from "./service-report-snapshot.schema";
 
 const sectionKeys = [
   "break_even",
@@ -361,6 +370,21 @@ const partialProductionSnapshot = {
   },
 };
 
+const validProductV2Snapshot = {
+  ...validProductSnapshot,
+  contentVersion: 2,
+};
+
+const validProductionV2Snapshot = {
+  ...validProductionSnapshot,
+  contentVersion: 2,
+};
+
+const validServiceV4Snapshot = {
+  ...validServiceV3Snapshot,
+  contentVersion: 4,
+};
+
 describe("category-versioned report snapshots", () => {
   it("preserves the complete Service V2 shape", () => {
     expect(parseServiceReportSnapshot(validServiceSnapshot)).toEqual(
@@ -375,6 +399,18 @@ describe("category-versioned report snapshots", () => {
     );
     expect(parseReportSnapshot(validServiceV3Snapshot)).toEqual(
       validServiceV3Snapshot,
+    );
+  });
+
+  it("parses the current Service content version without dropping V2 or V3", () => {
+    expect(parseCurrentServiceReportSnapshot(validServiceV4Snapshot)).toEqual(
+      validServiceV4Snapshot,
+    );
+    expect(parseServiceReportSnapshot(validServiceV4Snapshot)).toEqual(
+      validServiceV4Snapshot,
+    );
+    expect(parseReportSnapshot(validServiceV4Snapshot)).toEqual(
+      validServiceV4Snapshot,
     );
   });
 
@@ -415,6 +451,18 @@ describe("category-versioned report snapshots", () => {
     );
   });
 
+  it("parses the current Product content version without dropping V1", () => {
+    expect(parseCurrentProductReportSnapshot(validProductV2Snapshot)).toEqual(
+      validProductV2Snapshot,
+    );
+    expect(parseProductReportSnapshot(validProductV2Snapshot)).toEqual(
+      validProductV2Snapshot,
+    );
+    expect(parseReportSnapshot(validProductV2Snapshot)).toEqual(
+      validProductV2Snapshot,
+    );
+  });
+
   it("parses a complete composed Production V1 snapshot", () => {
     expect(parseProductionReportSnapshot(validProductionSnapshot)).toEqual(
       validProductionSnapshot,
@@ -428,6 +476,30 @@ describe("category-versioned report snapshots", () => {
     expect(parseReportSnapshot(partialProductionSnapshot)).toEqual(
       partialProductionSnapshot,
     );
+  });
+
+  it("parses the current Production content version without dropping V1", () => {
+    expect(
+      parseCurrentProductionReportSnapshot(validProductionV2Snapshot),
+    ).toEqual(validProductionV2Snapshot);
+    expect(parseProductionReportSnapshot(validProductionV2Snapshot)).toEqual(
+      validProductionV2Snapshot,
+    );
+    expect(parseReportSnapshot(validProductionV2Snapshot)).toEqual(
+      validProductionV2Snapshot,
+    );
+  });
+
+  it.each([
+    { ...validProductV2Snapshot, contentVersion: 3 },
+    { ...validProductionV2Snapshot, contentVersion: 3 },
+    { ...validServiceV4Snapshot, contentVersion: 5 },
+    {
+      ...validServiceSnapshot,
+      contentVersion: 4,
+    },
+  ])("rejects an unsupported content-version tuple %#", (snapshot) => {
+    expect(() => parseReportSnapshot(snapshot)).toThrow();
   });
 
   it.each([

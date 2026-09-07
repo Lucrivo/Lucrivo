@@ -6,8 +6,8 @@ import {
   formatReportUnit,
 } from "../formatters";
 import type {
-  ProductReportSnapshotV1,
-  ProductionReportSnapshotV1,
+  ProductReportSnapshot,
+  ProductionReportSnapshot,
   ReportDiscountSimulationBase,
   ReportSnapshot,
   ReportTone,
@@ -99,7 +99,7 @@ function toServiceNumbers(
 }
 
 function toProductNumbers(
-  snapshot: ProductReportSnapshotV1,
+  snapshot: ProductReportSnapshot,
 ): ReportNumberViewModel[] {
   const partial = snapshot.results.priceReferencesPartial;
 
@@ -137,7 +137,7 @@ function toProductNumbers(
 }
 
 function toProductionNumbers(
-  snapshot: ProductionReportSnapshotV1,
+  snapshot: ProductionReportSnapshot,
 ): ReportNumberViewModel[] {
   const partial = snapshot.results.priceReferencesPartial;
 

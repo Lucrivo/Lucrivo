@@ -7,8 +7,8 @@ import {
   formatReportUnit,
 } from "../formatters";
 import {
-  parseServiceReportSnapshotV3,
-  type ServiceReportSnapshotV3,
+  parseCurrentServiceReportSnapshot,
+  type CurrentServiceReportSnapshot,
 } from "../schemas/service-report-snapshot.schema";
 import {
   SERVICE_CALCULATION_VERSION,
@@ -226,7 +226,7 @@ function buildDiscountSimulatorSection(
 function buildServiceReportSnapshot(
   command: ServiceDiagnosisCommand,
   calculation: ServiceReportCalculation,
-): ServiceReportSnapshotV3 {
+): CurrentServiceReportSnapshot {
   const { unit, totalFeeBasisPoints } = calculation;
   const results = {
     monthlyCostCents: calculation.monthlyCostCents,
@@ -249,7 +249,7 @@ function buildServiceReportSnapshot(
     priority: calculation.priority,
   };
 
-  return parseServiceReportSnapshotV3({
+  return parseCurrentServiceReportSnapshot({
     schemaVersion: SERVICE_REPORT_SCHEMA_VERSION,
     calculationVersion: SERVICE_CALCULATION_VERSION,
     contentVersion: SERVICE_CONTENT_VERSION,
