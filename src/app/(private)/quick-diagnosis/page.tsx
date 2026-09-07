@@ -1,6 +1,5 @@
 import { createProductDiagnosis } from "@/modules/quick-diagnosis/actions/create-product-diagnosis.action";
 import { createProductionDiagnosis } from "@/modules/quick-diagnosis/actions/create-production-diagnosis.action";
-import { createServiceDiagnosis } from "@/modules/quick-diagnosis/actions/create-service-diagnosis.action";
 import { QuickDiagnosisWizard } from "@/modules/quick-diagnosis/components/quick-diagnosis-wizard";
 
 export default function QuickDiagnosisPage() {
@@ -8,7 +7,6 @@ export default function QuickDiagnosisPage() {
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col">
       <h1 className="sr-only">Diagnóstico rápido</h1>
       <QuickDiagnosisWizard
-        createServiceDiagnosis={createServiceDiagnosis}
         createProductDiagnosis={createProductDiagnosis}
         createProductionDiagnosis={createProductionDiagnosis}
       />

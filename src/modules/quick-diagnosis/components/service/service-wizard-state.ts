@@ -1,106 +1,98 @@
 import type {
-  ServiceDiagnosisField,
-  ServiceDiagnosisFieldErrors,
-  ServiceDiagnosisInput,
-  ServicePricingMethod,
-  ServiceWorkPeriod,
-} from "../../types";
+  ServiceFlowField,
+  ServiceFlowFieldErrors,
+  ServiceFlowInput,
+  ServiceFlowPricingMethod,
+  ServiceMaterialCostUnit,
+} from "../../domain/service-flow";
 
-const serviceWizardSteps = [
+const serviceWizardStepsWithoutDuration = [
   "monthlyGoal",
   "fixedExpenses",
-  "workRoutine",
   "pricingMethod",
-  "currentPrice",
+  "workRoutine",
   "materialCost",
   "fees",
   "review",
 ] as const;
 
-type ServiceWizardStep = (typeof serviceWizardSteps)[number];
+type ServiceWizardStep =
+  (typeof serviceWizardStepsWithoutDuration)[number] | "serviceDuration";
 
 type ServiceWizardState = {
   step: ServiceWizardStep;
-  values: ServiceDiagnosisInput;
-  fieldErrors: ServiceDiagnosisFieldErrors;
-  status: "editing" | "submitting" | "success";
-  diagnosisId: number | null;
-  submitError: "unauthorized" | "create_failed" | null;
+  values: ServiceFlowInput;
+  fieldErrors: ServiceFlowFieldErrors;
 };
 
 type ServiceWizardAction =
-  | {
-      type: "setField";
-      field: ServiceDiagnosisField;
-      value: string;
-    }
-  | { type: "setPricingMethod"; value: ServicePricingMethod }
-  | { type: "setWorkHoursPeriod"; value: ServiceWorkPeriod }
+  | { type: "setField"; field: ServiceFlowField; value: string }
+  | { type: "setPricingMethod"; value: ServiceFlowPricingMethod }
   | { type: "setHasMaterialCost"; value: boolean }
-  | {
-      type: "setFieldErrors";
-      fieldErrors: ServiceDiagnosisFieldErrors;
-    }
+  | { type: "setMaterialCostUnit"; value: ServiceMaterialCostUnit }
+  | { type: "setPaysRevenueTax"; value: boolean }
+  | { type: "setHasPaymentFee"; value: boolean }
+  | { type: "setFieldErrors"; fieldErrors: ServiceFlowFieldErrors }
   | { type: "next" }
   | { type: "back" }
   | { type: "edit"; step: ServiceWizardStep }
-  | { type: "submitting" }
-  | {
-      type: "submitError";
-      error: "unauthorized" | "create_failed";
-    }
-  | { type: "success"; diagnosisId: number }
-  | { type: "reset"; submissionId: string };
+  | { type: "reset" };
 
-const methodDependentFields = [
-  "hourlyRate",
-  "minuteRate",
-  "appointmentRate",
-  "appointmentDurationMinutes",
-  "hasMaterialCost",
-  "materialUnitCost",
-] as const satisfies readonly ServiceDiagnosisField[];
+function getServiceWizardSteps(
+  pricingMethod: string,
+): readonly ServiceWizardStep[] {
+  if (pricingMethod !== "appointment") return serviceWizardStepsWithoutDuration;
 
-function createInitialServiceWizardState(
-  submissionId: string,
-): ServiceWizardState {
+  return [
+    ...serviceWizardStepsWithoutDuration.slice(0, 4),
+    "serviceDuration",
+    ...serviceWizardStepsWithoutDuration.slice(4),
+  ];
+}
+
+function createInitialServiceWizardState(): ServiceWizardState {
   return {
     step: "monthlyGoal",
     values: {
-      submissionId,
-      pricingMethod: "",
       desiredMonthlyIncome: "",
       fixedMonthlyExpenses: "",
-      workHoursPeriod: "month",
-      workHours: "",
+      pricingMethod: "",
+      currentPrice: "",
+      dailyWorkHours: "",
       weeklyWorkDays: "",
-      hourlyRate: "",
-      minuteRate: "",
-      appointmentRate: "",
       appointmentDurationMinutes: "",
-      hasMaterialCost: false,
-      materialUnitCost: "",
+      hasMaterialCost: null,
+      materialCost: "",
+      materialCostUnit: "",
+      paysRevenueTax: null,
       taxRate: "",
-      cardFeeRate: "",
+      hasPaymentFee: null,
+      paymentFeeRate: "",
     },
     fieldErrors: {},
-    status: "editing",
-    diagnosisId: null,
-    submitError: null,
   };
 }
 
+function clearErrors(
+  errors: ServiceFlowFieldErrors,
+  fields: readonly ServiceFlowField[],
+): ServiceFlowFieldErrors {
+  const next = { ...errors };
+  for (const field of fields) delete next[field];
+  return next;
+}
+
 function adjacentStep(
-  step: ServiceWizardStep,
+  state: ServiceWizardState,
   offset: -1 | 1,
 ): ServiceWizardStep {
-  const currentIndex = serviceWizardSteps.indexOf(step);
+  const steps = getServiceWizardSteps(state.values.pricingMethod);
+  const currentIndex = steps.indexOf(state.step);
   const nextIndex = Math.min(
-    serviceWizardSteps.length - 1,
+    steps.length - 1,
     Math.max(0, currentIndex + offset),
   );
-
-  return serviceWizardSteps[nextIndex];
+  return steps[nextIndex];
 }
 
 function serviceWizardReducer(
@@ -108,94 +100,91 @@ function serviceWizardReducer(
   action: ServiceWizardAction,
 ): ServiceWizardState {
   switch (action.type) {
-    case "setField": {
-      const fieldErrors = { ...state.fieldErrors };
-      delete fieldErrors[action.field];
-
+    case "setField":
       return {
         ...state,
         values: { ...state.values, [action.field]: action.value },
-        fieldErrors,
+        fieldErrors: clearErrors(state.fieldErrors, [action.field]),
       };
-    }
-    case "setPricingMethod": {
-      const fieldErrors = { ...state.fieldErrors };
-      for (const field of methodDependentFields) delete fieldErrors[field];
-      delete fieldErrors.pricingMethod;
-
+    case "setPricingMethod":
       return {
         ...state,
         values: {
           ...state.values,
           pricingMethod: action.value,
-          hourlyRate: "",
-          minuteRate: "",
-          appointmentRate: "",
+          currentPrice: "",
           appointmentDurationMinutes: "",
-          hasMaterialCost: false,
-          materialUnitCost: "",
         },
-        fieldErrors,
+        fieldErrors: clearErrors(state.fieldErrors, [
+          "pricingMethod",
+          "currentPrice",
+          "appointmentDurationMinutes",
+        ]),
       };
-    }
-    case "setWorkHoursPeriod": {
-      const fieldErrors = { ...state.fieldErrors };
-      delete fieldErrors.workHoursPeriod;
-      delete fieldErrors.workHours;
-
-      return {
-        ...state,
-        values: { ...state.values, workHoursPeriod: action.value },
-        fieldErrors,
-      };
-    }
-    case "setHasMaterialCost": {
-      const fieldErrors = { ...state.fieldErrors };
-      delete fieldErrors.hasMaterialCost;
-      delete fieldErrors.materialUnitCost;
-
+    case "setHasMaterialCost":
       return {
         ...state,
         values: {
           ...state.values,
           hasMaterialCost: action.value,
-          materialUnitCost: action.value ? state.values.materialUnitCost : "",
+          materialCost: action.value ? state.values.materialCost : "",
+          materialCostUnit: action.value ? state.values.materialCostUnit : "",
         },
-        fieldErrors,
+        fieldErrors: clearErrors(state.fieldErrors, [
+          "hasMaterialCost",
+          "materialCost",
+          "materialCostUnit",
+        ]),
       };
-    }
+    case "setMaterialCostUnit":
+      return {
+        ...state,
+        values: { ...state.values, materialCostUnit: action.value },
+        fieldErrors: clearErrors(state.fieldErrors, ["materialCostUnit"]),
+      };
+    case "setPaysRevenueTax":
+      return {
+        ...state,
+        values: {
+          ...state.values,
+          paysRevenueTax: action.value,
+          taxRate: action.value ? state.values.taxRate : "",
+        },
+        fieldErrors: clearErrors(state.fieldErrors, [
+          "paysRevenueTax",
+          "taxRate",
+        ]),
+      };
+    case "setHasPaymentFee":
+      return {
+        ...state,
+        values: {
+          ...state.values,
+          hasPaymentFee: action.value,
+          paymentFeeRate: action.value ? state.values.paymentFeeRate : "",
+        },
+        fieldErrors: clearErrors(state.fieldErrors, [
+          "hasPaymentFee",
+          "paymentFeeRate",
+        ]),
+      };
     case "setFieldErrors":
       return { ...state, fieldErrors: action.fieldErrors };
     case "next":
-      return { ...state, step: adjacentStep(state.step, 1) };
+      return { ...state, step: adjacentStep(state, 1) };
     case "back":
-      return { ...state, step: adjacentStep(state.step, -1) };
+      return { ...state, step: adjacentStep(state, -1) };
     case "edit":
-      return { ...state, step: action.step, status: "editing" };
-    case "submitting":
-      return { ...state, status: "submitting", submitError: null };
-    case "submitError":
-      return {
-        ...state,
-        status: "editing",
-        submitError: action.error,
-      };
-    case "success":
-      return {
-        ...state,
-        status: "success",
-        diagnosisId: action.diagnosisId,
-        submitError: null,
-      };
+      return { ...state, step: action.step };
     case "reset":
-      return createInitialServiceWizardState(action.submissionId);
+      return createInitialServiceWizardState();
   }
 }
 
 export {
   createInitialServiceWizardState,
+  getServiceWizardSteps,
   serviceWizardReducer,
-  serviceWizardSteps,
   type ServiceWizardAction,
   type ServiceWizardState,
   type ServiceWizardStep,

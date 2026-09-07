@@ -265,38 +265,6 @@ export function LandingExperience() {
           </div>
         </div>
 
-        <div
-          className="hero-product hero-reveal scroll-visual"
-          aria-label="Prévia do diagnóstico Lucrivo"
-        >
-          <div className="product-bar">
-            <span>Seu diagnóstico</span>
-            <span className="product-status">Resultado personalizado</span>
-          </div>
-          <div className="product-focus">
-            <span>Leitura principal</span>
-            <strong>Sua margem precisa de atenção.</strong>
-            <p>
-              Sobra pouco depois de considerar os seus custos. Vale ajustar o
-              preço antes de continuar.
-            </p>
-          </div>
-          <div className="product-row">
-            <div>
-              <span>Preço</span>
-              <strong>Informado</strong>
-            </div>
-            <div>
-              <span>Custos</span>
-              <strong>Calculados</strong>
-            </div>
-            <div>
-              <span>Situação</span>
-              <strong>Atenção</strong>
-            </div>
-          </div>
-        </div>
-
         <a
           className="hero-scroll"
           href="#como-funciona"

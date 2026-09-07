@@ -1,113 +1,87 @@
 "use client";
 
 import { useEffect, useRef, type Dispatch } from "react";
-import { useRouter } from "next/navigation";
 
-import { validateServiceDiagnosisFields } from "../../schemas/service-diagnosis.schema";
-import type {
-  CreateServiceDiagnosisActionResult,
-  ServiceDiagnosisField,
-  ServiceDiagnosisFieldErrors,
-  ServiceDiagnosisInput,
-} from "../../types";
+import {
+  type ServiceFlowField,
+  type ServiceFlowFieldErrors,
+} from "../../domain/service-flow";
+import { validateServiceFlowFields } from "../../schemas/service-flow.schema";
 import { WizardShell } from "../shared/wizard-shell";
 import {
-  serviceWizardSteps,
+  getServiceWizardSteps,
   type ServiceWizardAction,
   type ServiceWizardState,
   type ServiceWizardStep,
 } from "./service-wizard-state";
-import { CurrentPriceStep } from "./steps/current-price-step";
 import { FeesStep } from "./steps/fees-step";
 import { FixedExpensesStep } from "./steps/fixed-expenses-step";
-import {
-  getMaterialCostQuestion,
-  MaterialCostStep,
-} from "./steps/material-cost-step";
+import { MaterialCostStep } from "./steps/material-cost-step";
 import { MonthlyGoalStep } from "./steps/monthly-goal-step";
-import { PricingMethodStep } from "./steps/pricing-method-step";
+import { PricingAndPriceStep } from "./steps/pricing-and-price-step";
 import { ReviewStep } from "./steps/review-step";
+import { ServiceDurationStep } from "./steps/service-duration-step";
 import { WorkRoutineStep } from "./steps/work-routine-step";
-
-type CreateServiceDiagnosisAction = (
-  input: ServiceDiagnosisInput,
-) => Promise<CreateServiceDiagnosisActionResult>;
 
 type ServiceDiagnosisWizardProps = {
   state: ServiceWizardState;
   dispatch: Dispatch<ServiceWizardAction>;
-  createDiagnosis: CreateServiceDiagnosisAction;
-  createSubmissionId: () => string;
   onBackToType: () => void;
 };
 
-const stepTitles: Record<Exclude<ServiceWizardStep, "materialCost">, string> = {
-  monthlyGoal: "Quanto você quer tirar por mês pra você?",
-  fixedExpenses: "Quanto são suas contas fixas do mês?",
-  workRoutine: "Qual é sua capacidade de atendimento?",
-  pricingMethod: "Como você vende seu tempo?",
-  currentPrice: "Quanto você cobra?",
-  fees: "Você paga imposto e taxa de cartão?",
+const stepTitles: Record<ServiceWizardStep, string> = {
+  monthlyGoal: "Quanto você quer ganhar por mês?",
+  fixedExpenses: "Quais são seus custos fixos mensais?",
+  pricingMethod: "Como você cobra pelo seu trabalho hoje?",
+  workRoutine: "Quanto você trabalha?",
+  serviceDuration:
+    "Quanto tempo você leva para realizar um atendimento/serviço?",
+  materialCost: "Você possui algum custo para realizar o serviço?",
+  fees: "Impostos e taxas",
   review: "Revise suas respostas",
 };
-
-function getStepTitle(
-  step: ServiceWizardStep,
-  values: ServiceDiagnosisInput,
-): string {
-  return step === "materialCost"
-    ? getMaterialCostQuestion(values)
-    : stepTitles[step];
-}
 
 const stepFields = {
   monthlyGoal: ["desiredMonthlyIncome"],
   fixedExpenses: ["fixedMonthlyExpenses"],
-  workRoutine: ["workHoursPeriod", "workHours", "weeklyWorkDays"],
-  pricingMethod: ["pricingMethod"],
-  currentPrice: [
-    "hourlyRate",
-    "minuteRate",
-    "appointmentRate",
-    "appointmentDurationMinutes",
-  ],
-  materialCost: ["hasMaterialCost", "materialUnitCost"],
-  fees: ["taxRate", "cardFeeRate"],
+  pricingMethod: ["pricingMethod", "currentPrice"],
+  workRoutine: ["dailyWorkHours", "weeklyWorkDays"],
+  serviceDuration: ["appointmentDurationMinutes"],
+  materialCost: ["hasMaterialCost", "materialCost", "materialCostUnit"],
+  fees: ["paysRevenueTax", "taxRate", "hasPaymentFee", "paymentFeeRate"],
 } as const satisfies Record<
   Exclude<ServiceWizardStep, "review">,
-  readonly ServiceDiagnosisField[]
+  readonly ServiceFlowField[]
 >;
 
-const fieldStep: Record<ServiceDiagnosisField, ServiceWizardStep> = {
-  submissionId: "pricingMethod",
-  pricingMethod: "pricingMethod",
+const fieldStep: Record<ServiceFlowField, ServiceWizardStep> = {
   desiredMonthlyIncome: "monthlyGoal",
   fixedMonthlyExpenses: "fixedExpenses",
-  workHoursPeriod: "workRoutine",
-  workHours: "workRoutine",
+  pricingMethod: "pricingMethod",
+  currentPrice: "pricingMethod",
+  dailyWorkHours: "workRoutine",
   weeklyWorkDays: "workRoutine",
-  hourlyRate: "currentPrice",
-  minuteRate: "currentPrice",
-  appointmentRate: "currentPrice",
-  appointmentDurationMinutes: "currentPrice",
+  appointmentDurationMinutes: "serviceDuration",
   hasMaterialCost: "materialCost",
-  materialUnitCost: "materialCost",
+  materialCost: "materialCost",
+  materialCostUnit: "materialCost",
+  paysRevenueTax: "fees",
   taxRate: "fees",
-  cardFeeRate: "fees",
+  hasPaymentFee: "fees",
+  paymentFeeRate: "fees",
 };
 
-const fieldOrder = Object.keys(fieldStep) as ServiceDiagnosisField[];
+const fieldOrder = Object.keys(fieldStep) as ServiceFlowField[];
 
 function firstInvalidField(
-  fieldErrors: ServiceDiagnosisFieldErrors,
-): ServiceDiagnosisField | undefined {
+  fieldErrors: ServiceFlowFieldErrors,
+  steps: readonly ServiceWizardStep[],
+): ServiceFlowField | undefined {
   return fieldOrder
     .filter((field) => fieldErrors[field]?.length)
     .sort((left, right) => {
       const stepDifference =
-        serviceWizardSteps.indexOf(fieldStep[left]) -
-        serviceWizardSteps.indexOf(fieldStep[right]);
-
+        steps.indexOf(fieldStep[left]) - steps.indexOf(fieldStep[right]);
       return (
         stepDifference || fieldOrder.indexOf(left) - fieldOrder.indexOf(right)
       );
@@ -117,15 +91,11 @@ function firstInvalidField(
 function ServiceDiagnosisWizard({
   state,
   dispatch,
-  createDiagnosis,
-  createSubmissionId,
   onBackToType,
 }: ServiceDiagnosisWizardProps) {
-  const router = useRouter();
-  const submittingRef = useRef(false);
-  const invalidFieldToFocusRef = useRef<ServiceDiagnosisField | null>(null);
-  const stepIndex = serviceWizardSteps.indexOf(state.step);
-  const globalStepNumber = stepIndex + 2;
+  const invalidFieldToFocusRef = useRef<ServiceFlowField | null>(null);
+  const steps = getServiceWizardSteps(state.values.pricingMethod);
+  const stepIndex = steps.indexOf(state.step);
 
   useEffect(() => {
     const field = invalidFieldToFocusRef.current;
@@ -133,9 +103,16 @@ function ServiceDiagnosisWizard({
 
     const target =
       field === "pricingMethod"
-        ? document.querySelector<HTMLElement>("[role='radio']")
-        : document.getElementById(field);
-
+        ? document.querySelector<HTMLElement>(
+            "[aria-label='Forma de cobrança'] [role='radio']",
+          )
+        : field === "hasMaterialCost" ||
+            field === "paysRevenueTax" ||
+            field === "hasPaymentFee"
+          ? document.querySelector<HTMLElement>(
+              `[data-field='${field}'] [role='radio']`,
+            )
+          : document.getElementById(field);
     target?.focus({ preventScroll: true });
     invalidFieldToFocusRef.current = null;
   }, [state.fieldErrors, state.step]);
@@ -143,37 +120,29 @@ function ServiceDiagnosisWizard({
   const stepProps = {
     values: state.values,
     errors: state.fieldErrors,
-    onChange: (field: ServiceDiagnosisField, value: string) =>
+    onChange: (field: ServiceFlowField, value: string) =>
       dispatch({ type: "setField", field, value }),
   };
 
   function renderStep() {
     switch (state.step) {
+      case "monthlyGoal":
+        return <MonthlyGoalStep {...stepProps} />;
+      case "fixedExpenses":
+        return <FixedExpensesStep {...stepProps} />;
       case "pricingMethod":
         return (
-          <PricingMethodStep
-            values={state.values}
-            errors={state.fieldErrors}
+          <PricingAndPriceStep
+            {...stepProps}
             onPricingMethodChange={(value) =>
               dispatch({ type: "setPricingMethod", value })
             }
           />
         );
-      case "monthlyGoal":
-        return <MonthlyGoalStep {...stepProps} />;
-      case "fixedExpenses":
-        return <FixedExpensesStep {...stepProps} />;
       case "workRoutine":
-        return (
-          <WorkRoutineStep
-            {...stepProps}
-            onWorkHoursPeriodChange={(value) =>
-              dispatch({ type: "setWorkHoursPeriod", value })
-            }
-          />
-        );
-      case "currentPrice":
-        return <CurrentPriceStep {...stepProps} />;
+        return <WorkRoutineStep {...stepProps} />;
+      case "serviceDuration":
+        return <ServiceDurationStep {...stepProps} />;
       case "materialCost":
         return (
           <MaterialCostStep
@@ -181,20 +150,29 @@ function ServiceDiagnosisWizard({
             onHasMaterialCostChange={(value) =>
               dispatch({ type: "setHasMaterialCost", value })
             }
+            onMaterialCostUnitChange={(value) =>
+              dispatch({ type: "setMaterialCostUnit", value })
+            }
           />
         );
       case "fees":
-        return <FeesStep {...stepProps} />;
+        return (
+          <FeesStep
+            {...stepProps}
+            onPaysRevenueTaxChange={(value) =>
+              dispatch({ type: "setPaysRevenueTax", value })
+            }
+            onHasPaymentFeeChange={(value) =>
+              dispatch({ type: "setHasPaymentFee", value })
+            }
+          />
+        );
       case "review":
         return (
           <ReviewStep
             values={state.values}
-            errors={state.fieldErrors}
-            pending={state.status === "submitting"}
-            submitError={state.submitError}
             onEdit={(step) => dispatch({ type: "edit", step })}
             onBackToType={onBackToType}
-            onSubmit={submitDiagnosis}
           />
         );
     }
@@ -203,7 +181,7 @@ function ServiceDiagnosisWizard({
   function continueToNextStep() {
     if (state.step === "review") return;
 
-    const fieldErrors = validateServiceDiagnosisFields(
+    const fieldErrors = validateServiceFlowFields(
       stepFields[state.step],
       state.values,
     );
@@ -211,7 +189,11 @@ function ServiceDiagnosisWizard({
 
     if (Object.keys(fieldErrors).length === 0) {
       dispatch({ type: "next" });
+      return;
     }
+
+    invalidFieldToFocusRef.current =
+      firstInvalidField(fieldErrors, steps) ?? null;
   }
 
   function goBack() {
@@ -219,61 +201,14 @@ function ServiceDiagnosisWizard({
       onBackToType();
       return;
     }
-
     dispatch({ type: "back" });
-  }
-
-  async function submitDiagnosis() {
-    if (submittingRef.current || state.status === "submitting") return;
-
-    submittingRef.current = true;
-    dispatch({ type: "submitting" });
-    let keepSubmissionLocked = false;
-
-    try {
-      const result = await createDiagnosis(state.values);
-
-      if (result.status === "success") {
-        router.replace(`/reports/${result.diagnosisId}`);
-        keepSubmissionLocked = true;
-        return;
-      }
-
-      if (result.error === "invalid_input") {
-        const fieldErrors = { ...result.fieldErrors };
-
-        if (fieldErrors.submissionId?.length) {
-          dispatch({
-            type: "setField",
-            field: "submissionId",
-            value: createSubmissionId(),
-          });
-          delete fieldErrors.submissionId;
-        }
-
-        const invalidField = firstInvalidField(fieldErrors);
-        invalidFieldToFocusRef.current = invalidField ?? null;
-        dispatch({ type: "setFieldErrors", fieldErrors });
-        dispatch({
-          type: "edit",
-          step: invalidField ? fieldStep[invalidField] : "pricingMethod",
-        });
-        return;
-      }
-
-      dispatch({ type: "submitError", error: result.error });
-    } catch {
-      dispatch({ type: "submitError", error: "create_failed" });
-    } finally {
-      if (!keepSubmissionLocked) submittingRef.current = false;
-    }
   }
 
   return (
     <WizardShell
-      stepNumber={globalStepNumber}
-      totalSteps={9}
-      title={getStepTitle(state.step, state.values)}
+      stepNumber={stepIndex + 2}
+      totalSteps={steps.length + 1}
+      title={stepTitles[state.step]}
       onBack={goBack}
       onContinue={state.step === "review" ? undefined : continueToNextStep}
     >
@@ -282,8 +217,4 @@ function ServiceDiagnosisWizard({
   );
 }
 
-export {
-  ServiceDiagnosisWizard,
-  type CreateServiceDiagnosisAction,
-  type ServiceDiagnosisWizardProps,
-};
+export { ServiceDiagnosisWizard, type ServiceDiagnosisWizardProps };
