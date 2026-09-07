@@ -5,6 +5,10 @@ import {
   InputGroupText,
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
+import {
+  PlainLanguageHelp,
+  type PlainLanguageHelpContent,
+} from "@/components/shared/plain-language-help";
 
 type StepFieldProps<Field extends string> = {
   field: Field;
@@ -15,6 +19,7 @@ type StepFieldProps<Field extends string> = {
   prefix?: string;
   suffix?: string;
   description?: string;
+  help?: PlainLanguageHelpContent;
   inputMode?: "decimal" | "numeric";
   labelClassName?: string;
 };
@@ -28,6 +33,7 @@ function StepField<Field extends string>({
   prefix,
   suffix,
   description,
+  help,
   inputMode = "decimal",
   labelClassName,
 }: StepFieldProps<Field>) {
@@ -73,6 +79,7 @@ function StepField<Field extends string>({
           {description}
         </p>
       ) : null}
+      {help ? <PlainLanguageHelp {...help} /> : null}
       {error ? (
         <p id={errorId} role="alert" className="text-destructive text-sm">
           {error}
