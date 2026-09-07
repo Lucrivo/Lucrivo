@@ -43,7 +43,10 @@ const serviceFlowSchema = z
       }
     }
 
-    function positivePercentage(field: "taxRate" | "paymentFeeRate") {
+    function positivePercentage(
+      field: "taxRate" | "paymentFeeRate",
+      message: string,
+    ) {
       try {
         const value = scaledInteger(input[field], 2);
         if (value <= 0 || value > 10_000) throw new Error();
@@ -51,18 +54,18 @@ const serviceFlowSchema = z
         context.addIssue({
           code: "custom",
           path: [field],
-          message: "Informe um percentual maior que zero e de até 100%.",
+          message,
         });
       }
     }
 
     positiveMoney(
       "desiredMonthlyIncome",
-      "Informe quanto você quer ganhar por mês.",
+      "Informe quanto você quer receber por mês.",
     );
     nonNegativeMoney(
       "fixedMonthlyExpenses",
-      "Informe um valor válido para os custos fixos.",
+      "Informe os gastos que existem todo mês.",
     );
 
     if (!isServiceFlowPricingMethod(input.pricingMethod)) {
@@ -83,7 +86,7 @@ const serviceFlowSchema = z
       context.addIssue({
         code: "custom",
         path: ["dailyWorkHours"],
-        message: "Informe uma jornada diária maior que zero e de até 24 horas.",
+        message: "Informe quantas horas você trabalha por dia.",
       });
     }
 
@@ -107,7 +110,7 @@ const serviceFlowSchema = z
         context.addIssue({
           code: "custom",
           path: ["appointmentDurationMinutes"],
-          message: "Informe a duração média do atendimento em minutos.",
+          message: "Informe quanto tempo dura, em média, um serviço.",
         });
       }
     }
@@ -116,18 +119,19 @@ const serviceFlowSchema = z
       context.addIssue({
         code: "custom",
         path: ["hasMaterialCost"],
-        message: "Informe se existe custo de material ou insumo.",
+        message:
+          "Informe se você gasta com materiais ou produtos para fazer este serviço.",
       });
     } else if (input.hasMaterialCost) {
       positiveMoney(
         "materialCost",
-        "Informe o custo médio do material ou insumo.",
+        "Informe quanto você gasta, em média, com esses materiais.",
       );
       if (!isServiceMaterialCostUnit(input.materialCostUnit)) {
         context.addIssue({
           code: "custom",
           path: ["materialCostUnit"],
-          message: "Selecione a unidade desse custo.",
+          message: "Escolha quando esse gasto com materiais acontece.",
         });
       }
     }
@@ -136,10 +140,13 @@ const serviceFlowSchema = z
       context.addIssue({
         code: "custom",
         path: ["paysRevenueTax"],
-        message: "Informe se você paga imposto sobre o faturamento.",
+        message: "Informe se você paga impostos sobre o valor recebido.",
       });
     } else if (input.paysRevenueTax) {
-      positivePercentage("taxRate");
+      positivePercentage(
+        "taxRate",
+        "Informe a porcentagem do valor recebido que vai para impostos.",
+      );
     }
 
     if (input.hasPaymentFee === null) {
@@ -149,7 +156,10 @@ const serviceFlowSchema = z
         message: "Informe se cartão ou plataforma cobra uma taxa.",
       });
     } else if (input.hasPaymentFee) {
-      positivePercentage("paymentFeeRate");
+      positivePercentage(
+        "paymentFeeRate",
+        "Informe a porcentagem que fica com o cartão ou a plataforma.",
+      );
     }
   });
 

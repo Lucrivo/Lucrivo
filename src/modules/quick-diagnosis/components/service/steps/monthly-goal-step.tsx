@@ -6,10 +6,17 @@ function MonthlyGoalStep(props: ServiceStepProps) {
     <StepField
       {...props}
       field="desiredMonthlyIncome"
-      label="Ganho mensal desejado"
+      label="Quanto você quer receber por mês?"
       value={props.values.desiredMonthlyIncome}
       prefix="R$"
-      description="Ex.: R$ 5.000. Informe quanto você quer que sobre para você por mês."
+      description="Ex.: R$ 5.000. Informe o valor que o negócio precisa pagar pelo seu trabalho."
+      help={{
+        triggerLabel: "Por que informar?",
+        title: "O valor que você recebe",
+        description:
+          "Inclua quanto o negócio precisa pagar pelo seu trabalho em um mês comum.",
+        technicalTerm: "pró-labore",
+      }}
     />
   );
 }

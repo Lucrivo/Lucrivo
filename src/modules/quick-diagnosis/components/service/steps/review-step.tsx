@@ -106,20 +106,20 @@ function ReviewStep({ values, onEdit, onBackToType }: ReviewStepProps) {
         </ReviewGroup>
 
         <ReviewGroup
-          title="Objetivo mensal"
-          editName="Editar ganho mensal"
+          title="Quanto você quer receber"
+          editName="Editar quanto você quer receber"
           onEdit={() => onEdit("monthlyGoal")}
         >
           <ReviewItem
-            label="Quanto você quer ganhar"
+            label="Quanto você quer receber por mês"
             value={money(values.desiredMonthlyIncome)}
           />
           <ReviewItem
-            label="Custos fixos"
+            label="Gastos que existem todo mês"
             value={money(values.fixedMonthlyExpenses)}
           />
           <ReviewItem
-            label="A atividade precisa gerar"
+            label="Quanto o negócio precisa gerar por mês"
             value={currency.format(preview.monthlyRevenueTargetCents / 100)}
           />
         </ReviewGroup>
@@ -136,7 +136,7 @@ function ReviewStep({ values, onEdit, onBackToType }: ReviewStepProps) {
           <ReviewItem label="Preço atual" value={money(values.currentPrice)} />
           {pricingMethod === "appointment" ? (
             <ReviewItem
-              label="Duração média"
+              label="Quanto tempo dura, em média, um serviço?"
               value={`${values.appointmentDurationMinutes} minutos`}
             />
           ) : null}
@@ -156,18 +156,18 @@ function ReviewStep({ values, onEdit, onBackToType }: ReviewStepProps) {
             value={`${values.weeklyWorkDays} dias`}
           />
           <ReviewItem
-            label="Capacidade mensal estimada"
+            label="Quanto você consegue trabalhar por mês"
             value={`${decimal.format(preview.monthlyWorkMinutes / 60)} horas`}
           />
         </ReviewGroup>
 
         <ReviewGroup
-          title="Material ou insumo"
-          editName="Editar custo de material"
+          title="Materiais usados no serviço"
+          editName="Editar gastos com materiais"
           onEdit={() => onEdit("materialCost")}
         >
           <ReviewItem
-            label="Custo"
+            label="Quanto você gasta com materiais"
             value={
               values.hasMaterialCost
                 ? `${money(values.materialCost)} por ${materialUnitLabels[materialUnit]}`
@@ -177,12 +177,12 @@ function ReviewStep({ values, onEdit, onBackToType }: ReviewStepProps) {
         </ReviewGroup>
 
         <ReviewGroup
-          title="Impostos e taxas"
-          editName="Editar impostos e taxas"
+          title="Descontos do valor recebido"
+          editName="Editar descontos do valor recebido"
           onEdit={() => onEdit("fees")}
         >
           <ReviewItem
-            label="Imposto sobre faturamento"
+            label="Porcentagem do valor recebido para impostos"
             value={values.paysRevenueTax ? `${values.taxRate}%` : "Não paga"}
           />
           <ReviewItem
@@ -197,14 +197,14 @@ function ReviewStep({ values, onEdit, onBackToType }: ReviewStepProps) {
       {preview.requiredHourlyRateCents !== null &&
       preview.currentEquivalentHourlyRateCents !== null ? (
         <div className="border-primary/20 bg-primary/5 grid gap-3 rounded-xl border p-4">
-          <h3 className="font-semibold">Base econômica comum</h3>
+          <h3 className="font-semibold">Compare usando uma hora</h3>
           <dl className="grid gap-3 sm:grid-cols-2">
             <ReviewItem
-              label="Valor necessário por hora"
+              label="Quanto cada hora precisa gerar"
               value={currency.format(preview.requiredHourlyRateCents / 100)}
             />
             <ReviewItem
-              label="Preço atual equivalente por hora"
+              label="Quanto seu preço gera por hora"
               value={currency.format(
                 preview.currentEquivalentHourlyRateCents / 100,
               )}

@@ -38,7 +38,7 @@ function MaterialCostStep({
   return (
     <div className="grid gap-5">
       <YesNoChoice
-        question="Você possui algum custo para realizar o serviço?"
+        question="Você gasta com materiais ou produtos para fazer este serviço?"
         field="hasMaterialCost"
         value={values.hasMaterialCost}
         error={errors.hasMaterialCost?.[0]}
@@ -49,7 +49,7 @@ function MaterialCostStep({
         <div className="grid gap-5 sm:grid-cols-2">
           <StepField
             field="materialCost"
-            label="Quanto custa, em média, o material ou insumo utilizado?"
+            label="Quanto você gasta, em média, com esses materiais?"
             value={values.materialCost}
             errors={errors}
             onChange={onChange}
@@ -61,7 +61,7 @@ function MaterialCostStep({
               htmlFor="materialCostUnit"
               className="sm:min-h-8 sm:items-end"
             >
-              Esse custo acontece
+              Quando esse gasto acontece?
             </Label>
             <Select
               value={values.materialCostUnit}
@@ -79,7 +79,7 @@ function MaterialCostStep({
                   unitError ? "materialCostUnit-error" : undefined
                 }
               >
-                <SelectValue placeholder="Selecione a unidade">
+                <SelectValue placeholder="Escolha uma opção">
                   {selectedUnit ? unitLabels[selectedUnit] : null}
                 </SelectValue>
               </SelectTrigger>
