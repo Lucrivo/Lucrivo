@@ -28,12 +28,13 @@ describe("service flow validation", () => {
   });
 
   it("requires duration only for appointments", () => {
-    expect(
-      validateServiceFlowFields(["appointmentDurationMinutes"], {
-        ...validInput,
-        appointmentDurationMinutes: "",
-      }),
-    ).toHaveProperty("appointmentDurationMinutes");
+    const errors = validateServiceFlowFields(["appointmentDurationMinutes"], {
+      ...validInput,
+      appointmentDurationMinutes: "",
+    });
+    expect(errors.appointmentDurationMinutes).toEqual([
+      "Informe quanto tempo dura, em média, um serviço.",
+    ]);
 
     expect(
       validateServiceFlowFields(["appointmentDurationMinutes"], {
@@ -51,7 +52,9 @@ describe("service flow validation", () => {
     );
 
     expect(errors).toHaveProperty("materialCost");
-    expect(errors).toHaveProperty("materialCostUnit");
+    expect(errors.materialCostUnit).toEqual([
+      "Escolha quando esse gasto com materiais acontece.",
+    ]);
     expect(
       validateServiceFlowFields(["materialCost", "materialCostUnit"], {
         ...validInput,
@@ -71,5 +74,23 @@ describe("service flow validation", () => {
 
     expect(errors).toHaveProperty("taxRate");
     expect(errors).toHaveProperty("paymentFeeRate");
+    expect(errors.taxRate).toEqual([
+      "Informe a porcentagem do valor recebido que vai para impostos.",
+    ]);
+    expect(errors.paymentFeeRate).toEqual([
+      "Informe a porcentagem que fica com o cartão ou a plataforma.",
+    ]);
+  });
+
+  it("uses the visible wording for monthly values", () => {
+    expect(
+      validateServiceFlowFields(
+        ["desiredMonthlyIncome", "fixedMonthlyExpenses"],
+        { ...validInput, desiredMonthlyIncome: "", fixedMonthlyExpenses: "-1" },
+      ),
+    ).toEqual({
+      desiredMonthlyIncome: ["Informe quanto você quer receber por mês."],
+      fixedMonthlyExpenses: ["Informe os gastos que existem todo mês."],
+    });
   });
 });

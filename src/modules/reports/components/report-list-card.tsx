@@ -18,6 +18,7 @@ import {
   formatCurrency,
   formatReportDate,
 } from "../formatters";
+import { getReportLanguageProfile } from "../presenters/report-language";
 import type { OwnedReportSummary } from "../services/list-reports.service";
 import type { ReportScenario, ReportVerdict } from "../types";
 
@@ -38,43 +39,35 @@ const scenarioLabels = {
 const verdictPresentation: Record<
   ReportVerdict,
   {
-    label: string;
     badge: "info" | "success" | "warning" | "destructive";
     icon: typeof CircleGaugeIcon;
   }
 > = {
   missing_price: {
-    label: "Informe o preço",
     badge: "info",
     icon: CircleGaugeIcon,
   },
   direct_loss: {
-    label: "Prejuízo direto",
     badge: "destructive",
     icon: CircleAlertIcon,
   },
   incomplete_volume: {
-    label: "Complete o diagnóstico",
     badge: "info",
     icon: CircleGaugeIcon,
   },
   operational_loss: {
-    label: "Preço não cobre a operação",
     badge: "destructive",
     icon: CircleAlertIcon,
   },
   tight_margin: {
-    label: "Margem apertada",
     badge: "warning",
     icon: CircleAlertIcon,
   },
   adequate_margin: {
-    label: "Margem adequada",
     badge: "success",
     icon: CircleCheckIcon,
   },
   above_target: {
-    label: "Acima da meta",
     badge: "success",
     icon: CircleCheckIcon,
   },
@@ -89,6 +82,10 @@ function optionalMargin(value: number | null): string {
 }
 
 function ReportListCard({ report }: { report: OwnedReportSummary }) {
+  const language = getReportLanguageProfile({
+    category: report.businessCategory,
+    contentVersion: report.contentVersion,
+  });
   const category = categoryLabels[report.businessCategory];
   const scenario =
     scenarioLabels[report.scenario as ReportScenario] ?? report.scenario;
@@ -96,6 +93,23 @@ function ReportListCard({ report }: { report: OwnedReportSummary }) {
     verdictPresentation[report.verdict as ReportVerdict] ??
     verdictPresentation.missing_price;
   const VerdictIcon = verdict.icon;
+  const verdictLabel =
+    language.verdictLabels[report.verdict as ReportVerdict] ??
+    language.verdictLabels.missing_price;
+  const marginLabel = language.isPlainLanguage
+    ? "Quanto sobra a cada R$ 100"
+    : "Margem real";
+  const profitLabel = language.isPlainLanguage
+    ? report.businessCategory === "product" ||
+      report.businessCategory === "production"
+      ? "Quanto sobra por unidade"
+      : report.unit === "hour"
+        ? "Quanto sobra por hora"
+        : "Quanto sobra por atendimento"
+    : report.businessCategory === "product" ||
+        report.businessCategory === "production"
+      ? "Lucro por unidade"
+      : "Lucro por venda";
 
   return (
     <Card
@@ -120,7 +134,7 @@ function ReportListCard({ report }: { report: OwnedReportSummary }) {
           </div>
           <Badge variant={verdict.badge}>
             <VerdictIcon aria-hidden="true" />
-            {verdict.label}
+            {verdictLabel}
           </Badge>
         </div>
         <p className="text-muted-foreground flex items-center gap-2 text-xs">
@@ -138,18 +152,13 @@ function ReportListCard({ report }: { report: OwnedReportSummary }) {
             </dd>
           </div>
           <div className="grid gap-1 border-r p-3.5">
-            <dt className="text-muted-foreground text-xs">Margem real</dt>
+            <dt className="text-muted-foreground text-xs">{marginLabel}</dt>
             <dd className="font-semibold tabular-nums">
               {optionalMargin(report.realMarginBasisPoints)}
             </dd>
           </div>
           <div className="grid gap-1 p-3.5">
-            <dt className="text-muted-foreground text-xs">
-              {report.businessCategory === "product" ||
-              report.businessCategory === "production"
-                ? "Lucro por unidade"
-                : "Lucro por venda"}
-            </dt>
+            <dt className="text-muted-foreground text-xs">{profitLabel}</dt>
             <dd className="font-semibold tabular-nums">
               {optionalCurrency(report.unitProfitCents)}
             </dd>
@@ -159,7 +168,7 @@ function ReportListCard({ report }: { report: OwnedReportSummary }) {
         <div className="flex items-center justify-between gap-3">
           <span className="text-muted-foreground flex items-center gap-2 text-xs">
             <CircleDollarSignIcon aria-hidden="true" className="size-4" />
-            Relatório financeiro salvo
+            {language.savedReportLabel}
           </span>
           <Link
             href={`/reports/${report.id}`}

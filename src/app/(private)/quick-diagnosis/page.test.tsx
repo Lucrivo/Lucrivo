@@ -32,6 +32,7 @@ describe("QuickDiagnosisPage", () => {
     expect(
       screen.getByRole("heading", { name: "Diagnóstico rápido", level: 1 }),
     ).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.getByText("Wizard do diagnóstico")).toBeInTheDocument();
     expect(QuickDiagnosisWizard).toHaveBeenCalledWith(
       {

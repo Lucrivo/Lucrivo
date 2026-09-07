@@ -23,7 +23,7 @@ function build(command: ProductDiagnosisCommand) {
 }
 
 describe("buildProductReportSnapshot", () => {
-  it("assembles the canonical complete Product V1 snapshot", () => {
+  it("assembles the canonical complete Product content V2 snapshot", () => {
     const calculation = calculateProductReport(completeCommand);
     const snapshot = buildProductReportSnapshot(completeCommand, calculation);
 
@@ -31,7 +31,7 @@ describe("buildProductReportSnapshot", () => {
       expect.objectContaining({
         schemaVersion: 1,
         calculationVersion: 1,
-        contentVersion: 1,
+        contentVersion: 2,
         category: "product",
         scenario: "resale",
         currency: "BRL",
@@ -86,7 +86,7 @@ describe("buildProductReportSnapshot", () => {
     expect(parseProductReportSnapshot(snapshot)).toEqual(snapshot);
   });
 
-  it("assembles the canonical partial Product V1 snapshot", () => {
+  it("assembles the canonical partial Product content V2 snapshot", () => {
     const command = { ...completeCommand, monthlySalesVolume: null };
     const snapshot = build(command);
 

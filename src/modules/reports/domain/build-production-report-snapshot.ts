@@ -6,8 +6,8 @@ import {
   formatIntegerVolume,
 } from "../formatters";
 import {
-  parseProductionReportSnapshot,
-  type ProductionReportSnapshotV1,
+  parseCurrentProductionReportSnapshot,
+  type CurrentProductionReportSnapshot,
 } from "../schemas/production-report-snapshot.schema";
 import {
   PRODUCTION_CALCULATION_VERSION,
@@ -224,7 +224,7 @@ function buildProductionDiscountSection(
 function buildProductionReportSnapshot(
   command: ProductionDiagnosisCommand,
   calculation: ProductionReportCalculation,
-): ProductionReportSnapshotV1 {
+): CurrentProductionReportSnapshot {
   const snapshot = {
     schemaVersion: PRODUCTION_REPORT_SCHEMA_VERSION,
     calculationVersion: PRODUCTION_CALCULATION_VERSION,
@@ -294,7 +294,7 @@ function buildProductionReportSnapshot(
     },
   };
 
-  return parseProductionReportSnapshot(snapshot);
+  return parseCurrentProductionReportSnapshot(snapshot);
 }
 
 export { buildProductionReportSnapshot };

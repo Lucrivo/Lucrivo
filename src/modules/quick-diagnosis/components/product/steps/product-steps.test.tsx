@@ -57,7 +57,7 @@ describe("Product diagnosis steps", () => {
       />,
     );
 
-    const purchaseCost = screen.getByLabelText("Custo de compra por unidade");
+    const purchaseCost = screen.getByLabelText("Quanto você paga por unidade?");
     expect(purchaseCost).toHaveAttribute("aria-invalid", "true");
     expect(purchaseCost).toHaveAttribute(
       "aria-describedby",
@@ -67,7 +67,7 @@ describe("Product diagnosis steps", () => {
       "Informe um custo válido.",
     );
     expect(
-      screen.getByLabelText("Preço de venda por unidade"),
+      screen.getByLabelText("Por quanto você vende cada unidade?"),
     ).toBeInTheDocument();
     expect(screen.queryByText(/hora faturável/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/atendimento/i)).not.toBeInTheDocument();
@@ -82,7 +82,7 @@ describe("Product diagnosis steps", () => {
       />,
     );
 
-    expect(screen.getByLabelText("Custo de compra por unidade")).toHaveValue(
+    expect(screen.getByLabelText("Quanto você paga por unidade?")).toHaveValue(
       "",
     );
     expect(
@@ -92,7 +92,8 @@ describe("Product diagnosis steps", () => {
     ).toBeVisible();
   });
 
-  it("accepts zero fixed expenses and marks monthly volume as optional", () => {
+  it("accepts zero monthly expenses and explains what to include", async () => {
+    const user = userEvent.setup();
     const { rerender } = render(
       <ProductFixedExpensesStep
         values={values}
@@ -101,15 +102,25 @@ describe("Product diagnosis steps", () => {
       />,
     );
 
-    expect(screen.getByLabelText("Despesas fixas mensais")).toHaveValue("0");
+    expect(screen.getByLabelText("Gastos que existem todo mês")).toHaveValue(
+      "0",
+    );
+    const help = screen.getByRole("button", { name: "O que incluir?" });
+    help.focus();
+    await user.keyboard("{Enter}");
+    expect(
+      screen.getByText(
+        "Some aluguel, energia, internet, sistemas e outros gastos que continuam mesmo quando você vende pouco.",
+      ),
+    ).toBeInTheDocument();
 
     rerender(
       <MonthlyVolumeStep values={values} errors={{}} onChange={onChange} />,
     );
     expect(screen.getByText(/opcional/i)).toBeVisible();
-    expect(screen.getByLabelText("Volume médio mensal de vendas")).toHaveValue(
-      "",
-    );
+    expect(
+      screen.getByLabelText("Quantas unidades você vende em um mês comum?"),
+    ).toHaveValue("");
   });
 
   it("toggles compensation by keyboard and removes stale browser text", async () => {
@@ -138,35 +149,46 @@ describe("Product diagnosis steps", () => {
 
     render(<CompensationHarness />);
     const compensation = screen.getByRole("switch", {
-      name: "Incluir pró-labore",
+      name: "Você quer incluir o valor que recebe pelo seu trabalho?",
     });
 
     expect(compensation).not.toBeChecked();
     expect(
-      screen.queryByLabelText("Pró-labore mensal"),
+      screen.queryByLabelText("Quanto você quer receber por mês?"),
     ).not.toBeInTheDocument();
 
     compensation.focus();
     await user.keyboard(" ");
     expect(compensation).toBeChecked();
-    await user.type(screen.getByLabelText("Pró-labore mensal"), "2000");
+    await user.type(
+      screen.getByLabelText("Quanto você quer receber por mês?"),
+      "2000",
+    );
 
     compensation.focus();
     await user.keyboard(" ");
     expect(compensation).not.toBeChecked();
     expect(
-      screen.queryByLabelText("Pró-labore mensal"),
+      screen.queryByLabelText("Quanto você quer receber por mês?"),
     ).not.toBeInTheDocument();
 
     compensation.focus();
     await user.keyboard(" ");
-    expect(screen.getByLabelText("Pró-labore mensal")).toHaveValue("");
+    expect(
+      screen.getByLabelText("Quanto você quer receber por mês?"),
+    ).toHaveValue("");
   });
 
   it("exposes Product tax and card fee fields", () => {
     render(<ProductFeesStep values={values} errors={{}} onChange={onChange} />);
 
-    expect(screen.getByLabelText("Impostos")).toHaveValue("6");
-    expect(screen.getByLabelText("Taxa do cartão")).toHaveValue("2");
+    expect(
+      screen.getByLabelText("Qual porcentagem da venda vai para impostos?"),
+    ).toHaveValue("6");
+    expect(
+      screen.getByLabelText(
+        "Qual porcentagem fica com o cartão ou a plataforma?",
+      ),
+    ).toHaveValue("2");
   });
 });

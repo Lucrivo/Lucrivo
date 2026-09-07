@@ -6,9 +6,16 @@ function ProductionFixedExpensesStep(props: ProductionStepProps) {
     <StepField
       {...props}
       field="fixedMonthlyExpenses"
-      label="Despesas fixas mensais"
+      label="Gastos que existem todo mês"
       value={props.values.fixedMonthlyExpenses}
       prefix="R$"
+      help={{
+        triggerLabel: "O que incluir?",
+        title: "Gastos que existem todo mês",
+        description:
+          "Some aluguel, energia, internet, sistemas e outros gastos que continuam mesmo quando você vende pouco.",
+        technicalTerm: "custos fixos",
+      }}
     />
   );
 }

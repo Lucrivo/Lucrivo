@@ -28,18 +28,18 @@ const baseCalculation = calculateServiceReport(baseCommand);
 describe("buildServiceExecutiveSummary", () => {
   it("builds the approved above-target appointment summary", () => {
     expect(buildServiceExecutiveSummary(baseCalculation)).toEqual({
-      headline: "A verdade por trás do preço.",
+      headline: "Seu serviço dá lucro?",
       introduction:
-        "O Lucrivo revela o que está escondido nos seus números e mostra exatamente o que fazer a respeito.",
+        "Veja quanto sobra do valor cobrado e o que merece sua atenção primeiro.",
       verdict: {
         label: "Acima da meta",
-        body: "O preço cobre os custos e supera a meta financeira de 15%. Há folga na margem; confirme se o mercado aceita esse preço e acompanhe o volume.",
+        body: "O preço paga os gastos e passa da meta de 15%. Acompanhe se seus clientes aceitam o preço e mantenha a quantidade de trabalho.",
         tone: "positive",
       },
       facts: [
         {
           key: "margin",
-          currentLabel: "Margem atual",
+          currentLabel: "Quanto sobra a cada R$ 100",
           currentValue: "29,5%",
           referenceLabel: "Meta",
           referenceValue: "15%",
@@ -48,30 +48,32 @@ describe("buildServiceExecutiveSummary", () => {
           key: "price",
           currentLabel: "Preço atual",
           currentValue: "R$ 80,00",
-          referenceLabel: "Preço-alvo",
+          referenceLabel: "Preço para alcançar a meta",
           referenceValue: "R$ 64,94",
         },
       ],
       priority: {
-        label: "Volume",
-        body: "Seu preço sustenta a operação e a meta. Agora transforme o volume necessário em rotina comercial.",
+        label: "Quantidade de serviços",
+        body: "Seu preço alcança a meta. Agora mantenha a quantidade de trabalho usada no cálculo.",
       },
       answers: [
         {
           key: "profitability",
           question: "Estou ganhando dinheiro?",
           answer:
-            "Sim — cada atendimento deixa R$ 23,60 após os custos considerados.",
+            "Sim — sobram R$ 23,60 por atendimento depois de pagar os gastos considerados.",
         },
         {
           key: "price_sufficiency",
           question: "Estou cobrando o preço certo?",
-          answer: "Sim — alcança a referência financeira para a meta de 15%.",
+          answer:
+            "Sim — seu preço alcança o valor calculado para a meta de 15%.",
         },
         {
           key: "immediate_action",
           question: "O que preciso fazer agora?",
-          answer: "Trabalhe para alcançar a meta de vendas calculada.",
+          answer:
+            "Mantenha a quantidade de atendimentos usada no cálculo e acompanhe se seus clientes aceitam o preço.",
         },
       ],
     });
@@ -90,22 +92,22 @@ describe("buildServiceExecutiveSummary", () => {
       targetPriceCents: 7793,
     });
 
-    expect(summary.verdict.label).toBe("Prejuízo");
+    expect(summary.verdict.label).toBe("Preço abaixo dos gastos");
     expect(summary.verdict.body).toContain("cada hora");
     expect(summary.answers[0].answer).toBe(
-      "Não — hoje cada hora fecha no vermelho em R$ 13,20.",
+      "Não — faltam R$ 13,20 por hora para pagar os gastos considerados.",
     );
     expect(summary.answers[1].answer).toBe(
-      "Não — está abaixo do mínimo financeiro de R$ 65,22.",
+      "Não — para pagar todos os gastos, o preço precisa ser pelo menos R$ 65,22.",
     );
   });
 
   it.each([
     ["missing_price", "Informe o preço", "neutral"],
-    ["direct_loss", "Prejuízo direto", "critical"],
-    ["operational_loss", "Prejuízo", "critical"],
-    ["tight_margin", "Margem apertada", "warning"],
-    ["adequate_margin", "Margem adequada", "positive"],
+    ["direct_loss", "Venda com prejuízo", "critical"],
+    ["operational_loss", "Preço abaixo dos gastos", "critical"],
+    ["tight_margin", "Abaixo da meta", "warning"],
+    ["adequate_margin", "Meta alcançada", "positive"],
     ["above_target", "Acima da meta", "positive"],
   ] as const)(
     "maps %s to persisted verdict content",
@@ -117,10 +119,22 @@ describe("buildServiceExecutiveSummary", () => {
   );
 
   it.each([
-    ["cost", "Custo", "Revise os custos antes de acelerar as vendas."],
-    ["price", "Preço", "Ajuste o preço antes de buscar mais volume."],
-    ["margin", "Margem", "Aproxime a operação da meta financeira de 15%."],
-    ["volume", "Volume", "Trabalhe para alcançar a meta de vendas calculada."],
+    ["cost", "Gastos", "Revise os maiores gastos antes de buscar mais vendas."],
+    [
+      "price",
+      "Preço",
+      "Aumente o preço ou reduza os gastos antes de vender mais.",
+    ],
+    [
+      "margin",
+      "Quanto sobra",
+      "Ajuste o preço ou os gastos para chegar à meta de 15%.",
+    ],
+    [
+      "volume",
+      "Quantidade de serviços",
+      "Mantenha a quantidade de atendimentos usada no cálculo e acompanhe se seus clientes aceitam o preço.",
+    ],
   ] as const)("maps %s to one correction", (priority, label, answer) => {
     const summary = buildServiceExecutiveSummary({
       ...baseCalculation,
@@ -133,23 +147,23 @@ describe("buildServiceExecutiveSummary", () => {
   it.each([
     [
       { verdict: "missing_price" as const, currentPriceCents: 0 },
-      "Ainda não é possível responder sem o preço atual.",
+      "Ainda não dá para calcular esse valor com os dados informados.",
     ],
     [
       { unitProfitCents: null },
-      "Ainda não é possível calcular o lucro por atendimento com os dados informados.",
+      "Ainda não dá para calcular esse valor com os dados informados.",
     ],
     [
       { unitProfitCents: -1320 },
-      "Não — hoje cada atendimento fecha no vermelho em R$ 13,20.",
+      "Não — faltam R$ 13,20 por atendimento para pagar os gastos considerados.",
     ],
     [
       { unitProfitCents: 0 },
-      "Não — cada atendimento apenas cobre os custos, sem gerar lucro.",
+      "Não — o valor recebido apenas paga os gastos, sem deixar dinheiro.",
     ],
     [
       { unitProfitCents: 2360 },
-      "Sim — cada atendimento deixa R$ 23,60 após os custos considerados.",
+      "Sim — sobram R$ 23,60 por atendimento depois de pagar os gastos considerados.",
     ],
   ] as const)("builds profitability answer %#", (override, answer) => {
     expect(
@@ -165,7 +179,7 @@ describe("buildServiceExecutiveSummary", () => {
     ],
     [
       { minimumPriceCents: null, targetPriceCents: null },
-      "Ainda não é possível calcular uma referência financeira segura com os dados informados.",
+      "Ainda não dá para calcular esse valor com os dados informados.",
     ],
     [
       {
@@ -173,7 +187,7 @@ describe("buildServiceExecutiveSummary", () => {
         minimumPriceCents: 5435,
         targetPriceCents: 6494,
       },
-      "Não — está abaixo do mínimo financeiro de R$ 54,35.",
+      "Não — para pagar todos os gastos, o preço precisa ser pelo menos R$ 54,35.",
     ],
     [
       {
@@ -181,7 +195,7 @@ describe("buildServiceExecutiveSummary", () => {
         minimumPriceCents: 5435,
         targetPriceCents: 6494,
       },
-      "Parcialmente — cobre os custos, mas ainda não alcança a meta de 15%.",
+      "Quase — o preço paga os gastos, mas ainda não alcança a meta de 15%.",
     ],
     [
       {
@@ -189,7 +203,7 @@ describe("buildServiceExecutiveSummary", () => {
         minimumPriceCents: 5435,
         targetPriceCents: 6494,
       },
-      "Sim — alcança a referência financeira para a meta de 15%.",
+      "Sim — seu preço alcança o valor calculado para a meta de 15%.",
     ],
     [
       {
@@ -197,12 +211,29 @@ describe("buildServiceExecutiveSummary", () => {
         minimumPriceCents: 5435,
         targetPriceCents: 6494,
       },
-      "Sim — alcança a referência financeira para a meta de 15%.",
+      "Sim — seu preço alcança o valor calculado para a meta de 15%.",
     ],
   ] as const)("builds price answer %#", (override, answer) => {
     expect(
       buildServiceExecutiveSummary({ ...baseCalculation, ...override })
         .answers[1].answer,
     ).toBe(answer);
+  });
+
+  it("keeps technical terms out of the executive summary", () => {
+    const content = JSON.stringify(
+      buildServiceExecutiveSummary(baseCalculation),
+    ).toLocaleLowerCase("pt-BR");
+
+    for (const term of [
+      "pró-labore",
+      "rateio",
+      "receita líquida",
+      "contribuição",
+      "operacional",
+      "referência financeira",
+    ]) {
+      expect(content).not.toContain(term);
+    }
   });
 });

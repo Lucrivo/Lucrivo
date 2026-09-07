@@ -83,7 +83,7 @@ describe("Production diagnosis steps", () => {
     );
 
     const productionCost = screen.getByLabelText(
-      "Custo de fabricação por unidade",
+      "Quanto custa produzir uma unidade?",
     );
     expect(productionCost).toHaveAttribute("aria-invalid", "true");
     expect(productionCost).toHaveAttribute(
@@ -94,7 +94,7 @@ describe("Production diagnosis steps", () => {
       "Informe um custo válido.",
     );
     expect(
-      screen.getByLabelText("Preço de venda por unidade"),
+      screen.getByLabelText("Por quanto você vende cada unidade?"),
     ).toBeInTheDocument();
     expect(screen.queryByText(/custo de compra/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/hora faturável/i)).not.toBeInTheDocument();
@@ -126,37 +126,35 @@ describe("Production diagnosis steps", () => {
 
     render(<ValuesHarness />);
     const composition = screen.getByRole("switch", {
-      name: "Compor custo de fabricação",
+      name: "Quer somar os gastos de produção por partes?",
     });
 
     expect(composition).not.toBeChecked();
     expect(
-      screen.getByLabelText("Custo de fabricação por unidade"),
+      screen.getByLabelText("Quanto custa produzir uma unidade?"),
     ).toBeVisible();
-    expect(screen.queryByLabelText("Materiais por unidade")).toBeNull();
+    expect(screen.queryByLabelText("Materiais")).toBeNull();
 
     composition.focus();
     await user.keyboard(" ");
 
     expect(composition).toBeChecked();
-    expect(screen.getByLabelText("Materiais por unidade")).toHaveValue("30,00");
-    expect(screen.getByLabelText("Embalagem por unidade")).toHaveValue("5,00");
-    expect(screen.getByLabelText("Mão de obra direta por unidade")).toHaveValue(
-      "10,00",
+    expect(screen.getByLabelText("Materiais")).toHaveValue("30,00");
+    expect(screen.getByLabelText("Embalagem")).toHaveValue("5,00");
+    expect(screen.getByLabelText("Seu tempo de produção")).toHaveValue("10,00");
+    expect(screen.getByLabelText("Outros gastos por unidade")).toHaveValue(
+      "5,00",
     );
-    expect(
-      screen.getByLabelText("Outros custos variáveis por unidade"),
-    ).toHaveValue("5,00");
     expect(screen.getByRole("status")).toHaveTextContent("R$ 50,00");
     expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
     expect(
-      screen.getByText(/mão de obra direta integra o custo/i),
+      screen.getByText(/some os gastos usados para produzir/i),
     ).toBeVisible();
     expect(
-      screen.getByText(/pró-labore integra os custos fixos/i),
+      screen.getByText(/valor que você recebe pelo seu trabalho/i),
     ).toBeVisible();
     expect(
-      screen.queryByLabelText("Custo de fabricação por unidade"),
+      screen.queryByLabelText("Quanto custa produzir uma unidade?"),
     ).not.toBeInTheDocument();
 
     composition.focus();
@@ -164,9 +162,9 @@ describe("Production diagnosis steps", () => {
 
     expect(composition).not.toBeChecked();
     expect(
-      screen.getByLabelText("Custo de fabricação por unidade"),
+      screen.getByLabelText("Quanto custa produzir uma unidade?"),
     ).toHaveValue("50,00");
-    expect(screen.queryByLabelText("Materiais por unidade")).toBeNull();
+    expect(screen.queryByLabelText("Materiais")).toBeNull();
   });
 
   it("links a cost-mode error to its switch", () => {
@@ -180,7 +178,7 @@ describe("Production diagnosis steps", () => {
     );
 
     const composition = screen.getByRole("switch", {
-      name: "Compor custo de fabricação",
+      name: "Quer somar os gastos de produção por partes?",
     });
     expect(composition).toHaveAttribute("aria-invalid", "true");
     expect(composition).toHaveAttribute(
@@ -192,7 +190,8 @@ describe("Production diagnosis steps", () => {
     );
   });
 
-  it("accepts zero fixed expenses and explains optional sold-unit volume", () => {
+  it("accepts zero monthly expenses and explains what to include", async () => {
+    const user = userEvent.setup();
     const { rerender } = render(
       <ProductionFixedExpensesStep
         values={values}
@@ -201,14 +200,24 @@ describe("Production diagnosis steps", () => {
       />,
     );
 
-    expect(screen.getByLabelText("Despesas fixas mensais")).toHaveValue("0");
+    expect(screen.getByLabelText("Gastos que existem todo mês")).toHaveValue(
+      "0",
+    );
+    const help = screen.getByRole("button", { name: "O que incluir?" });
+    help.focus();
+    await user.keyboard("{Enter}");
+    expect(
+      screen.getByText(
+        "Some aluguel, energia, internet, sistemas e outros gastos que continuam mesmo quando você vende pouco.",
+      ),
+    ).toBeInTheDocument();
 
     rerender(
       <MonthlyVolumeStep values={values} errors={{}} onChange={onChange} />,
     );
     expect(screen.getByText(/opcional/i)).toBeVisible();
     expect(
-      screen.getByLabelText("Volume médio mensal de unidades vendidas"),
+      screen.getByLabelText("Quantas unidades você vende em um mês comum?"),
     ).toHaveValue("");
   });
 
@@ -237,17 +246,21 @@ describe("Production diagnosis steps", () => {
 
     render(<CompensationHarness />);
     const compensation = screen.getByRole("switch", {
-      name: "Incluir pró-labore",
+      name: "Você quer incluir o valor que recebe pelo seu trabalho?",
     });
 
     expect(compensation).not.toBeChecked();
-    expect(screen.queryByLabelText("Pró-labore mensal")).toBeNull();
+    expect(
+      screen.queryByLabelText("Quanto você quer receber por mês?"),
+    ).toBeNull();
 
     compensation.focus();
     await user.keyboard(" ");
 
     expect(compensation).toBeChecked();
-    expect(screen.getByLabelText("Pró-labore mensal")).toHaveValue("");
+    expect(
+      screen.getByLabelText("Quanto você quer receber por mês?"),
+    ).toHaveValue("");
   });
 
   it("exposes Production tax and card fee fields", () => {
@@ -255,7 +268,13 @@ describe("Production diagnosis steps", () => {
       <ProductionFeesStep values={values} errors={{}} onChange={onChange} />,
     );
 
-    expect(screen.getByLabelText("Impostos")).toHaveValue("6");
-    expect(screen.getByLabelText("Taxa do cartão")).toHaveValue("2");
+    expect(
+      screen.getByLabelText("Qual porcentagem da venda vai para impostos?"),
+    ).toHaveValue("6");
+    expect(
+      screen.getByLabelText(
+        "Qual porcentagem fica com o cartão ou a plataforma?",
+      ),
+    ).toHaveValue("2");
   });
 });

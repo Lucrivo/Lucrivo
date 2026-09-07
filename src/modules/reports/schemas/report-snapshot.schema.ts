@@ -1,24 +1,22 @@
 import { z } from "zod";
 
 import {
-  productReportSnapshotV1Schema,
+  productReportSnapshotSchema,
   type ProductReportDiscountSimulationBase,
 } from "./product-report-snapshot.schema";
 import {
-  productionReportSnapshotV1Schema,
+  productionReportSnapshotSchema,
   type ProductionReportDiscountSimulationBase,
 } from "./production-report-snapshot.schema";
 import {
-  serviceReportSnapshotV3Schema,
-  serviceReportSnapshotV2Schema,
+  serviceReportSnapshotSchema,
   type ServiceReportDiscountSimulationBase,
 } from "./service-report-snapshot.schema";
 
 const reportSnapshotSchema = z.union([
-  serviceReportSnapshotV2Schema,
-  serviceReportSnapshotV3Schema,
-  productReportSnapshotV1Schema,
-  productionReportSnapshotV1Schema,
+  serviceReportSnapshotSchema,
+  productReportSnapshotSchema,
+  productionReportSnapshotSchema,
 ]);
 
 type ReportSnapshot = z.infer<typeof reportSnapshotSchema>;

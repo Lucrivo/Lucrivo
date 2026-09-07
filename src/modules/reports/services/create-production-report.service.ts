@@ -8,12 +8,12 @@ import type {
 } from "@/infrastructure/database/supabase/database.types";
 import type { ProductionDiagnosisCommand } from "@/modules/quick-diagnosis/types";
 
-import type { ProductionReportSnapshotV1 } from "../types";
+import type { CurrentProductionReportSnapshot } from "../types";
 
 type CreateProductionReportInput = {
   supabase: SupabaseClient<Database>;
   command: ProductionDiagnosisCommand;
-  snapshot: ProductionReportSnapshotV1;
+  snapshot: CurrentProductionReportSnapshot;
 };
 
 type CreateProductionReportResult =
@@ -44,7 +44,7 @@ type ProductionRpcArgs = Omit<
 
 function toProductionRpcArgs(
   command: ProductionDiagnosisCommand,
-  snapshot: ProductionReportSnapshotV1,
+  snapshot: CurrentProductionReportSnapshot,
 ): ProductionRpcArgs {
   return {
     p_submission_id: command.submissionId,

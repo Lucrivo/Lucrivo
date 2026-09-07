@@ -1,3 +1,5 @@
+import { PlainLanguageHelp } from "@/components/shared/plain-language-help";
+
 import { calculateServiceFlowPreview } from "../../../domain/service-flow";
 import { StepField } from "../../shared/step-field";
 import { FlowSummary } from "./flow-summary";
@@ -38,7 +40,19 @@ function WorkRoutineStep(props: ServiceStepProps) {
       </div>
 
       {hasCapacity && preview.requiredHourlyRateCents !== null ? (
-        <FlowSummary label="Capacidade mensal estimada">
+        <FlowSummary
+          label={
+            <span className="grid gap-1">
+              <span>Quanto você consegue trabalhar por mês</span>
+              <PlainLanguageHelp
+                triggerLabel="Como calculamos?"
+                title="Quanto você consegue trabalhar por mês"
+                description="Usamos as horas e os dias informados para estimar o tempo disponível em um mês comum."
+                technicalTerm="capacidade mensal"
+              />
+            </span>
+          }
+        >
           <span className="block">
             {decimal.format(preview.monthlyWorkMinutes / 60)} horas por mês
           </span>
@@ -50,7 +64,7 @@ function WorkRoutineStep(props: ServiceStepProps) {
           </span>
           {showCurrentEquivalent ? (
             <span className="text-muted-foreground mt-1 block font-normal">
-              Seu preço atual equivale a{" "}
+              Hoje, seu preço equivale a{" "}
               {currency.format(preview.currentEquivalentHourlyRateCents! / 100)}{" "}
               por hora.
             </span>

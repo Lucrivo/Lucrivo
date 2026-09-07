@@ -41,7 +41,7 @@ function build(command: ProductionDiagnosisCommand) {
 }
 
 describe("buildProductionReportSnapshot", () => {
-  it("assembles the canonical complete composed Production V1 snapshot", () => {
+  it("assembles the canonical complete composed Production content V2 snapshot", () => {
     const calculation = calculateProductionReport(composedCommand);
     const snapshot = buildProductionReportSnapshot(
       composedCommand,
@@ -52,7 +52,7 @@ describe("buildProductionReportSnapshot", () => {
       expect.objectContaining({
         schemaVersion: 1,
         calculationVersion: 1,
-        contentVersion: 1,
+        contentVersion: 2,
         category: "production",
         scenario: "manufacturing",
         currency: "BRL",
@@ -112,7 +112,7 @@ describe("buildProductionReportSnapshot", () => {
     expect(parseProductionReportSnapshot(snapshot)).toEqual(snapshot);
   });
 
-  it("assembles the canonical summarized partial Production V1 snapshot", () => {
+  it("assembles the canonical summarized partial Production content V2 snapshot", () => {
     const snapshot = build(summarizedPartialCommand);
 
     expect(snapshot.inputs).toEqual(

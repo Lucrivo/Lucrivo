@@ -45,7 +45,7 @@ export default async function ReportsPage({
             <div className="flex items-center gap-2">
               <Badge variant="info">
                 <FileChartColumnIcon aria-hidden="true" />
-                Histórico financeiro
+                Seus resultados
               </Badge>
               {result.reports.length > 0 ? (
                 <span className="text-muted-foreground text-xs tabular-nums">
@@ -54,10 +54,10 @@ export default async function ReportsPage({
               ) : null}
             </div>
             <div className="grid gap-2">
-              <h1>Seus diagnósticos</h1>
+              <h1>Seus resultados</h1>
               <p className="text-muted-foreground max-w-xl leading-6">
-                Reabra análises salvas, acompanhe suas referências de preço e
-                retome decisões sem preencher tudo novamente.
+                Veja os diagnósticos que você salvou e abra qualquer um sem
+                preencher tudo de novo.
               </p>
             </div>
           </div>
@@ -81,7 +81,7 @@ export default async function ReportsPage({
                 Mais recentes primeiro
               </p>
               <h2 id="saved-reports-title" className="text-2xl">
-                Relatórios salvos
+                Diagnósticos salvos
               </h2>
             </div>
           </div>

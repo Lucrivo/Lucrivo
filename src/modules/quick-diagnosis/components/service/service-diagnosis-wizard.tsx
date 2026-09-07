@@ -30,15 +30,14 @@ type ServiceDiagnosisWizardProps = {
 };
 
 const stepTitles: Record<ServiceWizardStep, string> = {
-  monthlyGoal: "Quanto você quer ganhar por mês?",
-  fixedExpenses: "Quais são seus custos fixos mensais?",
-  pricingMethod: "Como você cobra pelo seu trabalho hoje?",
-  workRoutine: "Quanto você trabalha?",
-  serviceDuration:
-    "Quanto tempo você leva para realizar um atendimento/serviço?",
-  materialCost: "Você possui algum custo para realizar o serviço?",
-  fees: "Impostos e taxas",
-  review: "Revise suas respostas",
+  monthlyGoal: "Quanto você quer receber por mês?",
+  fixedExpenses: "Quais gastos você tem todo mês?",
+  pricingMethod: "Como você cobra pelo seu trabalho?",
+  workRoutine: "Quanto tempo você trabalha?",
+  serviceDuration: "Quanto tempo dura um serviço?",
+  materialCost: "Você gasta materiais para fazer o serviço?",
+  fees: "O que é descontado do valor recebido?",
+  review: "Confira as informações do serviço",
 };
 
 const stepFields = {

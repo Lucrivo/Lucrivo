@@ -19,15 +19,21 @@ function FixedExpensesStep(props: ServiceStepProps) {
       <StepField
         {...props}
         field="fixedMonthlyExpenses"
-        label="Total dos custos fixos mensais"
+        label="Gastos que existem todo mês"
         value={props.values.fixedMonthlyExpenses}
         prefix="R$"
-        description="Some aluguel, energia, internet, sistemas e outros gastos que existem todo mês."
+        help={{
+          triggerLabel: "O que incluir?",
+          title: "Gastos que existem todo mês",
+          description:
+            "Some aluguel, energia, internet, sistemas e outros gastos que continuam mesmo quando você atende pouco.",
+          technicalTerm: "custos fixos",
+        }}
       />
       {canShowTotal ? (
-        <FlowSummary label="Quanto a atividade precisa gerar por mês">
-          {currency.format(preview.monthlyRevenueTargetCents / 100)} para cobrir
-          seus custos fixos e alcançar o ganho desejado.
+        <FlowSummary label="Quanto o negócio precisa gerar por mês">
+          {currency.format(preview.monthlyRevenueTargetCents / 100)} para pagar
+          os gastos do mês e deixar o valor que você quer receber.
         </FlowSummary>
       ) : null}
     </div>

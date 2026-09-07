@@ -30,6 +30,18 @@ function issuePaths(input: ProductionDiagnosisInput): string[] {
   return result.error.issues.map((issue) => String(issue.path[0]));
 }
 
+function issueMessages(
+  input: ProductionDiagnosisInput,
+  field: keyof ProductionDiagnosisInput,
+): string[] {
+  const result = productionDiagnosisSchema.safeParse(input);
+  expect(result.success).toBe(false);
+  if (result.success) return [];
+  return result.error.issues
+    .filter((issue) => issue.path[0] === field)
+    .map((issue) => issue.message);
+}
+
 describe("productionDiagnosisSchema", () => {
   it("normalizes the canonical composed Production input", () => {
     expect(productionDiagnosisSchema.parse(validProduction)).toEqual({
@@ -92,8 +104,8 @@ describe("productionDiagnosisSchema", () => {
         },
       ),
     ).toEqual({
-      productionUnitCost: ["Informe um custo de produção maior que zero."],
-      unitSalePrice: ["Informe um preço de venda maior que zero."],
+      productionUnitCost: ["Informe quanto custa produzir uma unidade."],
+      unitSalePrice: ["Informe por quanto você vende cada unidade."],
     });
   });
 
@@ -137,14 +149,19 @@ describe("productionDiagnosisSchema", () => {
 
   it("rejects a composed aggregate equal to zero", () => {
     expect(
-      issuePaths({
-        ...validProduction,
-        materialUnitCost: "",
-        packagingUnitCost: "0",
-        directLaborUnitCost: "0,00",
-        otherVariableUnitCost: "",
-      }),
-    ).toContain("materialUnitCost");
+      issueMessages(
+        {
+          ...validProduction,
+          materialUnitCost: "",
+          packagingUnitCost: "0",
+          directLaborUnitCost: "0,00",
+          otherVariableUnitCost: "",
+        },
+        "materialUnitCost",
+      ),
+    ).toContain(
+      "A soma de materiais, embalagem, seu tempo e outros gastos precisa ser igual ao custo de uma unidade.",
+    );
   });
 
   it.each([
@@ -181,6 +198,18 @@ describe("productionDiagnosisSchema", () => {
       );
     },
   );
+
+  it("uses the visible wording in volume and compensation errors", () => {
+    expect(
+      issueMessages(
+        { ...validProduction, monthlySalesVolume: "1,5" },
+        "monthlySalesVolume",
+      ),
+    ).toEqual(["Informe quantas unidades você vende em um mês comum."]);
+    expect(
+      issueMessages({ ...validProduction, proLabore: "0" }, "proLabore"),
+    ).toEqual(["Informe quanto você quer receber por mês."]);
+  });
 
   it("accepts blank components as zero when their aggregate is positive", () => {
     expect(

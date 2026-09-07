@@ -69,19 +69,25 @@ describe("ProductDiagnosisWizard", () => {
     expect(screen.getByText("3 de 8")).toBeInTheDocument();
     if (purchaseCost) {
       await user.type(
-        screen.getByLabelText("Custo de compra por unidade"),
+        screen.getByLabelText("Quanto você paga por unidade?"),
         purchaseCost,
       );
     }
-    await user.type(screen.getByLabelText("Preço de venda por unidade"), "100");
+    await user.type(
+      screen.getByLabelText("Por quanto você vende cada unidade?"),
+      "100",
+    );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(screen.getByText("4 de 8")).toBeInTheDocument();
-    await user.type(screen.getByLabelText("Despesas fixas mensais"), "1000");
+    await user.type(
+      screen.getByLabelText("Gastos que existem todo mês"),
+      "1000",
+    );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(screen.getByText("5 de 8")).toBeInTheDocument();
     if (volume) {
       await user.type(
-        screen.getByLabelText("Volume médio mensal de vendas"),
+        screen.getByLabelText("Quantas unidades você vende em um mês comum?"),
         "100",
       );
     }
@@ -89,14 +95,29 @@ describe("ProductDiagnosisWizard", () => {
     expect(screen.getByText("6 de 8")).toBeInTheDocument();
     if (compensation) {
       await user.click(
-        screen.getByRole("switch", { name: "Incluir pró-labore" }),
+        screen.getByRole("switch", {
+          name: "Você quer incluir o valor que recebe pelo seu trabalho?",
+        }),
       );
-      await user.type(screen.getByLabelText("Pró-labore mensal"), "2000");
+      await user.type(
+        screen.getByLabelText("Quanto você quer receber por mês?", {
+          selector: "input",
+        }),
+        "2000",
+      );
     }
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(screen.getByText("7 de 8")).toBeInTheDocument();
-    await user.type(screen.getByLabelText("Impostos"), "6,25");
-    await user.type(screen.getByLabelText("Taxa do cartão"), "3,50");
+    await user.type(
+      screen.getByLabelText("Qual porcentagem da venda vai para impostos?"),
+      "6,25",
+    );
+    await user.type(
+      screen.getByLabelText(
+        "Qual porcentagem fica com o cartão ou a plataforma?",
+      ),
+      "3,50",
+    );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(screen.getByText("8 de 8")).toBeInTheDocument();
 
@@ -123,7 +144,9 @@ describe("ProductDiagnosisWizard", () => {
 
     expect(screen.getByText("2 de 8")).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Qual análise você quer fazer?" }),
+      screen.getByRole("heading", {
+        name: "Que tipo de resultado você quer ver?",
+      }),
     ).toHaveFocus();
     expect(screen.getAllByTestId("wizard-step")).toHaveLength(1);
 
@@ -139,12 +162,12 @@ describe("ProductDiagnosisWizard", () => {
     expect(createDiagnosis).not.toHaveBeenCalled();
 
     const edits = [
-      ["Editar modalidade", "Qual análise você quer fazer?"],
-      ["Editar valores do produto", "Quais são o custo e o preço do produto?"],
-      ["Editar despesas fixas", "Quais são as despesas fixas mensais?"],
-      ["Editar volume mensal", "Quantas unidades você vende por mês?"],
-      ["Editar pró-labore", "Você quer incluir seu pró-labore?"],
-      ["Editar taxas", "Quais taxas incidem nas vendas?"],
+      ["Editar modalidade", "Que tipo de resultado você quer ver?"],
+      ["Editar valores do produto", "Quanto você paga e por quanto vende?"],
+      ["Editar gastos mensais", "Quais gastos você tem todo mês?"],
+      ["Editar quantidade de vendas", "Quantas unidades você vende por mês?"],
+      ["Editar quanto você quer receber", "Quanto você quer receber por mês?"],
+      ["Editar descontos da venda", "O que é descontado de cada venda?"],
     ] as const;
 
     for (const [buttonName, heading] of edits) {
@@ -153,11 +176,11 @@ describe("ProductDiagnosisWizard", () => {
 
       if (buttonName === "Editar valores do produto") {
         expect(
-          screen.getByLabelText("Custo de compra por unidade"),
+          screen.getByLabelText("Quanto você paga por unidade?"),
         ).toHaveValue("50");
-        expect(screen.getByLabelText("Preço de venda por unidade")).toHaveValue(
-          "100",
-        );
+        expect(
+          screen.getByLabelText("Por quanto você vende cada unidade?"),
+        ).toHaveValue("100");
       }
 
       while (!screen.queryByText("8 de 8")) {
@@ -180,8 +203,13 @@ describe("ProductDiagnosisWizard", () => {
     expect(screen.getByText("Não incluído")).toBeInTheDocument();
     expect(screen.queryByText("R$ 2.000,00")).not.toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Sem o volume mensal, os custos fixos não podem ser rateados por unidade. O relatório será parcial e não classificará sua margem como adequada.",
+      "Sem essa quantidade, o resultado não consegue incluir os gastos mensais em cada unidade.",
     );
+    expect(screen.getByText("Quanto você quer receber")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Gastos que existem todo mês").length,
+    ).toBeGreaterThan(0);
+    expect(container).not.toHaveTextContent("Pró-labore");
 
     const markup = container.innerHTML;
     expect(markup).toContain("grid");
@@ -230,7 +258,7 @@ describe("ProductDiagnosisWizard", () => {
     );
 
     expect(
-      await screen.findByLabelText("Custo de compra por unidade"),
+      await screen.findByLabelText("Quanto você paga por unidade?"),
     ).toHaveFocus();
     expect(screen.getByRole("alert")).toHaveTextContent("Custo inválido.");
     expect(replace).not.toHaveBeenCalled();
@@ -255,7 +283,7 @@ describe("ProductDiagnosisWizard", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Qual análise você quer fazer?",
+        name: "Que tipo de resultado você quer ver?",
       }),
     ).toHaveFocus();
     expect(screen.getByText("2 de 8")).toBeInTheDocument();

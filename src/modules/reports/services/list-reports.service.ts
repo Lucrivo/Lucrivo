@@ -4,10 +4,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 import type { Database } from "@/infrastructure/database/supabase/database.types";
+import type { ReportSnapshot } from "../types";
 
 const REPORTS_PAGE_SIZE = 12;
 const REPORT_SUMMARY_COLUMNS =
-  "id, business_category, scenario, created_at, current_price_cents, real_margin_basis_points, unit_profit_cents, verdict, priority, unit" as const;
+  "id, business_category, scenario, created_at, current_price_cents, real_margin_basis_points, unit_profit_cents, verdict, priority, unit, content_version" as const;
 
 const reportsCursorSchema = z.strictObject({
   createdAt: z.iso.datetime({ offset: true }),
@@ -28,6 +29,7 @@ type OwnedReportSummary = {
   verdict: string;
   priority: string;
   unit: string;
+  contentVersion: ReportSnapshot["contentVersion"];
 };
 
 type ListOwnedReportsInput = {
@@ -86,6 +88,7 @@ function toOwnedReportSummary(
     | "verdict"
     | "priority"
     | "unit"
+    | "content_version"
   >,
 ): OwnedReportSummary {
   return {
@@ -99,6 +102,7 @@ function toOwnedReportSummary(
     verdict: row.verdict,
     priority: row.priority,
     unit: row.unit,
+    contentVersion: row.content_version as ReportSnapshot["contentVersion"],
   };
 }
 

@@ -16,7 +16,7 @@ function ServiceDurationStep(props: ServiceStepProps) {
       <StepField
         {...props}
         field="appointmentDurationMinutes"
-        label="Duração média do atendimento/serviço"
+        label="Quanto tempo dura, em média, um serviço?"
         value={props.values.appointmentDurationMinutes}
         suffix="min"
         inputMode="numeric"
@@ -24,8 +24,8 @@ function ServiceDurationStep(props: ServiceStepProps) {
       />
       {preview.currentEquivalentHourlyRateCents !== null &&
       preview.requiredHourlyRateCents !== null ? (
-        <FlowSummary label="Comparação na mesma base">
-          Seu preço atual equivale a{" "}
+        <FlowSummary label="Compare usando uma hora">
+          Hoje, seu preço equivale a{" "}
           {currency.format(preview.currentEquivalentHourlyRateCents / 100)} por
           hora. Para sua meta mensal, cada hora precisa gerar{" "}
           {currency.format(preview.requiredHourlyRateCents / 100)}.

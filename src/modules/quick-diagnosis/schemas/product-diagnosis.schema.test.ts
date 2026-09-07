@@ -75,7 +75,7 @@ describe("productDiagnosisSchema", () => {
         proLabore: "0",
       }),
     ).toEqual({
-      unitSalePrice: ["Informe um preço de venda maior que zero."],
+      unitSalePrice: ["Informe por quanto você vende cada unidade."],
     });
   });
 
@@ -110,6 +110,29 @@ describe("productDiagnosisSchema", () => {
       expect(issuePaths({ ...validProduct, proLabore })).toContain("proLabore");
     },
   );
+
+  it("uses the visible wording in actionable validation messages", () => {
+    const volumeResult = productDiagnosisSchema.safeParse({
+      ...validProduct,
+      monthlySalesVolume: "1,5",
+    });
+    const compensationResult = productDiagnosisSchema.safeParse({
+      ...validProduct,
+      proLabore: "0",
+    });
+
+    expect(volumeResult.success).toBe(false);
+    expect(compensationResult.success).toBe(false);
+    if (volumeResult.success || compensationResult.success) return;
+    expect(volumeResult.error.flatten().fieldErrors).toMatchObject({
+      monthlySalesVolume: [
+        "Informe quantas unidades você vende em um mês comum.",
+      ],
+    });
+    expect(compensationResult.error.flatten().fieldErrors).toMatchObject({
+      proLabore: ["Informe quanto você quer receber por mês."],
+    });
+  });
 
   it("accepts all inclusive numeric boundaries", () => {
     expect(

@@ -33,13 +33,11 @@ describe("buildProductionExecutiveSummary", () => {
       }),
     );
 
-    expect(summary.headline).toBe(
-      "A verdade por trás do preço da sua produção.",
-    );
+    expect(summary.headline).toBe("Sua produção dá lucro?");
     expect(summary.facts).toEqual([
       {
         key: "margin",
-        currentLabel: "Margem atual",
+        currentLabel: "Quanto sobra a cada R$ 100",
         currentValue: "Indisponível",
         referenceLabel: "Meta",
         referenceValue: "20%",
@@ -48,27 +46,29 @@ describe("buildProductionExecutiveSummary", () => {
         key: "price",
         currentLabel: "Preço atual",
         currentValue: "R$ 100,00",
-        referenceLabel: "Preço-alvo sem rateio fixo",
+        referenceLabel: "Preço para a meta, sem gastos mensais",
         referenceValue: "R$ 69,45",
       },
     ]);
     expect(summary.answers).toEqual([
       expect.objectContaining({
         key: "profitability",
-        answer: expect.stringContaining("contribuição por unidade é positiva"),
+        answer:
+          "Ainda não dá para saber quanto sobra de verdade. Informe quantas unidades você vende por mês para incluir os gastos mensais.",
       }),
       expect.objectContaining({
         key: "price_sufficiency",
-        answer: expect.stringContaining("referência ainda é parcial"),
+        answer:
+          "Ainda é uma estimativa: R$ 69,45 inclui o custo de fabricação e as taxas, mas não os gastos mensais.",
       }),
       expect.objectContaining({
         key: "immediate_action",
-        answer: expect.stringContaining("volume médio mensal"),
+        answer:
+          "Informe quantas unidades você vende por mês para concluir o diagnóstico.",
       }),
     ]);
-    expect(summary.answers[0].answer).not.toContain("lucro real é positivo");
-    expect(summary.verdict.body).toContain(
-      "custos fixos e o pró-labore ainda não foram rateados",
+    expect(summary.verdict.body).toBe(
+      "A venda paga o custo de fabricação, mas falta informar quantas unidades você vende por mês para incluir os gastos mensais.",
     );
   });
 
@@ -76,44 +76,44 @@ describe("buildProductionExecutiveSummary", () => {
     [
       "direct_loss",
       "cost",
-      "Prejuízo direto",
+      "Venda com prejuízo",
       "critical",
-      "Revise o custo de fabricação ou aumente o preço antes de buscar volume.",
+      "Reduza o custo de fabricação ou aumente o preço antes de vender mais.",
     ],
     [
       "incomplete_volume",
       "data",
-      "Complete o diagnóstico",
+      "Falta informar as vendas",
       "neutral",
-      "Informe o volume médio mensal para concluir o diagnóstico.",
+      "Informe quantas unidades você vende por mês para concluir o diagnóstico.",
     ],
     [
       "operational_loss",
       "price",
-      "Prejuízo operacional",
+      "Preço abaixo dos gastos",
       "critical",
-      "Corrija o preço ou o custo operacional rateado antes de avançar.",
+      "Aumente o preço ou reduza os gastos de cada unidade.",
     ],
     [
       "tight_margin",
       "margin",
-      "Margem apertada",
+      "Abaixo da meta",
       "warning",
-      "Aproxime preço e custo da meta financeira de 20%.",
+      "Ajuste o preço ou os gastos para chegar à meta de 20%.",
     ],
     [
       "adequate_margin",
       "volume",
-      "Margem adequada",
+      "Meta alcançada",
       "positive",
-      "Mantenha o volume de vendas necessário para sustentar o resultado.",
+      "Mantenha a quantidade de vendas usada no cálculo.",
     ],
     [
       "above_target",
       "volume",
       "Acima da meta",
       "positive",
-      "Valide a aceitação do mercado e mantenha o volume de vendas.",
+      "Acompanhe se seus clientes aceitam o preço e mantenha as vendas.",
     ],
   ] as const)(
     "maps %s to Production-only verdict and priority content",
@@ -142,8 +142,8 @@ describe("buildProductionExecutiveSummary", () => {
     );
     const content = JSON.stringify(summary);
 
-    expect(summary.verdict.label).toBe("Prejuízo direto");
-    expect(summary.answers[0].answer).toContain("contribuição por unidade");
+    expect(summary.verdict.label).toBe("Venda com prejuízo");
+    expect(summary.answers[0].answer).toContain("faltam");
     expect(content).not.toContain("aumente o volume");
     expect(content).not.toContain("venda mais");
   });
@@ -157,10 +157,28 @@ describe("buildProductionExecutiveSummary", () => {
       "price_sufficiency",
       "immediate_action",
     ]);
-    expect(summary.answers[0].answer).toContain("lucro por unidade");
-    expect(summary.introduction).toContain("cada venda fabricada deixa");
-    expect(content).toContain("custo de fabricação");
+    expect(summary.answers[0].answer).toContain("sobram");
+    expect(summary.introduction).toBe(
+      "Veja quanto sobra de cada unidade vendida e o que merece sua atenção primeiro.",
+    );
     expect(content).not.toContain("custo de compra");
     expect(content).not.toContain("fornecedor");
+  });
+
+  it("keeps technical terms out of the executive summary", () => {
+    const content = JSON.stringify(
+      buildProductionExecutiveSummary(completeCalculation),
+    ).toLocaleLowerCase("pt-BR");
+
+    for (const term of [
+      "pró-labore",
+      "rateio",
+      "receita líquida",
+      "contribuição",
+      "operacional",
+      "referência financeira",
+    ]) {
+      expect(content).not.toContain(term);
+    }
   });
 });

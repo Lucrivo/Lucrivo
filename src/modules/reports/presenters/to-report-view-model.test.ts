@@ -12,6 +12,7 @@ import { buildServiceReportSnapshot } from "../domain/build-service-report-snaps
 import { calculateProductReport } from "../domain/calculate-product-report";
 import { calculateProductionReport } from "../domain/calculate-production-report";
 import { calculateServiceReport } from "../domain/calculate-service-report";
+import type { ReportSnapshot } from "../types";
 import { toReportViewModel } from "./to-report-view-model";
 
 const command: ServiceDiagnosisCommand = {
@@ -119,16 +120,20 @@ describe("toReportViewModel", () => {
       ...snapshot.executiveSummary,
       verdict: {
         ...snapshot.executiveSummary.verdict,
-        toneLabel: "Situação positiva",
+        toneLabel: "Bom resultado",
       },
     });
-    expect(viewModel.numbers).toEqual([
-      { key: "price", label: "Preço atual", value: "R$ 80,00" },
-      { key: "margin", label: "Margem real", value: "17%" },
-      { key: "profit", label: "Lucro por hora", value: "R$ 13,60" },
-      { key: "minimum", label: "Preço mínimo", value: "R$ 65,22" },
-      { key: "target", label: "Preço-alvo (15%)", value: "R$ 77,93" },
+    expect(
+      viewModel.numbers.map(({ label, value }) => ({ label, value })),
+    ).toEqual([
+      { label: "Preço atual", value: "R$ 80,00" },
+      { label: "Quanto sobra a cada R$ 100", value: "17%" },
+      { label: "Quanto sobra por hora", value: "R$ 13,60" },
+      { label: "Menor preço sem prejuízo", value: "R$ 65,22" },
+      { label: "Preço para alcançar a meta (15%)", value: "R$ 77,93" },
     ]);
+    expect(viewModel.numbers.filter(({ help }) => help)).toHaveLength(2);
+    expect(viewModel.language.isPlainLanguage).toBe(true);
     expect(viewModel).not.toHaveProperty("summary");
     expect(viewModel).not.toHaveProperty("nextActions");
   });
@@ -138,18 +143,28 @@ describe("toReportViewModel", () => {
 
     expect(viewModel.numbers).toContainEqual({
       key: "margin",
-      label: "Margem real",
+      label: "Quanto sobra a cada R$ 100",
       value: "Indisponível",
+      help: expect.any(Object),
     });
     expect(viewModel.numbers).toContainEqual({
       key: "profit",
-      label: "Lucro por hora",
+      label: "Quanto sobra por hora",
       value: "Indisponível",
     });
     expect(viewModel.numbers).toEqual(
       expect.arrayContaining([
-        { key: "minimum", label: "Preço mínimo", value: "Indisponível" },
-        { key: "target", label: "Preço-alvo (15%)", value: "Indisponível" },
+        {
+          key: "minimum",
+          label: "Menor preço sem prejuízo",
+          value: "Indisponível",
+        },
+        {
+          key: "target",
+          label: "Preço para alcançar a meta (15%)",
+          value: "Indisponível",
+          help: expect.any(Object),
+        },
       ]),
     );
   });
@@ -170,7 +185,7 @@ describe("toReportViewModel", () => {
         title: "1 · Ponto de equilíbrio",
         body: "Abaixo de R$ 65,22 por hora você vende no prejuízo. Seu preço de R$ 80,00 cobre o custo.",
         tone: "positive",
-        toneLabel: "Situação positiva",
+        toneLabel: "Bom resultado",
       }),
     );
   });
@@ -186,12 +201,14 @@ describe("toReportViewModel", () => {
       createdAtLabel: "31/08/2026, 12:00",
       unitLabel: "unidade",
     });
-    expect(viewModel.numbers).toEqual([
-      { key: "price", label: "Preço atual", value: "R$ 100,00" },
-      { key: "margin", label: "Margem real", value: "12%" },
-      { key: "profit", label: "Lucro por unidade", value: "R$ 12,00" },
-      { key: "minimum", label: "Preço mínimo", value: "R$ 86,96" },
-      { key: "target", label: "Preço-alvo (20%)", value: "R$ 111,12" },
+    expect(
+      viewModel.numbers.map(({ label, value }) => ({ label, value })),
+    ).toEqual([
+      { label: "Preço atual", value: "R$ 100,00" },
+      { label: "Quanto sobra a cada R$ 100", value: "12%" },
+      { label: "Quanto sobra por unidade", value: "R$ 12,00" },
+      { label: "Menor preço sem prejuízo", value: "R$ 86,96" },
+      { label: "Preço para alcançar a meta (20%)", value: "R$ 111,12" },
     ]);
   });
 
@@ -201,22 +218,21 @@ describe("toReportViewModel", () => {
       monthlySalesVolume: null,
     });
 
-    expect(viewModel.numbers).toEqual([
-      { key: "price", label: "Preço atual", value: "R$ 100,00" },
-      { key: "margin", label: "Margem real", value: "Indisponível" },
+    expect(
+      viewModel.numbers.map(({ label, value }) => ({ label, value })),
+    ).toEqual([
+      { label: "Preço atual", value: "R$ 100,00" },
+      { label: "Quanto sobra a cada R$ 100", value: "Indisponível" },
       {
-        key: "profit",
-        label: "Contribuição por unidade",
+        label: "Quanto sobra antes dos gastos mensais",
         value: "R$ 42,00",
       },
       {
-        key: "minimum",
-        label: "Preço mínimo (sem rateio fixo)",
+        label: "Menor preço antes dos gastos mensais",
         value: "R$ 54,35",
       },
       {
-        key: "target",
-        label: "Preço-alvo (sem rateio fixo)",
+        label: "Preço para a meta, sem gastos mensais",
         value: "R$ 69,45",
       },
     ]);
@@ -233,12 +249,14 @@ describe("toReportViewModel", () => {
       createdAtLabel: "01/09/2026, 12:00",
       unitLabel: "unidade",
     });
-    expect(viewModel.numbers).toEqual([
-      { key: "price", label: "Preço atual", value: "R$ 100,00" },
-      { key: "margin", label: "Margem real", value: "12%" },
-      { key: "profit", label: "Lucro por unidade", value: "R$ 12,00" },
-      { key: "minimum", label: "Preço mínimo", value: "R$ 86,96" },
-      { key: "target", label: "Preço-alvo (20%)", value: "R$ 111,12" },
+    expect(
+      viewModel.numbers.map(({ label, value }) => ({ label, value })),
+    ).toEqual([
+      { label: "Preço atual", value: "R$ 100,00" },
+      { label: "Quanto sobra a cada R$ 100", value: "12%" },
+      { label: "Quanto sobra por unidade", value: "R$ 12,00" },
+      { label: "Menor preço sem prejuízo", value: "R$ 86,96" },
+      { label: "Preço para alcançar a meta (20%)", value: "R$ 111,12" },
     ]);
     expect(viewModel.discountSimulationContext).toBe("production");
   });
@@ -249,24 +267,55 @@ describe("toReportViewModel", () => {
       monthlySalesVolume: null,
     });
 
-    expect(viewModel.numbers).toEqual([
-      { key: "price", label: "Preço atual", value: "R$ 100,00" },
-      { key: "margin", label: "Margem real", value: "Indisponível" },
+    expect(
+      viewModel.numbers.map(({ label, value }) => ({ label, value })),
+    ).toEqual([
+      { label: "Preço atual", value: "R$ 100,00" },
+      { label: "Quanto sobra a cada R$ 100", value: "Indisponível" },
       {
-        key: "profit",
-        label: "Contribuição por unidade",
+        label: "Quanto sobra antes dos gastos mensais",
         value: "R$ 42,00",
       },
       {
-        key: "minimum",
-        label: "Preço mínimo (sem rateio fixo)",
+        label: "Menor preço antes dos gastos mensais",
         value: "R$ 54,35",
       },
       {
-        key: "target",
-        label: "Preço-alvo (sem rateio fixo)",
+        label: "Preço para a meta, sem gastos mensais",
         value: "R$ 69,45",
       },
     ]);
+  });
+
+  it("keeps legacy labels for an older persisted report", () => {
+    const current = buildSnapshot();
+    const legacySnapshot = {
+      ...current,
+      contentVersion: 3,
+      executiveSummary: {
+        ...current.executiveSummary,
+        headline: "A verdade por trás do preço.",
+        verdict: {
+          ...current.executiveSummary.verdict,
+          label: "Margem adequada",
+        },
+      },
+    } as ReportSnapshot;
+    const legacy = toReportViewModel({
+      id: 43,
+      createdAt: "2026-08-28T22:30:00.000Z",
+      snapshot: legacySnapshot,
+    });
+
+    expect(legacy.language.reportEyebrow).toBe("Seu relatório financeiro");
+    expect(legacy.executiveSummary.verdict.toneLabel).toBe("Situação positiva");
+    expect(legacy.numbers.map(({ label }) => label)).toEqual([
+      "Preço atual",
+      "Margem real",
+      "Lucro por hora",
+      "Preço mínimo",
+      "Preço-alvo (15%)",
+    ]);
+    expect(legacy.numbers.every(({ help }) => help === undefined)).toBe(true);
   });
 });

@@ -39,13 +39,13 @@ type ProductDiagnosisWizardProps = {
 };
 
 const stepTitles: Record<ProductWizardStep, string> = {
-  analysisMode: "Qual análise você quer fazer?",
-  productValues: "Quais são o custo e o preço do produto?",
-  fixedExpenses: "Quais são as despesas fixas mensais?",
+  analysisMode: "Que tipo de resultado você quer ver?",
+  productValues: "Quanto você paga e por quanto vende?",
+  fixedExpenses: "Quais gastos você tem todo mês?",
   monthlyVolume: "Quantas unidades você vende por mês?",
-  ownerCompensation: "Você quer incluir seu pró-labore?",
-  fees: "Quais taxas incidem nas vendas?",
-  review: "Revise as informações do produto",
+  ownerCompensation: "Quanto você quer receber por mês?",
+  fees: "O que é descontado de cada venda?",
+  review: "Confira as informações do produto",
 };
 
 const fieldStep: Record<ProductDiagnosisField, ProductWizardStep> = {

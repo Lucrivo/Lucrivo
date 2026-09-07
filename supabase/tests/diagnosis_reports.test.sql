@@ -445,11 +445,11 @@ create function pg_temp.create_hour_report(
   p_submission_id uuid,
   p_hourly_rate_cents bigint default 10000,
   p_schema_version smallint default 3,
-  p_content_version smallint default 3,
+  p_content_version smallint default 4,
   p_report_snapshot jsonb default '{
     "schemaVersion": 3,
     "calculationVersion": 2,
-    "contentVersion": 3,
+    "contentVersion": 4,
     "category": "service",
     "scenario": "hour",
     "inputs": {
@@ -521,6 +521,31 @@ select set_config(
   'request.jwt.claim.sub',
   '33333333-3333-4333-8333-333333333333',
   true
+);
+select throws_ok(
+  $$ select pg_temp.create_hour_report(
+    '30000000-0000-4000-8000-000000000014',
+    10000,
+    3::smallint,
+    3::smallint,
+    '{
+      "schemaVersion": 3,
+      "calculationVersion": 2,
+      "contentVersion": 3,
+      "category": "service",
+      "scenario": "hour",
+      "inputs": {
+        "workHoursPeriod": "month",
+        "workPeriodMinutes": 6000,
+        "monthlyWorkMinutes": 6000,
+        "materialUnitCostCents": 0
+      },
+      "executiveSummary": {"headline": "A verdade por trás do preço."}
+    }'::jsonb
+  ) $$,
+  '22023',
+  'invalid report snapshot',
+  'atomic function rejects the previous content version'
 );
 select lives_ok(
   $$ select pg_temp.create_hour_report(
@@ -608,11 +633,11 @@ select throws_ok(
     '30000000-0000-4000-8000-000000000012',
     10000,
     3::smallint,
-    3::smallint,
+    4::smallint,
     '{
       "schemaVersion": 3,
       "calculationVersion": 2,
-      "contentVersion": 3,
+      "contentVersion": 4,
       "category": "service",
       "scenario": "hour",
       "inputs": {
@@ -633,11 +658,11 @@ select throws_ok(
     '30000000-0000-4000-8000-000000000013',
     10000,
     3::smallint,
-    3::smallint,
+    4::smallint,
     '{
       "schemaVersion": 3,
       "calculationVersion": 2,
-      "contentVersion": 3,
+      "contentVersion": 4,
       "category": "service",
       "scenario": "hour",
       "executiveSummary": {"headline": "A verdade por trás do preço."}
@@ -688,11 +713,11 @@ select results_eq(
       '30000000-0000-4000-8000-000000000005',
       12000,
       3::smallint,
-      3::smallint,
+      4::smallint,
       '{
         "schemaVersion": 3,
         "calculationVersion": 2,
-        "contentVersion": 3,
+        "contentVersion": 4,
         "category": "service",
         "scenario": "hour",
         "inputs": {

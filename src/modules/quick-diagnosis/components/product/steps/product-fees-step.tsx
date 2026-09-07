@@ -7,14 +7,14 @@ function ProductFeesStep(props: ProductStepProps) {
       <StepField
         {...props}
         field="taxRate"
-        label="Impostos"
+        label="Qual porcentagem da venda vai para impostos?"
         value={props.values.taxRate}
         suffix="%"
       />
       <StepField
         {...props}
         field="cardFeeRate"
-        label="Taxa do cartão"
+        label="Qual porcentagem fica com o cartão ou a plataforma?"
         value={props.values.cardFeeRate}
         suffix="%"
       />

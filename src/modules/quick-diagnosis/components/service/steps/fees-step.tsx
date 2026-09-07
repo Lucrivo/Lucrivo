@@ -13,7 +13,7 @@ function FeesStep({
     <div className="grid gap-7">
       <div className="grid gap-4">
         <YesNoChoice
-          question="Você paga imposto sobre o faturamento?"
+          question="Você paga impostos sobre o valor recebido?"
           field="paysRevenueTax"
           value={values.paysRevenueTax}
           error={errors.paysRevenueTax?.[0]}
@@ -22,7 +22,7 @@ function FeesStep({
         {values.paysRevenueTax ? (
           <StepField
             field="taxRate"
-            label="Percentual médio de imposto"
+            label="Qual porcentagem do valor recebido vai para impostos?"
             value={values.taxRate}
             errors={errors}
             onChange={onChange}
@@ -42,7 +42,7 @@ function FeesStep({
         {values.hasPaymentFee ? (
           <StepField
             field="paymentFeeRate"
-            label="Percentual médio da taxa"
+            label="Qual porcentagem fica com o cartão ou a plataforma?"
             value={values.paymentFeeRate}
             errors={errors}
             onChange={onChange}

@@ -14,6 +14,7 @@ import { calculateProductReport } from "../domain/calculate-product-report";
 import { calculateProductionReport } from "../domain/calculate-production-report";
 import { calculateServiceReport } from "../domain/calculate-service-report";
 import { toReportViewModel } from "../presenters/to-report-view-model";
+import { getReportLanguageProfile } from "../presenters/report-language";
 import { ReportDetail } from "./report-detail";
 
 const command: ServiceDiagnosisCommand = {
@@ -43,6 +44,36 @@ const viewModel = toReportViewModel({
   createdAt: "2026-08-28T22:30:00.000Z",
   snapshot,
 });
+const legacyViewModel = {
+  ...viewModel,
+  language: getReportLanguageProfile({
+    category: "service",
+    contentVersion: 3,
+  }),
+  executiveSummary: {
+    ...viewModel.executiveSummary,
+    headline: "A verdade por trás do preço.",
+    verdict: {
+      ...viewModel.executiveSummary.verdict,
+      label: "Margem adequada",
+      toneLabel: "Situação positiva",
+    },
+  },
+  numbers: [
+    { key: "price" as const, label: "Preço atual", value: "R$ 80,00" },
+    { key: "margin" as const, label: "Margem real", value: "17%" },
+    { key: "profit" as const, label: "Lucro por hora", value: "R$ 13,60" },
+    { key: "minimum" as const, label: "Preço mínimo", value: "R$ 65,22" },
+    { key: "target" as const, label: "Preço-alvo (15%)", value: "R$ 77,93" },
+  ],
+  sections: viewModel.sections.map((section) => ({
+    ...section,
+    toneLabel: getReportLanguageProfile({
+      category: "service",
+      contentVersion: 3,
+    }).toneLabels[section.tone],
+  })),
+};
 
 const productCommand: ProductDiagnosisCommand = {
   submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
@@ -108,10 +139,12 @@ describe("ReportDetail", () => {
   it("renders the executive summary before numbers and detailed analysis", () => {
     render(<ReportDetail viewModel={viewModel} />);
     const executiveSummary = screen.getByRole("region", {
-      name: "A verdade por trás do preço.",
+      name: "Seu serviço dá lucro?",
     });
     const numbers = screen.getByRole("complementary", { name: "Seus números" });
-    const analysis = screen.getByRole("region", { name: "Análise detalhada" });
+    const analysis = screen.getByRole("region", {
+      name: "Como chegamos a esse resultado",
+    });
 
     expect(
       executiveSummary.compareDocumentPosition(numbers) &
@@ -145,9 +178,7 @@ describe("ReportDetail", () => {
     )) {
       expect(screen.getAllByText(toneLabel).length).toBeGreaterThan(0);
     }
-    expect(
-      screen.getAllByLabelText("Situação positiva").length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText("Bom resultado").length).toBeGreaterThan(0);
   });
 
   it("renders Product identity and partial simulation semantics", () => {
@@ -180,5 +211,30 @@ describe("ReportDetail", () => {
     expect(
       screen.getByText("Simulação parcial", { exact: false }),
     ).toBeInTheDocument();
+  });
+
+  it("keeps report chrome unchanged for a legacy snapshot", () => {
+    render(<ReportDetail viewModel={legacyViewModel} />);
+
+    expect(screen.getByText("Seu relatório financeiro")).toBeInTheDocument();
+    expect(screen.getByText("Principal ponto a corrigir")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Entenda seus números" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Situação positiva").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Comece por aqui")).not.toBeInTheDocument();
+  });
+
+  it("renders the current plain-language report chrome", () => {
+    render(<ReportDetail viewModel={viewModel} />);
+
+    expect(
+      screen.getByText("Resultado do seu diagnóstico"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Comece por aqui")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Como chegamos a esse resultado" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Bom resultado").length).toBeGreaterThan(0);
   });
 });

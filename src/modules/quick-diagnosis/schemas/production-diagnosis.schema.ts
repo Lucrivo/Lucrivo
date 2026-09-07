@@ -24,8 +24,7 @@ const monthlySalesVolumeSchema: z.ZodType<number | null, string> = z
     } catch {
       context.addIssue({
         code: "custom",
-        message:
-          "Informe um volume mensal inteiro entre 1 e 2147483647 unidades.",
+        message: "Informe quantas unidades você vende em um mês comum.",
       });
       return z.NEVER;
     }
@@ -126,7 +125,8 @@ function validateConditionalCostsAndCompensation(
         context.addIssue({
           code: "custom",
           path: ["materialUnitCost"],
-          message: "Informe uma composição com total válido e maior que zero.",
+          message:
+            "A soma de materiais, embalagem, seu tempo e outros gastos precisa ser igual ao custo de uma unidade.",
         });
       }
     }
@@ -140,7 +140,7 @@ function validateConditionalCostsAndCompensation(
       context.addIssue({
         code: "custom",
         path: ["productionUnitCost"],
-        message: "Informe um custo de produção maior que zero.",
+        message: "Informe quanto custa produzir uma unidade.",
       });
     }
   }
@@ -149,7 +149,7 @@ function validateConditionalCostsAndCompensation(
     context.addIssue({
       code: "custom",
       path: ["unitSalePrice"],
-      message: "Informe um preço de venda maior que zero.",
+      message: "Informe por quanto você vende cada unidade.",
     });
   }
 
@@ -160,7 +160,7 @@ function validateConditionalCostsAndCompensation(
       context.addIssue({
         code: "custom",
         path: ["proLabore"],
-        message: "Informe um pró-labore maior que zero.",
+        message: "Informe quanto você quer receber por mês.",
       });
     }
   }

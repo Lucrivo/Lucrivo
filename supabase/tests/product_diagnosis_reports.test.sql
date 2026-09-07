@@ -263,7 +263,7 @@ as $$
   select jsonb_build_object(
     'schemaVersion', 1,
     'calculationVersion', 1,
-    'contentVersion', 1,
+    'contentVersion', 2,
     'category', 'product',
     'scenario', 'resale',
     'currency', 'BRL',
@@ -333,7 +333,7 @@ create function pg_temp.create_product_report(
   p_card_fee_rate_basis_points integer default 200,
   p_schema_version smallint default 1,
   p_calculation_version smallint default 1,
-  p_content_version smallint default 1,
+  p_content_version smallint default 2,
   p_scenario text default 'resale',
   p_current_price_cents bigint default 10000,
   p_real_margin_basis_points integer default 1200,
@@ -646,11 +646,16 @@ select throws_ok(
 select throws_ok(
   $$ select pg_temp.create_product_report(
     p_submission_id => '50000000-0000-4000-8000-000000000022',
-    p_content_version => 2::smallint
+    p_content_version => 1::smallint,
+    p_report_snapshot => jsonb_set(
+      pg_temp.complete_product_snapshot(),
+      '{contentVersion}',
+      '1'::jsonb
+    )
   ) $$,
   '22023',
   'invalid product report snapshot',
-  'content version mismatch is rejected'
+  'previous content version is rejected'
 );
 select throws_ok(
   $$ select pg_temp.create_product_report(
@@ -1035,7 +1040,7 @@ select lives_ok(
       200,
       3::smallint,
       2::smallint,
-      3::smallint,
+      4::smallint,
       'hour',
       10000,
       1700,
@@ -1046,7 +1051,7 @@ select lives_ok(
       '{
         "schemaVersion": 3,
         "calculationVersion": 2,
-        "contentVersion": 3,
+        "contentVersion": 4,
         "category": "service",
         "scenario": "hour",
         "inputs": {

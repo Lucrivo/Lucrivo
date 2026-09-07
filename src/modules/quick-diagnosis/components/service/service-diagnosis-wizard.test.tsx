@@ -41,11 +41,16 @@ describe("ServiceDiagnosisWizard", () => {
     renderWizard();
 
     expect(screen.getByText("2 de 8")).toBeInTheDocument();
-    await user.type(screen.getByLabelText("Ganho mensal desejado"), "5000");
+    await user.type(
+      screen.getByLabelText("Quanto você quer receber por mês?", {
+        selector: "input",
+      }),
+      "5000",
+    );
     await continueStep(user);
 
     await user.type(
-      screen.getByLabelText("Total dos custos fixos mensais"),
+      screen.getByLabelText("Gastos que existem todo mês"),
       "2000",
     );
     expect(screen.getByText(/R\$ 7.000,00/)).toBeInTheDocument();
@@ -71,28 +76,28 @@ describe("ServiceDiagnosisWizard", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "Quanto tempo você leva para realizar um atendimento/serviço?",
+        name: "Quanto tempo dura um serviço?",
       }),
     ).toBeInTheDocument();
     await user.type(
-      screen.getByLabelText("Duração média do atendimento/serviço"),
+      screen.getByLabelText("Quanto tempo dura, em média, um serviço?"),
       "45",
     );
     expect(screen.getByText(/R\$ 66,67 por hora/)).toBeInTheDocument();
     await continueStep(user);
 
     const material = screen.getByRole("radiogroup", {
-      name: "Você possui algum custo para realizar o serviço?",
+      name: "Você gasta com materiais ou produtos para fazer este serviço?",
     });
     await user.click(within(material).getByRole("radio", { name: "Sim" }));
     await user.type(
       screen.getByLabelText(
-        "Quanto custa, em média, o material ou insumo utilizado?",
+        "Quanto você gasta, em média, com esses materiais?",
       ),
       "20",
     );
     await user.click(
-      screen.getByRole("combobox", { name: "Esse custo acontece" }),
+      screen.getByRole("combobox", { name: "Quando esse gasto acontece?" }),
     );
     await user.click(
       await screen.findByRole("option", { name: "Por atendimento/serviço" }),
@@ -100,20 +105,35 @@ describe("ServiceDiagnosisWizard", () => {
     await continueStep(user);
 
     const tax = screen.getByRole("radiogroup", {
-      name: "Você paga imposto sobre o faturamento?",
+      name: "Você paga impostos sobre o valor recebido?",
     });
     await user.click(within(tax).getByRole("radio", { name: "Sim" }));
-    await user.type(screen.getByLabelText("Percentual médio de imposto"), "6");
+    await user.type(
+      screen.getByLabelText(
+        "Qual porcentagem do valor recebido vai para impostos?",
+      ),
+      "6",
+    );
     const fee = screen.getByRole("radiogroup", {
       name: "Você recebe por cartão ou plataforma que cobra taxa?",
     });
     await user.click(within(fee).getByRole("radio", { name: "Sim" }));
-    await user.type(screen.getByLabelText("Percentual médio da taxa"), "3,5");
+    await user.type(
+      screen.getByLabelText(
+        "Qual porcentagem fica com o cartão ou a plataforma?",
+      ),
+      "3,5",
+    );
     await continueStep(user);
 
     expect(screen.getByText("9 de 9")).toBeInTheDocument();
     expect(screen.getByText("R$ 7.000,00")).toBeInTheDocument();
     expect(screen.getByText("R$ 66,67")).toBeInTheDocument();
+    expect(screen.getByText("Quanto você quer receber")).toBeInTheDocument();
+    expect(screen.getByText("Gastos que existem todo mês")).toBeInTheDocument();
+    expect(
+      screen.getByText("Quanto você consegue trabalhar por mês"),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", {
         name: "Gerar relatório temporariamente indisponível",
@@ -125,10 +145,15 @@ describe("ServiceDiagnosisWizard", () => {
     const user = userEvent.setup();
     renderWizard();
 
-    await user.type(screen.getByLabelText("Ganho mensal desejado"), "5000");
+    await user.type(
+      screen.getByLabelText("Quanto você quer receber por mês?", {
+        selector: "input",
+      }),
+      "5000",
+    );
     await continueStep(user);
     await user.type(
-      screen.getByLabelText("Total dos custos fixos mensais"),
+      screen.getByLabelText("Gastos que existem todo mês"),
       "2000",
     );
     await continueStep(user);
@@ -144,7 +169,7 @@ describe("ServiceDiagnosisWizard", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "Você possui algum custo para realizar o serviço?",
+        name: "Você gasta materiais para fazer o serviço?",
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("6 de 8")).toBeInTheDocument();
@@ -154,10 +179,15 @@ describe("ServiceDiagnosisWizard", () => {
     const user = userEvent.setup();
     renderWizard();
 
-    await user.type(screen.getByLabelText("Ganho mensal desejado"), "5000");
+    await user.type(
+      screen.getByLabelText("Quanto você quer receber por mês?", {
+        selector: "input",
+      }),
+      "5000",
+    );
     await continueStep(user);
     await user.type(
-      screen.getByLabelText("Total dos custos fixos mensais"),
+      screen.getByLabelText("Gastos que existem todo mês"),
       "2000",
     );
     await continueStep(user);

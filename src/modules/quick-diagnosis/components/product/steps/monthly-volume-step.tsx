@@ -7,14 +7,14 @@ function MonthlyVolumeStep(props: ProductStepProps) {
       <StepField
         {...props}
         field="monthlySalesVolume"
-        label="Volume médio mensal de vendas"
+        label="Quantas unidades você vende em um mês comum?"
         value={props.values.monthlySalesVolume}
         suffix="unidades"
         inputMode="numeric"
       />
       <p className="text-muted-foreground text-sm">
-        Opcional. Sem esse valor, o relatório mostrará apenas referências sem o
-        rateio dos custos fixos.
+        Opcional. Sem essa quantidade, o resultado não consegue incluir os
+        gastos mensais em cada unidade.
       </p>
     </div>
   );

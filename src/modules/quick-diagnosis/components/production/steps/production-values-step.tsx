@@ -23,14 +23,14 @@ function ProductionValuesStep({
       <div className="border-border bg-background flex items-center justify-between gap-5 rounded-xl border p-4 shadow-xs">
         <div className="grid gap-1">
           <Label htmlFor="costCompositionEnabled">
-            Compor custo de fabricação
+            Quer somar os gastos de produção por partes?
           </Label>
           <p
             id="costCompositionEnabled-help"
             className="text-muted-foreground text-sm"
           >
-            Detalhe materiais, embalagem, mão de obra direta e outros custos
-            variáveis.
+            Você sabe o custo total de uma unidade? Deixe esta opção desligada e
+            informe apenas esse valor. Se preferir, detalhe cada parte.
           </p>
           {compositionError ? (
             <p
@@ -61,7 +61,7 @@ function ProductionValuesStep({
           <div className="grid gap-5 sm:grid-cols-2">
             <StepField
               field="materialUnitCost"
-              label="Materiais por unidade"
+              label="Materiais"
               value={values.materialUnitCost}
               errors={errors}
               onChange={onChange}
@@ -69,7 +69,7 @@ function ProductionValuesStep({
             />
             <StepField
               field="packagingUnitCost"
-              label="Embalagem por unidade"
+              label="Embalagem"
               value={values.packagingUnitCost}
               errors={errors}
               onChange={onChange}
@@ -77,7 +77,7 @@ function ProductionValuesStep({
             />
             <StepField
               field="directLaborUnitCost"
-              label="Mão de obra direta por unidade"
+              label="Seu tempo de produção"
               value={values.directLaborUnitCost}
               errors={errors}
               onChange={onChange}
@@ -85,7 +85,7 @@ function ProductionValuesStep({
             />
             <StepField
               field="otherVariableUnitCost"
-              label="Outros custos variáveis por unidade"
+              label="Outros gastos por unidade"
               value={values.otherVariableUnitCost}
               errors={errors}
               onChange={onChange}
@@ -93,12 +93,12 @@ function ProductionValuesStep({
             />
           </div>
           <p className="text-muted-foreground text-sm leading-relaxed">
-            A mão de obra direta integra o custo de fabricação; o pró-labore
-            integra os custos fixos e deve ser informado na etapa própria.
+            Some os gastos usados para produzir uma unidade. O valor que você
+            recebe pelo seu trabalho será informado na etapa própria.
           </p>
           <div className="border-primary/20 bg-primary/5 flex items-center justify-between gap-4 rounded-xl border px-4 py-3">
             <span className="text-sm font-medium">
-              Custo de fabricação calculado
+              Quanto custa produzir uma unidade?
             </span>
             <output
               htmlFor="costCompositionEnabled materialUnitCost packagingUnitCost directLaborUnitCost otherVariableUnitCost"
@@ -114,7 +114,7 @@ function ProductionValuesStep({
       ) : (
         <StepField
           field="productionUnitCost"
-          label="Custo de fabricação por unidade"
+          label="Quanto custa produzir uma unidade?"
           value={values.productionUnitCost}
           errors={errors}
           onChange={onChange}
@@ -124,7 +124,7 @@ function ProductionValuesStep({
 
       <StepField
         field="unitSalePrice"
-        label="Preço de venda por unidade"
+        label="Por quanto você vende cada unidade?"
         value={values.unitSalePrice}
         errors={errors}
         onChange={onChange}

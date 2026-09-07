@@ -17,59 +17,59 @@ const verdictContent: Record<
 > = {
   missing_price: {
     label: "Informe o preço",
-    body: "Informe o preço atual para o Lucrivo comparar sua cobrança com os custos e a meta de 15%.",
+    body: "Informe quanto você cobra para comparar com seus gastos e a meta de 15%.",
     tone: "neutral",
   },
   direct_loss: {
-    label: "Prejuízo direto",
-    body: "O preço líquido não cobre nem o material usado diretamente. Cada nova venda aumenta o prejuízo antes mesmo de pagar a estrutura.",
+    label: "Venda com prejuízo",
+    body: "O valor recebido, depois das taxas, não paga nem os materiais usados no serviço. Fazer mais serviços nessas condições aumenta o prejuízo.",
     tone: "critical",
   },
   operational_loss: {
-    label: "Prejuízo",
+    label: "Preço abaixo dos gastos",
     body: "",
     tone: "critical",
   },
   tight_margin: {
-    label: "Margem apertada",
-    body: "O preço cobre os custos, mas a margem ainda está abaixo da meta de 15%. Existe lucro, porém com menos espaço do que o planejado.",
+    label: "Abaixo da meta",
+    body: "O preço paga os gastos, mas ainda sobra menos que a meta de 15%.",
     tone: "warning",
   },
   adequate_margin: {
-    label: "Margem adequada",
-    body: "O preço cobre os custos e alcança a meta financeira de 15%. Agora o resultado depende de manter o volume necessário.",
+    label: "Meta alcançada",
+    body: "O preço paga os gastos e alcança a meta de 15%. Agora mantenha a quantidade de trabalho usada no cálculo.",
     tone: "positive",
   },
   above_target: {
     label: "Acima da meta",
-    body: "O preço cobre os custos e supera a meta financeira de 15%. Há folga na margem; confirme se o mercado aceita esse preço e acompanhe o volume.",
+    body: "O preço paga os gastos e passa da meta de 15%. Acompanhe se seus clientes aceitam o preço e mantenha a quantidade de trabalho.",
     tone: "positive",
   },
 };
 
 const priorityContent: Record<
   ServiceReportPriority,
-  { label: string; body: string; action: string }
+  { label: string; body: string; action: string | null }
 > = {
   cost: {
-    label: "Custo",
-    body: "Os custos pressionam cada venda. Reduza ou renegocie os maiores gastos antes de acelerar o volume.",
-    action: "Revise os custos antes de acelerar as vendas.",
+    label: "Gastos",
+    body: "Os gastos estão deixando pouco dinheiro em cada venda. Comece pelos maiores e veja quais podem ser reduzidos.",
+    action: "Revise os maiores gastos antes de buscar mais vendas.",
   },
   price: {
     label: "Preço",
-    body: "Seu preço está abaixo do necessário para cobrir a operação. O ajuste começa no preço.",
-    action: "Ajuste o preço antes de buscar mais volume.",
+    body: "Seu preço não paga todos os gastos. Reveja o valor cobrado antes de buscar mais vendas.",
+    action: "Aumente o preço ou reduza os gastos antes de vender mais.",
   },
   margin: {
-    label: "Margem",
-    body: "A operação gera lucro, mas ainda não alcança a meta. Combine preço, custo e valor percebido.",
-    action: "Aproxime a operação da meta financeira de 15%.",
+    label: "Quanto sobra",
+    body: "O serviço dá lucro, mas ainda sobra menos que a meta de 15%. Reveja o preço e os gastos em conjunto.",
+    action: "Ajuste o preço ou os gastos para chegar à meta de 15%.",
   },
   volume: {
-    label: "Volume",
-    body: "Seu preço sustenta a operação e a meta. Agora transforme o volume necessário em rotina comercial.",
-    action: "Trabalhe para alcançar a meta de vendas calculada.",
+    label: "Quantidade de serviços",
+    body: "Seu preço alcança a meta. Agora mantenha a quantidade de trabalho usada no cálculo.",
+    action: null,
   },
 };
 
@@ -89,7 +89,7 @@ function buildVerdict(
   const unit = formatReportUnit(calculation.unit);
   return {
     ...content,
-    body: `O preço não cobre todos os custos necessários. Do jeito que está, cada ${unit} ainda deixa a conta no vermelho — o ajuste é no preço ou no custo.`,
+    body: `O preço não paga todos os gastos. Do jeito que está, cada ${unit} deixa o negócio no prejuízo.`,
   };
 }
 
@@ -99,7 +99,7 @@ function buildFacts(
   return [
     {
       key: "margin",
-      currentLabel: "Margem atual",
+      currentLabel: "Quanto sobra a cada R$ 100",
       currentValue:
         calculation.realMarginBasisPoints === null
           ? "Indisponível"
@@ -111,7 +111,7 @@ function buildFacts(
       key: "price",
       currentLabel: "Preço atual",
       currentValue: formatCurrency(calculation.currentPriceCents),
-      referenceLabel: "Preço-alvo",
+      referenceLabel: "Preço para alcançar a meta",
       referenceValue:
         calculation.targetPriceCents === null
           ? "Indisponível"
@@ -134,15 +134,16 @@ function buildProfitabilityAnswer(
   let answer: string;
 
   if (calculation.verdict === "missing_price") {
-    answer = "Ainda não é possível responder sem o preço atual.";
+    answer = "Ainda não dá para calcular esse valor com os dados informados.";
   } else if (calculation.unitProfitCents === null) {
-    answer = `Ainda não é possível calcular o lucro por ${unit} com os dados informados.`;
+    answer = "Ainda não dá para calcular esse valor com os dados informados.";
   } else if (calculation.unitProfitCents < 0) {
-    answer = `Não — hoje cada ${unit} fecha no vermelho em ${formatCurrency(Math.abs(calculation.unitProfitCents))}.`;
+    answer = `Não — faltam ${formatCurrency(Math.abs(calculation.unitProfitCents))} por ${unit} para pagar os gastos considerados.`;
   } else if (calculation.unitProfitCents === 0) {
-    answer = `Não — cada ${unit} apenas cobre os custos, sem gerar lucro.`;
+    answer =
+      "Não — o valor recebido apenas paga os gastos, sem deixar dinheiro.";
   } else {
-    answer = `Sim — cada ${unit} deixa ${formatCurrency(calculation.unitProfitCents)} após os custos considerados.`;
+    answer = `Sim — sobram ${formatCurrency(calculation.unitProfitCents)} por ${unit} depois de pagar os gastos considerados.`;
   }
 
   return {
@@ -166,15 +167,14 @@ function buildPriceSufficiencyAnswer(
     calculation.minimumPriceCents === null ||
     calculation.targetPriceCents === null
   ) {
-    answer =
-      "Ainda não é possível calcular uma referência financeira segura com os dados informados.";
+    answer = "Ainda não dá para calcular esse valor com os dados informados.";
   } else if (calculation.currentPriceCents < calculation.minimumPriceCents) {
-    answer = `Não — está abaixo do mínimo financeiro de ${formatCurrency(calculation.minimumPriceCents)}.`;
+    answer = `Não — para pagar todos os gastos, o preço precisa ser pelo menos ${formatCurrency(calculation.minimumPriceCents)}.`;
   } else if (calculation.currentPriceCents < calculation.targetPriceCents) {
     answer =
-      "Parcialmente — cobre os custos, mas ainda não alcança a meta de 15%.";
+      "Quase — o preço paga os gastos, mas ainda não alcança a meta de 15%.";
   } else {
-    answer = "Sim — alcança a referência financeira para a meta de 15%.";
+    answer = "Sim — seu preço alcança o valor calculado para a meta de 15%.";
   }
 
   return {
@@ -185,12 +185,17 @@ function buildPriceSufficiencyAnswer(
 }
 
 function buildImmediateActionAnswer(
-  priority: ServiceReportPriority,
+  calculation: ServiceReportCalculation,
 ): ReportExecutiveSummary["answers"][number] {
+  const action = priorityContent[calculation.priority].action;
+  const unit = calculation.unit === "hour" ? "horas" : "atendimentos";
+
   return {
     key: "immediate_action",
     question: "O que preciso fazer agora?",
-    answer: priorityContent[priority].action,
+    answer:
+      action ??
+      `Mantenha a quantidade de ${unit} usada no cálculo e acompanhe se seus clientes aceitam o preço.`,
   };
 }
 
@@ -198,16 +203,16 @@ function buildServiceExecutiveSummary(
   calculation: ServiceReportCalculation,
 ): ReportExecutiveSummary {
   return {
-    headline: "A verdade por trás do preço.",
+    headline: "Seu serviço dá lucro?",
     introduction:
-      "O Lucrivo revela o que está escondido nos seus números e mostra exatamente o que fazer a respeito.",
+      "Veja quanto sobra do valor cobrado e o que merece sua atenção primeiro.",
     verdict: buildVerdict(calculation),
     facts: buildFacts(calculation),
     priority: buildPriority(calculation.priority),
     answers: [
       buildProfitabilityAnswer(calculation),
       buildPriceSufficiencyAnswer(calculation),
-      buildImmediateActionAnswer(calculation.priority),
+      buildImmediateActionAnswer(calculation),
     ],
   };
 }

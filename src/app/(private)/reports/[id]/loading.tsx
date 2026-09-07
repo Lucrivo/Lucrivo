@@ -9,7 +9,7 @@ export default function ReportLoading() {
       aria-label="Preparando relatório"
     >
       <p className="sr-only" role="status">
-        Preparando seu relatório financeiro...
+        Preparando o resultado do seu diagnóstico...
       </p>
       <Card className="rounded-3xl px-2 py-3">
         <CardHeader className="gap-4">

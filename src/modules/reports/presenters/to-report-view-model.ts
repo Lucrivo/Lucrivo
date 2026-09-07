@@ -5,19 +5,24 @@ import {
   formatReportScenario,
   formatReportUnit,
 } from "../formatters";
+import type { PlainLanguageHelpContent } from "@/components/shared/plain-language-help";
 import type {
-  ProductReportSnapshotV1,
-  ProductionReportSnapshotV1,
+  ProductReportSnapshot,
+  ProductionReportSnapshot,
   ReportDiscountSimulationBase,
   ReportSnapshot,
-  ReportTone,
   ServiceReportSnapshot,
 } from "../types";
+import {
+  getReportLanguageProfile,
+  type ReportLanguageProfile,
+} from "./report-language";
 
 type ReportNumberViewModel = {
   key: "price" | "margin" | "profit" | "minimum" | "target";
   label: string;
   value: string;
+  help?: PlainLanguageHelpContent;
 };
 
 type ReportExecutiveSummaryViewModel = Omit<
@@ -34,6 +39,7 @@ type ReportSectionViewModel = ReportSnapshot["sections"][number] & {
 };
 
 type ReportViewModel = {
+  language: ReportLanguageProfile;
   identity: {
     id: number;
     title: string;
@@ -49,12 +55,27 @@ type ReportViewModel = {
   discountSimulationContext: ReportSnapshot["category"];
 };
 
-const toneLabels: Record<ReportTone, string> = {
-  neutral: "Informação",
-  positive: "Situação positiva",
-  warning: "Ponto de atenção",
-  critical: "Ação necessária",
-};
+const marginHelp = {
+  triggerLabel: "Entenda este valor",
+  title: "Quanto sobra a cada R$ 100",
+  description:
+    "Mostra quanto fica no negócio depois de pagar os gastos usados neste cálculo.",
+  technicalTerm: "margem",
+} as const satisfies PlainLanguageHelpContent;
+
+const targetPriceHelp = {
+  triggerLabel: "Como calculamos?",
+  title: "Preço para alcançar a meta",
+  description:
+    "É o preço calculado com seus gastos, taxas e a meta definida neste diagnóstico.",
+  technicalTerm: "preço-alvo",
+} as const satisfies PlainLanguageHelpContent;
+
+const partialTargetPriceHelp = {
+  ...targetPriceHelp,
+  description:
+    "É o preço calculado com seus gastos, taxas e a meta definida neste diagnóstico. Como você não informou as vendas do mês, os gastos mensais ainda não entram neste valor.",
+} as const satisfies PlainLanguageHelpContent;
 
 function optionalCurrency(value: number | null): string {
   return value === null ? "Indisponível" : formatCurrency(value);
@@ -66,6 +87,7 @@ function optionalPercentage(value: number | null): string {
 
 function toServiceNumbers(
   snapshot: ServiceReportSnapshot,
+  plainLanguage: boolean,
 ): ReportNumberViewModel[] {
   const unitLabel = formatReportUnit(snapshot.unit);
 
@@ -77,29 +99,36 @@ function toServiceNumbers(
     },
     {
       key: "margin",
-      label: "Margem real",
+      label: plainLanguage ? "Quanto sobra a cada R$ 100" : "Margem real",
       value: optionalPercentage(snapshot.results.realMarginBasisPoints),
+      ...(plainLanguage ? { help: marginHelp } : {}),
     },
     {
       key: "profit",
-      label: `Lucro por ${unitLabel}`,
+      label: plainLanguage
+        ? `Quanto sobra por ${unitLabel}`
+        : `Lucro por ${unitLabel}`,
       value: optionalCurrency(snapshot.results.unitProfitCents),
     },
     {
       key: "minimum",
-      label: "Preço mínimo",
+      label: plainLanguage ? "Menor preço sem prejuízo" : "Preço mínimo",
       value: optionalCurrency(snapshot.results.minimumPriceCents),
     },
     {
       key: "target",
-      label: "Preço-alvo (15%)",
+      label: plainLanguage
+        ? "Preço para alcançar a meta (15%)"
+        : "Preço-alvo (15%)",
       value: optionalCurrency(snapshot.results.targetPriceCents),
+      ...(plainLanguage ? { help: targetPriceHelp } : {}),
     },
   ];
 }
 
 function toProductNumbers(
-  snapshot: ProductReportSnapshotV1,
+  snapshot: ProductReportSnapshot,
+  plainLanguage: boolean,
 ): ReportNumberViewModel[] {
   const partial = snapshot.results.priceReferencesPartial;
 
@@ -111,12 +140,19 @@ function toProductNumbers(
     },
     {
       key: "margin",
-      label: "Margem real",
+      label: plainLanguage ? "Quanto sobra a cada R$ 100" : "Margem real",
       value: optionalPercentage(snapshot.results.realMarginBasisPoints),
+      ...(plainLanguage ? { help: marginHelp } : {}),
     },
     {
       key: "profit",
-      label: partial ? "Contribuição por unidade" : "Lucro por unidade",
+      label: plainLanguage
+        ? partial
+          ? "Quanto sobra antes dos gastos mensais"
+          : "Quanto sobra por unidade"
+        : partial
+          ? "Contribuição por unidade"
+          : "Lucro por unidade",
       value: optionalCurrency(
         partial
           ? snapshot.results.unitContributionCents
@@ -125,19 +161,35 @@ function toProductNumbers(
     },
     {
       key: "minimum",
-      label: partial ? "Preço mínimo (sem rateio fixo)" : "Preço mínimo",
+      label: plainLanguage
+        ? partial
+          ? "Menor preço antes dos gastos mensais"
+          : "Menor preço sem prejuízo"
+        : partial
+          ? "Preço mínimo (sem rateio fixo)"
+          : "Preço mínimo",
       value: optionalCurrency(snapshot.results.minimumPriceCents),
     },
     {
       key: "target",
-      label: partial ? "Preço-alvo (sem rateio fixo)" : "Preço-alvo (20%)",
+      label: plainLanguage
+        ? partial
+          ? "Preço para a meta, sem gastos mensais"
+          : "Preço para alcançar a meta (20%)"
+        : partial
+          ? "Preço-alvo (sem rateio fixo)"
+          : "Preço-alvo (20%)",
       value: optionalCurrency(snapshot.results.targetPriceCents),
+      ...(plainLanguage
+        ? { help: partial ? partialTargetPriceHelp : targetPriceHelp }
+        : {}),
     },
   ];
 }
 
 function toProductionNumbers(
-  snapshot: ProductionReportSnapshotV1,
+  snapshot: ProductionReportSnapshot,
+  plainLanguage: boolean,
 ): ReportNumberViewModel[] {
   const partial = snapshot.results.priceReferencesPartial;
 
@@ -149,12 +201,19 @@ function toProductionNumbers(
     },
     {
       key: "margin",
-      label: "Margem real",
+      label: plainLanguage ? "Quanto sobra a cada R$ 100" : "Margem real",
       value: optionalPercentage(snapshot.results.realMarginBasisPoints),
+      ...(plainLanguage ? { help: marginHelp } : {}),
     },
     {
       key: "profit",
-      label: partial ? "Contribuição por unidade" : "Lucro por unidade",
+      label: plainLanguage
+        ? partial
+          ? "Quanto sobra antes dos gastos mensais"
+          : "Quanto sobra por unidade"
+        : partial
+          ? "Contribuição por unidade"
+          : "Lucro por unidade",
       value: optionalCurrency(
         partial
           ? snapshot.results.unitContributionCents
@@ -163,13 +222,28 @@ function toProductionNumbers(
     },
     {
       key: "minimum",
-      label: partial ? "Preço mínimo (sem rateio fixo)" : "Preço mínimo",
+      label: plainLanguage
+        ? partial
+          ? "Menor preço antes dos gastos mensais"
+          : "Menor preço sem prejuízo"
+        : partial
+          ? "Preço mínimo (sem rateio fixo)"
+          : "Preço mínimo",
       value: optionalCurrency(snapshot.results.minimumPriceCents),
     },
     {
       key: "target",
-      label: partial ? "Preço-alvo (sem rateio fixo)" : "Preço-alvo (20%)",
+      label: plainLanguage
+        ? partial
+          ? "Preço para a meta, sem gastos mensais"
+          : "Preço para alcançar a meta (20%)"
+        : partial
+          ? "Preço-alvo (sem rateio fixo)"
+          : "Preço-alvo (20%)",
       value: optionalCurrency(snapshot.results.targetPriceCents),
+      ...(plainLanguage
+        ? { help: partial ? partialTargetPriceHelp : targetPriceHelp }
+        : {}),
     },
   ];
 }
@@ -184,6 +258,7 @@ function toReportViewModel({
   snapshot: ReportSnapshot;
 }): ReportViewModel {
   const unitLabel = formatReportUnit(snapshot.unit);
+  const language = getReportLanguageProfile(snapshot);
   let title: string;
   let categoryLabel: string;
   let numbers: ReportNumberViewModel[];
@@ -192,21 +267,22 @@ function toReportViewModel({
     case "service":
       title = "Diagnóstico de Serviço";
       categoryLabel = "Serviço";
-      numbers = toServiceNumbers(snapshot);
+      numbers = toServiceNumbers(snapshot, language.isPlainLanguage);
       break;
     case "product":
       title = "Diagnóstico de Produto";
       categoryLabel = "Produto";
-      numbers = toProductNumbers(snapshot);
+      numbers = toProductNumbers(snapshot, language.isPlainLanguage);
       break;
     case "production":
       title = "Diagnóstico de Produção";
       categoryLabel = "Produção";
-      numbers = toProductionNumbers(snapshot);
+      numbers = toProductionNumbers(snapshot, language.isPlainLanguage);
       break;
   }
 
   return {
+    language,
     identity: {
       id,
       title,
@@ -219,13 +295,13 @@ function toReportViewModel({
       ...snapshot.executiveSummary,
       verdict: {
         ...snapshot.executiveSummary.verdict,
-        toneLabel: toneLabels[snapshot.executiveSummary.verdict.tone],
+        toneLabel: language.toneLabels[snapshot.executiveSummary.verdict.tone],
       },
     },
     numbers,
     sections: snapshot.sections.map((section) => ({
       ...section,
-      toneLabel: toneLabels[section.tone],
+      toneLabel: language.toneLabels[section.tone],
     })),
     discountSimulationBase: snapshot.discountSimulationBase,
     discountSimulationContext: snapshot.category,
