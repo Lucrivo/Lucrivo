@@ -31,6 +31,9 @@ function MaterialCostStep({
   onMaterialCostUnitChange,
 }: ServiceMaterialCostStepProps) {
   const unitError = errors.materialCostUnit?.[0];
+  const selectedUnit = isServiceMaterialCostUnit(values.materialCostUnit)
+    ? values.materialCostUnit
+    : null;
 
   return (
     <div className="grid gap-5">
@@ -51,9 +54,15 @@ function MaterialCostStep({
             errors={errors}
             onChange={onChange}
             prefix="R$"
+            labelClassName="sm:min-h-8 sm:items-end"
           />
           <div className="grid content-start gap-2">
-            <Label htmlFor="materialCostUnit">Esse custo acontece</Label>
+            <Label
+              htmlFor="materialCostUnit"
+              className="sm:min-h-8 sm:items-end"
+            >
+              Esse custo acontece
+            </Label>
             <Select
               value={values.materialCostUnit}
               onValueChange={(value) => {
@@ -70,7 +79,9 @@ function MaterialCostStep({
                   unitError ? "materialCostUnit-error" : undefined
                 }
               >
-                <SelectValue placeholder="Selecione a unidade" />
+                <SelectValue placeholder="Selecione a unidade">
+                  {selectedUnit ? unitLabels[selectedUnit] : null}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent align="start">
                 {serviceMaterialCostUnits.map((unit) => (

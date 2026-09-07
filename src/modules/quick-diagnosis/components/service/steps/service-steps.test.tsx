@@ -119,10 +119,41 @@ describe("service diagnosis steps", () => {
     await user.click(
       screen.getByRole("combobox", { name: "Esse custo acontece" }),
     );
-    expect(
-      await screen.findByRole("option", { name: "Por mês" }),
-    ).toBeInTheDocument();
+    await user.click(await screen.findByRole("option", { name: "Por mês" }));
+
+    const selectedUnit = screen.getByRole("combobox", {
+      name: "Esse custo acontece",
+    });
+    expect(selectedUnit).toHaveTextContent("Por mês");
+    expect(selectedUnit).not.toHaveTextContent("month");
+    expect(selectedUnit.previousElementSibling).toHaveClass("sm:min-h-8");
   });
+
+  it.each([
+    ["appointment", "Por atendimento/serviço"],
+    ["hour", "Por hora"],
+    ["day", "Por dia"],
+    ["month", "Por mês"],
+  ] as const)(
+    "renders the selected %s material unit in Portuguese",
+    (materialCostUnit, translatedLabel) => {
+      render(
+        <MaterialCostStep
+          values={{ ...values, hasMaterialCost: true, materialCostUnit }}
+          errors={{}}
+          onChange={vi.fn()}
+          onHasMaterialCostChange={vi.fn()}
+          onMaterialCostUnitChange={vi.fn()}
+        />,
+      );
+
+      const selectedUnit = screen.getByRole("combobox", {
+        name: "Esse custo acontece",
+      });
+      expect(selectedUnit).toHaveTextContent(translatedLabel);
+      expect(selectedUnit).not.toHaveTextContent(materialCostUnit);
+    },
+  );
 
   it("reveals tax and platform percentages independently", async () => {
     const user = userEvent.setup();

@@ -16,6 +16,7 @@ type StepFieldProps<Field extends string> = {
   suffix?: string;
   description?: string;
   inputMode?: "decimal" | "numeric";
+  labelClassName?: string;
 };
 
 function StepField<Field extends string>({
@@ -28,6 +29,7 @@ function StepField<Field extends string>({
   suffix,
   description,
   inputMode = "decimal",
+  labelClassName,
 }: StepFieldProps<Field>) {
   const error = errors[field]?.[0];
   const errorId = `${field}-error`;
@@ -41,7 +43,9 @@ function StepField<Field extends string>({
 
   return (
     <div className="grid content-start gap-2">
-      <Label htmlFor={field}>{label}</Label>
+      <Label htmlFor={field} className={labelClassName}>
+        {label}
+      </Label>
       <InputGroup className="bg-background h-11 shadow-xs">
         {prefix ? (
           <InputGroupAddon>
