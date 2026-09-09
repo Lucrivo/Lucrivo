@@ -40,6 +40,10 @@ type ServiceFlowInput = {
   paymentFeeRate: string;
 };
 
+type ServiceFlowSubmissionInput = ServiceFlowInput & {
+  submissionId: string;
+};
+
 type ServiceFlowField = keyof ServiceFlowInput;
 type ServiceFlowFieldErrors = Partial<Record<ServiceFlowField, string[]>>;
 
@@ -72,12 +76,28 @@ function safeScaledInteger(value: string, scale: number): number {
   }
 }
 
+function convertServiceUnitAmountCents(
+  amountCents: number,
+  sourceMinutes: number,
+  targetMinutes: number,
+): number | null {
+  if (
+    sourceMinutes <= 0 ||
+    targetMinutes <= 0 ||
+    !Number.isSafeInteger(amountCents) ||
+    !Number.isSafeInteger(sourceMinutes) ||
+    !Number.isSafeInteger(targetMinutes)
+  ) {
+    return null;
+  }
+
+  const numerator = BigInt(amountCents) * BigInt(targetMinutes);
+  const denominator = BigInt(sourceMinutes);
+  return Number((numerator + denominator / BigInt(2)) / denominator);
+}
+
 function roundRatio(numerator: number, denominator: number): number | null {
-  if (denominator <= 0) return null;
-  return Number(
-    (BigInt(numerator) + BigInt(Math.floor(denominator / 2))) /
-      BigInt(denominator),
-  );
+  return convertServiceUnitAmountCents(numerator, denominator, 1);
 }
 
 function hourlyEquivalent(
@@ -90,17 +110,25 @@ function hourlyEquivalent(
 ): number | null {
   switch (unit) {
     case "minute":
-      return amountCents * 60;
+      return convertServiceUnitAmountCents(amountCents, 1, 60);
     case "hour":
       return amountCents;
     case "appointment":
-      return roundRatio(amountCents * 60, appointmentDurationMinutes);
+      return convertServiceUnitAmountCents(
+        amountCents,
+        appointmentDurationMinutes,
+        60,
+      );
     case "day":
-      return roundRatio(amountCents * 60, dailyWorkMinutes);
+      return convertServiceUnitAmountCents(amountCents, dailyWorkMinutes, 60);
     case "week":
-      return roundRatio(amountCents * 60, dailyWorkMinutes * weeklyWorkDays);
+      return convertServiceUnitAmountCents(
+        amountCents,
+        dailyWorkMinutes * weeklyWorkDays,
+        60,
+      );
     case "month":
-      return roundRatio(amountCents * 60, monthlyWorkMinutes);
+      return convertServiceUnitAmountCents(amountCents, monthlyWorkMinutes, 60);
   }
 }
 
@@ -190,6 +218,7 @@ function calculateServiceFlowPreview(
 
 export {
   calculateServiceFlowPreview,
+  convertServiceUnitAmountCents,
   isServiceFlowPricingMethod,
   isServiceMaterialCostUnit,
   serviceMaterialCostUnits,
@@ -198,6 +227,7 @@ export {
   type ServiceFlowFieldErrors,
   type ServiceFlowInput,
   type ServiceFlowPreview,
+  type ServiceFlowSubmissionInput,
   type ServiceFlowPricingMethod,
   type ServiceMaterialCostUnit,
 };

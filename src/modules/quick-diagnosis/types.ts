@@ -40,6 +40,19 @@ type ServiceDiagnosisCommand = {
   cardFeeRateBasisPoints: number;
 };
 
+type ServiceDiagnosisSource = {
+  pricingMethod: ServiceFlowPricingMethod;
+  currentPriceCents: number;
+  materialCostUnit: ServiceMaterialCostUnit | null;
+  materialCostCents: number;
+  dailyWorkMinutes: number;
+  appointmentDurationMinutes: number;
+};
+
+type NormalizedServiceDiagnosisCommand = ServiceDiagnosisCommand & {
+  source: ServiceDiagnosisSource;
+};
+
 type ServiceDiagnosisField = keyof ServiceDiagnosisInput;
 type ServiceDiagnosisFieldErrors = Partial<
   Record<ServiceDiagnosisField, string[]>
@@ -162,10 +175,16 @@ export {
   type ProductionDiagnosisFieldErrors,
   type ProductionDiagnosisInput,
   type ProductionDiagnosisValidatedInput,
+  type NormalizedServiceDiagnosisCommand,
   type ServiceDiagnosisCommand,
+  type ServiceDiagnosisSource,
   type ServiceDiagnosisField,
   type ServiceDiagnosisFieldErrors,
   type ServiceDiagnosisInput,
   type ServicePricingMethod,
   type ServiceWorkPeriod,
 };
+import type {
+  ServiceFlowPricingMethod,
+  ServiceMaterialCostUnit,
+} from "./domain/service-flow";

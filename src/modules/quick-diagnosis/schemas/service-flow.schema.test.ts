@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import type { ServiceFlowInput } from "../domain/service-flow";
-import { validateServiceFlowFields } from "./service-flow.schema";
+import {
+  serviceFlowSubmissionSchema,
+  validateServiceFlowFields,
+} from "./service-flow.schema";
 
 const validInput: ServiceFlowInput = {
   desiredMonthlyIncome: "5000",
@@ -21,13 +24,34 @@ const validInput: ServiceFlowInput = {
 };
 
 describe("service flow validation", () => {
+  it("accepts a complete flow with a submission identifier", () => {
+    expect(
+      serviceFlowSubmissionSchema.parse({
+        ...validInput,
+        submissionId: "550e8400-e29b-41d4-a716-446655440000",
+      }),
+    ).toEqual({
+      ...validInput,
+      submissionId: "550e8400-e29b-41d4-a716-446655440000",
+    });
+  });
+
+  it("rejects an invalid submission identifier", () => {
+    expect(
+      serviceFlowSubmissionSchema.safeParse({
+        ...validInput,
+        submissionId: "not-a-uuid",
+      }).success,
+    ).toBe(false);
+  });
+
   it("accepts the complete new service flow", () => {
     expect(
       validateServiceFlowFields(Object.keys(validInput), validInput),
     ).toEqual({});
   });
 
-  it("requires duration only for appointments", () => {
+  it("requires duration when billing or material uses appointments", () => {
     const errors = validateServiceFlowFields(["appointmentDurationMinutes"], {
       ...validInput,
       appointmentDurationMinutes: "",
@@ -40,9 +64,19 @@ describe("service flow validation", () => {
       validateServiceFlowFields(["appointmentDurationMinutes"], {
         ...validInput,
         pricingMethod: "minute",
+        materialCostUnit: "hour",
         appointmentDurationMinutes: "",
       }),
     ).toEqual({});
+
+    expect(
+      validateServiceFlowFields(["appointmentDurationMinutes"], {
+        ...validInput,
+        pricingMethod: "hour",
+        materialCostUnit: "appointment",
+        appointmentDurationMinutes: "",
+      }).appointmentDurationMinutes,
+    ).toEqual(["Informe quanto tempo dura, em média, um serviço."]);
   });
 
   it("requires a material value and unit only when material exists", () => {

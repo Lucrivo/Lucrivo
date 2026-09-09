@@ -79,7 +79,7 @@ const targetMinutes =
 - Source-duration mapping: minute `1`, hour `60`, day `dailyWorkMinutes`, week `dailyWorkMinutes * weeklyWorkDays`, month `monthlyWorkMinutes`, appointment `appointmentDurationMinutes`.
 - Canonical command stores `pricingMethod: "appointment"` only for source appointments and `"hour"` otherwise; `workHoursPeriod: "day"`; `workPeriodMinutes: dailyWorkMinutes`; `minuteRateCents: 0`; source-disabled material/tax/fee values become zero.
 
-- [ ] **Step 1: Add failing validation and table-driven normalization tests**
+- [x] **Step 1: Add failing validation and table-driven normalization tests**
 
 Add schema cases for a valid UUID, invalid submission ID, and conditional duration. In the composer test, use `dailyWorkHours: "6"`, `weeklyWorkDays: "5"`, which yields `dailyWorkMinutes = 360` and `monthlyWorkMinutes = 7_794`, then assert:
 
@@ -109,7 +109,7 @@ it.each([
 
 Add an appointment case that retains the entered appointment price. Add material cases for `appointment`, `hour`, `day`, and `month` against both canonical hour and canonical appointment. Include a `.5`-cent boundary to prove half-up rounding and assert that tax/card answers set their basis points to zero when false.
 
-- [ ] **Step 2: Run focused tests and confirm they fail**
+- [x] **Step 2: Run focused tests and confirm they fail**
 
 Run:
 
@@ -119,7 +119,7 @@ pnpm test src/modules/quick-diagnosis/schemas/service-flow.schema.test.ts src/mo
 
 Expected: FAIL because the submission schema/composer/types do not exist and duration is not required for appointment-based material.
 
-- [ ] **Step 3: Implement one shared integer conversion path**
+- [x] **Step 3: Implement one shared integer conversion path**
 
 Move/export the reusable round helper from `service-flow.ts` or introduce it in the composer and make the preview call the same helper. Implement:
 
@@ -143,11 +143,11 @@ function convertUnitAmountCents(
 
 Parse all money and percentages through existing decimal helpers. Build the canonical command and source object without accepting any preview-derived number from the browser.
 
-- [ ] **Step 4: Run the focused tests**
+- [x] **Step 4: Run the focused tests**
 
 Run the Step 2 command. Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/modules/quick-diagnosis/domain/service-flow.ts src/modules/quick-diagnosis/domain/compose-service-diagnosis-command.ts src/modules/quick-diagnosis/domain/compose-service-diagnosis-command.test.ts src/modules/quick-diagnosis/schemas/service-flow.schema.ts src/modules/quick-diagnosis/schemas/service-flow.schema.test.ts src/modules/quick-diagnosis/types.ts
