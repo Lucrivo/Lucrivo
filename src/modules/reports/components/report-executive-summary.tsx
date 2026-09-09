@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { PlainLanguageHelp } from "@/components/shared/plain-language-help";
 import { cn } from "@/lib/utils";
 
 import type { ReportExecutiveSummaryViewModel } from "../presenters/to-report-view-model";
@@ -114,10 +115,11 @@ function ReportExecutiveSummary({
                 className="border-border/70 bg-background/75 grid gap-2 rounded-xl border p-3.5"
               >
                 <div className="flex items-end justify-between gap-3">
-                  <dt className="text-muted-foreground text-xs font-medium">
-                    {fact.currentLabel}
+                  <dt className="text-muted-foreground grid gap-1 text-xs font-medium">
+                    <span>{fact.currentLabel}</span>
+                    {fact.help ? <PlainLanguageHelp {...fact.help} /> : null}
                   </dt>
-                  <dd className="font-semibold tabular-nums">
+                  <dd className="min-w-0 text-right font-semibold break-words tabular-nums">
                     {fact.currentValue}
                   </dd>
                 </div>
@@ -125,7 +127,7 @@ function ReportExecutiveSummary({
                   <dt className="text-muted-foreground text-xs font-medium">
                     {fact.referenceLabel}
                   </dt>
-                  <dd className="font-semibold tabular-nums">
+                  <dd className="min-w-0 text-right font-semibold break-words tabular-nums">
                     {fact.referenceValue}
                   </dd>
                 </div>

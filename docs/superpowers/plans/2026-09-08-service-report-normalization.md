@@ -505,17 +505,17 @@ type DiscountSimulationContext = {
   - amount left: less than R$15 per R$100 is an attention range, not a universal recommendation;
   - normalization: only for original minute/day/week/month, states the original price and its hourly equivalent.
 
-- [ ] **Step 1: Add failing version-aware presenter tests**
+- [x] **Step 1: Add failing version-aware presenter tests**
 
 Assert V5 omits target number/copy, provides the three help contracts when applicable, labels margin states `Prejuízo`, `Pouca folga`, or `Boa folga`, and preserves current V4 labels/target price exactly.
 
-- [ ] **Step 2: Add failing component interaction tests**
+- [x] **Step 2: Add failing component interaction tests**
 
 Render the summary and numbers, activate help with click and keyboard, assert semantic title/body, close with `Escape`, and verify focus returns to the trigger. Render narrow containers and assert long currency/quantity content wraps rather than overflowing.
 
 For discounts, test loss, under-15% positive margin, and at-least-15% margin using V5 context; assert no `meta` or `preço-alvo`. Re-run an existing Product context to prove its target copy is unchanged.
 
-- [ ] **Step 3: Run focused presentation tests and confirm failure**
+- [x] **Step 3: Run focused presentation tests and confirm failure**
 
 ```bash
 pnpm test src/modules/reports/presentation/report-language.test.ts src/modules/reports/presenters/to-report-view-model.test.ts src/modules/reports/components/report-executive-summary.test.tsx src/modules/reports/components/discount-simulator.test.tsx src/modules/reports/components/report-detail.test.tsx
@@ -523,19 +523,19 @@ pnpm test src/modules/reports/presentation/report-language.test.ts src/modules/r
 
 Expected: FAIL because facts have no help and the simulator only supports target language.
 
-- [ ] **Step 4: Read the UI craft floor immediately before UI edits**
+- [x] **Step 4: Read the UI craft floor immediately before UI edits**
 
 Read `.agents/skills/impeccable/reference/craft-floor.md` completely. Apply its accessibility, responsive, typography, and interaction constraints while preserving this repository's current card system.
 
-- [ ] **Step 5: Implement the V5 presentation profile**
+- [x] **Step 5: Implement the V5 presentation profile**
 
 Branch on category plus exact tuple, not content version alone. Render `PlainLanguageHelp` adjacent to the fact/number it explains. Keep the monthly sales quantity as the visual emphasis and place weekly/daily equivalents in one short supporting sentence. Avoid adding decorative containers or animation.
 
-- [ ] **Step 6: Run focused tests**
+- [x] **Step 6: Run focused tests**
 
 Run the Step 3 command. Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/modules/reports/presentation src/modules/reports/presenters src/modules/reports/components

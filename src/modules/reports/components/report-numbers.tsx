@@ -1,5 +1,6 @@
 import { PlainLanguageHelp } from "@/components/shared/plain-language-help";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 import type { ReportNumberViewModel } from "../presenters/to-report-view-model";
 
@@ -28,13 +29,28 @@ function ReportNumbers({
             {numbers.map((number) => (
               <div
                 key={number.key}
-                className="flex items-end justify-between gap-4 py-3 first:pt-0 last:pb-0"
+                className={cn(
+                  "grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-end gap-3 py-3 first:pt-0 last:pb-0",
+                  number.key === "sales" && "py-5",
+                )}
               >
                 <dt className="text-muted-foreground grid gap-1 text-xs font-medium">
                   <span>{number.label}</span>
                   {number.help ? <PlainLanguageHelp {...number.help} /> : null}
                 </dt>
-                <dd className="font-semibold tabular-nums">{number.value}</dd>
+                <dd
+                  className={cn(
+                    "max-w-full min-w-0 text-right font-semibold break-words tabular-nums",
+                    number.key === "sales" && "text-primary text-xl",
+                  )}
+                >
+                  {number.value}
+                </dd>
+                {number.supportingText ? (
+                  <p className="text-muted-foreground col-span-2 text-xs leading-5">
+                    {number.supportingText}
+                  </p>
+                ) : null}
               </div>
             ))}
           </dl>

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type {
   ProductDiagnosisCommand,
   ProductionDiagnosisCommand,
-  ServiceDiagnosisCommand,
+  NormalizedServiceDiagnosisCommand,
 } from "@/modules/quick-diagnosis/types";
 
 import { buildProductReportSnapshot } from "../domain/build-product-report-snapshot";
@@ -15,14 +15,14 @@ import { calculateServiceReport } from "../domain/calculate-service-report";
 import type { ReportSnapshot } from "../types";
 import { toReportViewModel } from "./to-report-view-model";
 
-const command: ServiceDiagnosisCommand = {
+const command: NormalizedServiceDiagnosisCommand = {
   submissionId: "550e8400-e29b-41d4-a716-446655440000",
   pricingMethod: "hour",
   desiredMonthlyIncomeCents: 400000,
   fixedMonthlyExpensesCents: 200000,
-  workHoursPeriod: "month",
-  workPeriodMinutes: 6000,
-  monthlyWorkMinutes: 6000,
+  workHoursPeriod: "day",
+  workPeriodMinutes: 360,
+  monthlyWorkMinutes: 7794,
   weeklyWorkDays: 5,
   hourlyRateCents: 8000,
   minuteRateCents: 0,
@@ -31,6 +31,14 @@ const command: ServiceDiagnosisCommand = {
   materialUnitCostCents: 0,
   taxRateBasisPoints: 600,
   cardFeeRateBasisPoints: 200,
+  source: {
+    pricingMethod: "hour",
+    currentPriceCents: 8000,
+    materialCostUnit: null,
+    materialCostCents: 0,
+    dailyWorkMinutes: 360,
+    appointmentDurationMinutes: 0,
+  },
 };
 
 const productCommand: ProductDiagnosisCommand = {
@@ -62,7 +70,7 @@ const productionCommand: ProductionDiagnosisCommand = {
   cardFeeRateBasisPoints: 200,
 };
 
-function present(input: ServiceDiagnosisCommand = command) {
+function present(input: NormalizedServiceDiagnosisCommand = command) {
   const snapshot = buildSnapshot(input);
   return toReportViewModel({
     id: 42,
@@ -71,7 +79,7 @@ function present(input: ServiceDiagnosisCommand = command) {
   });
 }
 
-function buildSnapshot(input: ServiceDiagnosisCommand = command) {
+function buildSnapshot(input: NormalizedServiceDiagnosisCommand = command) {
   return buildServiceReportSnapshot(input, calculateServiceReport(input));
 }
 
@@ -104,7 +112,7 @@ function presentProduction(
 }
 
 describe("toReportViewModel", () => {
-  it("formats identity, persisted summary, and five report numbers", () => {
+  it("presents the normalized Service report without a target price", () => {
     const snapshot = buildSnapshot();
     const viewModel = present();
 
@@ -127,19 +135,65 @@ describe("toReportViewModel", () => {
       viewModel.numbers.map(({ label, value }) => ({ label, value })),
     ).toEqual([
       { label: "Preço atual", value: "R$ 80,00" },
-      { label: "Quanto sobra a cada R$ 100", value: "17%" },
-      { label: "Quanto sobra por hora", value: "R$ 13,60" },
-      { label: "Menor preço sem prejuízo", value: "R$ 65,22" },
-      { label: "Preço para alcançar a meta (15%)", value: "R$ 77,93" },
+      { label: "Menor preço sem prejuízo", value: "R$ 50,21" },
+      { label: "Quanto sobra a cada R$ 100", value: "R$ 34,26" },
+      { label: "Quantidade de serviços por mês", value: "82 horas" },
     ]);
-    expect(viewModel.numbers.filter(({ help }) => help)).toHaveLength(2);
+    expect(
+      viewModel.numbers.filter(({ help }) => help).length,
+    ).toBeGreaterThanOrEqual(2);
+    expect(viewModel.numbers.map(({ label }) => label).join(" ")).not.toMatch(
+      /meta|preço-alvo/i,
+    );
+    expect(viewModel.discountSimulationContext).toEqual({
+      category: "service",
+      usesAttentionBand: true,
+    });
     expect(viewModel.language.isPlainLanguage).toBe(true);
     expect(viewModel).not.toHaveProperty("summary");
     expect(viewModel).not.toHaveProperty("nextActions");
   });
 
+  it("explains an original monthly price through its hourly equivalent", () => {
+    const viewModel = present({
+      ...command,
+      source: {
+        ...command.source,
+        pricingMethod: "month",
+        currentPriceCents: 1039200,
+      },
+    });
+
+    expect(viewModel.executiveSummary.facts[0].help).toMatchObject({
+      title: "Por que mostramos o valor por hora?",
+    });
+    expect(viewModel.executiveSummary.facts[0].help?.description).toContain(
+      "R$ 10.392,00 por mês",
+    );
+    expect(viewModel.executiveSummary.facts[0].help?.description).toContain(
+      "R$ 80,00 por hora",
+    );
+  });
+
   it("renders nullable financial references as unavailable", () => {
-    const viewModel = present({ ...command, monthlyWorkMinutes: 0 });
+    const current = buildSnapshot();
+    const viewModel = toReportViewModel({
+      id: 42,
+      createdAt: "2026-08-28T22:30:00.000Z",
+      snapshot: {
+        ...current,
+        schemaVersion: 3,
+        calculationVersion: 2,
+        contentVersion: 4,
+        results: {
+          ...current.results,
+          realMarginBasisPoints: null,
+          unitProfitCents: null,
+          minimumPriceCents: null,
+          targetPriceCents: null,
+        },
+      } as unknown as ReportSnapshot,
+    });
 
     expect(viewModel.numbers).toContainEqual({
       key: "margin",
@@ -169,21 +223,20 @@ describe("toReportViewModel", () => {
     );
   });
 
-  it("preserves all five resolved snapshot sections and semantic tone labels", () => {
+  it("preserves all four normalized snapshot sections and semantic tone labels", () => {
     const viewModel = present();
 
-    expect(viewModel.sections).toHaveLength(5);
+    expect(viewModel.sections).toHaveLength(4);
     expect(viewModel.sections.map(({ key }) => key)).toEqual([
       "break_even",
-      "hidden_cost",
       "margin_diagnosis",
       "sales_goal",
       "discount_simulator",
     ]);
     expect(viewModel.sections[0]).toEqual(
       expect.objectContaining({
-        title: "1 · Ponto de equilíbrio",
-        body: "Abaixo de R$ 65,22 por hora você vende no prejuízo. Seu preço de R$ 80,00 cobre o custo.",
+        title: "Seu menor preço sem prejuízo",
+        body: "Você cobra R$ 80,00, R$ 29,79 acima desse valor por hora.",
         tone: "positive",
         toneLabel: "Bom resultado",
       }),
@@ -258,7 +311,10 @@ describe("toReportViewModel", () => {
       { label: "Menor preço sem prejuízo", value: "R$ 86,96" },
       { label: "Preço para alcançar a meta (20%)", value: "R$ 111,12" },
     ]);
-    expect(viewModel.discountSimulationContext).toBe("production");
+    expect(viewModel.discountSimulationContext).toEqual({
+      category: "production",
+      usesAttentionBand: false,
+    });
   });
 
   it("presents partial Production references without inventing real profit", () => {
@@ -300,7 +356,7 @@ describe("toReportViewModel", () => {
           label: "Margem adequada",
         },
       },
-    } as ReportSnapshot;
+    } as unknown as ReportSnapshot;
     const legacy = toReportViewModel({
       id: 43,
       createdAt: "2026-08-28T22:30:00.000Z",
@@ -317,5 +373,31 @@ describe("toReportViewModel", () => {
       "Preço-alvo (15%)",
     ]);
     expect(legacy.numbers.every(({ help }) => help === undefined)).toBe(true);
+  });
+
+  it("keeps the V4 target-based presentation unchanged", () => {
+    const current = buildSnapshot();
+    const v4 = toReportViewModel({
+      id: 44,
+      createdAt: "2026-08-28T22:30:00.000Z",
+      snapshot: {
+        ...current,
+        schemaVersion: 3,
+        calculationVersion: 2,
+        contentVersion: 4,
+      } as unknown as ReportSnapshot,
+    });
+
+    expect(v4.numbers.map(({ label }) => label)).toEqual([
+      "Preço atual",
+      "Quanto sobra a cada R$ 100",
+      "Quanto sobra por hora",
+      "Menor preço sem prejuízo",
+      "Preço para alcançar a meta (15%)",
+    ]);
+    expect(v4.discountSimulationContext).toEqual({
+      category: "service",
+      usesAttentionBand: false,
+    });
   });
 });

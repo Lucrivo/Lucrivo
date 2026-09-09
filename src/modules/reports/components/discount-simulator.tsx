@@ -19,7 +19,10 @@ import type { ReportDiscountSimulationBase } from "../types";
 type DiscountSimulationStatus =
   "unavailable" | "target" | "below_target" | "break_even" | "loss";
 
-type DiscountSimulationContext = "service" | "product" | "production";
+type DiscountSimulationContext = {
+  category: "service" | "product" | "production";
+  usesAttentionBand: boolean;
+};
 
 type DiscountSimulation = {
   discountPercent: number;
@@ -133,7 +136,24 @@ function safetyMessage(
 ): string {
   const target = formatBasisPoints(targetMarginBasisPoints);
   const partialCost =
-    context === "production" ? "custo de fabricação" : "custo de compra";
+    context.category === "production"
+      ? "custo de fabricação"
+      : "custo de compra";
+
+  if (context.usesAttentionBand) {
+    switch (simulation.status) {
+      case "unavailable":
+        return "Não foi possível simular o desconto porque faltam dados para calcular o menor preço sem prejuízo.";
+      case "target":
+        return "Boa folga: depois deste desconto, ainda sobram pelo menos R$ 15 a cada R$ 100 cobrados.";
+      case "below_target":
+        return "Pouca folga: o preço ainda paga os gastos, mas sobram menos de R$ 15 a cada R$ 100 cobrados.";
+      case "break_even":
+        return "No limite: este preço apenas paga os gastos, sem deixar dinheiro.";
+      case "loss":
+        return "Prejuízo: este preço não paga todos os gastos. Reduza o desconto antes de fechar a venda.";
+    }
+  }
 
   if (partial) {
     switch (simulation.status) {
@@ -152,7 +172,7 @@ function safetyMessage(
 
   switch (simulation.status) {
     case "unavailable":
-      if (context === "production") {
+      if (context.category === "production") {
         return "Não foi possível simular descontos porque o preço mínimo ou o custo de fabricação está indisponível.";
       }
       return "Não foi possível simular descontos porque o preço mínimo ou o custo por venda está indisponível.";
@@ -184,7 +204,8 @@ function DiscountSimulator({
 }) {
   const inputId = useId();
   const [discountPercent, setDiscountPercent] = useState(10);
-  const isUnitReport = context === "product" || context === "production";
+  const isUnitReport =
+    context.category === "product" || context.category === "production";
   const partial = isUnitReport && "partial" in base && base.partial;
   const simulation = simulateDiscount(base, discountPercent);
   const presentation = statusPresentation[simulation.status];
@@ -198,7 +219,9 @@ function DiscountSimulator({
       <CardHeader className="gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <h3 className="max-w-2xl text-lg font-semibold sm:text-xl">
-            Quanto de desconto eu consigo dar sem destruir minha margem?
+            {context.usesAttentionBand
+              ? "Quanto de desconto posso dar sem ter prejuízo?"
+              : "Quanto de desconto eu consigo dar sem destruir minha margem?"}
           </h3>
           <Badge variant="info">
             <GaugeIcon aria-hidden="true" />
@@ -209,7 +232,9 @@ function DiscountSimulator({
         <p className="text-muted-foreground max-w-3xl text-[0.9375rem] leading-6">
           {partial
             ? "Arraste e veja como o desconto altera o preço e a contribuição disponível para pagar a operação."
-            : "Arraste e veja o preço, a margem e o lucro mudarem — e onde está o seu limite."}
+            : context.usesAttentionBand
+              ? "Arraste e veja como o desconto muda o preço e quanto sobra depois dos gastos."
+              : "Arraste e veja o preço, a margem e o lucro mudarem — e onde está o seu limite."}
         </p>
         {partial ? (
           <p className="border-info/25 bg-info/8 text-info rounded-xl border px-4 py-3 text-sm leading-5 font-medium">
@@ -272,7 +297,9 @@ function DiscountSimulator({
                   ? "Margem de contribuição"
                   : isUnitReport
                     ? "Margem real"
-                    : "Nova margem"}
+                    : context.usesAttentionBand
+                      ? "Quanto sobra a cada R$ 100"
+                      : "Nova margem"}
               </dt>
               <dd className="font-semibold tabular-nums">
                 {optionalMargin(simulation.realMarginBasisPoints)}
@@ -284,7 +311,9 @@ function DiscountSimulator({
                   ? "Contribuição por unidade"
                   : isUnitReport
                     ? "Lucro por unidade"
-                    : "Lucro por venda"}
+                    : context.usesAttentionBand
+                      ? "Quanto sobra por serviço"
+                      : "Lucro por venda"}
               </dt>
               <dd className="font-semibold tabular-nums">
                 {optionalCurrency(simulation.unitProfitCents)}

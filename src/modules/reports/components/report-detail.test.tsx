@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type {
   ProductDiagnosisCommand,
   ProductionDiagnosisCommand,
-  ServiceDiagnosisCommand,
+  NormalizedServiceDiagnosisCommand,
 } from "@/modules/quick-diagnosis/types";
 
 import { buildProductReportSnapshot } from "../domain/build-product-report-snapshot";
@@ -17,14 +17,14 @@ import { toReportViewModel } from "../presenters/to-report-view-model";
 import { getReportLanguageProfile } from "../presenters/report-language";
 import { ReportDetail } from "./report-detail";
 
-const command: ServiceDiagnosisCommand = {
+const command: NormalizedServiceDiagnosisCommand = {
   submissionId: "550e8400-e29b-41d4-a716-446655440000",
   pricingMethod: "hour",
   desiredMonthlyIncomeCents: 400000,
   fixedMonthlyExpensesCents: 200000,
-  workHoursPeriod: "month",
-  workPeriodMinutes: 6000,
-  monthlyWorkMinutes: 6000,
+  workHoursPeriod: "day",
+  workPeriodMinutes: 360,
+  monthlyWorkMinutes: 7794,
   weeklyWorkDays: 5,
   hourlyRateCents: 8000,
   minuteRateCents: 0,
@@ -33,6 +33,14 @@ const command: ServiceDiagnosisCommand = {
   materialUnitCostCents: 0,
   taxRateBasisPoints: 600,
   cardFeeRateBasisPoints: 200,
+  source: {
+    pricingMethod: "hour",
+    currentPriceCents: 8000,
+    materialCostUnit: null,
+    materialCostCents: 0,
+    dailyWorkMinutes: 360,
+    appointmentDurationMinutes: 0,
+  },
 };
 
 const snapshot = buildServiceReportSnapshot(
@@ -158,16 +166,19 @@ describe("ReportDetail", () => {
     expect(screen.queryByText("Prioridade agora")).not.toBeInTheDocument();
   });
 
-  it("renders exactly five persisted sections in snapshot order", () => {
+  it("renders exactly four persisted V5 sections in snapshot order", () => {
     render(<ReportDetail viewModel={viewModel} />);
     const sections = screen.getAllByTestId("report-section");
 
-    expect(sections).toHaveLength(5);
+    expect(sections).toHaveLength(4);
     expect(
       sections.map(
         (section) => within(section).getByRole("heading").textContent,
       ),
-    ).toEqual(viewModel.sections.map(({ title }) => title));
+    ).toEqual([
+      ...viewModel.sections.slice(0, -1).map(({ title }) => title),
+      "Quanto de desconto posso dar sem ter prejuízo?",
+    ]);
   });
 
   it("communicates every tone with visible text in addition to color", () => {
