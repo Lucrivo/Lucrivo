@@ -1,3 +1,9 @@
+import type {
+  ServiceFlowPricingMethod,
+  ServiceFlowSubmissionFieldErrors,
+  ServiceMaterialCostUnit,
+} from "./domain/service-flow";
+
 const pricingMethods = ["hour", "minute", "appointment"] as const;
 const serviceWorkPeriods = ["day", "week", "month"] as const;
 
@@ -40,6 +46,19 @@ type ServiceDiagnosisCommand = {
   cardFeeRateBasisPoints: number;
 };
 
+type ServiceDiagnosisSource = {
+  pricingMethod: ServiceFlowPricingMethod;
+  currentPriceCents: number;
+  materialCostUnit: ServiceMaterialCostUnit | null;
+  materialCostCents: number;
+  dailyWorkMinutes: number;
+  appointmentDurationMinutes: number;
+};
+
+type NormalizedServiceDiagnosisCommand = ServiceDiagnosisCommand & {
+  source: ServiceDiagnosisSource;
+};
+
 type ServiceDiagnosisField = keyof ServiceDiagnosisInput;
 type ServiceDiagnosisFieldErrors = Partial<
   Record<ServiceDiagnosisField, string[]>
@@ -50,7 +69,7 @@ type CreateServiceDiagnosisActionResult =
   | {
       status: "error";
       error: "invalid_input";
-      fieldErrors: ServiceDiagnosisFieldErrors;
+      fieldErrors: ServiceFlowSubmissionFieldErrors;
     }
   | { status: "error"; error: "unauthorized" | "create_failed" };
 
@@ -162,7 +181,9 @@ export {
   type ProductionDiagnosisFieldErrors,
   type ProductionDiagnosisInput,
   type ProductionDiagnosisValidatedInput,
+  type NormalizedServiceDiagnosisCommand,
   type ServiceDiagnosisCommand,
+  type ServiceDiagnosisSource,
   type ServiceDiagnosisField,
   type ServiceDiagnosisFieldErrors,
   type ServiceDiagnosisInput,

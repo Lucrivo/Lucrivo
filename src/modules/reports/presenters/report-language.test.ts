@@ -62,4 +62,17 @@ describe("getReportLanguageProfile", () => {
       });
     },
   );
+
+  it("uses the attention-band labels for current Service reports", () => {
+    expect(
+      getReportLanguageProfile({ category: "service", contentVersion: 5 })
+        .verdictLabels,
+    ).toMatchObject({
+      direct_loss: "Prejuízo",
+      operational_loss: "Prejuízo",
+      tight_margin: "Pouca folga",
+      adequate_margin: "Boa folga",
+      above_target: "Boa folga",
+    });
+  });
 });

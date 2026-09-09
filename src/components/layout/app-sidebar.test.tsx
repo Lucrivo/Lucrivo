@@ -7,6 +7,25 @@ const { usePathname } = vi.hoisted(() => ({
 
 vi.mock("next/navigation", () => ({ usePathname }));
 
+vi.mock("next/image", () => ({
+  default: ({
+    src,
+    alt,
+    className,
+  }: {
+    src: string | { src: string };
+    alt: string;
+    className?: string;
+  }) => (
+    <span
+      role="img"
+      aria-label={alt}
+      className={className}
+      data-src={typeof src === "string" ? src : src.src}
+    />
+  ),
+}));
+
 vi.mock("@/components/theme-toggle", () => ({
   ThemeToggle: () => <div aria-label="Selecionar tema">Tema</div>,
 }));
@@ -85,6 +104,14 @@ describe("AppSidebar", () => {
     render(<AppSidebar />);
 
     expect(screen.getByText("Lucrivo")).toBeInTheDocument();
+    const logos = screen.getAllByRole("img", { name: "Lucrivo" });
+    expect(logos).toHaveLength(2);
+    expect(logos[0]).toHaveClass("dark:hidden");
+    expect(logos[1]).toHaveClass("hidden", "dark:block");
+    expect(logos[0]).not.toHaveAttribute(
+      "data-src",
+      logos[1].getAttribute("data-src"),
+    );
     expect(screen.getByRole("link", { name: /dashboard/i })).toHaveAttribute(
       "href",
       "/dashboard",

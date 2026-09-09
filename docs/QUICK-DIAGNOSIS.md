@@ -5,7 +5,7 @@
 O diagnóstico rápido do Lucrivo procura responder, em linguagem simples, três perguntas do dono do negócio:
 
 1. **Estou ganhando dinheiro em cada venda ou atendimento?**
-2. **O preço que cobro é suficiente para cobrir a operação e atingir minha meta?**
+2. **O preço que cobro é suficiente para pagar os gastos do negócio?**
 3. **O que devo corrigir primeiro: custo, preço, margem ou volume de vendas?**
 
 Este documento trata somente do **diagnóstico rápido de um único produto, produção ou serviço**. A análise detalhada de vários produtos, a ficha técnica completa do estoque, o painel demonstrativo e a comparação histórica não fazem parte deste escopo.
@@ -46,7 +46,7 @@ Resultado imediato
         |
         +--> veredito de margem
         +--> principal ponto a corrigir
-        +--> preço mínimo e preço-alvo
+        +--> preço atual e menor preço sem prejuízo
         +--> lucro e margem por unidade/atendimento
         +--> meta de vendas
         +--> simulador de desconto
@@ -75,15 +75,31 @@ O usuário informa:
 - existência e valor de material consumido diretamente no serviço;
 - percentuais de imposto e cartão.
 
-Existem três formas de cobrança:
+Existem seis formas de cobrança:
 
 | Opção           | Como o preço é interpretado                        | Unidade usada no resultado |
 | --------------- | -------------------------------------------------- | -------------------------- |
 | Por hora        | O valor informado já é o preço de uma hora         | Hora                       |
 | Por atendimento | O valor informado é o preço completo de uma sessão | Atendimento                |
 | Por minuto      | Preço por minuto × duração média da sessão         | Atendimento                |
+| Por dia         | Valor da diária dividido pelas horas do dia        | Hora                       |
+| Por semana      | Valor semanal dividido pelas horas da semana       | Hora                       |
+| Por mês         | Valor mensal dividido pelas horas do mês           | Hora                       |
 
-Na cobrança por atendimento ou minuto, a duração é convertida em horas para descobrir quanto da capacidade mensal é consumida por uma sessão. O material é informado por hora na cobrança por hora e por atendimento completo nas cobranças por minuto ou atendimento.
+O motor mantém a resposta original e também cria um valor comparável. Minuto, hora, dia, semana e mês são convertidos para hora; atendimento continua sendo atendimento. A capacidade mensal usa **4,33 semanas por mês**:
+
+```text
+minuto -> preço informado × 60
+dia    -> preço informado × 60 ÷ minutos trabalhados no dia
+semana -> preço informado × 60 ÷ (minutos por dia × dias por semana)
+mês    -> preço informado × 60 ÷ minutos trabalhados no mês
+
+minutos no mês = minutos por dia × dias por semana × 4,33
+```
+
+A duração do serviço é obrigatória quando a cobrança é por atendimento. Ela também é solicitada quando o material é informado por atendimento e o preço usa outra unidade; nesse caso, serve apenas para distribuir esse gasto na comparação por hora.
+
+O relatório mostra a conversão em um popover, com o preço original e seu equivalente por hora. Os dois valores são salvos para que o cálculo continue verificável.
 
 ### 3.2 Produto de revenda
 
@@ -158,14 +174,14 @@ O volume mensal significa **unidades vendidas**, não unidades apenas produzidas
 O comportamento atual começa com alguns valores predefinidos:
 
 - meta de margem de **20% para produtos e produção própria**;
-- meta de margem de **15% para serviços**;
+- faixa de atenção interna de **R$ 15 a cada R$ 100** para serviços;
 - simulação inicial de **10% de desconto**;
 - referência de **6 dias por semana para produtos e produção própria**;
 - referência de **5 dias por semana para serviços**;
 - pró-labore inicialmente desligado para produtos e produção própria;
 - pró-labore mensal informado diretamente no fluxo de serviços.
 
-No fluxo rápido atual, a meta de margem não é perguntada e também não há um controle visível para alterá-la na tela de resultado. Assim, o preço-alvo e a classificação usam automaticamente 20% ou 15%, conforme a trilha. O motor possui suporte para outras metas, mas essa escolha ainda não está exposta nessa jornada.
+No fluxo de Produto e Produção, a meta não é perguntada e permanece uma referência interna de 20%. No relatório atual de Serviço, R$ 15 a cada R$ 100 separa “Pouca folga” de “Boa folga”; essa faixa serve como alerta e não como recomendação universal para todos os negócios.
 
 Campos numéricos vazios ou inválidos são tratados como **zero**. Isso permite continuar o diagnóstico, mas também significa que um campo esquecido pode tornar o resultado incompleto.
 
@@ -422,14 +438,14 @@ margem real = lucroUnit ÷ preço
 
 A contribuição mostra quanto cada venda deixa para pagar pró-labore e contas fixas depois de taxas e material. O lucro unitário também desconta o custo de estrutura rateado.
 
-### 7.6 Preço mínimo e preço-alvo
+### 7.6 Menor preço sem prejuízo e preço de referência
 
 ```text
 preço mínimo = custoUnit ÷ (1 − imposto − cartão)
 preço-alvo = custoUnit ÷ (1 − imposto − cartão − margem-alvo)
 ```
 
-No fluxo rápido atual, a margem-alvo começa fixada em 15% para serviços. O preço-alvo só existe quando taxas e margem somam menos de 100%.
+O relatório atual de Serviço destaca o menor preço sem prejuízo e não exibe um preço-alvo. O cálculo interno de referência é preservado por compatibilidade histórica, mas não orienta a comunicação atual do Serviço.
 
 ### 7.7 Capacidade mensal
 
@@ -602,7 +618,7 @@ Ao salvar, o sistema registra um retrato do diagnóstico contendo, entre outros 
 
 A IA não realiza os cálculos principais. O motor de regras calcula os números primeiro; a IA recebe o retrato pronto para explicá-lo em linguagem consultiva.
 
-Novos relatórios de Serviço são salvos no contrato de snapshot V3, que preserva o período informado, a capacidade original e mensal normalizada e o custo de material. Relatórios V2 já existentes continuam sendo lidos pelo contrato legado sem reinterpretar ou recalcular seus números.
+Novos relatórios de Serviço usam o contrato `4/3/5` (schema/cálculo/conteúdo). Eles preservam preço e unidade originais, custo de material original, minutos trabalhados por dia e duração do atendimento, ao lado dos valores normalizados usados no cálculo. Os contratos legados `2/1/2`, `3/2/3` e `3/2/4` continuam sendo lidos sem reinterpretar nem recalcular seus números.
 
 No protótipo fora do ambiente original, o salvamento pode não persistir após recarregar a página e o relatório de IA pode exibir uma mensagem de indisponibilidade. Essas limitações não alteram os cálculos exibidos na tela.
 
@@ -615,7 +631,7 @@ No protótipo fora do ambiente original, o salvamento pode não persistir após 
 3. **Serviço sem horas faturáveis também fica incompleto.** O custo da hora passa a zero, tornando o resultado irreal.
 4. **Imposto e cartão em branco são considerados zero.** Isso pode superestimar a margem.
 5. **O sistema não avalia demanda ou concorrência.** Um preço financeiramente saudável ainda pode não ser aceito pelo mercado.
-6. **A meta atual é uma referência predefinida, não uma recomendação setorial.** Os 20% de produto e produção e os 15% de serviço não garantem adequação ao ramo, à região ou ao mercado.
+6. **As faixas internas não são recomendações setoriais.** Os 20% de Produto e Produção e a faixa de atenção de R$ 15 a cada R$ 100 em Serviço não garantem adequação ao ramo, à região ou ao mercado.
 7. **Taxas mais meta precisam somar menos de 100%.** Caso contrário, não existe preço-alvo matematicamente possível.
 8. **Rendimento e perda de produção não fazem parte do diagnóstico rápido atual.** Essas informações serão tratadas apenas na futura análise detalhada/ficha técnica.
 9. **O ponto de equilíbrio não representa necessariamente crescimento.** Ele mostra o mínimo para cobrir a estrutura; lucro adicional exige margem ou volume superior.
@@ -666,7 +682,7 @@ Considere um profissional com:
 - preço por atendimento: R$ 80;
 - material consumido por atendimento: R$ 10;
 - imposto + cartão: 8%;
-- meta de margem: 15%.
+- faixa de atenção: R$ 15 a cada R$ 100 cobrados.
 
 ```text
 custoBase = 2.000 + 4.000 = R$ 6.000
@@ -689,12 +705,10 @@ margem real = 13,60 ÷ 80 = 17%
 
 preço mínimo = 60 ÷ 92% = R$ 65,22
 
-preço-alvo = 60 ÷ (100% - 8% - 15%) = R$ 77,92
-
 meta mensal = teto(6.000 ÷ 63,60) = 95 atendimentos
 ```
 
-Interpretação: o preço cobre estrutura, material e taxas e supera a meta de 15%. A contribuição de R$ 63,60 é o valor que cada atendimento deixa para pagar a estrutura mensal; por isso são necessários pelo menos 95 atendimentos para fechar essa conta.
+Interpretação: o preço cobre estrutura, material e taxas. Sobram R$ 17 a cada R$ 100 cobrados, portanto o relatório mostra “Boa folga”. A contribuição de R$ 63,60 é o valor que cada atendimento deixa para pagar a estrutura mensal; por isso são necessários pelo menos 95 atendimentos para fechar essa conta.
 
 ---
 

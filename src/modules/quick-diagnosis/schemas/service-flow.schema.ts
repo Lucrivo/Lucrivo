@@ -6,6 +6,7 @@ import {
   type ServiceFlowField,
   type ServiceFlowFieldErrors,
   type ServiceFlowInput,
+  type ServiceFlowSubmissionInput,
 } from "../domain/service-flow";
 import { canonicalDecimal, scaledInteger } from "./decimal-input";
 
@@ -101,7 +102,10 @@ const serviceFlowSchema = z
       });
     }
 
-    if (input.pricingMethod === "appointment") {
+    if (
+      input.pricingMethod === "appointment" ||
+      (input.hasMaterialCost && input.materialCostUnit === "appointment")
+    ) {
       try {
         if (scaledInteger(input.appointmentDurationMinutes, 0) <= 0) {
           throw new Error();
@@ -163,6 +167,14 @@ const serviceFlowSchema = z
     }
   });
 
+const serviceFlowSubmissionSchema: z.ZodType<ServiceFlowSubmissionInput> =
+  z.intersection(
+    z.strictObject({
+      submissionId: z.uuid("Envie um identificador de submissão válido."),
+    }),
+    serviceFlowSchema,
+  );
+
 function validateServiceFlowFields(
   fields: readonly string[],
   values: ServiceFlowInput,
@@ -184,4 +196,8 @@ function validateServiceFlowFields(
   return fieldErrors;
 }
 
-export { serviceFlowSchema, validateServiceFlowFields };
+export {
+  serviceFlowSchema,
+  serviceFlowSubmissionSchema,
+  validateServiceFlowFields,
+};

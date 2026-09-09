@@ -23,6 +23,7 @@ import {
   type ProductionWizardState,
 } from "./production/production-wizard-state";
 import { ServiceDiagnosisWizard } from "./service/service-diagnosis-wizard";
+import type { CreateServiceDiagnosisAction } from "../actions/create-service-diagnosis.action";
 import {
   createInitialServiceWizardState,
   serviceWizardReducer,
@@ -41,12 +42,14 @@ type ActiveDiagnosisBranch =
   | { type: "production"; state: ProductionWizardState };
 
 type QuickDiagnosisWizardProps = {
+  createServiceDiagnosis: CreateServiceDiagnosisAction;
   createProductDiagnosis: CreateProductDiagnosisAction;
   createProductionDiagnosis: CreateProductionDiagnosisAction;
   createSubmissionId?: () => string;
 };
 
 function QuickDiagnosisWizard({
+  createServiceDiagnosis,
   createProductDiagnosis,
   createProductionDiagnosis,
   createSubmissionId = () => crypto.randomUUID(),
@@ -105,12 +108,14 @@ function QuickDiagnosisWizard({
 
     if (activeBranch?.type !== diagnosisType) {
       switch (diagnosisType) {
-        case "service":
+        case "service": {
+          const submissionId = createSubmissionId();
           setActiveBranch({
             type: "service",
-            state: createInitialServiceWizardState(),
+            state: createInitialServiceWizardState(submissionId),
           });
           break;
+        }
         case "product": {
           const submissionId = createSubmissionId();
           setActiveBranch({
@@ -138,6 +143,8 @@ function QuickDiagnosisWizard({
       <ServiceDiagnosisWizard
         state={activeBranch.state}
         dispatch={serviceDispatch}
+        createDiagnosis={createServiceDiagnosis}
+        createSubmissionId={createSubmissionId}
         onBackToType={() => setShowCategory(true)}
       />
     );
@@ -190,5 +197,6 @@ export {
   type ActiveDiagnosisBranch,
   type CreateProductDiagnosisAction,
   type CreateProductionDiagnosisAction,
+  type CreateServiceDiagnosisAction,
   type QuickDiagnosisWizardProps,
 };

@@ -209,7 +209,8 @@ describe("classifyServiceMargin", () => {
     [100, 0, null, "direct_loss"],
     [100, 1, 0, "operational_loss"],
     [100, 1, 1449, "tight_margin"],
-    [100, 1, 1450, "adequate_margin"],
+    [100, 1, 1450, "tight_margin"],
+    [100, 1, 1500, "adequate_margin"],
     [100, 1, 1800, "adequate_margin"],
     [100, 1, 1801, "above_target"],
   ] as const)(

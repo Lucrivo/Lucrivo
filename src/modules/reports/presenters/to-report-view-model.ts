@@ -12,6 +12,7 @@ import type {
   ReportDiscountSimulationBase,
   ReportSnapshot,
   ServiceReportSnapshot,
+  ServiceReportSnapshotV5,
 } from "../types";
 import {
   getReportLanguageProfile,
@@ -19,19 +20,25 @@ import {
 } from "./report-language";
 
 type ReportNumberViewModel = {
-  key: "price" | "margin" | "profit" | "minimum" | "target";
+  key: "price" | "margin" | "profit" | "minimum" | "target" | "sales";
   label: string;
   value: string;
+  supportingText?: string;
   help?: PlainLanguageHelpContent;
 };
 
 type ReportExecutiveSummaryViewModel = Omit<
   ReportSnapshot["executiveSummary"],
-  "verdict"
+  "verdict" | "facts"
 > & {
   verdict: ReportSnapshot["executiveSummary"]["verdict"] & {
     toneLabel: string;
   };
+  facts: Array<
+    ReportSnapshot["executiveSummary"]["facts"][number] & {
+      help?: PlainLanguageHelpContent;
+    }
+  >;
 };
 
 type ReportSectionViewModel = ReportSnapshot["sections"][number] & {
@@ -52,7 +59,10 @@ type ReportViewModel = {
   numbers: ReportNumberViewModel[];
   sections: ReportSectionViewModel[];
   discountSimulationBase: ReportDiscountSimulationBase;
-  discountSimulationContext: ReportSnapshot["category"];
+  discountSimulationContext: {
+    category: ReportSnapshot["category"];
+    usesAttentionBand: boolean;
+  };
 };
 
 const marginHelp = {
@@ -61,6 +71,20 @@ const marginHelp = {
   description:
     "Mostra quanto fica no negócio depois de pagar os gastos usados neste cálculo.",
   technicalTerm: "margem",
+} as const satisfies PlainLanguageHelpContent;
+
+const serviceMarginHelp = {
+  triggerLabel: "Entenda esta faixa",
+  title: "Quanto sobra a cada R$ 100",
+  description:
+    "Abaixo de R$ 15 a cada R$ 100 é uma faixa de atenção: o preço paga os gastos, mas deixa pouca folga. Não é uma recomendação igual para todos os negócios.",
+} as const satisfies PlainLanguageHelpContent;
+
+const serviceMinimumPriceHelp = {
+  triggerLabel: "Como calculamos?",
+  title: "Menor preço sem prejuízo",
+  description:
+    "Este valor inclui os gastos mensais, quanto você quer receber, os materiais e as taxas que informou.",
 } as const satisfies PlainLanguageHelpContent;
 
 const targetPriceHelp = {
@@ -122,6 +146,88 @@ function toServiceNumbers(
         : "Preço-alvo (15%)",
       value: optionalCurrency(snapshot.results.targetPriceCents),
       ...(plainLanguage ? { help: targetPriceHelp } : {}),
+    },
+  ];
+}
+
+function isNormalizedServiceSnapshot(
+  snapshot: ReportSnapshot,
+): snapshot is ServiceReportSnapshotV5 {
+  return (
+    snapshot.category === "service" &&
+    snapshot.schemaVersion === 4 &&
+    snapshot.calculationVersion === 3 &&
+    snapshot.contentVersion === 5
+  );
+}
+
+function sourcePriceLabel(snapshot: ServiceReportSnapshotV5): string {
+  const labels = {
+    minute: "minuto",
+    hour: "hora",
+    day: "dia",
+    week: "semana",
+    month: "mês",
+    appointment: "atendimento",
+  } as const;
+  return `${formatCurrency(snapshot.source.currentPriceCents)} por ${labels[snapshot.source.pricingMethod]}`;
+}
+
+function normalizationHelp(
+  snapshot: ServiceReportSnapshotV5,
+): PlainLanguageHelpContent | undefined {
+  if (
+    snapshot.source.pricingMethod === "hour" ||
+    snapshot.source.pricingMethod === "appointment"
+  ) {
+    return undefined;
+  }
+
+  return {
+    triggerLabel: "Entenda a conversão",
+    title: "Por que mostramos o valor por hora?",
+    description: `Você informou ${sourcePriceLabel(snapshot)}. Para comparar preço e gastos na mesma medida, isso equivale a ${formatCurrency(snapshot.results.currentPriceCents)} por hora.`,
+  };
+}
+
+function toNormalizedServiceNumbers(
+  snapshot: ServiceReportSnapshotV5,
+): ReportNumberViewModel[] {
+  const unit = snapshot.unit === "hour" ? "horas" : "atendimentos";
+  const monthly = snapshot.results.monthlySalesGoal;
+  const weekly = snapshot.results.weeklySalesGoal;
+  const daily = snapshot.results.dailySalesGoal;
+  const supporting =
+    weekly === null
+      ? undefined
+      : `${weekly} por semana${daily === null ? "" : ` e ${daily} por dia de trabalho`}.`;
+
+  return [
+    {
+      key: "price",
+      label: "Preço atual",
+      value: formatCurrency(snapshot.results.currentPriceCents),
+    },
+    {
+      key: "minimum",
+      label: "Menor preço sem prejuízo",
+      value: optionalCurrency(snapshot.results.minimumPriceCents),
+      help: serviceMinimumPriceHelp,
+    },
+    {
+      key: "margin",
+      label: "Quanto sobra a cada R$ 100",
+      value:
+        snapshot.results.realMarginBasisPoints === null
+          ? "Indisponível"
+          : formatCurrency(snapshot.results.realMarginBasisPoints),
+      help: serviceMarginHelp,
+    },
+    {
+      key: "sales",
+      label: "Quantidade de serviços por mês",
+      value: monthly === null ? "Indisponível" : `${monthly} ${unit}`,
+      supportingText: supporting,
     },
   ];
 }
@@ -259,6 +365,7 @@ function toReportViewModel({
 }): ReportViewModel {
   const unitLabel = formatReportUnit(snapshot.unit);
   const language = getReportLanguageProfile(snapshot);
+  const normalizedService = isNormalizedServiceSnapshot(snapshot);
   let title: string;
   let categoryLabel: string;
   let numbers: ReportNumberViewModel[];
@@ -267,7 +374,9 @@ function toReportViewModel({
     case "service":
       title = "Diagnóstico de Serviço";
       categoryLabel = "Serviço";
-      numbers = toServiceNumbers(snapshot, language.isPlainLanguage);
+      numbers = normalizedService
+        ? toNormalizedServiceNumbers(snapshot)
+        : toServiceNumbers(snapshot, language.isPlainLanguage);
       break;
     case "product":
       title = "Diagnóstico de Produto";
@@ -297,6 +406,11 @@ function toReportViewModel({
         ...snapshot.executiveSummary.verdict,
         toneLabel: language.toneLabels[snapshot.executiveSummary.verdict.tone],
       },
+      facts: snapshot.executiveSummary.facts.map((fact) =>
+        normalizedService && fact.key === "price"
+          ? { ...fact, help: normalizationHelp(snapshot) }
+          : fact,
+      ),
     },
     numbers,
     sections: snapshot.sections.map((section) => ({
@@ -304,7 +418,10 @@ function toReportViewModel({
       toneLabel: language.toneLabels[section.tone],
     })),
     discountSimulationBase: snapshot.discountSimulationBase,
-    discountSimulationContext: snapshot.category,
+    discountSimulationContext: {
+      category: snapshot.category,
+      usesAttentionBand: normalizedService,
+    },
   };
 }
 

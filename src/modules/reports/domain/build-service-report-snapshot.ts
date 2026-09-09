@@ -1,7 +1,6 @@
-import type { ServiceDiagnosisCommand } from "@/modules/quick-diagnosis/types";
+import type { NormalizedServiceDiagnosisCommand } from "@/modules/quick-diagnosis/types";
 
 import {
-  formatBillableHours,
   formatCurrency,
   formatIntegerVolume,
   formatReportUnit,
@@ -11,8 +10,8 @@ import {
   type CurrentServiceReportSnapshot,
 } from "../schemas/service-report-snapshot.schema";
 import {
-  SERVICE_CALCULATION_VERSION,
-  SERVICE_CONTENT_VERSION,
+  SERVICE_REPORT_CALCULATION_VERSION,
+  SERVICE_REPORT_CONTENT_VERSION,
   SERVICE_REPORT_SCHEMA_VERSION,
   type ReportSection,
   type ReportTone,
@@ -24,38 +23,38 @@ import {
 } from "./calculate-service-report";
 import { buildServiceExecutiveSummary } from "./build-service-executive-summary";
 
-const verdictContent: Record<
+const marginReading: Record<
   ServiceReportVerdict,
   { label: string; body: string; tone: ReportTone }
 > = {
   missing_price: {
-    label: "Informe o preço",
-    body: "Preencha o preço atual para diagnosticar sua margem.",
+    label: "Não calculado",
+    body: "Informe quanto você cobra para calcular quanto sobra.",
     tone: "neutral",
   },
   direct_loss: {
-    label: "Prejuízo direto",
-    body: "O preço líquido não cobre o material e as taxas da venda.",
+    label: "Prejuízo",
+    body: "O preço não paga os materiais e as taxas informadas.",
     tone: "critical",
   },
   operational_loss: {
-    label: "Preço não cobre a operação",
-    body: "O preço atual não cobre toda a operação.",
+    label: "Prejuízo",
+    body: "O preço não paga todos os gastos usados no cálculo.",
     tone: "critical",
   },
   tight_margin: {
-    label: "Margem apertada",
-    body: "O preço cobre os custos, mas sobra menos que o desejado.",
+    label: "Pouca folga",
+    body: "O preço paga os gastos, mas deixa pouco espaço para imprevistos.",
     tone: "warning",
   },
   adequate_margin: {
-    label: "Margem adequada",
-    body: "O preço é suficiente para alcançar a meta.",
+    label: "Boa folga",
+    body: "O preço paga os gastos e deixa espaço para imprevistos.",
     tone: "positive",
   },
   above_target: {
-    label: "Acima da meta",
-    body: "Há folga; valide a aceitação do mercado.",
+    label: "Boa folga",
+    body: "O preço paga os gastos e deixa espaço para imprevistos.",
     tone: "positive",
   },
 };
@@ -63,88 +62,53 @@ const verdictContent: Record<
 function buildBreakEvenSection(
   calculation: ServiceReportCalculation,
 ): ReportSection {
+  const minimum = calculation.minimumPriceCents;
+  const current = calculation.currentPriceCents;
   const unit = formatReportUnit(calculation.unit);
-  const minimumPrice = calculation.minimumPriceCents;
-  const currentPrice = calculation.currentPriceCents;
 
-  if (minimumPrice === null) {
+  if (minimum === null) {
     return {
       key: "break_even",
-      title: "1 · Ponto de equilíbrio",
-      body: "Informe sua capacidade faturável e mantenha as taxas abaixo de 100% para calcular o ponto de equilíbrio.",
+      title: "Seu menor preço sem prejuízo",
+      body: "Complete os dados de rotina e taxas para calcular este valor.",
       emphasisLabel: null,
       emphasisValue: null,
       tone: "neutral",
     };
   }
 
+  const difference = Math.abs(current - minimum);
   const comparison =
-    currentPrice <= 0
-      ? "Informe seu preço atual para comparar com o custo."
-      : currentPrice >= minimumPrice
-        ? `Seu preço de ${formatCurrency(currentPrice)} cobre o custo.`
-        : `Seu preço de ${formatCurrency(currentPrice)} não cobre o custo.`;
+    current >= minimum
+      ? `Você cobra ${formatCurrency(current)}, ${formatCurrency(difference)} acima desse valor por ${unit}.`
+      : `Você cobra ${formatCurrency(current)}. Faltam ${formatCurrency(difference)} por ${unit} para pagar tudo.`;
 
   return {
     key: "break_even",
-    title: "1 · Ponto de equilíbrio",
-    body: `Abaixo de ${formatCurrency(minimumPrice)} por ${unit} você vende no prejuízo. ${comparison}`,
-    emphasisLabel: "Preço mínimo",
-    emphasisValue: formatCurrency(minimumPrice),
-    tone:
-      currentPrice <= 0
-        ? "neutral"
-        : currentPrice >= minimumPrice
-          ? "positive"
-          : "critical",
+    title: "Seu menor preço sem prejuízo",
+    body: comparison,
+    emphasisLabel: "Menor preço sem prejuízo",
+    emphasisValue: formatCurrency(minimum),
+    tone: current >= minimum ? "positive" : "critical",
   };
 }
 
-function buildHiddenCostSection(
+function buildMarginSection(
   calculation: ServiceReportCalculation,
 ): ReportSection {
-  if (calculation.hourCostCents === null) {
-    return {
-      key: "hidden_cost",
-      title: "2 · A conta que ninguém faz",
-      body: "Informe quantas horas do mês são realmente pagas para descobrir o custo real da sua hora.",
-      emphasisLabel: null,
-      emphasisValue: null,
-      tone: "neutral",
-    };
-  }
-
-  const unit = formatReportUnit(calculation.unit);
-  const profit = calculation.unitProfitCents;
-  const body =
-    calculation.materialUnitCostCents > 0 &&
-    calculation.structureUnitCostCents !== null &&
-    calculation.unitCostCents !== null
-      ? `Sua estrutura custa ${formatCurrency(calculation.structureUnitCostCents)} por ${unit}. Somando ${formatCurrency(calculation.materialUnitCostCents)} de material usado diretamente, o custo total chega a ${formatCurrency(calculation.unitCostCents)}.`
-      : `Só ${formatBillableHours(calculation.monthlyWorkMinutes)}h/mês são realmente pagas — é sobre elas que caem seus custos de estrutura. Por isso a hora custa ${formatCurrency(calculation.hourCostCents)}, não o que você imagina. É com esse número que a conta fecha.`;
-
-  return {
-    key: "hidden_cost",
-    title: "2 · A conta que ninguém faz",
-    body,
-    emphasisLabel: profit === null ? null : `Lucro por ${unit}`,
-    emphasisValue: profit === null ? null : formatCurrency(profit),
-    tone: profit === null ? "neutral" : profit > 0 ? "positive" : "critical",
-  };
-}
-
-function buildMarginDiagnosisSection(
-  calculation: ServiceReportCalculation,
-): ReportSection {
-  const content = verdictContent[calculation.verdict];
-
+  const content = marginReading[calculation.verdict];
   return {
     key: "margin_diagnosis",
-    title: "3 · Diagnóstico da margem",
+    title: "Quanto sobra no preço",
     body: content.body,
     emphasisLabel:
-      calculation.realMarginBasisPoints === null ? null : "Margem real",
-    emphasisValue: content.label,
+      calculation.realMarginBasisPoints === null
+        ? null
+        : "A cada R$ 100 cobrados",
+    emphasisValue:
+      calculation.realMarginBasisPoints === null
+        ? content.label
+        : formatCurrency(calculation.realMarginBasisPoints),
     tone: content.tone,
   };
 }
@@ -153,64 +117,46 @@ function pluralUnit(calculation: ServiceReportCalculation): string {
   return calculation.unit === "hour" ? "horas" : "atendimentos";
 }
 
-function buildSalesGoalSection(
+function buildSalesSection(
   calculation: ServiceReportCalculation,
 ): ReportSection {
-  if (
-    calculation.verdict === "missing_price" ||
-    calculation.verdict === "direct_loss" ||
-    calculation.verdict === "operational_loss"
-  ) {
+  const unit = pluralUnit(calculation);
+  const monthly = calculation.monthlySalesGoal;
+  const weekly = calculation.weeklySalesGoal;
+  const daily = calculation.dailySalesGoal;
+
+  if (monthly === null || weekly === null) {
     return {
       key: "sales_goal",
-      title: "Meta de vendas",
-      body:
-        calculation.verdict === "direct_loss"
-          ? "Seu preço líquido não cobre o material e as taxas. Corrija o custo ou o preço antes de buscar mais volume."
-          : "Seu preço atual não sustenta a operação. Corrija o preço antes de buscar mais volume.",
+      title: "Quanto você precisa vender",
+      body: "Primeiro ajuste o preço para pagar todos os gastos. Depois será possível calcular uma quantidade sustentável.",
       emphasisLabel: null,
       emphasisValue: null,
       tone: "critical",
     };
   }
 
-  const monthly = calculation.monthlySalesGoal;
-  const weekly = calculation.weeklySalesGoal;
-  const daily = calculation.dailySalesGoal;
-  if (monthly === null || weekly === null) {
-    return {
-      key: "sales_goal",
-      title: "Meta de vendas",
-      body: "A meta de vendas fica disponível quando preço, taxas e capacidade formam uma referência válida.",
-      emphasisLabel: null,
-      emphasisValue: null,
-      tone: "neutral",
-    };
-  }
-
-  const unit = pluralUnit(calculation);
-  const dailyCopy =
+  const dailyText =
     daily === null
-      ? ". Informe seus dias de trabalho para calcular a meta diária."
-      : ` e ${formatIntegerVolume(daily)} por dia.`;
-
+      ? ""
+      : ` e ${formatIntegerVolume(daily)} por dia de trabalho`;
   return {
     key: "sales_goal",
-    title: "Meta de vendas",
-    body: `Para cobrir seus custos fixos (pró-labore incluído), sua meta é de ${formatIntegerVolume(monthly)} ${unit} por mês, ${formatIntegerVolume(weekly)} por semana${dailyCopy}`,
-    emphasisLabel: "Meta mensal",
+    title: "Quanto você precisa vender",
+    body: `Isso equivale a ${formatIntegerVolume(weekly)} por semana${dailyText}.`,
+    emphasisLabel: "Por mês",
     emphasisValue: `${formatIntegerVolume(monthly)} ${unit}`,
     tone: "positive",
   };
 }
 
-function buildDiscountSimulatorSection(
+function buildDiscountSection(
   calculation: ServiceReportCalculation,
 ): ReportSection {
   return {
     key: "discount_simulator",
-    title: "Quanto de desconto eu consigo dar sem destruir minha margem?",
-    body: "Arraste e veja o preço, a margem e o lucro mudarem — e onde está o seu limite.",
+    title: "Como um desconto muda o resultado",
+    body: "Teste um desconto e veja quanto sobra no novo preço.",
     emphasisLabel:
       calculation.breakEvenDiscountPercent === null
         ? null
@@ -224,39 +170,17 @@ function buildDiscountSimulatorSection(
 }
 
 function buildServiceReportSnapshot(
-  command: ServiceDiagnosisCommand,
+  command: NormalizedServiceDiagnosisCommand,
   calculation: ServiceReportCalculation,
 ): CurrentServiceReportSnapshot {
-  const { unit, totalFeeBasisPoints } = calculation;
-  const results = {
-    monthlyCostCents: calculation.monthlyCostCents,
-    hourCostCents: calculation.hourCostCents,
-    structureUnitCostCents: calculation.structureUnitCostCents,
-    materialUnitCostCents: calculation.materialUnitCostCents,
-    unitCostCents: calculation.unitCostCents,
-    currentPriceCents: calculation.currentPriceCents,
-    netRevenueCents: calculation.netRevenueCents,
-    unitContributionCents: calculation.unitContributionCents,
-    unitProfitCents: calculation.unitProfitCents,
-    realMarginBasisPoints: calculation.realMarginBasisPoints,
-    minimumPriceCents: calculation.minimumPriceCents,
-    targetPriceCents: calculation.targetPriceCents,
-    monthlySalesGoal: calculation.monthlySalesGoal,
-    weeklySalesGoal: calculation.weeklySalesGoal,
-    dailySalesGoal: calculation.dailySalesGoal,
-    breakEvenDiscountPercent: calculation.breakEvenDiscountPercent,
-    verdict: calculation.verdict,
-    priority: calculation.priority,
-  };
-
   return parseCurrentServiceReportSnapshot({
     schemaVersion: SERVICE_REPORT_SCHEMA_VERSION,
-    calculationVersion: SERVICE_CALCULATION_VERSION,
-    contentVersion: SERVICE_CONTENT_VERSION,
+    calculationVersion: SERVICE_REPORT_CALCULATION_VERSION,
+    contentVersion: SERVICE_REPORT_CONTENT_VERSION,
     category: "service",
-    scenario: command.pricingMethod,
+    scenario: command.source.pricingMethod,
     currency: "BRL",
-    unit,
+    unit: calculation.unit,
     policy: {
       targetMarginBasisPoints: SERVICE_TARGET_MARGIN_BPS,
       weeklyDivisorHundredths: 433,
@@ -278,19 +202,38 @@ function buildServiceReportSnapshot(
       taxRateBasisPoints: command.taxRateBasisPoints,
       cardFeeRateBasisPoints: command.cardFeeRateBasisPoints,
     },
-    results,
-    executiveSummary: buildServiceExecutiveSummary(calculation),
+    source: command.source,
+    results: {
+      monthlyCostCents: calculation.monthlyCostCents,
+      hourCostCents: calculation.hourCostCents,
+      structureUnitCostCents: calculation.structureUnitCostCents,
+      materialUnitCostCents: calculation.materialUnitCostCents,
+      unitCostCents: calculation.unitCostCents,
+      currentPriceCents: calculation.currentPriceCents,
+      netRevenueCents: calculation.netRevenueCents,
+      unitContributionCents: calculation.unitContributionCents,
+      unitProfitCents: calculation.unitProfitCents,
+      realMarginBasisPoints: calculation.realMarginBasisPoints,
+      minimumPriceCents: calculation.minimumPriceCents,
+      targetPriceCents: calculation.targetPriceCents,
+      monthlySalesGoal: calculation.monthlySalesGoal,
+      weeklySalesGoal: calculation.weeklySalesGoal,
+      dailySalesGoal: calculation.dailySalesGoal,
+      breakEvenDiscountPercent: calculation.breakEvenDiscountPercent,
+      verdict: calculation.verdict,
+      priority: calculation.priority,
+    },
+    executiveSummary: buildServiceExecutiveSummary(command, calculation),
     sections: [
       buildBreakEvenSection(calculation),
-      buildHiddenCostSection(calculation),
-      buildMarginDiagnosisSection(calculation),
-      buildSalesGoalSection(calculation),
-      buildDiscountSimulatorSection(calculation),
+      buildMarginSection(calculation),
+      buildSalesSection(calculation),
+      buildDiscountSection(calculation),
     ],
     discountSimulationBase: {
       originalPriceCents: calculation.currentPriceCents,
       unitCostCents: calculation.unitCostCents,
-      totalFeeBasisPoints,
+      totalFeeBasisPoints: calculation.totalFeeBasisPoints,
       targetMarginBasisPoints: SERVICE_TARGET_MARGIN_BPS,
       minimumPriceCents: calculation.minimumPriceCents,
     },

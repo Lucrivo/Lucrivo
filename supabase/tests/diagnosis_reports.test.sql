@@ -426,6 +426,56 @@ select ok(
   'authenticated can execute only the controlled creation function'
 );
 
+select has_function(
+  'public',
+  'create_service_diagnosis_report_v4',
+  'normalized Service report creation function exists'
+);
+select ok(
+  (
+    select prosecdef
+    from pg_proc
+    where pronamespace = 'public'::regnamespace
+      and proname = 'create_service_diagnosis_report_v4'
+  ),
+  'normalized creation function is security definer'
+);
+select ok(
+  (
+    select proconfig
+    from pg_proc
+    where pronamespace = 'public'::regnamespace
+      and proname = 'create_service_diagnosis_report_v4'
+  ) = array['search_path=""']::text[],
+  'normalized creation function uses an empty search path'
+);
+select ok(
+  not has_function_privilege(
+    'anon',
+    (
+      select oid
+      from pg_proc
+      where pronamespace = 'public'::regnamespace
+        and proname = 'create_service_diagnosis_report_v4'
+    ),
+    'execute'
+  ),
+  'anon cannot execute normalized report creation'
+);
+select ok(
+  has_function_privilege(
+    'authenticated',
+    (
+      select oid
+      from pg_proc
+      where pronamespace = 'public'::regnamespace
+        and proname = 'create_service_diagnosis_report_v4'
+    ),
+    'execute'
+  ),
+  'authenticated can execute normalized report creation'
+);
+
 insert into auth.users (id, aud, role, email)
 values
   (
@@ -495,6 +545,92 @@ as $$
   );
 $$;
 
+create function pg_temp.create_month_report_v4(
+  p_submission_id uuid,
+  p_source_current_price_cents bigint default 400000,
+  p_schema_version smallint default 4,
+  p_report_snapshot jsonb default '{
+    "schemaVersion": 4,
+    "calculationVersion": 3,
+    "contentVersion": 5,
+    "category": "service",
+    "scenario": "month",
+    "unit": "hour",
+    "inputs": {
+      "desiredMonthlyIncomeCents": 400000,
+      "fixedMonthlyExpensesCents": 200000,
+      "workHoursPeriod": "day",
+      "workPeriodMinutes": 360,
+      "monthlyWorkMinutes": 7794,
+      "weeklyWorkDays": 5,
+      "hourlyRateCents": 3079,
+      "minuteRateCents": 0,
+      "appointmentRateCents": 0,
+      "appointmentDurationMinutes": 0,
+      "materialUnitCostCents": 0,
+      "taxRateBasisPoints": 600,
+      "cardFeeRateBasisPoints": 200
+    },
+    "source": {
+      "pricingMethod": "month",
+      "currentPriceCents": 400000,
+      "materialCostUnit": null,
+      "materialCostCents": 0,
+      "dailyWorkMinutes": 360,
+      "appointmentDurationMinutes": 0
+    },
+    "results": {
+      "currentPriceCents": 3079,
+      "realMarginBasisPoints": -5801,
+      "unitProfitCents": -1786,
+      "verdict": "operational_loss",
+      "priority": "price",
+      "materialUnitCostCents": 0
+    },
+    "executiveSummary": {},
+    "sections": [],
+    "discountSimulationBase": {}
+  }'::jsonb
+)
+returns bigint
+language sql
+as $$
+  select public.create_service_diagnosis_report_v4(
+    p_submission_id,
+    'hour'::public.service_pricing_method,
+    400000,
+    200000,
+    'day'::public.service_work_hours_period,
+    360,
+    7794,
+    5::smallint,
+    3079,
+    0,
+    0,
+    0,
+    0,
+    600,
+    200,
+    'month',
+    p_source_current_price_cents,
+    null,
+    0,
+    360,
+    0,
+    p_schema_version,
+    3::smallint,
+    5::smallint,
+    'month',
+    3079,
+    -5801,
+    -1786,
+    'operational_loss',
+    'price',
+    'hour',
+    p_report_snapshot
+  );
+$$;
+
 set local role anon;
 select throws_ok(
   $$ select pg_temp.create_hour_report(
@@ -503,6 +639,14 @@ select throws_ok(
   '42501',
   null,
   'anon execution is denied by function privileges'
+);
+select throws_ok(
+  $$ select pg_temp.create_month_report_v4(
+    '30000000-0000-4000-8000-000000000020'
+  ) $$,
+  '42501',
+  null,
+  'anon normalized execution is denied by function privileges'
 );
 reset role;
 
@@ -516,11 +660,105 @@ select throws_ok(
   'authentication required',
   'function rejects an authenticated role without a JWT subject'
 );
+select throws_ok(
+  $$ select pg_temp.create_month_report_v4(
+    '30000000-0000-4000-8000-000000000021'
+  ) $$,
+  '42501',
+  'authentication required',
+  'normalized function rejects an authenticated role without a JWT subject'
+);
 
 select set_config(
   'request.jwt.claim.sub',
   '33333333-3333-4333-8333-333333333333',
   true
+);
+select lives_ok(
+  $$ select pg_temp.create_month_report_v4(
+    '30000000-0000-4000-8000-000000000022'
+  ) $$,
+  'authenticated owner creates a normalized report'
+);
+select results_eq(
+  $$
+    select
+      d.scenario,
+      d.schema_version,
+      d.calculation_version,
+      d.content_version,
+      s.pricing_method::text,
+      s.hourly_rate_cents,
+      s.source_pricing_method,
+      s.source_current_price_cents,
+      s.daily_work_minutes
+    from public.diagnoses d
+    join public.service_diagnoses s on s.diagnosis_id = d.id
+    where d.submission_id = '30000000-0000-4000-8000-000000000022'
+  $$,
+  $$ values (
+    'month'::text,
+    4::smallint,
+    3::smallint,
+    5::smallint,
+    'hour'::text,
+    3079::bigint,
+    'month'::text,
+    400000::bigint,
+    360::integer
+  ) $$,
+  'normalized function persists source and canonical values together'
+);
+select results_eq(
+  $$ select pg_temp.create_month_report_v4(
+    '30000000-0000-4000-8000-000000000022'
+  ) $$,
+  $$
+    select id
+    from public.diagnoses
+    where submission_id = '30000000-0000-4000-8000-000000000022'
+  $$,
+  'normalized retry returns the original diagnosis id'
+);
+select results_eq(
+  $$
+    select count(*)::bigint
+    from public.service_diagnoses s
+    where s.submission_id = '30000000-0000-4000-8000-000000000022'
+  $$,
+  array[1::bigint],
+  'normalized retry creates no duplicate Service row'
+);
+select throws_ok(
+  $$ select pg_temp.create_month_report_v4(
+    '30000000-0000-4000-8000-000000000023',
+    9000
+  ) $$,
+  '22023',
+  'invalid report snapshot',
+  'normalized function rejects source arguments that differ from snapshot'
+);
+select throws_ok(
+  $$ select pg_temp.create_month_report_v4(
+    '30000000-0000-4000-8000-000000000024',
+    400000,
+    3::smallint
+  ) $$,
+  '22023',
+  'invalid report snapshot',
+  'normalized function writes only version 4 3 5'
+);
+select results_eq(
+  $$
+    select count(*)::bigint
+    from public.diagnoses
+    where submission_id in (
+      '30000000-0000-4000-8000-000000000023',
+      '30000000-0000-4000-8000-000000000024'
+    )
+  $$,
+  array[0::bigint],
+  'invalid normalized calls leave no partial registry rows'
 );
 select throws_ok(
   $$ select pg_temp.create_hour_report(

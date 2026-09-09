@@ -1,6 +1,6 @@
-const SERVICE_REPORT_SCHEMA_VERSION = 3;
-const SERVICE_CALCULATION_VERSION = 2;
-const SERVICE_CONTENT_VERSION = 4;
+const SERVICE_REPORT_SCHEMA_VERSION = 4;
+const SERVICE_REPORT_CALCULATION_VERSION = 3;
+const SERVICE_REPORT_CONTENT_VERSION = 5;
 const PRODUCT_REPORT_SCHEMA_VERSION = 1;
 const PRODUCT_CALCULATION_VERSION = 1;
 const PRODUCT_CONTENT_VERSION = 2;
@@ -66,6 +66,9 @@ const reportScenarios = [
   "hour",
   "minute",
   "appointment",
+  "day",
+  "week",
+  "month",
   "resale",
   "manufacturing",
 ] as const;
@@ -150,8 +153,8 @@ export {
   PRODUCTION_CALCULATION_VERSION,
   PRODUCTION_CONTENT_VERSION,
   PRODUCTION_REPORT_SCHEMA_VERSION,
-  SERVICE_CALCULATION_VERSION,
-  SERVICE_CONTENT_VERSION,
+  SERVICE_REPORT_CALCULATION_VERSION,
+  SERVICE_REPORT_CONTENT_VERSION,
   SERVICE_REPORT_SCHEMA_VERSION,
   productReportPriorities,
   productReportUnits,
@@ -220,4 +223,5 @@ export type {
   ServiceReportSnapshotV2,
   ServiceReportSnapshotV3,
   ServiceReportSnapshotV4,
+  ServiceReportSnapshotV5,
 } from "./schemas/service-report-snapshot.schema";

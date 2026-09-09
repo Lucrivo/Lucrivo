@@ -73,11 +73,24 @@ const plainReportLanguage = {
   },
 } as const satisfies ReportLanguageProfile;
 
+const normalizedServiceReportLanguage = {
+  ...plainReportLanguage,
+  verdictLabels: {
+    ...plainReportLanguage.verdictLabels,
+    direct_loss: "Prejuízo",
+    operational_loss: "Prejuízo",
+    tight_margin: "Pouca folga",
+    adequate_margin: "Boa folga",
+    above_target: "Boa folga",
+  },
+} as const satisfies ReportLanguageProfile;
+
 function usesPlainLanguage(
   snapshot: Pick<ReportSnapshot, "category" | "contentVersion">,
 ): boolean {
   return (
-    (snapshot.category === "service" && snapshot.contentVersion === 4) ||
+    (snapshot.category === "service" &&
+      (snapshot.contentVersion === 4 || snapshot.contentVersion === 5)) ||
     (snapshot.category === "product" && snapshot.contentVersion === 2) ||
     (snapshot.category === "production" && snapshot.contentVersion === 2)
   );
@@ -86,6 +99,9 @@ function usesPlainLanguage(
 function getReportLanguageProfile(
   snapshot: Pick<ReportSnapshot, "category" | "contentVersion">,
 ): ReportLanguageProfile {
+  if (snapshot.category === "service" && snapshot.contentVersion === 5) {
+    return normalizedServiceReportLanguage;
+  }
   return usesPlainLanguage(snapshot)
     ? plainReportLanguage
     : legacyReportLanguage;

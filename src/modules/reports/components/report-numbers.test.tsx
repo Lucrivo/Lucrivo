@@ -83,4 +83,48 @@ describe("ReportNumbers", () => {
     await user.keyboard("{Escape}");
     expect(trigger).toHaveFocus();
   });
+
+  it("keeps long values readable and opens help from the keyboard", async () => {
+    const user = userEvent.setup();
+    render(
+      <div className="w-64">
+        <ReportNumbers
+          numbers={[
+            {
+              key: "minimum",
+              label: "Menor preço sem prejuízo",
+              value: "R$ 1.234.567.890,00",
+              help: {
+                triggerLabel: "Como calculamos?",
+                title: "Menor preço sem prejuízo",
+                description:
+                  "Inclui os gastos mensais, quanto você quer receber, materiais e taxas.",
+              },
+            },
+            {
+              key: "sales",
+              label: "Quantidade de serviços por mês",
+              value: "123.456 atendimentos",
+              supportingText: "28.511 por semana e 5.703 por dia de trabalho.",
+            },
+          ]}
+          title="Seus números"
+          description="Valores calculados com o que você informou."
+        />
+      </div>,
+    );
+
+    const trigger = screen.getByRole("button", { name: "Como calculamos?" });
+    await user.tab();
+    expect(trigger).toHaveFocus();
+    await user.keyboard("{Enter}");
+    expect(
+      screen.getByText("Menor preço sem prejuízo", { selector: "h2" }),
+    ).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    expect(trigger).toHaveFocus();
+
+    expect(screen.getByText("R$ 1.234.567.890,00")).toHaveClass("break-words");
+    expect(screen.getByText("123.456 atendimentos")).toHaveClass("break-words");
+  });
 });

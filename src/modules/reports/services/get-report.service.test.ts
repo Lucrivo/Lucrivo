@@ -5,7 +5,7 @@ vi.mock("server-only", () => ({}));
 import type {
   ProductDiagnosisCommand,
   ProductionDiagnosisCommand,
-  ServiceDiagnosisCommand,
+  NormalizedServiceDiagnosisCommand,
 } from "@/modules/quick-diagnosis/types";
 
 import { buildProductReportSnapshot } from "../domain/build-product-report-snapshot";
@@ -16,14 +16,14 @@ import { calculateProductionReport } from "../domain/calculate-production-report
 import { calculateServiceReport } from "../domain/calculate-service-report";
 import { getOwnedReport } from "./get-report.service";
 
-const command: ServiceDiagnosisCommand = {
+const command: NormalizedServiceDiagnosisCommand = {
   submissionId: "550e8400-e29b-41d4-a716-446655440000",
   pricingMethod: "hour",
   desiredMonthlyIncomeCents: 400000,
   fixedMonthlyExpensesCents: 200000,
-  workHoursPeriod: "month",
-  workPeriodMinutes: 6000,
-  monthlyWorkMinutes: 6000,
+  workHoursPeriod: "day",
+  workPeriodMinutes: 360,
+  monthlyWorkMinutes: 7794,
   weeklyWorkDays: 5,
   hourlyRateCents: 8000,
   minuteRateCents: 0,
@@ -32,6 +32,14 @@ const command: ServiceDiagnosisCommand = {
   materialUnitCostCents: 0,
   taxRateBasisPoints: 600,
   cardFeeRateBasisPoints: 200,
+  source: {
+    pricingMethod: "hour",
+    currentPriceCents: 8000,
+    materialCostUnit: null,
+    materialCostCents: 0,
+    dailyWorkMinutes: 360,
+    appointmentDurationMinutes: 0,
+  },
 };
 const snapshot = buildServiceReportSnapshot(
   command,

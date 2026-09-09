@@ -1,7 +1,15 @@
 import { useReducer } from "react";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { CreateServiceDiagnosisAction } from "../../actions/create-service-diagnosis.action";
+
+const replace = vi.hoisted(() => vi.fn());
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace }),
+}));
 
 import { ServiceDiagnosisWizard } from "./service-diagnosis-wizard";
 import {
@@ -10,35 +18,88 @@ import {
 } from "./service-wizard-state";
 
 describe("ServiceDiagnosisWizard", () => {
-  function renderWizard() {
+  const submissionId = "550e8400-e29b-41d4-a716-446655440000";
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function renderWizard(
+    createDiagnosis = vi
+      .fn<CreateServiceDiagnosisAction>()
+      .mockResolvedValue({ status: "success", diagnosisId: 42 }),
+  ) {
     const onBackToType = vi.fn();
 
     function ControlledWizard() {
       const [state, dispatch] = useReducer(
         serviceWizardReducer,
         undefined,
-        createInitialServiceWizardState,
+        () => createInitialServiceWizardState(submissionId),
       );
       return (
         <ServiceDiagnosisWizard
           state={state}
           dispatch={dispatch}
+          createDiagnosis={createDiagnosis}
+          createSubmissionId={() => "550e8400-e29b-41d4-a716-446655440001"}
           onBackToType={onBackToType}
         />
       );
     }
 
     render(<ControlledWizard />);
-    return { onBackToType };
+    return { createDiagnosis, onBackToType };
   }
 
   async function continueStep(user: ReturnType<typeof userEvent.setup>) {
     await user.click(screen.getByRole("button", { name: "Continuar" }));
   }
 
+  function renderReview(
+    createDiagnosis: CreateServiceDiagnosisAction,
+    createSubmissionId = vi
+      .fn()
+      .mockReturnValue("550e8400-e29b-41d4-a716-446655440001"),
+  ) {
+    const initial = createInitialServiceWizardState(submissionId);
+
+    function ControlledWizard() {
+      const [state, dispatch] = useReducer(serviceWizardReducer, {
+        ...initial,
+        step: "review",
+        values: {
+          ...initial.values,
+          desiredMonthlyIncome: "5000",
+          fixedMonthlyExpenses: "2000",
+          pricingMethod: "hour",
+          currentPrice: "80",
+          dailyWorkHours: "8",
+          weeklyWorkDays: "5",
+          hasMaterialCost: false,
+          paysRevenueTax: false,
+          hasPaymentFee: false,
+        },
+      });
+
+      return (
+        <ServiceDiagnosisWizard
+          state={state}
+          dispatch={dispatch}
+          createDiagnosis={createDiagnosis}
+          createSubmissionId={createSubmissionId}
+          onBackToType={vi.fn()}
+        />
+      );
+    }
+
+    render(<ControlledWizard />);
+    return { createSubmissionId };
+  }
+
   it("completes the appointment journey in the specified order", async () => {
     const user = userEvent.setup();
-    renderWizard();
+    const { createDiagnosis } = renderWizard();
 
     expect(screen.getByText("2 de 8")).toBeInTheDocument();
     await user.type(
@@ -134,11 +195,17 @@ describe("ServiceDiagnosisWizard", () => {
     expect(
       screen.getByText("Quanto você consegue trabalhar por mês"),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", {
-        name: "Gerar relatório temporariamente indisponível",
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/reports/42"));
+    expect(createDiagnosis).toHaveBeenCalledWith(
+      expect.objectContaining({
+        submissionId,
+        pricingMethod: "appointment",
+        appointmentDurationMinutes: "45",
       }),
-    ).toBeDisabled();
+    );
   });
 
   it("skips duration for every non-appointment pricing method", async () => {
@@ -202,6 +269,127 @@ describe("ServiceDiagnosisWizard", () => {
     expect(screen.getByLabelText("Quantas horas por dia?")).toHaveAttribute(
       "aria-invalid",
       "true",
+    );
+  });
+
+  it("blocks duplicate confirmation while preparing the report", async () => {
+    const user = userEvent.setup();
+    let finish!: (result: { status: "success"; diagnosisId: number }) => void;
+    const createDiagnosis = vi
+      .fn<CreateServiceDiagnosisAction>()
+      .mockReturnValue(
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+      );
+    renderReview(createDiagnosis);
+
+    await user.dblClick(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+    expect(createDiagnosis).toHaveBeenCalledOnce();
+    expect(
+      screen.getByRole("button", { name: "Preparando relatório..." }),
+    ).toBeDisabled();
+
+    finish({ status: "success", diagnosisId: 77 });
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/reports/77"));
+  });
+
+  it("retries a temporary failure with the same submission id", async () => {
+    const user = userEvent.setup();
+    const createDiagnosis = vi
+      .fn<CreateServiceDiagnosisAction>()
+      .mockResolvedValueOnce({ status: "error", error: "create_failed" })
+      .mockResolvedValueOnce({ status: "success", diagnosisId: 78 });
+    renderReview(createDiagnosis);
+
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível salvar o diagnóstico. Tente novamente.",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+
+    expect(createDiagnosis).toHaveBeenCalledTimes(2);
+    expect(createDiagnosis).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ submissionId }),
+    );
+    expect(createDiagnosis).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ submissionId }),
+    );
+  });
+
+  it("offers login recovery when the session expired", async () => {
+    const user = userEvent.setup();
+    const createDiagnosis = vi
+      .fn<CreateServiceDiagnosisAction>()
+      .mockResolvedValue({ status: "error", error: "unauthorized" });
+    renderReview(createDiagnosis);
+
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+    expect(
+      await screen.findByRole("link", { name: "Entrar novamente" }),
+    ).toHaveAttribute("href", "/login");
+  });
+
+  it("returns to and focuses the first invalid visible answer", async () => {
+    const user = userEvent.setup();
+    const createDiagnosis = vi
+      .fn<CreateServiceDiagnosisAction>()
+      .mockResolvedValue({
+        status: "error",
+        error: "invalid_input",
+        fieldErrors: { currentPrice: ["Informe o preço que você cobra hoje."] },
+      });
+    renderReview(createDiagnosis);
+
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Como você cobra pelo seu trabalho?",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Quanto você cobra por hora?")).toHaveFocus();
+  });
+
+  it("replaces only an invalid submission id and preserves answers", async () => {
+    const user = userEvent.setup();
+    const createDiagnosis = vi
+      .fn<CreateServiceDiagnosisAction>()
+      .mockResolvedValueOnce({
+        status: "error",
+        error: "invalid_input",
+        fieldErrors: { submissionId: ["Identificador inválido."] },
+      })
+      .mockResolvedValueOnce({ status: "success", diagnosisId: 79 });
+    const { createSubmissionId } = renderReview(createDiagnosis);
+
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+    expect(createSubmissionId).toHaveBeenCalledOnce();
+    expect(screen.getAllByText("R$ 80,00").length).toBeGreaterThan(0);
+
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+    expect(createDiagnosis).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        submissionId: "550e8400-e29b-41d4-a716-446655440001",
+        currentPrice: "80",
+      }),
     );
   });
 });

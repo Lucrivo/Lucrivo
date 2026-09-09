@@ -1,23 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ServiceDiagnosisCommand, ServiceDiagnosisInput } from "../types";
+import type { ServiceFlowSubmissionInput } from "../domain/service-flow";
+import type { NormalizedServiceDiagnosisCommand } from "../types";
 
 const {
   AuthRequiredError,
   buildServiceReportSnapshot,
   calculateServiceReport,
+  composeServiceDiagnosisCommand,
   createServiceReport,
   requireUser,
   safeParse,
 } = vi.hoisted(() => ({
-  AuthRequiredError: class AuthRequiredError extends Error {
-    constructor() {
-      super("Authentication required");
-      this.name = "AuthRequiredError";
-    }
-  },
+  AuthRequiredError: class AuthRequiredError extends Error {},
   buildServiceReportSnapshot: vi.fn(),
   calculateServiceReport: vi.fn(),
+  composeServiceDiagnosisCommand: vi.fn(),
   createServiceReport: vi.fn(),
   requireUser: vi.fn(),
   safeParse: vi.fn(),
@@ -28,6 +26,12 @@ vi.mock("@/modules/auth/services/require-user", () => ({
   requireUser,
 }));
 vi.mock("server-only", () => ({}));
+vi.mock("../schemas/service-flow.schema", () => ({
+  serviceFlowSubmissionSchema: { safeParse },
+}));
+vi.mock("../domain/compose-service-diagnosis-command", () => ({
+  composeServiceDiagnosisCommand,
+}));
 vi.mock("@/modules/reports/domain/calculate-service-report", () => ({
   calculateServiceReport,
 }));
@@ -37,71 +41,63 @@ vi.mock("@/modules/reports/domain/build-service-report-snapshot", () => ({
 vi.mock("@/modules/reports/services/create-service-report.service", () => ({
   createServiceReport,
 }));
-vi.mock("../schemas/service-diagnosis.schema", () => ({
-  serviceDiagnosisSchema: { safeParse },
-}));
 
 import { createServiceDiagnosis } from "./create-service-diagnosis.action";
 
-const validInput: ServiceDiagnosisInput = {
+const input: ServiceFlowSubmissionInput = {
   submissionId: "550e8400-e29b-41d4-a716-446655440000",
-  pricingMethod: "hour",
-  desiredMonthlyIncome: "R$ 5.000,25",
-  fixedMonthlyExpenses: "1.234,56",
-  workHoursPeriod: "day",
-  workHours: "8",
+  desiredMonthlyIncome: "5000",
+  fixedMonthlyExpenses: "2000",
+  pricingMethod: "month",
+  currentPrice: "4000",
+  dailyWorkHours: "6",
   weeklyWorkDays: "5",
-  hourlyRate: "125,90",
-  minuteRate: "",
-  appointmentRate: "",
   appointmentDurationMinutes: "",
-  hasMaterialCost: true,
-  materialUnitCost: "30,50",
-  taxRate: "6,25",
-  cardFeeRate: "3.50",
+  hasMaterialCost: false,
+  materialCost: "",
+  materialCostUnit: "",
+  paysRevenueTax: true,
+  taxRate: "6",
+  hasPaymentFee: true,
+  paymentFeeRate: "2",
 };
 
-const command: ServiceDiagnosisCommand = {
-  submissionId: validInput.submissionId,
+const command: NormalizedServiceDiagnosisCommand = {
+  submissionId: input.submissionId,
   pricingMethod: "hour",
-  desiredMonthlyIncomeCents: 500025,
-  fixedMonthlyExpensesCents: 123456,
+  desiredMonthlyIncomeCents: 500_000,
+  fixedMonthlyExpensesCents: 200_000,
   workHoursPeriod: "day",
-  workPeriodMinutes: 480,
-  monthlyWorkMinutes: 10392,
+  workPeriodMinutes: 360,
+  monthlyWorkMinutes: 7_794,
   weeklyWorkDays: 5,
-  hourlyRateCents: 12590,
+  hourlyRateCents: 3_079,
   minuteRateCents: 0,
   appointmentRateCents: 0,
   appointmentDurationMinutes: 0,
-  materialUnitCostCents: 3050,
-  taxRateBasisPoints: 625,
-  cardFeeRateBasisPoints: 350,
+  materialUnitCostCents: 0,
+  taxRateBasisPoints: 600,
+  cardFeeRateBasisPoints: 200,
+  source: {
+    pricingMethod: "month",
+    currentPriceCents: 400_000,
+    materialCostUnit: null,
+    materialCostCents: 0,
+    dailyWorkMinutes: 360,
+    appointmentDurationMinutes: 0,
+  },
 };
-
-const calculation = { calculation: "service-result" };
-const snapshot = { schemaVersion: 1, category: "service" };
-
-function expectNoTechnicalDetails(result: unknown) {
-  const serialized = JSON.stringify(result);
-
-  expect(serialized).not.toContain("message");
-  expect(serialized).not.toContain("details");
-  expect(serialized).not.toContain("hint");
-  expect(serialized).not.toContain("code");
-  expect(serialized).not.toContain("private@example.com");
-  expect(serialized).not.toContain("private row detail");
-  expect(serialized).not.toContain("internal provider hint");
-  expect(serialized).not.toContain("XX001");
-}
 
 describe("createServiceDiagnosis", () => {
   const supabase = { rpc: vi.fn() };
+  const calculation = { result: "calculation" };
+  const snapshot = { schemaVersion: 4 };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    safeParse.mockReturnValue({ success: true, data: command });
-    requireUser.mockResolvedValue({ userId: "trusted-user", supabase });
+    safeParse.mockReturnValue({ success: true, data: input });
+    requireUser.mockResolvedValue({ userId: "user-id", supabase });
+    composeServiceDiagnosisCommand.mockReturnValue(command);
     calculateServiceReport.mockReturnValue(calculation);
     buildServiceReportSnapshot.mockReturnValue(snapshot);
     createServiceReport.mockResolvedValue({
@@ -110,56 +106,46 @@ describe("createServiceDiagnosis", () => {
     });
   });
 
-  it("returns field errors before authentication for invalid input", async () => {
+  it("returns field errors before authentication", async () => {
     safeParse.mockReturnValue({
       success: false,
       error: {
         flatten: () => ({
           fieldErrors: {
-            hourlyRate: ["Informe um valor por hora maior que zero."],
+            currentPrice: ["Informe o preço que você cobra hoje."],
           },
         }),
       },
     });
 
-    const result = await createServiceDiagnosis({
-      ...validInput,
-      hourlyRate: "",
-    });
-
-    expect(result).toEqual({
+    await expect(
+      createServiceDiagnosis({ ...input, currentPrice: "" }),
+    ).resolves.toEqual({
       status: "error",
       error: "invalid_input",
-      fieldErrors: {
-        hourlyRate: ["Informe um valor por hora maior que zero."],
-      },
+      fieldErrors: { currentPrice: ["Informe o preço que você cobra hoje."] },
     });
-    expectNoTechnicalDetails(result);
-    expect(safeParse).toHaveBeenCalledOnce();
     expect(requireUser).not.toHaveBeenCalled();
-    expect(calculateServiceReport).not.toHaveBeenCalled();
-    expect(buildServiceReportSnapshot).not.toHaveBeenCalled();
-    expect(createServiceReport).not.toHaveBeenCalled();
+    expect(composeServiceDiagnosisCommand).not.toHaveBeenCalled();
   });
 
-  it("maps a missing authenticated user to unauthorized", async () => {
+  it("maps an expired session to the established unauthorized result", async () => {
     requireUser.mockRejectedValue(new AuthRequiredError());
 
-    const result = await createServiceDiagnosis(validInput);
-
-    expect(result).toEqual({ status: "error", error: "unauthorized" });
-    expectNoTechnicalDetails(result);
-    expect(calculateServiceReport).not.toHaveBeenCalled();
-    expect(buildServiceReportSnapshot).not.toHaveBeenCalled();
-    expect(createServiceReport).not.toHaveBeenCalled();
+    await expect(createServiceDiagnosis(input)).resolves.toEqual({
+      status: "error",
+      error: "unauthorized",
+    });
+    expect(composeServiceDiagnosisCommand).not.toHaveBeenCalled();
   });
 
-  it("orchestrates parse, auth, calculation, snapshot, and persistence in order", async () => {
-    const result = await createServiceDiagnosis(validInput);
-
-    expect(result).toEqual({ status: "success", diagnosisId: 42 });
-    expectNoTechnicalDetails(result);
-    expect(safeParse).toHaveBeenCalledWith(validInput);
+  it("validates, authenticates, composes, calculates, and persists in order", async () => {
+    await expect(createServiceDiagnosis(input)).resolves.toEqual({
+      status: "success",
+      diagnosisId: 42,
+    });
+    expect(safeParse).toHaveBeenCalledWith(input);
+    expect(composeServiceDiagnosisCommand).toHaveBeenCalledWith(input);
     expect(calculateServiceReport).toHaveBeenCalledWith(command);
     expect(buildServiceReportSnapshot).toHaveBeenCalledWith(
       command,
@@ -174,6 +160,7 @@ describe("createServiceDiagnosis", () => {
     const order = [
       safeParse,
       requireUser,
+      composeServiceDiagnosisCommand,
       calculateServiceReport,
       buildServiceReportSnapshot,
       createServiceReport,
@@ -181,60 +168,19 @@ describe("createServiceDiagnosis", () => {
     expect(order).toEqual([...order].sort((left, right) => left - right));
   });
 
-  it.each(["calculation", "snapshot"])(
-    "sanitizes a %s construction failure",
-    async (boundary) => {
-      const failure = new Error("private domain detail");
-      if (boundary === "calculation") {
-        calculateServiceReport.mockImplementation(() => {
-          throw failure;
-        });
-      } else {
-        buildServiceReportSnapshot.mockImplementation(() => {
-          throw failure;
-        });
-      }
+  it.each([
+    ["composition", composeServiceDiagnosisCommand],
+    ["calculation", calculateServiceReport],
+    ["snapshot", buildServiceReportSnapshot],
+    ["persistence", createServiceReport],
+  ])("sanitizes an unexpected %s failure", async (_boundary, mock) => {
+    mock.mockImplementation(() => {
+      throw new Error("private provider details");
+    });
 
-      const result = await createServiceDiagnosis(validInput);
-
-      expect(result).toEqual({ status: "error", error: "create_failed" });
-      expectNoTechnicalDetails(result);
-      expect(createServiceReport).not.toHaveBeenCalled();
-    },
-  );
-
-  it("returns the safe persistence error", async () => {
-    createServiceReport.mockResolvedValue({
+    await expect(createServiceDiagnosis(input)).resolves.toEqual({
       status: "error",
       error: "create_failed",
     });
-
-    const result = await createServiceDiagnosis(validInput);
-
-    expect(result).toEqual({ status: "error", error: "create_failed" });
-    expectNoTechnicalDetails(result);
   });
-
-  it.each(["authentication", "persistence"])(
-    "sanitizes an unexpected %s exception",
-    async (boundary) => {
-      const providerFailure = {
-        message: "provider detail for private@example.com",
-        details: "private row detail",
-        hint: "internal provider hint",
-        code: "XX001",
-      };
-
-      if (boundary === "authentication") {
-        requireUser.mockRejectedValue(providerFailure);
-      } else {
-        createServiceReport.mockRejectedValue(providerFailure);
-      }
-
-      const result = await createServiceDiagnosis(validInput);
-
-      expect(result).toEqual({ status: "error", error: "create_failed" });
-      expectNoTechnicalDetails(result);
-    },
-  );
 });

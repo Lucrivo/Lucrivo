@@ -149,7 +149,12 @@ describe("simulateDiscount", () => {
 
 describe("DiscountSimulator", () => {
   it("exposes an accessible range and starts at the approved ten percent", () => {
-    render(<DiscountSimulator base={base} context="service" />);
+    render(
+      <DiscountSimulator
+        base={base}
+        context={{ category: "service", usesAttentionBand: false }}
+      />,
+    );
 
     const slider = screen.getByRole("slider", { name: "Desconto simulado" });
     expect(slider).toHaveValue("10");
@@ -158,7 +163,12 @@ describe("DiscountSimulator", () => {
   });
 
   it("updates price, profit, margin, and live safety copy at each boundary", () => {
-    render(<DiscountSimulator base={base} context="service" />);
+    render(
+      <DiscountSimulator
+        base={base}
+        context={{ category: "service", usesAttentionBand: false }}
+      />,
+    );
     const simulator = screen.getByTestId("discount-simulator");
     const slider = within(simulator).getByRole("slider", {
       name: "Desconto simulado",
@@ -200,7 +210,7 @@ describe("DiscountSimulator", () => {
     render(
       <DiscountSimulator
         base={{ ...base, unitCostCents: null }}
-        context="service"
+        context={{ category: "service", usesAttentionBand: false }}
       />,
     );
 
@@ -213,7 +223,12 @@ describe("DiscountSimulator", () => {
   });
 
   it("uses real profit language for a complete Product simulation", () => {
-    render(<DiscountSimulator base={completeProductBase} context="product" />);
+    render(
+      <DiscountSimulator
+        base={completeProductBase}
+        context={{ category: "product", usesAttentionBand: false }}
+      />,
+    );
 
     expect(screen.getByText("Margem real")).toBeInTheDocument();
     expect(screen.getByText("Lucro por unidade")).toBeInTheDocument();
@@ -223,7 +238,12 @@ describe("DiscountSimulator", () => {
   });
 
   it("uses contribution language and a warning for a partial Product simulation", () => {
-    render(<DiscountSimulator base={partialProductBase} context="product" />);
+    render(
+      <DiscountSimulator
+        base={partialProductBase}
+        context={{ category: "product", usesAttentionBand: false }}
+      />,
+    );
 
     expect(screen.getByText("Margem de contribuição")).toBeInTheDocument();
     expect(screen.getByText("Contribuição por unidade")).toBeInTheDocument();
@@ -245,7 +265,12 @@ describe("DiscountSimulator", () => {
   });
 
   it("keeps immutable Service simulator copy unchanged", () => {
-    render(<DiscountSimulator base={base} context="service" />);
+    render(
+      <DiscountSimulator
+        base={base}
+        context={{ category: "service", usesAttentionBand: false }}
+      />,
+    );
 
     expect(screen.getByText("Nova margem")).toBeInTheDocument();
     expect(screen.getByText("Lucro por venda")).toBeInTheDocument();
@@ -257,9 +282,28 @@ describe("DiscountSimulator", () => {
     );
   });
 
+  it("uses the attention range without calling it a target", () => {
+    render(
+      <DiscountSimulator
+        base={base}
+        context={{ category: "service", usesAttentionBand: true }}
+      />,
+    );
+
+    const simulator = screen.getByTestId("discount-simulator");
+    expect(simulator).toHaveTextContent("Pouca folga");
+    expect(simulator.textContent).not.toMatch(/meta|preço-alvo/i);
+
+    fireEvent.change(screen.getByRole("slider"), { target: { value: "50" } });
+    expect(screen.getByTestId("discount-safety")).toHaveTextContent("Prejuízo");
+  });
+
   it("uses unit profit and real margin for complete Production", () => {
     render(
-      <DiscountSimulator base={completeProductBase} context="production" />,
+      <DiscountSimulator
+        base={completeProductBase}
+        context={{ category: "production", usesAttentionBand: false }}
+      />,
     );
 
     expect(screen.getByText("Margem real")).toBeInTheDocument();
@@ -272,7 +316,10 @@ describe("DiscountSimulator", () => {
 
   it("uses manufacturing-cost copy for partial Production", () => {
     render(
-      <DiscountSimulator base={partialProductBase} context="production" />,
+      <DiscountSimulator
+        base={partialProductBase}
+        context={{ category: "production", usesAttentionBand: false }}
+      />,
     );
 
     expect(screen.getByText("Margem de contribuição")).toBeInTheDocument();

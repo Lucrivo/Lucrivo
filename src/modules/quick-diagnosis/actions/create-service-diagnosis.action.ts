@@ -8,16 +8,15 @@ import { buildServiceReportSnapshot } from "@/modules/reports/domain/build-servi
 import { calculateServiceReport } from "@/modules/reports/domain/calculate-service-report";
 import { createServiceReport } from "@/modules/reports/services/create-service-report.service";
 
-import { serviceDiagnosisSchema } from "../schemas/service-diagnosis.schema";
-import type {
-  CreateServiceDiagnosisActionResult,
-  ServiceDiagnosisInput,
-} from "../types";
+import { composeServiceDiagnosisCommand } from "../domain/compose-service-diagnosis-command";
+import type { ServiceFlowSubmissionInput } from "../domain/service-flow";
+import { serviceFlowSubmissionSchema } from "../schemas/service-flow.schema";
+import type { CreateServiceDiagnosisActionResult } from "../types";
 
 async function createServiceDiagnosis(
-  input: ServiceDiagnosisInput,
+  input: ServiceFlowSubmissionInput,
 ): Promise<CreateServiceDiagnosisActionResult> {
-  const parsed = serviceDiagnosisSchema.safeParse(input);
+  const parsed = serviceFlowSubmissionSchema.safeParse(input);
 
   if (!parsed.success) {
     return {
@@ -29,12 +28,13 @@ async function createServiceDiagnosis(
 
   try {
     const { supabase } = await requireUser();
-    const calculation = calculateServiceReport(parsed.data);
-    const snapshot = buildServiceReportSnapshot(parsed.data, calculation);
+    const command = composeServiceDiagnosisCommand(parsed.data);
+    const calculation = calculateServiceReport(command);
+    const snapshot = buildServiceReportSnapshot(command, calculation);
 
     return await createServiceReport({
       supabase,
-      command: parsed.data,
+      command,
       snapshot,
     });
   } catch (error) {
@@ -46,4 +46,6 @@ async function createServiceDiagnosis(
   }
 }
 
-export { createServiceDiagnosis };
+type CreateServiceDiagnosisAction = typeof createServiceDiagnosis;
+
+export { createServiceDiagnosis, type CreateServiceDiagnosisAction };

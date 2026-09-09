@@ -1,4 +1,5 @@
 import { Label } from "@/components/ui/label";
+import { PlainLanguageHelp } from "@/components/shared/plain-language-help";
 import {
   Select,
   SelectContent,
@@ -46,61 +47,81 @@ function MaterialCostStep({
       />
 
       {values.hasMaterialCost ? (
-        <div className="grid gap-5 sm:grid-cols-2">
-          <StepField
-            field="materialCost"
-            label="Quanto você gasta, em média, com esses materiais?"
-            value={values.materialCost}
-            errors={errors}
-            onChange={onChange}
-            prefix="R$"
-            labelClassName="sm:min-h-8 sm:items-end"
-          />
-          <div className="grid content-start gap-2">
-            <Label
-              htmlFor="materialCostUnit"
-              className="sm:min-h-8 sm:items-end"
-            >
-              Quando esse gasto acontece?
-            </Label>
-            <Select
-              value={values.materialCostUnit}
-              onValueChange={(value) => {
-                if (isServiceMaterialCostUnit(value)) {
-                  onMaterialCostUnitChange(value);
-                }
-              }}
-            >
-              <SelectTrigger
-                id="materialCostUnit"
-                className="bg-background h-11 w-full shadow-xs"
-                aria-invalid={Boolean(unitError)}
-                aria-describedby={
-                  unitError ? "materialCostUnit-error" : undefined
-                }
+        <div className="grid gap-5">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <StepField
+              field="materialCost"
+              label="Quanto você gasta, em média, com esses materiais?"
+              value={values.materialCost}
+              errors={errors}
+              onChange={onChange}
+              prefix="R$"
+              labelClassName="sm:min-h-8 sm:items-end"
+            />
+            <div className="grid content-start gap-2">
+              <Label
+                htmlFor="materialCostUnit"
+                className="sm:min-h-8 sm:items-end"
               >
-                <SelectValue placeholder="Escolha uma opção">
-                  {selectedUnit ? unitLabels[selectedUnit] : null}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent align="start">
-                {serviceMaterialCostUnits.map((unit) => (
-                  <SelectItem key={unit} value={unit}>
-                    {unitLabels[unit]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {unitError ? (
-              <p
-                id="materialCostUnit-error"
-                role="alert"
-                className="text-destructive text-sm"
+                Quando esse gasto acontece?
+              </Label>
+              <Select
+                value={values.materialCostUnit}
+                onValueChange={(value) => {
+                  if (isServiceMaterialCostUnit(value)) {
+                    onMaterialCostUnitChange(value);
+                  }
+                }}
               >
-                {unitError}
-              </p>
-            ) : null}
+                <SelectTrigger
+                  id="materialCostUnit"
+                  className="bg-background h-11 w-full shadow-xs"
+                  aria-invalid={Boolean(unitError)}
+                  aria-describedby={
+                    unitError ? "materialCostUnit-error" : undefined
+                  }
+                >
+                  <SelectValue placeholder="Escolha uma opção">
+                    {selectedUnit ? unitLabels[selectedUnit] : null}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent align="start">
+                  {serviceMaterialCostUnits.map((unit) => (
+                    <SelectItem key={unit} value={unit}>
+                      {unitLabels[unit]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {unitError ? (
+                <p
+                  id="materialCostUnit-error"
+                  role="alert"
+                  className="text-destructive text-sm"
+                >
+                  {unitError}
+                </p>
+              ) : null}
+            </div>
           </div>
+
+          {values.materialCostUnit === "appointment" &&
+          values.pricingMethod !== "appointment" ? (
+            <div className="grid gap-2">
+              <StepField
+                field="appointmentDurationMinutes"
+                label="Quanto tempo dura, em média, um serviço?"
+                value={values.appointmentDurationMinutes}
+                errors={errors}
+                onChange={onChange}
+                suffix="minutos"
+              />
+              <PlainLanguageHelp
+                title="Por que pedimos esse tempo?"
+                description="Usamos esse tempo somente para distribuir o gasto do atendimento no valor por hora."
+              />
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

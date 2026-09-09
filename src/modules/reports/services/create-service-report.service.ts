@@ -6,13 +6,13 @@ import type {
   Database,
   Json,
 } from "@/infrastructure/database/supabase/database.types";
-import type { ServiceDiagnosisCommand } from "@/modules/quick-diagnosis/types";
+import type { NormalizedServiceDiagnosisCommand } from "@/modules/quick-diagnosis/types";
 
 import type { CurrentServiceReportSnapshot } from "../types";
 
 type CreateServiceReportInput = {
   supabase: SupabaseClient<Database>;
-  command: ServiceDiagnosisCommand;
+  command: NormalizedServiceDiagnosisCommand;
   snapshot: CurrentServiceReportSnapshot;
 };
 
@@ -21,18 +21,21 @@ type CreateServiceReportResult =
   | { status: "error"; error: "create_failed" };
 
 type GeneratedRpcArgs =
-  Database["public"]["Functions"]["create_service_diagnosis_report"]["Args"];
+  Database["public"]["Functions"]["create_service_diagnosis_report_v4"]["Args"];
 
 type ServiceReportRpcArgs = Omit<
   GeneratedRpcArgs,
-  "p_real_margin_basis_points" | "p_unit_profit_cents"
+  | "p_real_margin_basis_points"
+  | "p_source_material_cost_unit"
+  | "p_unit_profit_cents"
 > & {
   p_real_margin_basis_points: number | null;
+  p_source_material_cost_unit: string | null;
   p_unit_profit_cents: number | null;
 };
 
 function toRpcArgs(
-  command: ServiceDiagnosisCommand,
+  command: NormalizedServiceDiagnosisCommand,
   snapshot: CurrentServiceReportSnapshot,
 ): ServiceReportRpcArgs {
   return {
@@ -51,6 +54,13 @@ function toRpcArgs(
     p_material_unit_cost_cents: command.materialUnitCostCents,
     p_tax_rate_basis_points: command.taxRateBasisPoints,
     p_card_fee_rate_basis_points: command.cardFeeRateBasisPoints,
+    p_source_pricing_method: command.source.pricingMethod,
+    p_source_current_price_cents: command.source.currentPriceCents,
+    p_source_material_cost_unit: command.source.materialCostUnit,
+    p_source_material_cost_cents: command.source.materialCostCents,
+    p_daily_work_minutes: command.source.dailyWorkMinutes,
+    p_source_appointment_duration_minutes:
+      command.source.appointmentDurationMinutes,
     p_schema_version: snapshot.schemaVersion,
     p_calculation_version: snapshot.calculationVersion,
     p_content_version: snapshot.contentVersion,
@@ -73,7 +83,7 @@ async function createServiceReport({
   try {
     const rpcArgs = toRpcArgs(command, snapshot);
     const { data, error } = await supabase.rpc(
-      "create_service_diagnosis_report",
+      "create_service_diagnosis_report_v4",
       rpcArgs as GeneratedRpcArgs,
     );
 

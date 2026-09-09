@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { PlainLanguageHelp } from "@/components/shared/plain-language-help";
 import { cn } from "@/lib/utils";
 
 import type { ReportExecutiveSummaryViewModel } from "../presenters/to-report-view-model";
@@ -15,28 +16,28 @@ const tonePresentation = {
   neutral: {
     icon: CircleHelpIcon,
     badge: "info" as const,
-    border: "border-l-info",
+    border: "border-info/30",
     surface: "bg-info/4",
     verdictSurface: "bg-info/5",
   },
   positive: {
     icon: CircleCheckIcon,
     badge: "success" as const,
-    border: "border-l-success",
+    border: "border-success/30",
     surface: "bg-success/4",
     verdictSurface: "bg-success/5",
   },
   warning: {
     icon: TriangleAlertIcon,
     badge: "warning" as const,
-    border: "border-l-warning",
+    border: "border-warning/35",
     surface: "bg-warning/5",
     verdictSurface: "bg-warning/6",
   },
   critical: {
     icon: OctagonAlertIcon,
     badge: "destructive" as const,
-    border: "border-l-destructive",
+    border: "border-destructive/30",
     surface: "bg-destructive/4",
     verdictSurface: "bg-destructive/5",
   },
@@ -65,7 +66,7 @@ function ReportExecutiveSummary({
     <section
       aria-labelledby="executive-summary-title"
       className={cn(
-        "border-border/70 relative overflow-hidden rounded-3xl border border-l-4 shadow-sm",
+        "relative overflow-hidden rounded-3xl border shadow-sm",
         presentation.border,
         presentation.surface,
       )}
@@ -114,10 +115,11 @@ function ReportExecutiveSummary({
                 className="border-border/70 bg-background/75 grid gap-2 rounded-xl border p-3.5"
               >
                 <div className="flex items-end justify-between gap-3">
-                  <dt className="text-muted-foreground text-xs font-medium">
-                    {fact.currentLabel}
+                  <dt className="text-muted-foreground grid gap-1 text-xs font-medium">
+                    <span>{fact.currentLabel}</span>
+                    {fact.help ? <PlainLanguageHelp {...fact.help} /> : null}
                   </dt>
-                  <dd className="font-semibold tabular-nums">
+                  <dd className="min-w-0 text-right font-semibold break-words tabular-nums">
                     {fact.currentValue}
                   </dd>
                 </div>
@@ -125,7 +127,7 @@ function ReportExecutiveSummary({
                   <dt className="text-muted-foreground text-xs font-medium">
                     {fact.referenceLabel}
                   </dt>
-                  <dd className="font-semibold tabular-nums">
+                  <dd className="min-w-0 text-right font-semibold break-words tabular-nums">
                     {fact.referenceValue}
                   </dd>
                 </div>
@@ -134,7 +136,7 @@ function ReportExecutiveSummary({
           </div>
         </div>
 
-        <div className="border-l-primary bg-primary/7 grid gap-2 rounded-2xl border-l-4 p-4 sm:p-5">
+        <div className="border-primary/20 bg-primary/7 grid gap-2 rounded-2xl border p-4 sm:p-5">
           <p className="text-primary text-xs font-semibold tracking-[0.14em] uppercase">
             {priorityEyebrow}
           </p>
