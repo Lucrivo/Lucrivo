@@ -46,6 +46,10 @@ type ServiceFlowSubmissionInput = ServiceFlowInput & {
 
 type ServiceFlowField = keyof ServiceFlowInput;
 type ServiceFlowFieldErrors = Partial<Record<ServiceFlowField, string[]>>;
+type ServiceFlowSubmissionField = ServiceFlowField | "submissionId";
+type ServiceFlowSubmissionFieldErrors = Partial<
+  Record<ServiceFlowSubmissionField, string[]>
+>;
 
 type ServiceFlowPreview = {
   monthlyRevenueTargetCents: number;
@@ -228,6 +232,8 @@ export {
   type ServiceFlowInput,
   type ServiceFlowPreview,
   type ServiceFlowSubmissionInput,
+  type ServiceFlowSubmissionField,
+  type ServiceFlowSubmissionFieldErrors,
   type ServiceFlowPricingMethod,
   type ServiceMaterialCostUnit,
 };

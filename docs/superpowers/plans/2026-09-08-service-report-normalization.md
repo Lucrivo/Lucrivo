@@ -360,7 +360,7 @@ git commit -m "feat: persist normalized service reports"
 - `createServiceDiagnosisAction(input: ServiceFlowSubmissionInput)` returns the existing discriminated action result shape so all wizard categories keep one error protocol.
 - Action order is: `serviceFlowSubmissionSchema.safeParse` → authenticated client/user → `composeServiceDiagnosisCommand` → `calculateServiceReport` → `buildServiceReportSnapshot` → `createServiceReport`.
 
-- [ ] **Step 1: Write failing service mapping tests**
+- [x] **Step 1: Write failing service mapping tests**
 
 Assert the V4 RPC receives both canonical and source values:
 
@@ -382,11 +382,11 @@ expect(rpc).toHaveBeenCalledWith(
 
 Keep tests for invalid RPC data, thrown RPC errors, and `create_failed`.
 
-- [ ] **Step 2: Write failing action orchestration tests**
+- [x] **Step 2: Write failing action orchestration tests**
 
 Mock the submission schema and composer. Assert invalid input never authenticates, signed-out input returns `unauthenticated`, a valid input passes the composed command to calculator/builder/service, and domain/persistence exceptions return the established generic failure without leaking technical messages.
 
-- [ ] **Step 3: Run focused tests and confirm failure**
+- [x] **Step 3: Run focused tests and confirm failure**
 
 ```bash
 pnpm test src/modules/reports/services/create-service-report.service.test.ts src/modules/quick-diagnosis/actions/create-service-diagnosis.action.test.ts
@@ -394,15 +394,15 @@ pnpm test src/modules/reports/services/create-service-report.service.test.ts src
 
 Expected: FAIL because the old schema/RPC and old command are still used.
 
-- [ ] **Step 4: Implement the service and action wiring**
+- [x] **Step 4: Implement the service and action wiring**
 
 Type the RPC args directly from generated `Database["public"]["Functions"]["create_service_diagnosis_report_v4"]["Args"]`. Keep null result fields handled exactly as required by generated types. Do not cast through `unknown` or bypass the snapshot parser.
 
-- [ ] **Step 5: Run focused tests**
+- [x] **Step 5: Run focused tests**
 
 Run the Step 3 command. Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/modules/reports/services/create-service-report.service.ts src/modules/reports/services/create-service-report.service.test.ts src/modules/quick-diagnosis/actions/create-service-diagnosis.action.ts src/modules/quick-diagnosis/actions/create-service-diagnosis.action.test.ts

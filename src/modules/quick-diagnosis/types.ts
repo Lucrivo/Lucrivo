@@ -1,3 +1,9 @@
+import type {
+  ServiceFlowPricingMethod,
+  ServiceFlowSubmissionFieldErrors,
+  ServiceMaterialCostUnit,
+} from "./domain/service-flow";
+
 const pricingMethods = ["hour", "minute", "appointment"] as const;
 const serviceWorkPeriods = ["day", "week", "month"] as const;
 
@@ -63,7 +69,7 @@ type CreateServiceDiagnosisActionResult =
   | {
       status: "error";
       error: "invalid_input";
-      fieldErrors: ServiceDiagnosisFieldErrors;
+      fieldErrors: ServiceFlowSubmissionFieldErrors;
     }
   | { status: "error"; error: "unauthorized" | "create_failed" };
 
@@ -184,7 +190,3 @@ export {
   type ServicePricingMethod,
   type ServiceWorkPeriod,
 };
-import type {
-  ServiceFlowPricingMethod,
-  ServiceMaterialCostUnit,
-} from "./domain/service-flow";

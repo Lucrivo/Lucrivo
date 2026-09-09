@@ -1,33 +1,43 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ServiceDiagnosisCommand } from "@/modules/quick-diagnosis/types";
+import type { NormalizedServiceDiagnosisCommand } from "@/modules/quick-diagnosis/types";
 
 vi.mock("server-only", () => ({}));
 
-import { buildServiceReportSnapshot } from "../domain/build-service-report-snapshot";
 import { calculateServiceReport } from "../domain/calculate-service-report";
+import { buildServiceReportSnapshot } from "../domain/build-service-report-snapshot";
 import { createServiceReport } from "./create-service-report.service";
 
-const command: ServiceDiagnosisCommand = {
+const command: NormalizedServiceDiagnosisCommand = {
   submissionId: "550e8400-e29b-41d4-a716-446655440000",
   pricingMethod: "hour",
-  desiredMonthlyIncomeCents: 500000,
-  fixedMonthlyExpensesCents: 120000,
+  desiredMonthlyIncomeCents: 500_000,
+  fixedMonthlyExpensesCents: 120_000,
   workHoursPeriod: "day",
-  workPeriodMinutes: 480,
-  monthlyWorkMinutes: 10392,
+  workPeriodMinutes: 360,
+  monthlyWorkMinutes: 7_794,
   weeklyWorkDays: 5,
-  hourlyRateCents: 12590,
+  hourlyRateCents: 3_079,
   minuteRateCents: 0,
   appointmentRateCents: 0,
   appointmentDurationMinutes: 0,
-  materialUnitCostCents: 3050,
+  materialUnitCostCents: 0,
   taxRateBasisPoints: 625,
   cardFeeRateBasisPoints: 350,
+  source: {
+    pricingMethod: "month",
+    currentPriceCents: 400_000,
+    materialCostUnit: null,
+    materialCostCents: 0,
+    dailyWorkMinutes: 360,
+    appointmentDurationMinutes: 0,
+  },
 };
 
-const calculation = calculateServiceReport(command);
-const snapshot = buildServiceReportSnapshot(command, calculation);
+const snapshot = buildServiceReportSnapshot(
+  command,
+  calculateServiceReport(command),
+);
 
 describe("createServiceReport", () => {
   const rpc = vi.fn();
@@ -46,50 +56,35 @@ describe("createServiceReport", () => {
     });
   }
 
-  it("persists normalized input, versions, snapshot, and summary in one RPC", async () => {
+  it("persists source and canonical values through the V4 RPC", async () => {
     await expect(create()).resolves.toEqual({
       status: "success",
       diagnosisId: 42,
     });
-    expect(rpc).toHaveBeenCalledOnce();
-    expect(rpc).toHaveBeenCalledWith("create_service_diagnosis_report", {
-      p_submission_id: command.submissionId,
-      p_pricing_method: "hour",
-      p_desired_monthly_income_cents: 500000,
-      p_fixed_monthly_expenses_cents: 120000,
-      p_work_hours_period: "day",
-      p_work_period_minutes: 480,
-      p_monthly_work_minutes: 10392,
-      p_weekly_work_days: 5,
-      p_hourly_rate_cents: 12590,
-      p_minute_rate_cents: 0,
-      p_appointment_rate_cents: 0,
-      p_appointment_duration_minutes: 0,
-      p_material_unit_cost_cents: 3050,
-      p_tax_rate_basis_points: 625,
-      p_card_fee_rate_basis_points: 350,
-      p_schema_version: 3,
-      p_calculation_version: 2,
-      p_content_version: 4,
-      p_scenario: "hour",
-      p_current_price_cents: snapshot.results.currentPriceCents,
-      p_real_margin_basis_points: snapshot.results.realMarginBasisPoints,
-      p_unit_profit_cents: snapshot.results.unitProfitCents,
-      p_verdict: snapshot.results.verdict,
-      p_priority: snapshot.results.priority,
-      p_unit: "hour",
-      p_report_snapshot: snapshot,
-    });
-    expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty("user_id");
+    expect(rpc).toHaveBeenCalledWith(
+      "create_service_diagnosis_report_v4",
+      expect.objectContaining({
+        p_submission_id: command.submissionId,
+        p_pricing_method: "hour",
+        p_hourly_rate_cents: 3_079,
+        p_source_pricing_method: "month",
+        p_source_current_price_cents: 400_000,
+        p_source_material_cost_unit: null,
+        p_source_material_cost_cents: 0,
+        p_daily_work_minutes: 360,
+        p_source_appointment_duration_minutes: 0,
+        p_schema_version: 4,
+        p_calculation_version: 3,
+        p_content_version: 5,
+        p_scenario: "month",
+        p_report_snapshot: snapshot,
+      }),
+    );
     expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty("p_user_id");
   });
 
   it("returns a safe error for a PostgREST failure", async () => {
-    rpc.mockResolvedValue({
-      data: null,
-      error: { code: "XX001", message: "private provider detail" },
-    });
-
+    rpc.mockResolvedValue({ data: null, error: { message: "private" } });
     await expect(create()).resolves.toEqual({
       status: "error",
       error: "create_failed",
@@ -100,7 +95,6 @@ describe("createServiceReport", () => {
     "returns a safe error for invalid RPC id %s",
     async (data) => {
       rpc.mockResolvedValue({ data, error: null });
-
       await expect(create()).resolves.toEqual({
         status: "error",
         error: "create_failed",
@@ -109,8 +103,7 @@ describe("createServiceReport", () => {
   );
 
   it("sanitizes a thrown provider exception", async () => {
-    rpc.mockRejectedValue(new Error("database failed for private@example.com"));
-
+    rpc.mockRejectedValue(new Error("private database failure"));
     await expect(create()).resolves.toEqual({
       status: "error",
       error: "create_failed",
