@@ -6,7 +6,6 @@ import {
   ClipboardCheckIcon,
   FileChartColumnIcon,
   LayoutDashboardIcon,
-  TrendingUpIcon,
 } from "lucide-react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -23,6 +22,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { Logo } from "../ui/logo";
 
 function AppSidebar() {
   const pathname = usePathname();
@@ -42,8 +42,8 @@ function AppSidebar() {
               render={<Link href="/dashboard" aria-label="Lucrivo" />}
               className="h-12 rounded-xl px-1 group-data-[collapsible=icon]:justify-center hover:bg-transparent active:bg-transparent"
             >
-              <span className="bg-brand-gradient text-primary-foreground flex size-9 shrink-0 items-center justify-center rounded-xl shadow-sm">
-                <TrendingUpIcon aria-hidden="true" />
+              <span className="flex size-9 shrink-0 items-center justify-center p-0.5">
+                <Logo />
               </span>
               <span className="grid min-w-0 flex-1 text-left leading-tight">
                 <span className="truncate text-base font-semibold tracking-tight">
