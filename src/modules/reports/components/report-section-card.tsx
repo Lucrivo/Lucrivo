@@ -15,25 +15,25 @@ const tonePresentation = {
   neutral: {
     icon: CircleHelpIcon,
     badge: "info" as const,
-    border: "border-l-info",
+    border: "border-info/30",
     surface: "bg-info/4",
   },
   positive: {
     icon: CircleCheckIcon,
     badge: "success" as const,
-    border: "border-l-success",
+    border: "border-success/30",
     surface: "bg-success/4",
   },
   warning: {
     icon: TriangleAlertIcon,
     badge: "warning" as const,
-    border: "border-l-warning",
+    border: "border-warning/35",
     surface: "bg-warning/5",
   },
   critical: {
     icon: OctagonAlertIcon,
     badge: "destructive" as const,
-    border: "border-l-destructive",
+    border: "border-destructive/30",
     surface: "bg-destructive/4",
   },
 };
@@ -46,7 +46,7 @@ function ReportSectionCard({ section }: { section: ReportSectionViewModel }) {
     <Card
       data-testid="report-section"
       className={cn(
-        "relative border-l-4 py-0 shadow-xs",
+        "relative py-0 shadow-xs",
         presentation.border,
         presentation.surface,
       )}

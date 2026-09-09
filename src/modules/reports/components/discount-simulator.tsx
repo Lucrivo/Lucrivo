@@ -214,7 +214,7 @@ function DiscountSimulator({
   return (
     <Card
       data-testid="report-section"
-      className="border-primary/25 from-primary/7 via-card to-info/7 relative border-l-4 bg-linear-to-br py-0 shadow-sm"
+      className="border-primary/25 from-primary/7 via-card to-info/7 relative bg-linear-to-br py-0 shadow-sm"
     >
       <CardHeader className="gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
         <div className="flex flex-wrap items-start justify-between gap-3">

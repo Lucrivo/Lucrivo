@@ -609,7 +609,7 @@ git commit -m "test: seed normalized service report scenarios"
 
 - Modify only files required by failures found in this task.
 
-- [ ] **Step 1: Run all application quality gates**
+- [x] **Step 1: Run all application quality gates**
 
 ```bash
 pnpm test
@@ -620,7 +620,7 @@ pnpm format:check
 
 Expected: PASS with no skipped new tests and no TypeScript casts that weaken the V4 RPC or V5 snapshot contracts.
 
-- [ ] **Step 2: Run all local database quality gates from a clean reset**
+- [x] **Step 2: Run all local database quality gates from a clean reset**
 
 ```bash
 pnpm supabase:reset
@@ -632,7 +632,7 @@ git diff --exit-code src/infrastructure/database/supabase/database.types.ts
 
 Expected: PASS and generated database types are committed.
 
-- [ ] **Step 3: Run the Impeccable mechanical detector**
+- [x] **Step 3: Run the Impeccable mechanical detector**
 
 ```bash
 node /home/pereira/projetos/Lucrivo/.agents/skills/impeccable/scripts/detect.mjs --json src/modules/quick-diagnosis/components/service src/modules/reports/components src/modules/reports/presenters/to-report-view-model.ts src/modules/reports/presentation/report-language.ts
@@ -640,7 +640,7 @@ node /home/pereira/projetos/Lucrivo/.agents/skills/impeccable/scripts/detect.mjs
 
 Review every finding. Fix applicable accessibility, overflow, typography, or interaction issues; document why any false positive is safe.
 
-- [ ] **Step 4: Perform one grouped visual pass**
+- [x] **Step 4: Perform one grouped visual pass**
 
 With the local app and seeded database, inspect in one pass:
 
@@ -653,7 +653,7 @@ With the local app and seeded database, inspect in one pass:
 
 Check that current/minimum price is readable first, the largest weight is visible without opening help, monthly sales quantity dominates its card, supporting text does not overflow, and no technical wording leaks into the primary copy. Apply one correction round if necessary, then repeat only the affected views once.
 
-- [ ] **Step 5: Re-run affected tests and the complete check**
+- [x] **Step 5: Re-run affected tests and the complete check**
 
 ```bash
 pnpm check
@@ -663,7 +663,7 @@ pnpm exec supabase test db
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit verification fixes if any**
+- [x] **Step 6: Commit verification fixes if any**
 
 ```bash
 git add src supabase docs

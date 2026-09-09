@@ -187,7 +187,6 @@ function buildPriceAnswer(
 
 function buildImmediateActionAnswer(
   priority: ReportExecutiveSummary["priority"],
-  calculation: ServiceReportCalculation,
 ): ReportExecutiveSummary["answers"][number] {
   const answer =
     priority.label === "Quantidade de serviços"
@@ -215,7 +214,7 @@ function buildServiceExecutiveSummary(
     answers: [
       buildProfitabilityAnswer(calculation),
       buildPriceAnswer(calculation),
-      buildImmediateActionAnswer(priority, calculation),
+      buildImmediateActionAnswer(priority),
     ],
   };
 }
