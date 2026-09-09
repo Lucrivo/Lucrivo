@@ -85,6 +85,7 @@ select set_config(
 );
 
 -- Serviços: preço saudável, margem apertada e prejuízo direto.
+/* Relatórios legados preservados abaixo apenas como referência histórica.
 select public.create_service_diagnosis_report(
   p_submission_id => '11000000-0000-4000-8000-000000000001'::uuid,
   p_pricing_method => 'hour'::public.service_pricing_method,
@@ -607,6 +608,120 @@ select public.create_service_diagnosis_report(
   "calculationVersion": 2,
   "contentVersion": 4
 }
+$report$::jsonb
+);
+
+*/
+
+-- Serviços normalizados: prejuízo, pouca folga e boa folga.
+select public.create_service_diagnosis_report_v4(
+  p_submission_id => '11000000-0000-4000-8000-000000000001'::uuid,
+  p_pricing_method => 'hour'::public.service_pricing_method,
+  p_desired_monthly_income_cents => 100000::bigint,
+  p_fixed_monthly_expenses_cents => 1000000::bigint,
+  p_work_hours_period => 'day'::public.service_work_hours_period,
+  p_work_period_minutes => 360::integer,
+  p_monthly_work_minutes => 7794::integer,
+  p_weekly_work_days => 5::smallint,
+  p_hourly_rate_cents => 6159::bigint,
+  p_minute_rate_cents => 0::bigint,
+  p_appointment_rate_cents => 0::bigint,
+  p_appointment_duration_minutes => 0::integer,
+  p_material_unit_cost_cents => 0::bigint,
+  p_tax_rate_basis_points => 0::integer,
+  p_card_fee_rate_basis_points => 0::integer,
+  p_source_pricing_method => 'month'::text,
+  p_source_current_price_cents => 800000::bigint,
+  p_source_material_cost_unit => null::text,
+  p_source_material_cost_cents => 0::bigint,
+  p_daily_work_minutes => 360::integer,
+  p_source_appointment_duration_minutes => 0::integer,
+  p_schema_version => 4::smallint,
+  p_calculation_version => 3::smallint,
+  p_content_version => 5::smallint,
+  p_scenario => 'month'::text,
+  p_current_price_cents => 6159::bigint,
+  p_real_margin_basis_points => -3749::integer,
+  p_unit_profit_cents => -2309::bigint,
+  p_verdict => 'operational_loss'::text,
+  p_priority => 'price'::text,
+  p_unit => 'hour'::text,
+  p_report_snapshot => $report$
+{"schemaVersion":4,"calculationVersion":3,"contentVersion":5,"category":"service","scenario":"month","currency":"BRL","unit":"hour","policy":{"targetMarginBasisPoints":1500,"weeklyDivisorHundredths":433,"maximumDiscountPercent":50,"proLaboreIncluded":true},"inputs":{"desiredMonthlyIncomeCents":100000,"fixedMonthlyExpensesCents":1000000,"monthlyWorkMinutes":7794,"weeklyWorkDays":5,"hourlyRateCents":6159,"minuteRateCents":0,"appointmentRateCents":0,"appointmentDurationMinutes":0,"taxRateBasisPoints":0,"cardFeeRateBasisPoints":0,"workHoursPeriod":"day","workPeriodMinutes":360,"materialUnitCostCents":0},"source":{"pricingMethod":"month","currentPriceCents":800000,"materialCostUnit":null,"materialCostCents":0,"dailyWorkMinutes":360,"appointmentDurationMinutes":0},"results":{"monthlyCostCents":1100000,"hourCostCents":8468,"unitCostCents":8468,"currentPriceCents":6159,"netRevenueCents":6159,"unitProfitCents":-2309,"realMarginBasisPoints":-3749,"minimumPriceCents":8468,"targetPriceCents":9963,"monthlySalesGoal":179,"weeklySalesGoal":42,"dailySalesGoal":9,"breakEvenDiscountPercent":0,"priority":"price","structureUnitCostCents":8468,"materialUnitCostCents":0,"unitContributionCents":6159,"verdict":"operational_loss"},"executiveSummary":{"headline":"Seu serviço dá lucro?","introduction":"Compare seu preço com o mínimo necessário e veja o que merece atenção primeiro.","verdict":{"label":"Prejuízo","body":"Faltam R$ 23,09 por hora para o preço pagar todos os gastos.","tone":"critical"},"facts":[{"key":"price","currentLabel":"Você cobra","currentValue":"R$ 61,59","referenceLabel":"Menor preço sem prejuízo","referenceValue":"R$ 84,68"},{"key":"margin","currentLabel":"Quanto sobra a cada R$ 100","currentValue":"-R$ 37,49","referenceLabel":"Leitura","referenceValue":"Prejuízo"}],"priority":{"label":"Gastos que existem todo mês","body":"Gastos que existem todo mês é o maior peso no cálculo: R$ 76,98 por hora. Confira esse valor primeiro."},"answers":[{"key":"profitability","question":"Estou ganhando dinheiro?","answer":"Não — faltam R$ 23,09 por hora para pagar os gastos."},{"key":"price_sufficiency","question":"Meu preço paga tudo?","answer":"Não — o menor preço sem prejuízo é R$ 84,68."},{"key":"immediate_action","question":"O que preciso fazer agora?","answer":"Comece conferindo gastos que existem todo mês."}]},"sections":[{"key":"break_even","title":"Seu menor preço sem prejuízo","body":"Você cobra R$ 61,59. Faltam R$ 23,09 por hora para pagar tudo.","emphasisLabel":"Menor preço sem prejuízo","emphasisValue":"R$ 84,68","tone":"critical"},{"key":"margin_diagnosis","title":"Quanto sobra no preço","body":"O preço não paga todos os gastos usados no cálculo.","emphasisLabel":"A cada R$ 100 cobrados","emphasisValue":"-R$ 37,49","tone":"critical"},{"key":"sales_goal","title":"Quanto você precisa vender","body":"Isso equivale a 42 por semana e 9 por dia de trabalho.","emphasisLabel":"Por mês","emphasisValue":"179 horas","tone":"positive"},{"key":"discount_simulator","title":"Como um desconto muda o resultado","body":"Teste um desconto e veja quanto sobra no novo preço.","emphasisLabel":"Limite antes do prejuízo","emphasisValue":"0%","tone":"neutral"}],"discountSimulationBase":{"originalPriceCents":6159,"unitCostCents":8468,"totalFeeBasisPoints":0,"targetMarginBasisPoints":1500,"minimumPriceCents":8468}}
+$report$::jsonb
+);
+
+select public.create_service_diagnosis_report_v4(
+  p_submission_id => '11000000-0000-4000-8000-000000000002'::uuid,
+  p_pricing_method => 'hour'::public.service_pricing_method,
+  p_desired_monthly_income_cents => 100000::bigint,
+  p_fixed_monthly_expenses_cents => 100000::bigint,
+  p_work_hours_period => 'day'::public.service_work_hours_period,
+  p_work_period_minutes => 360::integer,
+  p_monthly_work_minutes => 7794::integer,
+  p_weekly_work_days => 5::smallint,
+  p_hourly_rate_cents => 2500::bigint,
+  p_minute_rate_cents => 0::bigint,
+  p_appointment_rate_cents => 0::bigint,
+  p_appointment_duration_minutes => 0::integer,
+  p_material_unit_cost_cents => 0::bigint,
+  p_tax_rate_basis_points => 3000::integer,
+  p_card_fee_rate_basis_points => 500::integer,
+  p_source_pricing_method => 'day'::text,
+  p_source_current_price_cents => 15000::bigint,
+  p_source_material_cost_unit => null::text,
+  p_source_material_cost_cents => 0::bigint,
+  p_daily_work_minutes => 360::integer,
+  p_source_appointment_duration_minutes => 0::integer,
+  p_schema_version => 4::smallint,
+  p_calculation_version => 3::smallint,
+  p_content_version => 5::smallint,
+  p_scenario => 'day'::text,
+  p_current_price_cents => 2500::bigint,
+  p_real_margin_basis_points => 340::integer,
+  p_unit_profit_cents => 85::bigint,
+  p_verdict => 'tight_margin'::text,
+  p_priority => 'margin'::text,
+  p_unit => 'hour'::text,
+  p_report_snapshot => $report$
+{"schemaVersion":4,"calculationVersion":3,"contentVersion":5,"category":"service","scenario":"day","currency":"BRL","unit":"hour","policy":{"targetMarginBasisPoints":1500,"weeklyDivisorHundredths":433,"maximumDiscountPercent":50,"proLaboreIncluded":true},"inputs":{"desiredMonthlyIncomeCents":100000,"fixedMonthlyExpensesCents":100000,"monthlyWorkMinutes":7794,"weeklyWorkDays":5,"hourlyRateCents":2500,"minuteRateCents":0,"appointmentRateCents":0,"appointmentDurationMinutes":0,"taxRateBasisPoints":3000,"cardFeeRateBasisPoints":500,"workHoursPeriod":"day","workPeriodMinutes":360,"materialUnitCostCents":0},"source":{"pricingMethod":"day","currentPriceCents":15000,"materialCostUnit":null,"materialCostCents":0,"dailyWorkMinutes":360,"appointmentDurationMinutes":0},"results":{"monthlyCostCents":200000,"hourCostCents":1540,"unitCostCents":1540,"currentPriceCents":2500,"netRevenueCents":1625,"unitProfitCents":85,"realMarginBasisPoints":340,"minimumPriceCents":2370,"targetPriceCents":3080,"monthlySalesGoal":124,"weeklySalesGoal":29,"dailySalesGoal":6,"breakEvenDiscountPercent":5,"priority":"margin","structureUnitCostCents":1540,"materialUnitCostCents":0,"unitContributionCents":1625,"verdict":"tight_margin"},"executiveSummary":{"headline":"Seu serviço dá lucro?","introduction":"Compare seu preço com o mínimo necessário e veja o que merece atenção primeiro.","verdict":{"label":"Pouca folga","body":"O preço paga os gastos, mas deixa pouco espaço para imprevistos.","tone":"warning"},"facts":[{"key":"price","currentLabel":"Você cobra","currentValue":"R$ 25,00","referenceLabel":"Menor preço sem prejuízo","referenceValue":"R$ 23,70"},{"key":"margin","currentLabel":"Quanto sobra a cada R$ 100","currentValue":"R$ 3,40","referenceLabel":"Leitura","referenceValue":"Pouca folga"}],"priority":{"label":"Impostos e taxas","body":"Impostos e taxas é o maior peso no cálculo: R$ 8,75 por hora. Confira esse valor primeiro."},"answers":[{"key":"profitability","question":"Estou ganhando dinheiro?","answer":"Sim — sobram R$ 0,85 por hora depois de pagar os gastos."},{"key":"price_sufficiency","question":"Meu preço paga tudo?","answer":"Sim — o preço paga todos os gastos usados no cálculo."},{"key":"immediate_action","question":"O que preciso fazer agora?","answer":"Comece conferindo impostos e taxas."}]},"sections":[{"key":"break_even","title":"Seu menor preço sem prejuízo","body":"Você cobra R$ 25,00, R$ 1,30 acima desse valor por hora.","emphasisLabel":"Menor preço sem prejuízo","emphasisValue":"R$ 23,70","tone":"positive"},{"key":"margin_diagnosis","title":"Quanto sobra no preço","body":"O preço paga os gastos, mas deixa pouco espaço para imprevistos.","emphasisLabel":"A cada R$ 100 cobrados","emphasisValue":"R$ 3,40","tone":"warning"},{"key":"sales_goal","title":"Quanto você precisa vender","body":"Isso equivale a 29 por semana e 6 por dia de trabalho.","emphasisLabel":"Por mês","emphasisValue":"124 horas","tone":"positive"},{"key":"discount_simulator","title":"Como um desconto muda o resultado","body":"Teste um desconto e veja quanto sobra no novo preço.","emphasisLabel":"Limite antes do prejuízo","emphasisValue":"5%","tone":"neutral"}],"discountSimulationBase":{"originalPriceCents":2500,"unitCostCents":1540,"totalFeeBasisPoints":3500,"targetMarginBasisPoints":1500,"minimumPriceCents":2370}}
+$report$::jsonb
+);
+
+select public.create_service_diagnosis_report_v4(
+  p_submission_id => '11000000-0000-4000-8000-000000000003'::uuid,
+  p_pricing_method => 'appointment'::public.service_pricing_method,
+  p_desired_monthly_income_cents => 400000::bigint,
+  p_fixed_monthly_expenses_cents => 200000::bigint,
+  p_work_hours_period => 'day'::public.service_work_hours_period,
+  p_work_period_minutes => 360::integer,
+  p_monthly_work_minutes => 7794::integer,
+  p_weekly_work_days => 5::smallint,
+  p_hourly_rate_cents => 0::bigint,
+  p_minute_rate_cents => 0::bigint,
+  p_appointment_rate_cents => 15000::bigint,
+  p_appointment_duration_minutes => 60::integer,
+  p_material_unit_cost_cents => 1000::bigint,
+  p_tax_rate_basis_points => 600::integer,
+  p_card_fee_rate_basis_points => 200::integer,
+  p_source_pricing_method => 'appointment'::text,
+  p_source_current_price_cents => 15000::bigint,
+  p_source_material_cost_unit => 'appointment'::text,
+  p_source_material_cost_cents => 1000::bigint,
+  p_daily_work_minutes => 360::integer,
+  p_source_appointment_duration_minutes => 60::integer,
+  p_schema_version => 4::smallint,
+  p_calculation_version => 3::smallint,
+  p_content_version => 5::smallint,
+  p_scenario => 'appointment'::text,
+  p_current_price_cents => 15000::bigint,
+  p_real_margin_basis_points => 5454::integer,
+  p_unit_profit_cents => 8181::bigint,
+  p_verdict => 'above_target'::text,
+  p_priority => 'volume'::text,
+  p_unit => 'appointment'::text,
+  p_report_snapshot => $report$
+{"schemaVersion":4,"calculationVersion":3,"contentVersion":5,"category":"service","scenario":"appointment","currency":"BRL","unit":"appointment","policy":{"targetMarginBasisPoints":1500,"weeklyDivisorHundredths":433,"maximumDiscountPercent":50,"proLaboreIncluded":true},"inputs":{"desiredMonthlyIncomeCents":400000,"fixedMonthlyExpensesCents":200000,"monthlyWorkMinutes":7794,"weeklyWorkDays":5,"hourlyRateCents":0,"minuteRateCents":0,"appointmentRateCents":15000,"appointmentDurationMinutes":60,"taxRateBasisPoints":600,"cardFeeRateBasisPoints":200,"workHoursPeriod":"day","workPeriodMinutes":360,"materialUnitCostCents":1000},"source":{"pricingMethod":"appointment","currentPriceCents":15000,"materialCostUnit":"appointment","materialCostCents":1000,"dailyWorkMinutes":360,"appointmentDurationMinutes":60},"results":{"monthlyCostCents":600000,"hourCostCents":4619,"unitCostCents":5619,"currentPriceCents":15000,"netRevenueCents":13800,"unitProfitCents":8181,"realMarginBasisPoints":5454,"minimumPriceCents":6108,"targetPriceCents":7298,"monthlySalesGoal":47,"weeklySalesGoal":11,"dailySalesGoal":3,"breakEvenDiscountPercent":59,"priority":"volume","structureUnitCostCents":4619,"materialUnitCostCents":1000,"unitContributionCents":12800,"verdict":"above_target"},"executiveSummary":{"headline":"Seu serviço dá lucro?","introduction":"Compare seu preço com o mínimo necessário e veja o que merece atenção primeiro.","verdict":{"label":"Boa folga","body":"O preço paga os gastos e deixa espaço para imprevistos.","tone":"positive"},"facts":[{"key":"price","currentLabel":"Você cobra","currentValue":"R$ 150,00","referenceLabel":"Menor preço sem prejuízo","referenceValue":"R$ 61,08"},{"key":"margin","currentLabel":"Quanto sobra a cada R$ 100","currentValue":"R$ 54,54","referenceLabel":"Leitura","referenceValue":"Boa folga"}],"priority":{"label":"Quantidade de serviços","body":"Mantenha a quantidade de trabalho usada no cálculo e acompanhe se seus clientes aceitam o preço."},"answers":[{"key":"profitability","question":"Estou ganhando dinheiro?","answer":"Sim — sobram R$ 81,81 por atendimento depois de pagar os gastos."},{"key":"price_sufficiency","question":"Meu preço paga tudo?","answer":"Sim — o preço paga todos os gastos usados no cálculo."},{"key":"immediate_action","question":"O que preciso fazer agora?","answer":"Mantenha a quantidade de trabalho usada no cálculo e acompanhe se seus clientes aceitam o preço."}]},"sections":[{"key":"break_even","title":"Seu menor preço sem prejuízo","body":"Você cobra R$ 150,00, R$ 88,92 acima desse valor por atendimento.","emphasisLabel":"Menor preço sem prejuízo","emphasisValue":"R$ 61,08","tone":"positive"},{"key":"margin_diagnosis","title":"Quanto sobra no preço","body":"O preço paga os gastos e deixa espaço para imprevistos.","emphasisLabel":"A cada R$ 100 cobrados","emphasisValue":"R$ 54,54","tone":"positive"},{"key":"sales_goal","title":"Quanto você precisa vender","body":"Isso equivale a 11 por semana e 3 por dia de trabalho.","emphasisLabel":"Por mês","emphasisValue":"47 atendimentos","tone":"positive"},{"key":"discount_simulator","title":"Como um desconto muda o resultado","body":"Teste um desconto e veja quanto sobra no novo preço.","emphasisLabel":"Limite antes do prejuízo","emphasisValue":"59%","tone":"neutral"}],"discountSimulationBase":{"originalPriceCents":15000,"unitCostCents":5619,"totalFeeBasisPoints":800,"targetMarginBasisPoints":1500,"minimumPriceCents":6108}}
 $report$::jsonb
 );
 

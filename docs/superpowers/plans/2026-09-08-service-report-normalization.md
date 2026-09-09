@@ -562,11 +562,11 @@ git commit -m "refactor: simplify normalized service reports"
 - Each fixture calls `create_service_diagnosis_report_v4`, persists original and canonical values, and contains a snapshot produced by the TypeScript builder rather than hand-edited divergent arithmetic.
 - Documentation describes `4.33`, normalization formulas, the attention band, original/canonical persistence, and supported legacy/current tuples without calling 15% a target.
 
-- [ ] **Step 1: Update seed assertions first**
+- [x] **Step 1: Update seed assertions first**
 
 Assert exactly three Service rows for the test user, all tuple `4/3/5`, all six source fields coherent, scenarios cover loss/tight/healthy, and no Service snapshot contains the forbidden main-copy terms.
 
-- [ ] **Step 2: Reset and observe the expected seed-test failure**
+- [x] **Step 2: Reset and observe the expected seed-test failure**
 
 ```bash
 pnpm supabase:reset
@@ -575,15 +575,15 @@ pnpm exec supabase test db supabase/tests/seed.test.sql
 
 Expected: FAIL because the seed still creates Service `3/2/4` snapshots.
 
-- [ ] **Step 3: Generate and insert the three V5 fixtures**
+- [x] **Step 3: Generate and insert the three V5 fixtures**
 
 Use the production composer/calculator/builder in a temporary checked script or a focused test output to obtain exact JSON and RPC numbers. Delete the temporary generator after copying the verified fixture data. Do not alter the seeded credentials or unrelated report fixtures.
 
-- [ ] **Step 4: Update the quick-diagnosis documentation**
+- [x] **Step 4: Update the quick-diagnosis documentation**
 
 Document the exact formulas and examples from the approved spec, including the conditional appointment duration. Clearly distinguish source data, canonical calculation unit, attention band, and minimum no-loss price.
 
-- [ ] **Step 5: Reset and run all pgTAP tests**
+- [x] **Step 5: Reset and run all pgTAP tests**
 
 ```bash
 pnpm supabase:reset
@@ -594,7 +594,7 @@ pnpm supabase:advisors
 
 Expected: PASS, including cross-category tests that still invoke the legacy Service RPC.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add supabase/seed.sql supabase/tests/seed.test.sql docs/QUICK-DIAGNOSIS.md
