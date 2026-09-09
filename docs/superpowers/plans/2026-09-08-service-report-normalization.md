@@ -286,11 +286,11 @@ source_appointment_duration_minutes integer
 - Create `public.create_service_diagnosis_report_v4(...) returns bigint` with all existing canonical arguments plus six source arguments. It accepts only `4/3/5`, validates snapshot/source/canonical equivalence, uses `security definer set search_path = ''`, requires `auth.uid()`, and retains `(user_id, submission_id)` idempotency.
 - Keep `public.create_service_diagnosis_report` unchanged and executable for old application versions. Revoke V4 execution from `public, anon`; grant only `authenticated`.
 
-- [ ] **Step 1: Read current Supabase guidance before writing SQL**
+- [x] **Step 1: Read current Supabase guidance before writing SQL**
 
 Fetch `https://supabase.com/changelog.md`, scan changes since the project CLI/database versions, and read current official documentation relevant to database functions, RLS, privileges, and local testing. Record only implementation-impacting findings in the commit message body or plan progress notes.
 
-- [ ] **Step 2: Inspect CLI syntax and create the migration through the CLI**
+- [x] **Step 2: Inspect CLI syntax and create the migration through the CLI**
 
 ```bash
 pnpm exec supabase migration new --help
@@ -299,7 +299,7 @@ pnpm exec supabase migration new create_normalized_service_report
 
 Expected: a timestamped empty migration file created by Supabase CLI.
 
-- [ ] **Step 3: Write failing pgTAP coverage first**
+- [x] **Step 3: Write failing pgTAP coverage first**
 
 Extend schema tests for all columns and checks. Extend report tests to assert:
 
@@ -320,11 +320,11 @@ pnpm exec supabase test db supabase/tests/service_diagnoses.test.sql supabase/te
 
 Expected: FAIL because the columns and V4 RPC are missing.
 
-- [ ] **Step 4: Implement the additive migration**
+- [x] **Step 4: Implement the additive migration**
 
 Validate JSON fields with `jsonb_typeof` and explicit comparisons before insert. Insert the registry and detail rows in the same function transaction. On idempotent conflict, return the owned existing diagnosis only after confirming it belongs to the caller. Do not dynamically interpolate SQL or trust client-provided `user_id`.
 
-- [ ] **Step 5: Reset, run pgTAP, lint, and regenerate types**
+- [x] **Step 5: Reset, run pgTAP, lint, and regenerate types**
 
 ```bash
 pnpm supabase:reset
@@ -336,7 +336,7 @@ pnpm supabase:types
 
 Expected: all commands PASS and generated types contain the six columns plus `create_service_diagnosis_report_v4`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add supabase/migrations supabase/tests/service_diagnoses.test.sql supabase/tests/diagnosis_reports.test.sql src/infrastructure/database/supabase/database.types.ts

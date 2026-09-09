@@ -62,7 +62,13 @@ select columns_are(
     'diagnosis_id',
     'work_hours_period',
     'work_period_minutes',
-    'material_unit_cost_cents'
+    'material_unit_cost_cents',
+    'source_pricing_method',
+    'source_current_price_cents',
+    'source_material_cost_unit',
+    'source_material_cost_cents',
+    'daily_work_minutes',
+    'source_appointment_duration_minutes'
   ],
   'service diagnoses exposes only the approved columns'
 );
@@ -114,7 +120,13 @@ select ok(
       ["diagnosis_id", "pg_catalog", "int8"],
       ["work_hours_period", "public", "service_work_hours_period"],
       ["work_period_minutes", "pg_catalog", "int4"],
-      ["material_unit_cost_cents", "pg_catalog", "int8"]
+      ["material_unit_cost_cents", "pg_catalog", "int8"],
+      ["source_pricing_method", "pg_catalog", "text"],
+      ["source_current_price_cents", "pg_catalog", "int8"],
+      ["source_material_cost_unit", "pg_catalog", "text"],
+      ["source_material_cost_cents", "pg_catalog", "int8"],
+      ["daily_work_minutes", "pg_catalog", "int4"],
+      ["source_appointment_duration_minutes", "pg_catalog", "int4"]
     ]
   $json$::jsonb,
   'every service diagnosis column has the approved database type'
@@ -201,6 +213,11 @@ select ok(
       "service_diagnoses_duration_check",
       "service_diagnoses_money_check",
       "service_diagnoses_pricing_shape_check",
+      "service_diagnoses_source_duration_check",
+      "service_diagnoses_source_material_unit_check",
+      "service_diagnoses_source_method_check",
+      "service_diagnoses_source_money_check",
+      "service_diagnoses_source_shape_check",
       "service_diagnoses_tax_check",
       "service_diagnoses_work_days_check",
       "service_diagnoses_work_minutes_check",
@@ -1223,6 +1240,65 @@ select throws_ok(
   'authenticated cannot delete diagnoses'
 );
 reset role;
+
+select throws_ok(
+  $sql$
+    insert into public.service_diagnoses (
+      submission_id,
+      user_id,
+      pricing_method,
+      hourly_rate_cents,
+      source_pricing_method,
+      source_current_price_cents,
+      source_material_cost_cents,
+      daily_work_minutes,
+      source_appointment_duration_minutes
+    ) values (
+      'ffffffff-ffff-4fff-8fff-fffffffffff6',
+      '11111111-1111-4111-8111-111111111111',
+      'hour',
+      100,
+      'quarter',
+      100,
+      0,
+      480,
+      0
+    )
+  $sql$,
+  '23514',
+  null,
+  'source billing method rejects unsupported values'
+);
+select throws_ok(
+  $sql$
+    insert into public.service_diagnoses (
+      submission_id,
+      user_id,
+      pricing_method,
+      hourly_rate_cents,
+      source_pricing_method,
+      source_current_price_cents,
+      source_material_cost_unit,
+      source_material_cost_cents,
+      daily_work_minutes,
+      source_appointment_duration_minutes
+    ) values (
+      'ffffffff-ffff-4fff-8fff-fffffffffff7',
+      '11111111-1111-4111-8111-111111111111',
+      'hour',
+      100,
+      'hour',
+      100,
+      'appointment',
+      10,
+      480,
+      0
+    )
+  $sql$,
+  '23514',
+  null,
+  'appointment material requires a positive source duration'
+);
 
 select * from finish();
 
