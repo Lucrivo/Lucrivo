@@ -435,15 +435,15 @@ git commit -m "feat: create service reports from the new flow"
 - Review receives `isPending`, `error`, and `onSubmit`; visible labels are `Confirmar diagnóstico` and `Preparando relatório...`.
 - Material step shows `appointmentDurationMinutes` when material is per appointment and billing is not, with help text explaining that duration only distributes the material expense into the hourly view.
 
-- [ ] **Step 1: Replace disabled-button tests with failing submission behavior**
+- [x] **Step 1: Replace disabled-button tests with failing submission behavior**
 
 Test successful submission and `/reports/{id}` navigation; double-click invokes the action once; pending state disables the button; transient error keeps values and enables retry with the same ID; `unauthenticated` shows an entry link; invalid submission ID creates a fresh ID without clearing answers; field errors return to and focus the first invalid field.
 
-- [ ] **Step 2: Add failing conditional material-duration tests**
+- [x] **Step 2: Add failing conditional material-duration tests**
 
 For hourly billing plus appointment material, assert the duration field and clickable plain-language help appear. Assert it is absent for hourly material and not duplicated for appointment billing where the pricing step already collected it.
 
-- [ ] **Step 3: Run focused wizard tests and confirm failure**
+- [x] **Step 3: Run focused wizard tests and confirm failure**
 
 ```bash
 pnpm test src/app/\(private\)/quick-diagnosis/page.test.tsx src/modules/quick-diagnosis/components/quick-diagnosis-wizard.test.tsx src/modules/quick-diagnosis/components/service/service-wizard-state.test.ts src/modules/quick-diagnosis/components/service/service-diagnosis-wizard.test.tsx src/modules/quick-diagnosis/components/service/steps/material-cost-step.test.tsx
@@ -451,15 +451,15 @@ pnpm test src/app/\(private\)/quick-diagnosis/page.test.tsx src/modules/quick-di
 
 Expected: FAIL because the Service action is not injected and the review remains disabled.
 
-- [ ] **Step 4: Implement submission using the established wizard pattern**
+- [x] **Step 4: Implement submission using the established wizard pattern**
 
 Use `useRouter`, a synchronous `submittingRef`, reducer status, and the existing invalid-field routing/focus conventions from Product. Submit the original `ServiceFlowInput` plus `submissionId`; do not submit preview normalization values. Replace the maintenance notice with the real action/error region.
 
-- [ ] **Step 5: Run focused tests**
+- [x] **Step 5: Run focused tests**
 
 Run the Step 3 command. Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add 'src/app/(private)/quick-diagnosis/page.tsx' 'src/app/(private)/quick-diagnosis/page.test.tsx' src/modules/quick-diagnosis/components/quick-diagnosis-wizard.tsx src/modules/quick-diagnosis/components/quick-diagnosis-wizard.test.tsx src/modules/quick-diagnosis/components/service

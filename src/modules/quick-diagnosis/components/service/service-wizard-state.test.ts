@@ -7,12 +7,14 @@ import {
   type ServiceWizardState,
 } from "./service-wizard-state";
 
+const submissionId = "550e8400-e29b-41d4-a716-446655440000";
+
 function withValues(): ServiceWizardState {
   return {
-    ...createInitialServiceWizardState(),
+    ...createInitialServiceWizardState(submissionId),
     step: "workRoutine",
     values: {
-      ...createInitialServiceWizardState().values,
+      ...createInitialServiceWizardState(submissionId).values,
       desiredMonthlyIncome: "5000",
       fixedMonthlyExpenses: "2000",
       pricingMethod: "appointment",
@@ -33,7 +35,8 @@ function withValues(): ServiceWizardState {
 
 describe("service wizard state", () => {
   it("starts with only the fields used by the new isolated flow", () => {
-    expect(createInitialServiceWizardState()).toEqual({
+    expect(createInitialServiceWizardState(submissionId)).toEqual({
+      submissionId,
       step: "monthlyGoal",
       values: {
         desiredMonthlyIncome: "",
@@ -52,7 +55,33 @@ describe("service wizard state", () => {
         paymentFeeRate: "",
       },
       fieldErrors: {},
+      submissionStatus: "idle",
+      submissionError: null,
     });
+  });
+
+  it("tracks submission failure and replaces only an invalid id", () => {
+    const filled = withValues();
+    const submitting = serviceWizardReducer(filled, { type: "submitting" });
+    const failed = serviceWizardReducer(submitting, {
+      type: "submissionError",
+      error: "create_failed",
+    });
+    const replaced = serviceWizardReducer(failed, {
+      type: "replaceSubmissionId",
+      submissionId: "550e8400-e29b-41d4-a716-446655440001",
+    });
+
+    expect(submitting.submissionStatus).toBe("submitting");
+    expect(failed).toEqual(
+      expect.objectContaining({
+        submissionStatus: "error",
+        submissionError: "create_failed",
+      }),
+    );
+    expect(replaced.submissionId).toBe("550e8400-e29b-41d4-a716-446655440001");
+    expect(replaced.values).toEqual(filled.values);
+    expect(replaced.submissionStatus).toBe("idle");
   });
 
   it("adds the duration step only for appointment pricing", () => {

@@ -1,4 +1,5 @@
-import { InfoIcon, PencilIcon } from "lucide-react";
+import Link from "next/link";
+import { CheckIcon, PencilIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -11,8 +12,11 @@ import type { ServiceWizardStep } from "../service-wizard-state";
 
 type ReviewStepProps = {
   values: ServiceFlowInput;
+  pending: boolean;
+  submitError: "unauthorized" | "create_failed" | null;
   onEdit: (step: ServiceWizardStep) => void;
   onBackToType: () => void;
+  onSubmit: () => void;
 };
 
 const currency = new Intl.NumberFormat("pt-BR", {
@@ -88,7 +92,14 @@ function ReviewGroup({
   );
 }
 
-function ReviewStep({ values, onEdit, onBackToType }: ReviewStepProps) {
+function ReviewStep({
+  values,
+  pending,
+  submitError,
+  onEdit,
+  onBackToType,
+  onSubmit,
+}: ReviewStepProps) {
   const preview = calculateServiceFlowPreview(values);
   const pricingMethod = values.pricingMethod as keyof typeof pricingLabels;
   const materialUnit =
@@ -122,6 +133,14 @@ function ReviewStep({ values, onEdit, onBackToType }: ReviewStepProps) {
             label="Quanto o negócio precisa gerar por mês"
             value={currency.format(preview.monthlyRevenueTargetCents / 100)}
           />
+          {values.hasMaterialCost &&
+          materialUnit === "appointment" &&
+          pricingMethod !== "appointment" ? (
+            <ReviewItem
+              label="Duração média de um serviço"
+              value={`${values.appointmentDurationMinutes} minutos`}
+            />
+          ) : null}
         </ReviewGroup>
 
         <ReviewGroup
@@ -213,34 +232,43 @@ function ReviewStep({ values, onEdit, onBackToType }: ReviewStepProps) {
         </div>
       ) : null}
 
-      <div
-        className="border-border bg-muted/40 grid gap-3 rounded-xl border p-4"
-        role="status"
-      >
-        <div className="flex items-start gap-3">
-          <InfoIcon
-            aria-hidden="true"
-            className="text-primary mt-0.5 size-5 shrink-0"
-          />
-          <div className="grid gap-1">
-            <h3 className="font-semibold">
-              Relatório de Serviço em atualização
-            </h3>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Suas respostas podem ser revisadas, mas ainda não serão salvas. O
-              relatório será reativado quando estiver adaptado às novas formas
-              de cobrança e unidades de custo.
-            </p>
-          </div>
-        </div>
-        <Button
-          type="button"
-          disabled
-          className="w-full sm:w-auto sm:justify-self-end"
+      {submitError ? (
+        <div
+          role="alert"
+          className="border-destructive/25 bg-destructive/5 text-destructive rounded-lg border p-3 text-sm"
         >
-          Gerar relatório temporariamente indisponível
-        </Button>
-      </div>
+          {submitError === "unauthorized" ? (
+            <>
+              Sua sessão expirou. Entre novamente para continuar.{" "}
+              <Link
+                href="/login"
+                className="font-semibold underline underline-offset-4"
+              >
+                Entrar novamente
+              </Link>
+            </>
+          ) : (
+            "Não foi possível salvar o diagnóstico. Tente novamente."
+          )}
+        </div>
+      ) : null}
+
+      <Button
+        type="button"
+        size="lg"
+        disabled={pending}
+        onClick={onSubmit}
+        className="w-full motion-reduce:transform-none motion-reduce:transition-none"
+      >
+        {pending ? (
+          "Preparando relatório..."
+        ) : (
+          <>
+            <CheckIcon aria-hidden="true" />
+            Confirmar diagnóstico
+          </>
+        )}
+      </Button>
     </div>
   );
 }

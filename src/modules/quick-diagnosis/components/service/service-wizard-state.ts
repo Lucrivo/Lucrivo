@@ -20,9 +20,12 @@ type ServiceWizardStep =
   (typeof serviceWizardStepsWithoutDuration)[number] | "serviceDuration";
 
 type ServiceWizardState = {
+  submissionId: string;
   step: ServiceWizardStep;
   values: ServiceFlowInput;
   fieldErrors: ServiceFlowFieldErrors;
+  submissionStatus: "idle" | "submitting" | "error";
+  submissionError: "unauthorized" | "create_failed" | null;
 };
 
 type ServiceWizardAction =
@@ -36,7 +39,12 @@ type ServiceWizardAction =
   | { type: "next" }
   | { type: "back" }
   | { type: "edit"; step: ServiceWizardStep }
-  | { type: "reset" };
+  | { type: "submitting" }
+  | {
+      type: "submissionError";
+      error: "unauthorized" | "create_failed";
+    }
+  | { type: "replaceSubmissionId"; submissionId: string };
 
 function getServiceWizardSteps(
   pricingMethod: string,
@@ -50,8 +58,11 @@ function getServiceWizardSteps(
   ];
 }
 
-function createInitialServiceWizardState(): ServiceWizardState {
+function createInitialServiceWizardState(
+  submissionId: string,
+): ServiceWizardState {
   return {
+    submissionId,
     step: "monthlyGoal",
     values: {
       desiredMonthlyIncome: "",
@@ -70,7 +81,17 @@ function createInitialServiceWizardState(): ServiceWizardState {
       paymentFeeRate: "",
     },
     fieldErrors: {},
+    submissionStatus: "idle",
+    submissionError: null,
   };
+}
+
+function editingState(
+  state: ServiceWizardState,
+): Pick<ServiceWizardState, "submissionStatus" | "submissionError"> {
+  return state.submissionStatus === "idle" && state.submissionError === null
+    ? state
+    : { submissionStatus: "idle", submissionError: null };
 }
 
 function clearErrors(
@@ -103,12 +124,14 @@ function serviceWizardReducer(
     case "setField":
       return {
         ...state,
+        ...editingState(state),
         values: { ...state.values, [action.field]: action.value },
         fieldErrors: clearErrors(state.fieldErrors, [action.field]),
       };
     case "setPricingMethod":
       return {
         ...state,
+        ...editingState(state),
         values: {
           ...state.values,
           pricingMethod: action.value,
@@ -124,6 +147,7 @@ function serviceWizardReducer(
     case "setHasMaterialCost":
       return {
         ...state,
+        ...editingState(state),
         values: {
           ...state.values,
           hasMaterialCost: action.value,
@@ -139,12 +163,14 @@ function serviceWizardReducer(
     case "setMaterialCostUnit":
       return {
         ...state,
+        ...editingState(state),
         values: { ...state.values, materialCostUnit: action.value },
         fieldErrors: clearErrors(state.fieldErrors, ["materialCostUnit"]),
       };
     case "setPaysRevenueTax":
       return {
         ...state,
+        ...editingState(state),
         values: {
           ...state.values,
           paysRevenueTax: action.value,
@@ -158,6 +184,7 @@ function serviceWizardReducer(
     case "setHasPaymentFee":
       return {
         ...state,
+        ...editingState(state),
         values: {
           ...state.values,
           hasPaymentFee: action.value,
@@ -175,9 +202,27 @@ function serviceWizardReducer(
     case "back":
       return { ...state, step: adjacentStep(state, -1) };
     case "edit":
-      return { ...state, step: action.step };
-    case "reset":
-      return createInitialServiceWizardState();
+      return { ...state, ...editingState(state), step: action.step };
+    case "submitting":
+      return {
+        ...state,
+        submissionStatus: "submitting",
+        submissionError: null,
+      };
+    case "submissionError":
+      return {
+        ...state,
+        submissionStatus: "error",
+        submissionError: action.error,
+      };
+    case "replaceSubmissionId": {
+      return {
+        ...state,
+        submissionId: action.submissionId,
+        submissionStatus: "idle",
+        submissionError: null,
+      };
+    }
   }
 }
 

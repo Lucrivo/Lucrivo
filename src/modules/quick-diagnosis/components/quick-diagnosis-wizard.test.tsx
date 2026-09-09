@@ -12,6 +12,7 @@ import {
   QuickDiagnosisWizard,
   type CreateProductDiagnosisAction,
   type CreateProductionDiagnosisAction,
+  type CreateServiceDiagnosisAction,
 } from "./quick-diagnosis-wizard";
 
 const submissionIds = [
@@ -30,12 +31,15 @@ describe("QuickDiagnosisWizard category orchestration", () => {
   function renderWizard(options?: {
     createProductDiagnosis?: CreateProductDiagnosisAction;
     createProductionDiagnosis?: CreateProductionDiagnosisAction;
+    createServiceDiagnosis?: CreateServiceDiagnosisAction;
   }) {
     const createProductDiagnosis =
       options?.createProductDiagnosis ?? vi.fn<CreateProductDiagnosisAction>();
     const createProductionDiagnosis =
       options?.createProductionDiagnosis ??
       vi.fn<CreateProductionDiagnosisAction>();
+    const createServiceDiagnosis =
+      options?.createServiceDiagnosis ?? vi.fn<CreateServiceDiagnosisAction>();
     const createSubmissionId = vi
       .fn()
       .mockReturnValueOnce(submissionIds[0])
@@ -48,6 +52,7 @@ describe("QuickDiagnosisWizard category orchestration", () => {
       <QuickDiagnosisWizard
         createProductDiagnosis={createProductDiagnosis}
         createProductionDiagnosis={createProductionDiagnosis}
+        createServiceDiagnosis={createServiceDiagnosis}
         createSubmissionId={createSubmissionId}
       />,
     );
@@ -56,6 +61,7 @@ describe("QuickDiagnosisWizard category orchestration", () => {
       createProductDiagnosis,
       createProductionDiagnosis,
       createSubmissionId,
+      createServiceDiagnosis,
     };
   }
 
@@ -377,17 +383,13 @@ describe("QuickDiagnosisWizard category orchestration", () => {
 
       await user.click(screen.getByRole("radio", { name: "Produção" }));
       await user.click(screen.getByRole("button", { name: "Continuar" }));
-      expect(createSubmissionId).toHaveBeenCalledTimes(
-        initialCategory === "Produto" ? 2 : 1,
-      );
+      expect(createSubmissionId).toHaveBeenCalledTimes(2);
       expect(screen.getByText("2 de 8")).toBeInTheDocument();
       await user.click(screen.getByRole("button", { name: "Voltar" }));
 
       await user.click(screen.getByRole("radio", { name: initialCategory }));
       await user.click(screen.getByRole("button", { name: "Continuar" }));
-      expect(createSubmissionId).toHaveBeenCalledTimes(
-        initialCategory === "Produto" ? 3 : 1,
-      );
+      expect(createSubmissionId).toHaveBeenCalledTimes(3);
 
       if (initialCategory === "Produto") {
         expect(
@@ -455,12 +457,12 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     await openCategoryFromProductValues(user);
     await user.click(screen.getByRole("radio", { name: "Serviço" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    expect(createSubmissionId).toHaveBeenCalledTimes(1);
+    expect(createSubmissionId).toHaveBeenCalledTimes(2);
     await user.click(screen.getByRole("button", { name: "Voltar" }));
 
     await user.click(screen.getByRole("radio", { name: "Produto" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    expect(createSubmissionId).toHaveBeenCalledTimes(2);
+    expect(createSubmissionId).toHaveBeenCalledTimes(3);
     await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(screen.getByLabelText("Quanto você paga por unidade?")).toHaveValue(
@@ -483,30 +485,40 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     expect(createProductDiagnosis).toHaveBeenCalledTimes(2);
     expect(createProductDiagnosis).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ submissionId: submissionIds[1] }),
+      expect.objectContaining({ submissionId: submissionIds[2] }),
     );
     expect(createProductDiagnosis).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({ submissionId: submissionIds[1] }),
+      expect.objectContaining({ submissionId: submissionIds[2] }),
     );
     expect(createProductionDiagnosis).not.toHaveBeenCalled();
   });
 
-  it("keeps the new Service flow isolated and disables its report action", async () => {
+  it("submits the Service flow only to its action", async () => {
     const user = userEvent.setup();
-    const { createProductDiagnosis, createProductionDiagnosis } =
-      renderWizard();
+    const createServiceDiagnosis = vi
+      .fn<CreateServiceDiagnosisAction>()
+      .mockResolvedValue({ status: "success", diagnosisId: 84 });
+    const { createProductDiagnosis, createProductionDiagnosis } = renderWizard({
+      createServiceDiagnosis,
+    });
 
     await user.click(screen.getByRole("radio", { name: "Serviço" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await completeServiceDiagnosis(user);
 
-    expect(
-      screen.getByRole("button", {
-        name: "Gerar relatório temporariamente indisponível",
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/reports/84"));
+    expect(createServiceDiagnosis).toHaveBeenCalledWith(
+      expect.objectContaining({
+        submissionId: submissionIds[0],
+        pricingMethod: "hour",
+        currentPrice: "125,90",
       }),
-    ).toBeDisabled();
-    expect(replace).not.toHaveBeenCalled();
+    );
     expect(createProductDiagnosis).not.toHaveBeenCalled();
     expect(createProductionDiagnosis).not.toHaveBeenCalled();
   });

@@ -4,13 +4,19 @@ import { describe, expect, it, vi } from "vitest";
 const {
   createProductDiagnosis,
   createProductionDiagnosis,
+  createServiceDiagnosis,
   QuickDiagnosisWizard,
 } = vi.hoisted(() => ({
   createProductDiagnosis: vi.fn(),
   createProductionDiagnosis: vi.fn(),
+  createServiceDiagnosis: vi.fn(),
   QuickDiagnosisWizard: vi.fn(() => <div>Wizard do diagnóstico</div>),
 }));
 
+vi.mock(
+  "@/modules/quick-diagnosis/actions/create-service-diagnosis.action",
+  () => ({ createServiceDiagnosis }),
+);
 vi.mock(
   "@/modules/quick-diagnosis/actions/create-product-diagnosis.action",
   () => ({ createProductDiagnosis }),
@@ -38,6 +44,7 @@ describe("QuickDiagnosisPage", () => {
       {
         createProductDiagnosis,
         createProductionDiagnosis,
+        createServiceDiagnosis,
       },
       undefined,
     );
