@@ -385,6 +385,34 @@ const validServiceV4Snapshot = {
   contentVersion: 4,
 };
 
+const validServiceV5Snapshot = {
+  ...validServiceV4Snapshot,
+  schemaVersion: 4,
+  calculationVersion: 3,
+  contentVersion: 5,
+  source: {
+    pricingMethod: "appointment",
+    currentPriceCents: 8000,
+    materialCostUnit: "appointment",
+    materialCostCents: 1000,
+    dailyWorkMinutes: 480,
+    appointmentDurationMinutes: 50,
+  },
+  inputs: {
+    ...validServiceV4Snapshot.inputs,
+    workHoursPeriod: "day",
+    workPeriodMinutes: 480,
+    monthlyWorkMinutes: 10392,
+  },
+  executiveSummary: {
+    ...validServiceV4Snapshot.executiveSummary,
+    facts: [...validServiceV4Snapshot.executiveSummary.facts].reverse(),
+  },
+  sections: validServiceV4Snapshot.sections.filter(
+    ({ key }) => key !== "hidden_cost",
+  ),
+};
+
 describe("category-versioned report snapshots", () => {
   it("preserves the complete Service V2 shape", () => {
     expect(parseServiceReportSnapshot(validServiceSnapshot)).toEqual(
@@ -402,16 +430,46 @@ describe("category-versioned report snapshots", () => {
     );
   });
 
-  it("parses the current Service content version without dropping V2 or V3", () => {
-    expect(parseCurrentServiceReportSnapshot(validServiceV4Snapshot)).toEqual(
-      validServiceV4Snapshot,
+  it("parses V5 as current without dropping V2, V3, or V4", () => {
+    expect(parseCurrentServiceReportSnapshot(validServiceV5Snapshot)).toEqual(
+      validServiceV5Snapshot,
     );
     expect(parseServiceReportSnapshot(validServiceV4Snapshot)).toEqual(
       validServiceV4Snapshot,
     );
-    expect(parseReportSnapshot(validServiceV4Snapshot)).toEqual(
-      validServiceV4Snapshot,
+    expect(parseReportSnapshot(validServiceV5Snapshot)).toEqual(
+      validServiceV5Snapshot,
     );
+  });
+
+  it("rejects removed or incorrectly ordered V5 content", () => {
+    expect(() =>
+      parseCurrentServiceReportSnapshot({
+        ...validServiceV5Snapshot,
+        sections: validServiceV4Snapshot.sections,
+      }),
+    ).toThrow();
+    expect(() =>
+      parseCurrentServiceReportSnapshot({
+        ...validServiceV5Snapshot,
+        executiveSummary: {
+          ...validServiceV5Snapshot.executiveSummary,
+          facts: [...validServiceV5Snapshot.executiveSummary.facts].reverse(),
+        },
+      }),
+    ).toThrow();
+  });
+
+  it("rejects incoherent V5 source and canonical values", () => {
+    expect(() =>
+      parseCurrentServiceReportSnapshot({
+        ...validServiceV5Snapshot,
+        source: {
+          ...validServiceV5Snapshot.source,
+          currentPriceCents: 9000,
+        },
+      }),
+    ).toThrow();
   });
 
   it.each([

@@ -1,215 +1,129 @@
 import { describe, expect, it } from "vitest";
 
-import type { ServiceDiagnosisCommand } from "@/modules/quick-diagnosis/types";
+import type { NormalizedServiceDiagnosisCommand } from "@/modules/quick-diagnosis/types";
 
 import { calculateServiceReport } from "./calculate-service-report";
 import { buildServiceReportSnapshot } from "./build-service-report-snapshot";
 
-const baseCommand: ServiceDiagnosisCommand = {
+const baseCommand: NormalizedServiceDiagnosisCommand = {
   submissionId: "550e8400-e29b-41d4-a716-446655440000",
-  pricingMethod: "appointment",
-  desiredMonthlyIncomeCents: 400000,
-  fixedMonthlyExpensesCents: 200000,
-  workHoursPeriod: "month",
-  workPeriodMinutes: 6000,
-  monthlyWorkMinutes: 6000,
+  pricingMethod: "hour",
+  desiredMonthlyIncomeCents: 400_000,
+  fixedMonthlyExpensesCents: 200_000,
+  workHoursPeriod: "day",
+  workPeriodMinutes: 360,
+  monthlyWorkMinutes: 7_794,
   weeklyWorkDays: 5,
-  hourlyRateCents: 0,
+  hourlyRateCents: 3_079,
   minuteRateCents: 0,
-  appointmentRateCents: 8000,
-  appointmentDurationMinutes: 50,
+  appointmentRateCents: 0,
+  appointmentDurationMinutes: 0,
   materialUnitCostCents: 0,
   taxRateBasisPoints: 600,
   cardFeeRateBasisPoints: 200,
+  source: {
+    pricingMethod: "month",
+    currentPriceCents: 400_000,
+    materialCostUnit: null,
+    materialCostCents: 0,
+    dailyWorkMinutes: 360,
+    appointmentDurationMinutes: 0,
+  },
 };
 
-function build(command: ServiceDiagnosisCommand) {
+function build(command: NormalizedServiceDiagnosisCommand = baseCommand) {
   return buildServiceReportSnapshot(command, calculateServiceReport(command));
 }
 
 describe("buildServiceReportSnapshot", () => {
-  it.each([
-    {
-      name: "Hour",
-      command: {
-        ...baseCommand,
-        pricingMethod: "hour" as const,
-        hourlyRateCents: 8000,
-        appointmentRateCents: 0,
-        appointmentDurationMinutes: 0,
-      },
-      expectedBodies: [
-        "Abaixo de R$ 65,22 por hora você vende no prejuízo. Seu preço de R$ 80,00 cobre o custo.",
-        "Só 100h/mês são realmente pagas — é sobre elas que caem seus custos de estrutura. Por isso a hora custa R$ 60,00, não o que você imagina. É com esse número que a conta fecha.",
-        "O preço é suficiente para alcançar a meta.",
-        "Para cobrir seus custos fixos (pró-labore incluído), sua meta é de 82 horas por mês, 19 por semana e 4 por dia.",
-        "Arraste e veja o preço, a margem e o lucro mudarem — e onde está o seu limite.",
-      ],
-    },
-    {
-      name: "Minute",
-      command: {
-        ...baseCommand,
-        pricingMethod: "minute" as const,
-        minuteRateCents: 250,
-        appointmentRateCents: 0,
-        appointmentDurationMinutes: 40,
-      },
-      expectedBodies: [
-        "Abaixo de R$ 43,48 por atendimento você vende no prejuízo. Seu preço de R$ 100,00 cobre o custo.",
-        "Só 100h/mês são realmente pagas — é sobre elas que caem seus custos de estrutura. Por isso a hora custa R$ 60,00, não o que você imagina. É com esse número que a conta fecha.",
-        "Há folga; valide a aceitação do mercado.",
-        "Para cobrir seus custos fixos (pró-labore incluído), sua meta é de 66 atendimentos por mês, 16 por semana e 4 por dia.",
-        "Arraste e veja o preço, a margem e o lucro mudarem — e onde está o seu limite.",
-      ],
-    },
-    {
-      name: "Appointment",
-      command: baseCommand,
-      expectedBodies: [
-        "Abaixo de R$ 54,35 por atendimento você vende no prejuízo. Seu preço de R$ 80,00 cobre o custo.",
-        "Só 100h/mês são realmente pagas — é sobre elas que caem seus custos de estrutura. Por isso a hora custa R$ 60,00, não o que você imagina. É com esse número que a conta fecha.",
-        "Há folga; valide a aceitação do mercado.",
-        "Para cobrir seus custos fixos (pró-labore incluído), sua meta é de 82 atendimentos por mês, 19 por semana e 4 por dia.",
-        "Arraste e veja o preço, a margem e o lucro mudarem — e onde está o seu limite.",
-      ],
-    },
-  ])(
-    "builds exact $name copy in the approved order",
-    ({ command, expectedBodies }) => {
-      const snapshot = build(command);
+  it("builds the normalized current contract in the approved order", () => {
+    const snapshot = build();
 
-      expect(snapshot).toEqual(
-        expect.objectContaining({
-          schemaVersion: 3,
-          calculationVersion: 2,
-          contentVersion: 4,
-          category: "service",
-          scenario: command.pricingMethod,
-          currency: "BRL",
-        }),
-      );
-      expect(snapshot.sections.map(({ key }) => key)).toEqual([
-        "break_even",
-        "hidden_cost",
-        "margin_diagnosis",
-        "sales_goal",
-        "discount_simulator",
-      ]);
-      expect(snapshot.sections.map(({ body }) => body)).toEqual(expectedBodies);
-      expect(snapshot.executiveSummary.answers.map(({ key }) => key)).toEqual([
-        "profitability",
-        "price_sufficiency",
-        "immediate_action",
-      ]);
-      expect(snapshot.sections[4]).toEqual(
-        expect.objectContaining({
-          title: "Quanto de desconto eu consigo dar sem destruir minha margem?",
-          body: "Arraste e veja o preço, a margem e o lucro mudarem — e onde está o seu limite.",
-        }),
-      );
-    },
-  );
-
-  it("marks a loss as critical and tells the user to correct price first", () => {
-    const snapshot = build({ ...baseCommand, appointmentRateCents: 4000 });
-
-    expect(snapshot.sections[0].tone).toBe("critical");
-    expect(snapshot.sections[2]).toEqual(
+    expect(snapshot).toEqual(
       expect.objectContaining({
-        emphasisValue: "Preço não cobre a operação",
-        body: "O preço atual não cobre toda a operação.",
-        tone: "critical",
+        schemaVersion: 4,
+        calculationVersion: 3,
+        contentVersion: 5,
+        category: "service",
+        scenario: "month",
+        currency: "BRL",
+        unit: "hour",
+        source: baseCommand.source,
       }),
     );
-    expect(snapshot.sections[3]).toEqual(
-      expect.objectContaining({
-        body: "Seu preço atual não sustenta a operação. Corrija o preço antes de buscar mais volume.",
-        tone: "critical",
-      }),
-    );
-    expect(snapshot.sections[3].body).not.toContain("sua meta é de");
+    expect(snapshot.executiveSummary.facts.map(({ key }) => key)).toEqual([
+      "price",
+      "margin",
+    ]);
+    expect(snapshot.sections.map(({ key }) => key)).toEqual([
+      "break_even",
+      "margin_diagnosis",
+      "sales_goal",
+      "discount_simulator",
+    ]);
   });
 
-  it("marks a positive margin below tolerance as warning", () => {
-    const snapshot = build({ ...baseCommand, appointmentRateCents: 6000 });
+  it("uses the minimum price and concise sales copy", () => {
+    const snapshot = build();
 
+    expect(snapshot.sections[0]).toEqual(
+      expect.objectContaining({
+        title: "Seu menor preço sem prejuízo",
+        emphasisLabel: "Menor preço sem prejuízo",
+      }),
+    );
+    expect(snapshot.sections[1].title).toBe("Quanto sobra no preço");
     expect(snapshot.sections[2]).toEqual(
       expect.objectContaining({
-        emphasisValue: "Margem apertada",
-        body: "O preço cobre os custos, mas sobra menos que o desejado.",
-        tone: "warning",
+        title: "Quanto você precisa vender",
+        emphasisLabel: "Por mês",
       }),
     );
   });
 
-  it("stores normalized inputs, results, policy, and simulator base", () => {
-    const calculation = calculateServiceReport(baseCommand);
-    const snapshot = buildServiceReportSnapshot(baseCommand, calculation);
+  it("stores canonical inputs beside the original answers", () => {
+    const snapshot = build();
 
     expect(snapshot.inputs).toEqual(
       expect.objectContaining({
-        desiredMonthlyIncomeCents: 400000,
-        workHoursPeriod: "month",
-        workPeriodMinutes: 6000,
-        appointmentRateCents: 8000,
+        workHoursPeriod: "day",
+        workPeriodMinutes: 360,
+        monthlyWorkMinutes: 7_794,
+        hourlyRateCents: 3_079,
         materialUnitCostCents: 0,
       }),
     );
-    expect(snapshot.results).toEqual(
-      expect.objectContaining({
-        currentPriceCents: 8000,
-        structureUnitCostCents: 5000,
-        materialUnitCostCents: 0,
-        unitContributionCents: 7360,
-        unitProfitCents: 2360,
-        realMarginBasisPoints: 2950,
-      }),
-    );
-    expect(snapshot.policy).toEqual({
-      targetMarginBasisPoints: 1500,
-      weeklyDivisorHundredths: 433,
-      maximumDiscountPercent: 50,
-      proLaboreIncluded: true,
-    });
-    expect(snapshot.discountSimulationBase).toEqual({
-      originalPriceCents: 8000,
-      unitCostCents: 5000,
-      totalFeeBasisPoints: 800,
-      targetMarginBasisPoints: 1500,
-      minimumPriceCents: 5435,
-    });
+    expect(snapshot.results.currentPriceCents).toBe(3_079);
+    expect(snapshot.source).toEqual(baseCommand.source);
   });
 
-  it("explains structure and material as separate cost origins", () => {
-    const snapshot = build({ ...baseCommand, materialUnitCostCents: 1000 });
-
-    expect(snapshot.sections[1].body).toBe(
-      "Sua estrutura custa R$ 50,00 por atendimento. Somando R$ 10,00 de material usado diretamente, o custo total chega a R$ 60,00.",
-    );
-    expect(snapshot.discountSimulationBase).toEqual(
-      expect.objectContaining({
-        unitCostCents: 6000,
-        minimumPriceCents: 6522,
-      }),
-    );
-  });
-
-  it("persists direct loss content and suppresses volume advice", () => {
-    const snapshot = build({
+  it("makes current and minimum prices explicit for a loss", () => {
+    const command = {
       ...baseCommand,
-      appointmentRateCents: 1000,
-      materialUnitCostCents: 1000,
-    });
+      hourlyRateCents: 1_000,
+      source: { ...baseCommand.source, currentPriceCents: 129_900 },
+    };
+    const snapshot = build(command);
 
-    expect(snapshot.executiveSummary.verdict).toEqual(
+    expect(snapshot.executiveSummary.verdict.label).toBe("Prejuízo");
+    expect(snapshot.executiveSummary.facts[0]).toEqual(
       expect.objectContaining({
-        label: "Venda com prejuízo",
-        tone: "critical",
+        currentValue: "R$ 10,00",
+        referenceLabel: "Menor preço sem prejuízo",
       }),
     );
-    expect(snapshot.executiveSummary.priority.label).toBe("Gastos");
-    expect(snapshot.sections[3].body).toContain("material e as taxas");
-    expect(snapshot.sections[3].body).not.toContain("sua meta é de");
+    expect(snapshot.sections[0].body).toContain("Você cobra R$ 10,00");
+  });
+
+  it("does not persist forbidden main-copy terms or the removed card", () => {
+    const snapshot = build();
+    const content = JSON.stringify({
+      executiveSummary: snapshot.executiveSummary,
+      sections: snapshot.sections,
+    });
+
+    expect(content).not.toMatch(
+      /meta de 15%|preço-alvo|pró-labore|alíquota|rateio|A conta que ninguém faz/i,
+    );
   });
 });

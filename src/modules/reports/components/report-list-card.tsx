@@ -32,6 +32,9 @@ const scenarioLabels = {
   hour: "Por hora",
   minute: "Por minuto",
   appointment: "Por atendimento",
+  day: "Por dia",
+  week: "Por semana",
+  month: "Por mês",
   resale: "Revenda",
   manufacturing: "Fabricação própria",
 } as const satisfies Record<ReportScenario, string>;

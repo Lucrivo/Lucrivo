@@ -167,6 +167,8 @@ git commit -m "feat: normalize service diagnosis inputs"
 - Modify: `src/modules/reports/domain/build-service-executive-summary.test.ts`
 - Modify: `src/modules/reports/domain/build-service-report-snapshot.ts`
 - Modify: `src/modules/reports/domain/build-service-report-snapshot.test.ts`
+- Modify: `src/modules/reports/formatters.ts`
+- Modify: `src/modules/reports/components/report-list-card.tsx`
 
 **Interfaces:**
 
@@ -189,11 +191,11 @@ source: {
 - `buildServiceExecutiveSummary` accepts `NormalizedServiceDiagnosisCommand` plus calculation so it can select the largest financial weight.
 - Compare these canonical per-unit amounts in fixed tie order: desired monthly income allocation, fixed monthly expense allocation, material cost, combined fees. Labels are `Quanto você quer receber por mês`, `Gastos que existem todo mês`, `Materiais usados`, and `Impostos e taxas`.
 
-- [ ] **Step 1: Add failing schema compatibility tests**
+- [x] **Step 1: Add failing schema compatibility tests**
 
 Create a valid V5 fixture and assert `parseCurrentServiceReportSnapshot` accepts it, rejects a V5 snapshot containing `hidden_cost`, rejects source/canonical inconsistency, and rejects wrong fact/section order. Keep assertions proving V2, V3, and V4 still parse.
 
-- [ ] **Step 2: Add failing builder content tests**
+- [x] **Step 2: Add failing builder content tests**
 
 For loss and little-buffer calculations, assert the first price fact shows current/minimum prices and the priority names the largest weight. Add equal-weight input and assert the fixed tie order. For a healthy result, assert the priority remains sales-volume guidance.
 
@@ -214,7 +216,7 @@ expect(JSON.stringify(snapshot)).not.toMatch(
 );
 ```
 
-- [ ] **Step 3: Run focused snapshot tests and verify failure**
+- [x] **Step 3: Run focused snapshot tests and verify failure**
 
 ```bash
 pnpm test src/modules/reports/schemas/report-snapshot.schema.test.ts src/modules/reports/domain/build-service-executive-summary.test.ts src/modules/reports/domain/build-service-report-snapshot.test.ts
@@ -222,7 +224,7 @@ pnpm test src/modules/reports/schemas/report-snapshot.schema.test.ts src/modules
 
 Expected: FAIL because V5 and the source-aware summary do not exist.
 
-- [ ] **Step 4: Implement isolated V5 schemas and builders**
+- [x] **Step 4: Implement isolated V5 schemas and builders**
 
 Do not mutate legacy schemas or derive their visible labels from the V5 profile. Build the largest-weight amount with the same canonical unit duration used by the calculator:
 
@@ -244,11 +246,11 @@ const feeWeight = roundRatio(
 
 Derive `unitDurationMinutes` as `60` for `calculation.unit === "hour"` and from the canonical appointment duration otherwise. Use the first maximum in the declared tie order. Make the loss/tight price fact state current price, minimum price, and their difference in the canonical unit. Store the minimum, monthly/weekly/daily quantity, and discount data already produced by the central calculator; do not add new financial formulas.
 
-- [ ] **Step 5: Run focused tests**
+- [x] **Step 5: Run focused tests**
 
 Run the Step 3 command. Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/modules/reports/types.ts src/modules/reports/schemas/service-report-snapshot.schema.ts src/modules/reports/schemas/report-snapshot.schema.test.ts src/modules/reports/domain/build-service-executive-summary.ts src/modules/reports/domain/build-service-executive-summary.test.ts src/modules/reports/domain/build-service-report-snapshot.ts src/modules/reports/domain/build-service-report-snapshot.test.ts
@@ -481,6 +483,8 @@ git commit -m "feat: enable service diagnosis confirmation"
 - Modify: `src/modules/reports/components/discount-simulator.test.tsx`
 - Modify: `src/modules/reports/components/report-detail.tsx`
 - Modify: `src/modules/reports/components/report-detail.test.tsx`
+- Modify: `src/app/(private)/reports/[id]/page.test.tsx`
+- Modify: `src/modules/reports/services/get-report.service.test.ts`
 
 **Interfaces:**
 

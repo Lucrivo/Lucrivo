@@ -9,7 +9,6 @@ import { ceilDivide, multiplyDivideRound, roundDivide } from "./integer-math";
 
 const RATE_SCALE = 10_000;
 const SERVICE_TARGET_MARGIN_BPS = 1_500;
-const SERVICE_MARGIN_TOLERANCE_BPS = 50;
 const SERVICE_ABOVE_TARGET_BPS = 300;
 const WEEKLY_DIVISOR_HUNDREDTHS = 433;
 
@@ -49,10 +48,7 @@ function classifyServiceMargin(
   if (realMarginBasisPoints === null || realMarginBasisPoints <= 0) {
     return "operational_loss";
   }
-  if (
-    realMarginBasisPoints <
-    SERVICE_TARGET_MARGIN_BPS - SERVICE_MARGIN_TOLERANCE_BPS
-  ) {
+  if (realMarginBasisPoints < SERVICE_TARGET_MARGIN_BPS) {
     return "tight_margin";
   }
   if (

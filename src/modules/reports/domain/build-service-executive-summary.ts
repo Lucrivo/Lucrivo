@@ -1,130 +1,157 @@
-import {
-  formatBasisPoints,
-  formatCurrency,
-  formatReportUnit,
-} from "../formatters";
+import type { NormalizedServiceDiagnosisCommand } from "@/modules/quick-diagnosis/types";
+
+import { formatCurrency, formatReportUnit } from "../formatters";
 import type {
   ReportExecutiveSummary,
   ReportTone,
-  ServiceReportPriority,
   ServiceReportVerdict,
 } from "../types";
 import type { ServiceReportCalculation } from "./calculate-service-report";
+import { multiplyDivideRound } from "./integer-math";
 
-const verdictContent: Record<
-  ServiceReportVerdict,
-  { label: string; body: string; tone: ReportTone }
-> = {
-  missing_price: {
-    label: "Informe o preço",
-    body: "Informe quanto você cobra para comparar com seus gastos e a meta de 15%.",
-    tone: "neutral",
-  },
-  direct_loss: {
-    label: "Venda com prejuízo",
-    body: "O valor recebido, depois das taxas, não paga nem os materiais usados no serviço. Fazer mais serviços nessas condições aumenta o prejuízo.",
-    tone: "critical",
-  },
-  operational_loss: {
-    label: "Preço abaixo dos gastos",
-    body: "",
-    tone: "critical",
-  },
-  tight_margin: {
-    label: "Abaixo da meta",
-    body: "O preço paga os gastos, mas ainda sobra menos que a meta de 15%.",
-    tone: "warning",
-  },
-  adequate_margin: {
-    label: "Meta alcançada",
-    body: "O preço paga os gastos e alcança a meta de 15%. Agora mantenha a quantidade de trabalho usada no cálculo.",
-    tone: "positive",
-  },
-  above_target: {
-    label: "Acima da meta",
-    body: "O preço paga os gastos e passa da meta de 15%. Acompanhe se seus clientes aceitam o preço e mantenha a quantidade de trabalho.",
-    tone: "positive",
-  },
+type MarginReading = {
+  label: "Não calculado" | "Prejuízo" | "Pouca folga" | "Boa folga";
+  tone: ReportTone;
 };
 
-const priorityContent: Record<
-  ServiceReportPriority,
-  { label: string; body: string; action: string | null }
-> = {
-  cost: {
-    label: "Gastos",
-    body: "Os gastos estão deixando pouco dinheiro em cada venda. Comece pelos maiores e veja quais podem ser reduzidos.",
-    action: "Revise os maiores gastos antes de buscar mais vendas.",
-  },
-  price: {
-    label: "Preço",
-    body: "Seu preço não paga todos os gastos. Reveja o valor cobrado antes de buscar mais vendas.",
-    action: "Aumente o preço ou reduza os gastos antes de vender mais.",
-  },
-  margin: {
-    label: "Quanto sobra",
-    body: "O serviço dá lucro, mas ainda sobra menos que a meta de 15%. Reveja o preço e os gastos em conjunto.",
-    action: "Ajuste o preço ou os gastos para chegar à meta de 15%.",
-  },
-  volume: {
-    label: "Quantidade de serviços",
-    body: "Seu preço alcança a meta. Agora mantenha a quantidade de trabalho usada no cálculo.",
-    action: null,
-  },
+const readingByVerdict: Record<ServiceReportVerdict, MarginReading> = {
+  missing_price: { label: "Não calculado", tone: "neutral" },
+  direct_loss: { label: "Prejuízo", tone: "critical" },
+  operational_loss: { label: "Prejuízo", tone: "critical" },
+  tight_margin: { label: "Pouca folga", tone: "warning" },
+  adequate_margin: { label: "Boa folga", tone: "positive" },
+  above_target: { label: "Boa folga", tone: "positive" },
 };
 
 function buildVerdict(
   calculation: ServiceReportCalculation,
 ): ReportExecutiveSummary["verdict"] {
-  const content = verdictContent[calculation.verdict];
-  if (
-    calculation.verdict !== "operational_loss" &&
-    calculation.verdict !== "direct_loss"
-  ) {
-    return content;
-  }
-
-  if (calculation.verdict === "direct_loss") return content;
-
+  const reading = readingByVerdict[calculation.verdict];
   const unit = formatReportUnit(calculation.unit);
+
+  if (calculation.verdict === "missing_price") {
+    return {
+      ...reading,
+      body: "Informe quanto você cobra para comparar o preço com seus gastos.",
+    };
+  }
+  if (
+    calculation.verdict === "direct_loss" ||
+    calculation.verdict === "operational_loss"
+  ) {
+    const difference =
+      calculation.minimumPriceCents === null
+        ? null
+        : Math.max(
+            0,
+            calculation.minimumPriceCents - calculation.currentPriceCents,
+          );
+    return {
+      ...reading,
+      body:
+        difference === null
+          ? "O preço informado não paga todos os gastos usados no cálculo."
+          : `Faltam ${formatCurrency(difference)} por ${unit} para o preço pagar todos os gastos.`,
+    };
+  }
+  if (calculation.verdict === "tight_margin") {
+    return {
+      ...reading,
+      body: "O preço paga os gastos, mas deixa pouco espaço para imprevistos.",
+    };
+  }
   return {
-    ...content,
-    body: `O preço não paga todos os gastos. Do jeito que está, cada ${unit} deixa o negócio no prejuízo.`,
+    ...reading,
+    body: "O preço paga os gastos e deixa espaço para imprevistos.",
   };
 }
 
 function buildFacts(
   calculation: ServiceReportCalculation,
 ): ReportExecutiveSummary["facts"] {
+  const reading = readingByVerdict[calculation.verdict];
   return [
+    {
+      key: "price",
+      currentLabel: "Você cobra",
+      currentValue: formatCurrency(calculation.currentPriceCents),
+      referenceLabel: "Menor preço sem prejuízo",
+      referenceValue:
+        calculation.minimumPriceCents === null
+          ? "Indisponível"
+          : formatCurrency(calculation.minimumPriceCents),
+    },
     {
       key: "margin",
       currentLabel: "Quanto sobra a cada R$ 100",
       currentValue:
         calculation.realMarginBasisPoints === null
           ? "Indisponível"
-          : formatBasisPoints(calculation.realMarginBasisPoints),
-      referenceLabel: "Meta",
-      referenceValue: "15%",
-    },
-    {
-      key: "price",
-      currentLabel: "Preço atual",
-      currentValue: formatCurrency(calculation.currentPriceCents),
-      referenceLabel: "Preço para alcançar a meta",
-      referenceValue:
-        calculation.targetPriceCents === null
-          ? "Indisponível"
-          : formatCurrency(calculation.targetPriceCents),
+          : formatCurrency(calculation.realMarginBasisPoints),
+      referenceLabel: "Leitura",
+      referenceValue: reading.label,
     },
   ];
 }
 
+function financialWeights(
+  command: NormalizedServiceDiagnosisCommand,
+  calculation: ServiceReportCalculation,
+) {
+  const unitDurationMinutes =
+    calculation.unit === "hour" ? 60 : command.appointmentDurationMinutes;
+  return [
+    {
+      label: "Quanto você quer receber por mês",
+      amount: multiplyDivideRound(
+        command.desiredMonthlyIncomeCents,
+        unitDurationMinutes,
+        command.monthlyWorkMinutes,
+      ),
+    },
+    {
+      label: "Gastos que existem todo mês",
+      amount: multiplyDivideRound(
+        command.fixedMonthlyExpensesCents,
+        unitDurationMinutes,
+        command.monthlyWorkMinutes,
+      ),
+    },
+    { label: "Materiais usados", amount: command.materialUnitCostCents },
+    {
+      label: "Impostos e taxas",
+      amount: multiplyDivideRound(
+        calculation.currentPriceCents,
+        command.taxRateBasisPoints + command.cardFeeRateBasisPoints,
+        10_000,
+      ),
+    },
+  ] as const;
+}
+
 function buildPriority(
-  priority: ServiceReportPriority,
+  command: NormalizedServiceDiagnosisCommand,
+  calculation: ServiceReportCalculation,
 ): ReportExecutiveSummary["priority"] {
-  const { label, body } = priorityContent[priority];
-  return { label, body };
+  if (
+    calculation.verdict === "adequate_margin" ||
+    calculation.verdict === "above_target"
+  ) {
+    return {
+      label: "Quantidade de serviços",
+      body: "Mantenha a quantidade de trabalho usada no cálculo e acompanhe se seus clientes aceitam o preço.",
+    };
+  }
+
+  const weights = financialWeights(command, calculation);
+  const largest = weights.reduce((selected, candidate) =>
+    candidate.amount > selected.amount ? candidate : selected,
+  );
+  const unit = formatReportUnit(calculation.unit);
+  return {
+    label: largest.label,
+    body: `${largest.label} é o maior peso no cálculo: ${formatCurrency(largest.amount)} por ${unit}. Confira esse valor primeiro.`,
+  };
 }
 
 function buildProfitabilityAnswer(
@@ -132,87 +159,63 @@ function buildProfitabilityAnswer(
 ): ReportExecutiveSummary["answers"][number] {
   const unit = formatReportUnit(calculation.unit);
   let answer: string;
-
-  if (calculation.verdict === "missing_price") {
-    answer = "Ainda não dá para calcular esse valor com os dados informados.";
-  } else if (calculation.unitProfitCents === null) {
-    answer = "Ainda não dá para calcular esse valor com os dados informados.";
+  if (calculation.unitProfitCents === null) {
+    answer = "Ainda não dá para calcular com os dados informados.";
   } else if (calculation.unitProfitCents < 0) {
-    answer = `Não — faltam ${formatCurrency(Math.abs(calculation.unitProfitCents))} por ${unit} para pagar os gastos considerados.`;
+    answer = `Não — faltam ${formatCurrency(Math.abs(calculation.unitProfitCents))} por ${unit} para pagar os gastos.`;
   } else if (calculation.unitProfitCents === 0) {
-    answer =
-      "Não — o valor recebido apenas paga os gastos, sem deixar dinheiro.";
+    answer = "O preço apenas paga os gastos, sem deixar dinheiro.";
   } else {
-    answer = `Sim — sobram ${formatCurrency(calculation.unitProfitCents)} por ${unit} depois de pagar os gastos considerados.`;
+    answer = `Sim — sobram ${formatCurrency(calculation.unitProfitCents)} por ${unit} depois de pagar os gastos.`;
   }
-
-  return {
-    key: "profitability",
-    question: "Estou ganhando dinheiro?",
-    answer,
-  };
+  return { key: "profitability", question: "Estou ganhando dinheiro?", answer };
 }
 
-function buildPriceSufficiencyAnswer(
+function buildPriceAnswer(
   calculation: ServiceReportCalculation,
 ): ReportExecutiveSummary["answers"][number] {
   let answer: string;
-
-  if (
-    calculation.verdict === "missing_price" ||
-    calculation.currentPriceCents <= 0
-  ) {
-    answer = "Ainda não — informe o preço atual para fazer a comparação.";
-  } else if (
-    calculation.minimumPriceCents === null ||
-    calculation.targetPriceCents === null
-  ) {
-    answer = "Ainda não dá para calcular esse valor com os dados informados.";
+  if (calculation.minimumPriceCents === null) {
+    answer = "Ainda não dá para calcular com os dados informados.";
   } else if (calculation.currentPriceCents < calculation.minimumPriceCents) {
-    answer = `Não — para pagar todos os gastos, o preço precisa ser pelo menos ${formatCurrency(calculation.minimumPriceCents)}.`;
-  } else if (calculation.currentPriceCents < calculation.targetPriceCents) {
-    answer =
-      "Quase — o preço paga os gastos, mas ainda não alcança a meta de 15%.";
+    answer = `Não — o menor preço sem prejuízo é ${formatCurrency(calculation.minimumPriceCents)}.`;
   } else {
-    answer = "Sim — seu preço alcança o valor calculado para a meta de 15%.";
+    answer = "Sim — o preço paga todos os gastos usados no cálculo.";
   }
-
-  return {
-    key: "price_sufficiency",
-    question: "Estou cobrando o preço certo?",
-    answer,
-  };
+  return { key: "price_sufficiency", question: "Meu preço paga tudo?", answer };
 }
 
 function buildImmediateActionAnswer(
+  priority: ReportExecutiveSummary["priority"],
   calculation: ServiceReportCalculation,
 ): ReportExecutiveSummary["answers"][number] {
-  const action = priorityContent[calculation.priority].action;
-  const unit = calculation.unit === "hour" ? "horas" : "atendimentos";
-
+  const answer =
+    priority.label === "Quantidade de serviços"
+      ? priority.body
+      : `Comece conferindo ${priority.label.toLocaleLowerCase("pt-BR")}.`;
   return {
     key: "immediate_action",
     question: "O que preciso fazer agora?",
-    answer:
-      action ??
-      `Mantenha a quantidade de ${unit} usada no cálculo e acompanhe se seus clientes aceitam o preço.`,
+    answer,
   };
 }
 
 function buildServiceExecutiveSummary(
+  command: NormalizedServiceDiagnosisCommand,
   calculation: ServiceReportCalculation,
 ): ReportExecutiveSummary {
+  const priority = buildPriority(command, calculation);
   return {
     headline: "Seu serviço dá lucro?",
     introduction:
-      "Veja quanto sobra do valor cobrado e o que merece sua atenção primeiro.",
+      "Compare seu preço com o mínimo necessário e veja o que merece atenção primeiro.",
     verdict: buildVerdict(calculation),
     facts: buildFacts(calculation),
-    priority: buildPriority(calculation.priority),
+    priority,
     answers: [
       buildProfitabilityAnswer(calculation),
-      buildPriceSufficiencyAnswer(calculation),
-      buildImmediateActionAnswer(calculation),
+      buildPriceAnswer(calculation),
+      buildImmediateActionAnswer(priority, calculation),
     ],
   };
 }
