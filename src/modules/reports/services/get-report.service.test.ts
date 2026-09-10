@@ -88,6 +88,12 @@ describe("getOwnedReport", () => {
   const maybeSingle = vi.fn();
   const from = vi.fn();
   const supabase = { from };
+  const adminSelect = vi.fn();
+  const adminById = vi.fn();
+  const adminByUser = vi.fn();
+  const adminMaybeSingle = vi.fn();
+  const adminFrom = vi.fn();
+  const admin = { from: adminFrom };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -95,6 +101,11 @@ describe("getOwnedReport", () => {
     select.mockReturnValue({ eq: byId });
     byId.mockReturnValue({ eq: byUser });
     byUser.mockReturnValue({ maybeSingle });
+    adminFrom.mockReturnValue({ select: adminSelect });
+    adminSelect.mockReturnValue({ eq: adminById });
+    adminById.mockReturnValue({ eq: adminByUser });
+    adminByUser.mockReturnValue({ maybeSingle: adminMaybeSingle });
+    adminMaybeSingle.mockResolvedValue({ data: null, error: null });
     maybeSingle.mockResolvedValue({
       data: {
         id: 42,
@@ -110,6 +121,7 @@ describe("getOwnedReport", () => {
   async function get(diagnosisId: string = "42") {
     return getOwnedReport({
       supabase: supabase as never,
+      admin: admin as never,
       userId: "trusted-user",
       diagnosisId,
     });
@@ -131,6 +143,7 @@ describe("getOwnedReport", () => {
     expect(byId).toHaveBeenCalledWith("id", 42);
     expect(byUser).toHaveBeenCalledWith("user_id", "trusted-user");
     expect(maybeSingle).toHaveBeenCalledOnce();
+    expect(adminFrom).not.toHaveBeenCalled();
   });
 
   it.each(["", "0", "-1", "1.5", "abc", "9007199254740992"])(
@@ -138,6 +151,7 @@ describe("getOwnedReport", () => {
     async (diagnosisId) => {
       await expect(get(diagnosisId)).resolves.toEqual({ status: "not_found" });
       expect(from).not.toHaveBeenCalled();
+      expect(adminFrom).not.toHaveBeenCalled();
     },
   );
 
@@ -145,12 +159,37 @@ describe("getOwnedReport", () => {
     maybeSingle.mockResolvedValue({ data: null, error: null });
 
     await expect(get()).resolves.toEqual({ status: "not_found" });
+    expect(adminSelect).toHaveBeenCalledWith("id");
+    expect(adminById).toHaveBeenCalledWith("id", 42);
+    expect(adminByUser).toHaveBeenCalledWith("user_id", "trusted-user");
+  });
+
+  it("returns locked only for an owned row hidden by RLS", async () => {
+    maybeSingle.mockResolvedValue({ data: null, error: null });
+    adminMaybeSingle.mockResolvedValue({ data: { id: 42 }, error: null });
+
+    await expect(get()).resolves.toEqual({ status: "locked" });
+    expect(adminSelect).toHaveBeenCalledWith("id");
+    expect(adminSelect.mock.calls[0]?.[0]).not.toContain("report_snapshot");
+    expect(adminById).toHaveBeenCalledWith("id", 42);
+    expect(adminByUser).toHaveBeenCalledWith("user_id", "trusted-user");
   });
 
   it("returns read_failed for a technical database error", async () => {
     maybeSingle.mockResolvedValue({
       data: null,
       error: { code: "XX001", message: "private provider detail" },
+    });
+
+    await expect(get()).resolves.toEqual({ status: "read_failed" });
+    expect(adminFrom).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when the metadata-only ownership check fails", async () => {
+    maybeSingle.mockResolvedValue({ data: null, error: null });
+    adminMaybeSingle.mockResolvedValue({
+      data: null,
+      error: { code: "XX001", message: "private admin detail" },
     });
 
     await expect(get()).resolves.toEqual({ status: "read_failed" });

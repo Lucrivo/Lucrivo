@@ -1175,18 +1175,17 @@ select set_config(
   '11111111-1111-4111-8111-111111111111',
   true
 );
-select results_eq(
-  $$
-    select submission_id
+select is(
+  (
+    select count(*)::bigint
     from public.service_diagnoses
     where submission_id in (
       'ffffffff-ffff-4fff-8fff-fffffffffff1',
       'ffffffff-ffff-4fff-8fff-fffffffffff2'
     )
-    order by submission_id
-  $$,
-  array['ffffffff-ffff-4fff-8fff-fffffffffff1'::uuid],
-  'an authenticated user selects only their own diagnosis'
+  ),
+  0::bigint,
+  'unlinked legacy Service inputs are hidden from authenticated users'
 );
 select throws_ok(
   $sql$

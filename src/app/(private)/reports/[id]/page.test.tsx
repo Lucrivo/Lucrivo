@@ -10,16 +10,22 @@ import { buildServiceReportSnapshot } from "@/modules/reports/domain/build-servi
 import { calculateProductReport } from "@/modules/reports/domain/calculate-product-report";
 import { calculateServiceReport } from "@/modules/reports/domain/calculate-service-report";
 
-const { getOwnedReport, notFound, requireUser } = vi.hoisted(() => ({
-  getOwnedReport: vi.fn(),
-  notFound: vi.fn(() => {
-    throw new Error("NEXT_NOT_FOUND");
+const { createAdminClient, getOwnedReport, notFound, requireUser } = vi.hoisted(
+  () => ({
+    createAdminClient: vi.fn(),
+    getOwnedReport: vi.fn(),
+    notFound: vi.fn(() => {
+      throw new Error("NEXT_NOT_FOUND");
+    }),
+    requireUser: vi.fn(),
   }),
-  requireUser: vi.fn(),
-}));
+);
 
 vi.mock("next/navigation", () => ({ notFound }));
 vi.mock("@/modules/auth/services/require-user", () => ({ requireUser }));
+vi.mock("@/infrastructure/database/supabase/clients/admin.client", () => ({
+  createAdminClient,
+}));
 vi.mock("@/modules/reports/services/get-report.service", () => ({
   getOwnedReport,
   parseDiagnosisId: (value: string) => {
@@ -81,11 +87,13 @@ const currentProductSnapshot = buildProductReportSnapshot(
 
 describe("ReportPage", () => {
   const supabase = { from: vi.fn() };
+  const admin = { from: vi.fn() };
   const snapshot = legacyServiceSnapshot;
 
   beforeEach(() => {
     vi.clearAllMocks();
     requireUser.mockResolvedValue({ userId: "trusted-user", supabase });
+    createAdminClient.mockReturnValue(admin);
     getOwnedReport.mockResolvedValue({
       status: "found",
       report: {
@@ -107,6 +115,7 @@ describe("ReportPage", () => {
     expect(requireUser).toHaveBeenCalledOnce();
     expect(getOwnedReport).toHaveBeenCalledWith({
       supabase,
+      admin,
       userId: "trusted-user",
       diagnosisId: "42",
     });
@@ -144,6 +153,20 @@ describe("ReportPage", () => {
       ReportPage({ params: Promise.resolve({ id: "42" }) }),
     ).rejects.toThrow("NEXT_NOT_FOUND");
     expect(notFound).toHaveBeenCalledOnce();
+  });
+
+  it("renders an upgrade card for an owned report hidden by RLS", async () => {
+    getOwnedReport.mockResolvedValue({ status: "locked" });
+
+    await renderPage();
+
+    expect(
+      screen.getByRole("heading", { name: "Relatório bloqueado" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Reativar acesso" }),
+    ).toHaveAttribute("href", "/billing");
+    expect(notFound).not.toHaveBeenCalled();
   });
 
   it("renders a stable unavailable panel for an invalid owned snapshot", async () => {

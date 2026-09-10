@@ -91,6 +91,31 @@ describe("createServiceReport", () => {
     });
   });
 
+  it("maps only the database free-report limit to limit_reached", async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: { code: "P0001", message: "free_report_limit_reached" },
+    });
+
+    await expect(create()).resolves.toEqual({
+      status: "error",
+      error: "limit_reached",
+    });
+
+    rpc.mockResolvedValue({
+      data: null,
+      error: {
+        code: "P0001",
+        message: "another_failure",
+        details: "private provider detail",
+      },
+    });
+    await expect(create()).resolves.toEqual({
+      status: "error",
+      error: "create_failed",
+    });
+  });
+
   it.each([null, 0, -1, 1.5, "42"])(
     "returns a safe error for invalid RPC id %s",
     async (data) => {

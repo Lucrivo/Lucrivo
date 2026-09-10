@@ -1,0 +1,48 @@
+type BillingContractStatus =
+  | "pending"
+  | "pending_reconciliation"
+  | "active"
+  | "cancel_at_period_end"
+  | "expired"
+  | "canceled"
+  | "refunded"
+  | "chargeback"
+  | "failed";
+
+type BillingMode = "monthly" | "annual";
+type BillingPaymentMethod = "credit_card" | "pix";
+
+type ActiveBillingPrice = {
+  id: string;
+  productCode: "quick_diagnosis_pro";
+  billingMode: BillingMode;
+  amountCents: number;
+  currency: "BRL";
+  installmentLimit: number | null;
+  accessMonths: number;
+};
+
+type BillingOverview = {
+  tier: "free" | "paid";
+  canCreateDiagnosis: boolean;
+  freeReportUsed: boolean;
+  contract: null | {
+    billingMode: BillingMode;
+    paymentMethod: BillingPaymentMethod;
+    status: BillingContractStatus;
+    accessEndsAt: string | null;
+    cancelAtPeriodEnd: boolean;
+  };
+};
+
+type GetBillingOverviewResult =
+  { status: "success"; overview: BillingOverview } | { status: "read_failed" };
+
+export type {
+  ActiveBillingPrice,
+  BillingContractStatus,
+  BillingMode,
+  BillingOverview,
+  BillingPaymentMethod,
+  GetBillingOverviewResult,
+};

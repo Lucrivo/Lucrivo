@@ -67,6 +67,10 @@ describe("service wizard state", () => {
       type: "submissionError",
       error: "create_failed",
     });
+    const limited = serviceWizardReducer(submitting, {
+      type: "submissionError",
+      error: "limit_reached",
+    });
     const replaced = serviceWizardReducer(failed, {
       type: "replaceSubmissionId",
       submissionId: "550e8400-e29b-41d4-a716-446655440001",
@@ -82,6 +86,7 @@ describe("service wizard state", () => {
     expect(replaced.submissionId).toBe("550e8400-e29b-41d4-a716-446655440001");
     expect(replaced.values).toEqual(filled.values);
     expect(replaced.submissionStatus).toBe("idle");
+    expect(limited.submissionError).toBe("limit_reached");
   });
 
   it("adds the duration step only for appointment pricing", () => {

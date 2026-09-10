@@ -168,6 +168,18 @@ describe("createServiceDiagnosis", () => {
     expect(order).toEqual([...order].sort((left, right) => left - right));
   });
 
+  it("preserves the safe limit_reached result", async () => {
+    createServiceReport.mockResolvedValue({
+      status: "error",
+      error: "limit_reached",
+    });
+
+    await expect(createServiceDiagnosis(input)).resolves.toEqual({
+      status: "error",
+      error: "limit_reached",
+    });
+  });
+
   it.each([
     ["composition", composeServiceDiagnosisCommand],
     ["calculation", calculateServiceReport],

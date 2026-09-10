@@ -25,7 +25,7 @@ type ServiceWizardState = {
   values: ServiceFlowInput;
   fieldErrors: ServiceFlowFieldErrors;
   submissionStatus: "idle" | "submitting" | "error";
-  submissionError: "unauthorized" | "create_failed" | null;
+  submissionError: "unauthorized" | "create_failed" | "limit_reached" | null;
 };
 
 type ServiceWizardAction =
@@ -42,7 +42,7 @@ type ServiceWizardAction =
   | { type: "submitting" }
   | {
       type: "submissionError";
-      error: "unauthorized" | "create_failed";
+      error: "unauthorized" | "create_failed" | "limit_reached";
     }
   | { type: "replaceSubmissionId"; submissionId: string };
 

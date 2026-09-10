@@ -18,7 +18,7 @@ type CreateProductionReportInput = {
 
 type CreateProductionReportResult =
   | { status: "success"; diagnosisId: number }
-  | { status: "error"; error: "create_failed" };
+  | { status: "error"; error: "create_failed" | "limit_reached" };
 
 type GeneratedProductionRpcArgs =
   Database["public"]["Functions"]["create_production_diagnosis_report"]["Args"];
@@ -86,6 +86,13 @@ async function createProductionReport({
       "create_production_diagnosis_report",
       rpcArgs as GeneratedProductionRpcArgs,
     );
+
+    if (
+      error?.code === "P0001" &&
+      error.message === "free_report_limit_reached"
+    ) {
+      return { status: "error", error: "limit_reached" };
+    }
 
     if (
       error ||

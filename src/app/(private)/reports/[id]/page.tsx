@@ -4,7 +4,9 @@ import { FileWarningIcon, PlusIcon } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { createAdminClient } from "@/infrastructure/database/supabase/clients/admin.client";
 import { requireUser } from "@/modules/auth/services/require-user";
+import { LockedReportCard } from "@/modules/billing/components/locked-report-card";
 import { ReportDetail } from "@/modules/reports/components/report-detail";
 import { toReportViewModel } from "@/modules/reports/presenters/to-report-view-model";
 import {
@@ -59,14 +61,17 @@ export default async function ReportPage({
   if (parseDiagnosisId(id) === null) notFound();
 
   const { userId, supabase } = await requireUser();
+  const admin = createAdminClient();
   const result = await getOwnedReport({
     supabase,
+    admin,
     userId,
     diagnosisId: id,
   });
 
   if (result.status === "not_found") notFound();
   if (result.status === "read_failed") throw new Error("report_read_failed");
+  if (result.status === "locked") return <LockedReportCard />;
   if (result.status === "unavailable") return <UnavailableReport />;
 
   const viewModel = toReportViewModel(result.report);

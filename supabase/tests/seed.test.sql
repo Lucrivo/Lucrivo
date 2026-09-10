@@ -57,6 +57,34 @@ select results_eq(
   'seed creates three current reports for every category'
 );
 
+select is(
+  (
+    select count(*)::bigint
+    from public.diagnoses
+    where user_id = '10000000-0000-4000-8000-000000000001'
+      and is_free_report
+  ),
+  1::bigint,
+  'seed marks exactly one report as free'
+);
+
+select results_eq(
+  $$
+    select id
+    from public.diagnoses
+    where user_id = '10000000-0000-4000-8000-000000000001'
+      and is_free_report
+  $$,
+  $$
+    select id
+    from public.diagnoses
+    where user_id = '10000000-0000-4000-8000-000000000001'
+    order by created_at, id
+    limit 1
+  $$,
+  'the earliest seeded report is the sole free report'
+);
+
 select results_eq(
   $$
     select business_category::text, verdict, count(*)::bigint
@@ -173,8 +201,8 @@ select set_config(
 
 select is(
   (select count(*)::bigint from public.diagnoses),
-  9::bigint,
-  'the seeded user can read all nine reports through RLS'
+  1::bigint,
+  'the seeded user can read only the free report after access expires'
 );
 
 select * from finish();

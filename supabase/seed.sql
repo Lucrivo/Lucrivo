@@ -84,6 +84,40 @@ select set_config(
   true
 );
 
+-- Acesso local temporário: o primeiro relatório ocupa a cota gratuita e os
+-- demais exercitam o fluxo pago. O contrato é expirado ao final do seed.
+insert into public.billing_contracts (
+  id,
+  user_id,
+  price_id,
+  external_reference,
+  billing_mode,
+  payment_method,
+  charge_type,
+  amount_cents,
+  currency,
+  installment_limit,
+  access_months,
+  status,
+  access_starts_at,
+  access_ends_at
+) values (
+  '12000000-0000-4000-8000-000000000001',
+  '10000000-0000-4000-8000-000000000001',
+  '20000000-0000-4000-8000-000000000002',
+  'local-seed-annual-access',
+  'annual',
+  'pix',
+  'detached',
+  47880,
+  'BRL',
+  12,
+  12,
+  'active',
+  '2000-01-01T00:00:00Z',
+  '2100-01-01T00:00:00Z'
+);
+
 -- Serviços: preço saudável, margem apertada e prejuízo direto.
 /* Relatórios legados preservados abaixo apenas como referência histórica.
 select public.create_service_diagnosis_report(
@@ -1752,5 +1786,11 @@ select public.create_production_diagnosis_report(
 }
 $report$::jsonb
 );
+
+update public.billing_contracts
+set status = 'expired',
+    access_ends_at = '2001-01-01T00:00:00Z',
+    updated_at = statement_timestamp()
+where id = '12000000-0000-4000-8000-000000000001';
 
 commit;

@@ -6,6 +6,7 @@ import {
   ClipboardCheckIcon,
   FileChartColumnIcon,
   LayoutDashboardIcon,
+  WalletCardsIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -46,6 +47,11 @@ const navigationItems: NavigationItem[] = [
     label: "Relatórios",
     href: "/reports",
     icon: FileChartColumnIcon,
+  },
+  {
+    label: "Plano",
+    href: "/billing",
+    icon: WalletCardsIcon,
   },
 ];
 

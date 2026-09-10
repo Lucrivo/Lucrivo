@@ -32,7 +32,7 @@ type ProductionWizardState = {
   values: ProductionDiagnosisInput;
   fieldErrors: ProductionDiagnosisFieldErrors;
   status: "editing" | "submitting";
-  submitError: "unauthorized" | "create_failed" | null;
+  submitError: "unauthorized" | "create_failed" | "limit_reached" | null;
 };
 
 type ProductionWizardAction =
@@ -46,7 +46,10 @@ type ProductionWizardAction =
   | { type: "back" }
   | { type: "edit"; step: ProductionWizardStep }
   | { type: "submitting" }
-  | { type: "submitError"; error: "unauthorized" | "create_failed" }
+  | {
+      type: "submitError";
+      error: "unauthorized" | "create_failed" | "limit_reached";
+    }
   | { type: "reset"; submissionId: string };
 
 function createInitialProductionWizardState(

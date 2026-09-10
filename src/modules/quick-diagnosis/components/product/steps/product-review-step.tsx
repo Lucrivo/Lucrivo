@@ -13,7 +13,7 @@ type ProductReviewStepProps = {
   values: ProductDiagnosisInput;
   errors: ProductDiagnosisFieldErrors;
   pending: boolean;
-  submitError: "unauthorized" | "create_failed" | null;
+  submitError: "unauthorized" | "create_failed" | "limit_reached" | null;
   onEdit: (step: ProductWizardStep) => void;
   onBackToType: () => void;
   onSubmit: () => void;
@@ -201,7 +201,11 @@ function ProductReviewStep({
       {submitError ? (
         <div
           role="alert"
-          className="border-destructive/25 bg-destructive/5 text-destructive rounded-lg border p-3 text-sm"
+          className={
+            submitError === "limit_reached"
+              ? "border-primary/20 bg-primary/5 text-foreground flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 text-sm"
+              : "border-destructive/25 bg-destructive/5 text-destructive rounded-lg border p-3 text-sm"
+          }
         >
           {submitError === "unauthorized" ? (
             <>
@@ -211,6 +215,16 @@ function ProductReviewStep({
                 className="font-semibold underline underline-offset-4"
               >
                 Entrar novamente
+              </Link>
+            </>
+          ) : submitError === "limit_reached" ? (
+            <>
+              <p>Seu diagnóstico gratuito já foi usado.</p>
+              <Link
+                href="/billing"
+                className="text-primary font-semibold underline underline-offset-4"
+              >
+                Conhecer os planos
               </Link>
             </>
           ) : (

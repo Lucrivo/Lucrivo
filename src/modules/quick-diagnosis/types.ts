@@ -71,7 +71,10 @@ type CreateServiceDiagnosisActionResult =
       error: "invalid_input";
       fieldErrors: ServiceFlowSubmissionFieldErrors;
     }
-  | { status: "error"; error: "unauthorized" | "create_failed" };
+  | {
+      status: "error";
+      error: "unauthorized" | "create_failed" | "limit_reached";
+    };
 
 type ProductDiagnosisInput = {
   submissionId: string;
@@ -109,7 +112,10 @@ type CreateProductDiagnosisActionResult =
       error: "invalid_input";
       fieldErrors: ProductDiagnosisFieldErrors;
     }
-  | { status: "error"; error: "unauthorized" | "create_failed" };
+  | {
+      status: "error";
+      error: "unauthorized" | "create_failed" | "limit_reached";
+    };
 
 type ProductionDiagnosisInput = {
   submissionId: string;
@@ -164,7 +170,10 @@ type CreateProductionDiagnosisActionResult =
       error: "invalid_input";
       fieldErrors: ProductionDiagnosisFieldErrors;
     }
-  | { status: "error"; error: "unauthorized" | "create_failed" };
+  | {
+      status: "error";
+      error: "unauthorized" | "create_failed" | "limit_reached";
+    };
 
 export {
   pricingMethods,

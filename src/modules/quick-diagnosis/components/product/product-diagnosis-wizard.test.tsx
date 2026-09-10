@@ -334,6 +334,7 @@ describe("ProductDiagnosisWizard", () => {
       "Não foi possível salvar o diagnóstico. Tente novamente.",
     ],
     ["unauthorized", "Sua sessão expirou. Entre novamente para continuar."],
+    ["limit_reached", "Seu diagnóstico gratuito já foi usado."],
   ] as const)("preserves review and UUID after %s", async (error, message) => {
     const createDiagnosis = vi
       .fn()
@@ -352,6 +353,11 @@ describe("ProductDiagnosisWizard", () => {
       expect(
         screen.getByRole("link", { name: "Entrar novamente" }),
       ).toHaveAttribute("href", "/login");
+    }
+    if (error === "limit_reached") {
+      expect(
+        screen.getByRole("link", { name: "Conhecer os planos" }),
+      ).toHaveAttribute("href", "/billing");
     }
 
     await user.click(

@@ -9,6 +9,7 @@ import type { ReportSnapshot } from "../types";
 
 type GetOwnedReportInput = {
   supabase: SupabaseClient<Database>;
+  admin: SupabaseClient<Database>;
   userId: string;
   diagnosisId: string;
 };
@@ -22,6 +23,7 @@ type OwnedReport = {
 type GetOwnedReportResult =
   | { status: "found"; report: OwnedReport }
   | { status: "not_found" }
+  | { status: "locked" }
   | {
       status: "unavailable";
       report: { id: number; createdAt: string };
@@ -36,6 +38,7 @@ function parseDiagnosisId(value: string): number | null {
 
 async function getOwnedReport({
   supabase,
+  admin,
   userId,
   diagnosisId,
 }: GetOwnedReportInput): Promise<GetOwnedReportResult> {
@@ -51,7 +54,17 @@ async function getOwnedReport({
       .maybeSingle();
 
     if (error) return { status: "read_failed" };
-    if (!data) return { status: "not_found" };
+    if (!data) {
+      const { data: ownedLockedRow, error: ownershipError } = await admin
+        .from("diagnoses")
+        .select("id")
+        .eq("id", parsedId)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (ownershipError) return { status: "read_failed" };
+      return ownedLockedRow ? { status: "locked" } : { status: "not_found" };
+    }
 
     try {
       const snapshot = parseReportSnapshot(data.report_snapshot);
