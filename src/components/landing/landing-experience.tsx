@@ -7,13 +7,15 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   ArrowUpRightIcon,
-  CheckIcon,
   ListIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+
+import { BillingPlans } from "@/modules/billing/components/billing-plans";
+import type { ActiveBillingPrice } from "@/modules/billing/types";
 
 import "./landing-experience.css";
 
@@ -41,7 +43,7 @@ const featurePanels = [
   {
     title: "Orientação que faz sentido",
     description:
-      "A IA interpreta o cálculo e mostra o que precisa de atenção, sem planilha e sem falar contabilês.",
+      "O diagnóstico organiza o cálculo e mostra o que precisa de atenção, sem planilha e sem falar contabilês.",
     image: "https://picsum.photos/seed/lucrivo-consulting/1200/900",
   },
 ];
@@ -70,48 +72,11 @@ const testimonials = [
   },
 ];
 
-const plans = [
-  {
-    name: "Diagnóstico",
-    price: "Grátis",
-    description:
-      "Para descobrir se o preço que você cobra faz sentido para o seu negócio.",
-    features: [
-      "Diagnóstico guiado em poucos minutos",
-      "Leitura da margem real",
-      "Preço mínimo e preço-alvo",
-      "Prioridade de correção",
-    ],
-    cta: "Fazer diagnóstico",
-  },
-  {
-    name: "Lucrivo Pro",
-    price: "Acesso mensal",
-    description: "Para usar o Lucrivo nas decisões recorrentes do negócio.",
-    features: [
-      "Diagnósticos recorrentes",
-      "Simulações de preço e desconto",
-      "Análise de múltiplos produtos",
-      "Relatórios interpretados por IA",
-    ],
-    cta: "Começar gratuitamente",
-    featured: true,
-  },
-  {
-    name: "Lucrivo Negócio",
-    price: "Acesso avançado",
-    description: "Para operações que precisam analisar produção e portfólio.",
-    features: [
-      "Tudo do plano Pro",
-      "Ficha técnica de produção",
-      "Visão consolidada do portfólio",
-      "Histórico para decisões futuras",
-    ],
-    cta: "Conhecer o plano",
-  },
-];
-
-export function LandingExperience() {
+export function LandingExperience({
+  prices,
+}: {
+  prices: ActiveBillingPrice[];
+}) {
   const root = useRef<HTMLElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
@@ -478,41 +443,19 @@ export function LandingExperience() {
 
       <section id="planos" className="pricing-section chapter">
         <div className="section-heading pricing-heading">
-          <p className="eyebrow">Comece pela resposta que importa</p>
-          <h2>Primeiro, descubra. Depois, evolua.</h2>
-          <p>
-            Faça o diagnóstico inicial gratuitamente. Quando o Lucrivo passar a
-            fazer parte da rotina, escolha o acesso que acompanha seu negócio.
+          <div>
+            <h2>Planos para cada momento do seu negócio.</h2>
+            <p>
+              Comece gratuitamente ou escolha o acesso que acompanha a rotina e
+              o ritmo das suas decisões.
+            </p>
+          </div>
+          <p className="pricing-note">
+            Mais clareza para decidir. Sem surpresa na cobrança.
           </p>
         </div>
 
-        <div className="pricing-grid">
-          {plans.map((plan) => (
-            <article
-              className={`price-card ${plan.featured ? "price-featured" : ""}`}
-              key={plan.name}
-            >
-              <div>
-                <p className="plan-name">{plan.name}</p>
-                <h3>{plan.price}</h3>
-                <p className="plan-description">{plan.description}</p>
-              </div>
-              <ul>
-                {plan.features.map((feature) => (
-                  <li key={feature}>
-                    <CheckIcon size={17} weight="bold" /> {feature}
-                  </li>
-                ))}
-              </ul>
-              <a
-                className={`button ${plan.featured ? "button-primary" : "button-dark"}`}
-                href="#diagnostico"
-              >
-                {plan.cta} <ArrowUpRightIcon size={17} weight="bold" />
-              </a>
-            </article>
-          ))}
-        </div>
+        <BillingPlans prices={prices} context="public" />
       </section>
 
       <section id="diagnostico" className="final-cta chapter">

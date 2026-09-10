@@ -616,8 +616,7 @@ html:has(.landing-experience) {
   grid-template-columns: 0.55fr 1.2fr 0.65fr;
 }
 
-.landing-experience .section-heading-light > p:last-child,
-.landing-experience .pricing-heading > p:last-child {
+.landing-experience .section-heading-light > p:last-child {
   margin: 0;
   color: oklch(0.955 0.012 255 / 0.55);
   line-height: 1.65;
@@ -953,87 +952,35 @@ html:has(.landing-experience) {
 }
 
 .landing-experience .pricing-heading {
-  grid-template-columns: 0.55fr 1.2fr 0.65fr;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.35fr);
+  gap: 64px;
+  align-items: start;
 }
 
-.landing-experience .pricing-heading > p:last-child {
-  color: oklch(0.51 0.04 258);
+.landing-experience .pricing-heading h2 {
+  max-width: 980px;
+  font-size: clamp(2.7rem, 3.5vw, 3.5rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
 }
 
-.landing-experience .pricing-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1px;
-  width: min(100%, 1240px);
-  margin: 0 auto;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 24px;
-  background: var(--line);
-}
-
-.landing-experience .price-card {
-  display: flex;
-  min-height: 600px;
-  flex-direction: column;
-  padding: 42px;
-  background: var(--paper-bright);
-}
-
-.landing-experience .price-featured {
-  background: oklch(0.925 0.045 255);
-}
-
-.landing-experience .plan-name {
-  margin: 0 0 55px;
-  color: oklch(0.51 0.04 258);
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.landing-experience .price-card h3 {
-  margin: 0;
-  font-size: clamp(2.3rem, 3.6vw, 4rem);
-  font-weight: 520;
-  line-height: 1;
-  letter-spacing: -0.06em;
-}
-
-.landing-experience .plan-description {
-  min-height: 76px;
+.landing-experience .pricing-heading > div > p {
+  max-width: 720px;
   margin: 22px 0 0;
   color: oklch(0.51 0.04 258);
-  line-height: 1.5;
+  font-size: 1.05rem;
+  line-height: 1.6;
 }
 
-.landing-experience .price-card ul {
-  display: flex;
-  flex-direction: column;
-  gap: 17px;
-  margin: 46px 0;
-  padding: 30px 0 0;
-  border-top: 1px solid oklch(0.205 0.045 258 / 0.12);
-  list-style: none;
-}
-
-.landing-experience .price-card li {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  color: oklch(0.205 0.045 258);
+.landing-experience .pricing-note {
+  max-width: 26ch;
+  margin: 8px 0 0;
+  padding-left: 20px;
+  border-left: 1px solid oklch(0.56 0.23 259 / 0.45);
+  color: oklch(0.38 0.075 258);
   font-size: 0.92rem;
-}
-
-.landing-experience .price-card li svg {
-  flex: 0 0 auto;
-  margin-top: 1px;
-}
-
-.landing-experience .price-card .button {
-  width: 100%;
-  margin-top: auto;
+  font-weight: 650;
+  line-height: 1.55;
 }
 
 .landing-experience .final-cta {
@@ -1222,12 +1169,9 @@ html:has(.landing-experience) {
     gap: 4vw;
   }
 
-  .landing-experience .pricing-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .landing-experience .price-card {
-    min-height: auto;
+  .landing-experience .pricing-note {
+    max-width: 42ch;
+    margin: 0;
   }
 }
 
@@ -1379,10 +1323,6 @@ html:has(.landing-experience) {
 
   .landing-experience .testimonial-copy blockquote {
     font-size: clamp(2rem, 10vw, 3.2rem);
-  }
-
-  .landing-experience .price-card {
-    padding: 30px;
   }
 
   .landing-experience .final-cta {

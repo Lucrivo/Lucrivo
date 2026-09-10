@@ -169,4 +169,22 @@ describe("AppSidebar", () => {
       ).not.toHaveAttribute("data-active", "true");
     },
   );
+
+  it("links to billing and marks its nested routes active", () => {
+    usePathname.mockReturnValue("/billing/return");
+
+    render(<AppSidebar />);
+
+    expect(screen.getByRole("link", { name: "Plano" })).toHaveAttribute(
+      "href",
+      "/billing",
+    );
+    expect(screen.getByRole("link", { name: "Plano" })).toHaveAttribute(
+      "data-active",
+      "true",
+    );
+    expect(
+      screen.getByRole("link", { name: /dashboard/i }),
+    ).not.toHaveAttribute("data-active", "true");
+  });
 });
