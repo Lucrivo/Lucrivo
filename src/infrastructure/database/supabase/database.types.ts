@@ -272,6 +272,7 @@ export type Database = {
           created_at: string;
           current_price_cents: number;
           id: number;
+          is_free_report: boolean;
           priority: string;
           real_margin_basis_points: number | null;
           report_snapshot: Json;
@@ -290,6 +291,7 @@ export type Database = {
           created_at?: string;
           current_price_cents: number;
           id?: never;
+          is_free_report?: boolean;
           priority: string;
           real_margin_basis_points?: number | null;
           report_snapshot: Json;
@@ -308,6 +310,7 @@ export type Database = {
           created_at?: string;
           current_price_cents?: number;
           id?: never;
+          is_free_report?: boolean;
           priority?: string;
           real_margin_basis_points?: number | null;
           report_snapshot?: Json;

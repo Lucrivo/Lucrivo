@@ -24,7 +24,8 @@ select columns_are(
     'priority',
     'unit',
     'report_snapshot',
-    'created_at'
+    'created_at',
+    'is_free_report'
   ],
   'registry exposes only common identity, summary, and snapshot columns'
 );
@@ -66,7 +67,8 @@ select ok(
       ["priority", "pg_catalog", "text"],
       ["unit", "pg_catalog", "text"],
       ["report_snapshot", "pg_catalog", "jsonb"],
-      ["created_at", "pg_catalog", "timestamptz"]
+      ["created_at", "pg_catalog", "timestamptz"],
+      ["is_free_report", "pg_catalog", "bool"]
     ]
   $json$::jsonb,
   'registry columns use exact durable database types'
@@ -79,7 +81,7 @@ select results_eq(
       and table_name = 'diagnoses'
       and is_nullable = 'NO'
   $$,
-  array[14::bigint],
+  array[15::bigint],
   'only margin and profit summaries may be unavailable'
 );
 select fk_ok(
@@ -391,7 +393,7 @@ select ok(
   'anon cannot execute report creation'
 );
 select ok(
-  has_function_privilege(
+  not has_function_privilege(
     'authenticated',
     'public.create_service_diagnosis_report(
       uuid,
@@ -423,7 +425,7 @@ select ok(
     )',
     'execute'
   ),
-  'authenticated can execute only the controlled creation function'
+  'authenticated cannot execute the obsolete Service writer'
 );
 
 select has_function(
@@ -432,13 +434,13 @@ select has_function(
   'normalized Service report creation function exists'
 );
 select ok(
-  (
+  not (
     select prosecdef
     from pg_proc
     where pronamespace = 'public'::regnamespace
       and proname = 'create_service_diagnosis_report_v4'
   ),
-  'normalized creation function is security definer'
+  'normalized public creation function is security invoker'
 );
 select ok(
   (
@@ -490,60 +492,6 @@ values
     'authenticated',
     'reports-two@example.com'
   );
-
-create function pg_temp.create_hour_report(
-  p_submission_id uuid,
-  p_hourly_rate_cents bigint default 10000,
-  p_schema_version smallint default 3,
-  p_content_version smallint default 4,
-  p_report_snapshot jsonb default '{
-    "schemaVersion": 3,
-    "calculationVersion": 2,
-    "contentVersion": 4,
-    "category": "service",
-    "scenario": "hour",
-    "inputs": {
-      "workHoursPeriod": "month",
-      "workPeriodMinutes": 6000,
-      "monthlyWorkMinutes": 6000,
-      "materialUnitCostCents": 0
-    },
-    "executiveSummary": {"headline": "A verdade por trás do preço."},
-    "marker": "first"
-  }'::jsonb
-)
-returns bigint
-language sql
-as $$
-  select public.create_service_diagnosis_report(
-    p_submission_id,
-    'hour'::public.service_pricing_method,
-    400000,
-    200000,
-    'month'::public.service_work_hours_period,
-    6000,
-    6000,
-    5::smallint,
-    p_hourly_rate_cents,
-    0,
-    0,
-    0,
-    0,
-    600,
-    200,
-    p_schema_version,
-    2::smallint,
-    p_content_version,
-    'hour',
-    p_hourly_rate_cents,
-    1700,
-    1360,
-    'adequate_margin',
-    'volume',
-    'hour',
-    p_report_snapshot
-  );
-$$;
 
 create function pg_temp.create_month_report_v4(
   p_submission_id uuid,
@@ -633,14 +581,6 @@ $$;
 
 set local role anon;
 select throws_ok(
-  $$ select pg_temp.create_hour_report(
-    '30000000-0000-4000-8000-000000000001'
-  ) $$,
-  '42501',
-  null,
-  'anon execution is denied by function privileges'
-);
-select throws_ok(
   $$ select pg_temp.create_month_report_v4(
     '30000000-0000-4000-8000-000000000020'
   ) $$,
@@ -652,14 +592,6 @@ reset role;
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '', true);
-select throws_ok(
-  $$ select pg_temp.create_hour_report(
-    '30000000-0000-4000-8000-000000000002'
-  ) $$,
-  '42501',
-  'authentication required',
-  'function rejects an authenticated role without a JWT subject'
-);
 select throws_ok(
   $$ select pg_temp.create_month_report_v4(
     '30000000-0000-4000-8000-000000000021'
@@ -731,6 +663,14 @@ select results_eq(
 );
 select throws_ok(
   $$ select pg_temp.create_month_report_v4(
+    '30000000-0000-4000-8000-000000000025'
+  ) $$,
+  'P0001',
+  'free_report_limit_reached',
+  'a second distinct Service report requires paid access'
+);
+select throws_ok(
+  $$ select pg_temp.create_month_report_v4(
     '30000000-0000-4000-8000-000000000023',
     9000
   ) $$,
@@ -760,242 +700,6 @@ select results_eq(
   array[0::bigint],
   'invalid normalized calls leave no partial registry rows'
 );
-select throws_ok(
-  $$ select pg_temp.create_hour_report(
-    '30000000-0000-4000-8000-000000000014',
-    10000,
-    3::smallint,
-    3::smallint,
-    '{
-      "schemaVersion": 3,
-      "calculationVersion": 2,
-      "contentVersion": 3,
-      "category": "service",
-      "scenario": "hour",
-      "inputs": {
-        "workHoursPeriod": "month",
-        "workPeriodMinutes": 6000,
-        "monthlyWorkMinutes": 6000,
-        "materialUnitCostCents": 0
-      },
-      "executiveSummary": {"headline": "A verdade por trás do preço."}
-    }'::jsonb
-  ) $$,
-  '22023',
-  'invalid report snapshot',
-  'atomic function rejects the previous content version'
-);
-select lives_ok(
-  $$ select pg_temp.create_hour_report(
-    '30000000-0000-4000-8000-000000000003'
-  ) $$,
-  'authenticated owner creates one atomic report'
-);
-select results_eq(
-  $$
-    select user_id
-    from public.diagnoses
-    where submission_id = '30000000-0000-4000-8000-000000000003'
-  $$,
-  array['33333333-3333-4333-8333-333333333333'::uuid],
-  'function always derives report ownership from auth uid'
-);
-select results_eq(
-  $$
-    select count(*)::bigint
-    from public.diagnoses d
-    join public.service_diagnoses s on s.diagnosis_id = d.id
-    where d.submission_id = '30000000-0000-4000-8000-000000000003'
-      and s.submission_id = d.submission_id
-      and s.user_id = d.user_id
-  $$,
-  array[1::bigint],
-  'valid function call inserts one registry and one linked Service input'
-);
-select results_eq(
-  $$
-    select
-      work_hours_period,
-      work_period_minutes,
-      monthly_work_minutes,
-      material_unit_cost_cents
-    from public.service_diagnoses
-    where submission_id = '30000000-0000-4000-8000-000000000003'
-  $$,
-  $$ values (
-    'month'::public.service_work_hours_period,
-    6000::integer,
-    6000::integer,
-    0::bigint
-  ) $$,
-  'atomic function persists source capacity, normalized capacity, and material cost'
-);
-select throws_ok(
-  $$ select pg_temp.create_hour_report(
-    '30000000-0000-4000-8000-000000000010',
-    10000,
-    1::smallint,
-    1::smallint,
-    '{
-      "schemaVersion": 1,
-      "calculationVersion": 1,
-      "contentVersion": 1,
-      "category": "service",
-      "scenario": "hour"
-    }'::jsonb
-  ) $$,
-  '22023',
-  'invalid report snapshot',
-  'atomic function rejects obsolete version 1 snapshots'
-);
-select throws_ok(
-  $$ select pg_temp.create_hour_report(
-    '30000000-0000-4000-8000-000000000011',
-    10000,
-    2::smallint,
-    2::smallint,
-    '{
-      "schemaVersion": 2,
-      "calculationVersion": 1,
-      "contentVersion": 2,
-      "category": "service",
-      "scenario": "hour"
-    }'::jsonb
-  ) $$,
-  '22023',
-  'invalid report snapshot',
-  'atomic function rejects version 2 without an executive summary object'
-);
-select throws_ok(
-  $$ select pg_temp.create_hour_report(
-    '30000000-0000-4000-8000-000000000012',
-    10000,
-    3::smallint,
-    4::smallint,
-    '{
-      "schemaVersion": 3,
-      "calculationVersion": 2,
-      "contentVersion": 4,
-      "category": "service",
-      "scenario": "hour",
-      "inputs": {
-        "workHoursPeriod": "month",
-        "workPeriodMinutes": 6000,
-        "monthlyWorkMinutes": 6000,
-        "materialUnitCostCents": 1
-      },
-      "executiveSummary": {"headline": "A verdade por trás do preço."}
-    }'::jsonb
-  ) $$,
-  '22023',
-  'invalid report snapshot',
-  'atomic function rejects snapshot scalars that differ from persisted inputs'
-);
-select throws_ok(
-  $$ select pg_temp.create_hour_report(
-    '30000000-0000-4000-8000-000000000013',
-    10000,
-    3::smallint,
-    4::smallint,
-    '{
-      "schemaVersion": 3,
-      "calculationVersion": 2,
-      "contentVersion": 4,
-      "category": "service",
-      "scenario": "hour",
-      "executiveSummary": {"headline": "A verdade por trás do preço."}
-    }'::jsonb
-  ) $$,
-  '22023',
-  'invalid report snapshot',
-  'atomic function rejects snapshots without persisted input scalars'
-);
-select results_eq(
-  $$
-    select report_snapshot -> 'executiveSummary' ->> 'headline'
-    from public.diagnoses
-    where submission_id = '30000000-0000-4000-8000-000000000003'
-  $$,
-  array['A verdade por trás do preço.'],
-  'atomic function preserves resolved executive-summary content'
-);
-
-select throws_ok(
-  $$ select pg_temp.create_hour_report(
-    '30000000-0000-4000-8000-000000000004',
-    0
-  ) $$,
-  '23514',
-  null,
-  'invalid Service input fails the atomic call'
-);
-select results_eq(
-  $$
-    select count(*)::bigint
-    from public.diagnoses
-    where submission_id = '30000000-0000-4000-8000-000000000004'
-  $$,
-  array[0::bigint],
-  'failed Service input rolls back its registry insert'
-);
-
-select lives_ok(
-  $$ select pg_temp.create_hour_report(
-    '30000000-0000-4000-8000-000000000005'
-  ) $$,
-  'first idempotent submission creates its report'
-);
-select results_eq(
-  $$
-    select pg_temp.create_hour_report(
-      '30000000-0000-4000-8000-000000000005',
-      12000,
-      3::smallint,
-      4::smallint,
-      '{
-        "schemaVersion": 3,
-        "calculationVersion": 2,
-        "contentVersion": 4,
-        "category": "service",
-        "scenario": "hour",
-        "inputs": {
-          "workHoursPeriod": "month",
-          "workPeriodMinutes": 6000,
-          "monthlyWorkMinutes": 6000,
-          "materialUnitCostCents": 0
-        },
-        "executiveSummary": {"headline": "A verdade por trás do preço."},
-        "marker": "second"
-      }'::jsonb
-    )
-  $$,
-  $$
-    select id
-    from public.diagnoses
-    where submission_id = '30000000-0000-4000-8000-000000000005'
-  $$,
-  'retry returns the original common diagnosis id'
-);
-select results_eq(
-  $$
-    select report_snapshot ->> 'marker'
-    from public.diagnoses
-    where submission_id = '30000000-0000-4000-8000-000000000005'
-  $$,
-  array['first'::text],
-  'retry preserves the first immutable snapshot'
-);
-select results_eq(
-  $$
-    select count(*)::bigint
-    from public.service_diagnoses s
-    join public.diagnoses d on d.id = s.diagnosis_id
-    where d.submission_id = '30000000-0000-4000-8000-000000000005'
-  $$,
-  array[1::bigint],
-  'retry does not duplicate the linked Service input'
-);
-
 select throws_ok(
   $$
     insert into public.diagnoses (

@@ -192,7 +192,7 @@ select has_function(
   'atomic Product report creation function exists'
 );
 select ok(
-  (
+  not (
     select prosecdef
     from pg_proc
     where oid = 'public.create_product_diagnosis_report(
@@ -201,7 +201,7 @@ select ok(
       text, text, text, jsonb
     )'::regprocedure
   ),
-  'Product report RPC is security definer'
+  'Product public report RPC is security invoker'
 );
 select ok(
   (
@@ -254,6 +254,38 @@ values
     'authenticated',
     'product-two@example.com'
   );
+
+insert into public.billing_contracts (
+  id,
+  user_id,
+  price_id,
+  external_reference,
+  billing_mode,
+  payment_method,
+  charge_type,
+  amount_cents,
+  currency,
+  installment_limit,
+  access_months,
+  status,
+  access_starts_at,
+  access_ends_at
+) values (
+  '51000000-0000-4000-8000-000000000090',
+  '55555555-5555-4555-8555-555555555555',
+  '20000000-0000-4000-8000-000000000001',
+  'product-report-test-access',
+  'monthly',
+  'pix',
+  'detached',
+  4990,
+  'BRL',
+  null,
+  1,
+  'active',
+  '2000-01-01T00:00:00Z',
+  '2100-01-01T00:00:00Z'
+);
 
 create function pg_temp.complete_product_snapshot()
 returns jsonb
@@ -1020,61 +1052,43 @@ select results_eq(
   'same-category retry keeps exactly one Product detail'
 );
 
-select lives_ok(
-  $$
-    select public.create_service_diagnosis_report(
-      '50000000-0000-4000-8000-000000000051',
-      'hour'::public.service_pricing_method,
-      400000,
-      200000,
-      'month'::public.service_work_hours_period,
-      6000,
-      6000,
-      5::smallint,
-      10000,
-      0,
-      0,
-      0,
-      0,
-      600,
-      200,
-      3::smallint,
-      2::smallint,
-      4::smallint,
-      'hour',
-      10000,
-      1700,
-      1360,
-      'adequate_margin',
-      'volume',
-      'hour',
-      '{
-        "schemaVersion": 3,
-        "calculationVersion": 2,
-        "contentVersion": 4,
-        "category": "service",
-        "scenario": "hour",
-        "inputs": {
-          "workHoursPeriod": "month",
-          "workPeriodMinutes": 6000,
-          "monthlyWorkMinutes": 6000,
-          "materialUnitCostCents": 0
-        },
-        "executiveSummary": {"headline": "Diagnóstico de serviço"}
-      }'::jsonb
-    )
-  $$,
-  'existing Service RPC still creates a report'
+reset role;
+insert into public.diagnoses (
+  submission_id,
+  user_id,
+  business_category,
+  scenario,
+  schema_version,
+  calculation_version,
+  content_version,
+  current_price_cents,
+  real_margin_basis_points,
+  unit_profit_cents,
+  verdict,
+  priority,
+  unit,
+  report_snapshot
+) values (
+  '50000000-0000-4000-8000-000000000051',
+  '55555555-5555-4555-8555-555555555555',
+  'service',
+  'hour',
+  4,
+  3,
+  5,
+  10000,
+  1700,
+  1360,
+  'adequate_margin',
+  'volume',
+  'hour',
+  '{"category":"service"}'::jsonb
 );
-select results_eq(
-  $$
-    select count(*)::bigint
-    from public.diagnoses d
-    join public.service_diagnoses s on s.diagnosis_id = d.id
-    where d.submission_id = '50000000-0000-4000-8000-000000000051'
-  $$,
-  array[1::bigint],
-  'existing Service RPC still creates one linked Service detail'
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '55555555-5555-4555-8555-555555555555',
+  true
 );
 select throws_ok(
   $$ select pg_temp.create_product_report(
