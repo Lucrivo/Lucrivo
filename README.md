@@ -19,6 +19,13 @@ O Studio fica em `http://127.0.0.1:54323` e o Mailpit em
 pnpm supabase:stop
 ```
 
+Para desenvolver os fluxos de cobrança, configure também `APP_URL`,
+`SUPABASE_SECRET_KEY`, `ASAAS_API_URL`, `ASAAS_API_KEY` e
+`ASAAS_WEBHOOK_TOKEN`. Use somente credenciais do sandbox localmente e nunca
+prefixe secrets com `NEXT_PUBLIC_`. A configuração do webhook, a lista de
+eventos, a homologação e os procedimentos de recuperação estão no
+[runbook de billing com Asaas](docs/asaas-billing-runbook.md).
+
 ## Banco local
 
 Reconstrua o banco a partir de `supabase/config.toml`, migrations e

@@ -17,7 +17,8 @@ vi.mock("@/modules/billing/services/process-asaas-webhook.service", () => ({
   processAsaasWebhook,
 }));
 
-import { hasValidWebhookToken, POST } from "./route";
+import { POST } from "./route";
+import { hasValidWebhookToken } from "./webhook-token";
 
 const webhookToken = "webhook-secret-token-value-123456";
 const validBody = {

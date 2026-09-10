@@ -1,5 +1,3 @@
-import { createHash, timingSafeEqual } from "node:crypto";
-
 import { NextResponse } from "next/server";
 
 import { readBillingEnvironment } from "@/config/billing-environment";
@@ -7,17 +5,7 @@ import { createAdminClient } from "@/infrastructure/database/supabase/clients/ad
 import { parseAsaasWebhook } from "@/infrastructure/payments/asaas/webhook.schema";
 import { processAsaasWebhook } from "@/modules/billing/services/process-asaas-webhook.service";
 
-function hasValidWebhookToken(
-  received: string | null,
-  expected: string,
-): boolean {
-  if (received === null) return false;
-
-  const receivedDigest = createHash("sha256").update(received, "utf8").digest();
-  const expectedDigest = createHash("sha256").update(expected, "utf8").digest();
-
-  return timingSafeEqual(receivedDigest, expectedDigest);
-}
+import { hasValidWebhookToken } from "./webhook-token";
 
 function json(body: unknown, status: number) {
   return NextResponse.json(body, {
@@ -70,4 +58,4 @@ async function POST(request: Request) {
   }
 }
 
-export { hasValidWebhookToken, POST };
+export { POST };
