@@ -13,7 +13,7 @@ The product will offer:
 - an annual plan for **R$ 478.80**, paid once by credit card in up to 12 installments (12 installments are R$ 39.90 each), with the total purchase consuming the customer's card limit and no automatic renewal;
 - a free tier that lets each authenticated user create exactly one quick-diagnosis report.
 
-The hosted Asaas Checkout will collect customer and card data. Lucrivo must not receive or store raw card data.
+The hosted Asaas Checkout collects customer and card data. Lucrivo does not collect those fields in its UI; if provider webhooks include masked card metadata or a card token, the webhook boundary discards the complete card object before persistence.
 
 ## 2. Product Rules
 
@@ -217,10 +217,10 @@ Key fields:
 - received timestamp;
 - processing status (`received`, `processed`, `ignored`, `failed`);
 - attempt count and last error;
-- raw JSON payload, visible only to trusted server roles;
+- provider JSON payload after removal of card/token fields, visible only to trusted server roles;
 - processed timestamp.
 
-Raw payloads can contain personal data. They must never be exposed through public APIs or user RLS policies and should have an operational retention policy.
+Webhook payloads can contain personal data and, for payment events, a reusable card token. Lucrivo removes the complete `payment.creditCard` object before persistence. The remaining payload must never be exposed through public APIs or user RLS policies. Processed/ignored payloads are retained for 180 days; failed events remain until reconciled.
 
 ### 5.6 `diagnoses`
 
@@ -261,8 +261,8 @@ Processing sequence:
 
 1. Read the raw request and compare the `asaas-access-token` header with `ASAAS_WEBHOOK_TOKEN` using a timing-safe comparison.
 2. Reject missing or invalid tokens without logging their values.
-3. Parse a small required envelope (`id`, `event`) while tolerating additional fields.
-4. Insert the event ID into `asaas_webhook_events` before applying business effects.
+3. Parse a small required envelope (`id`, `event`) while tolerating additional fields, then remove card/token fields from the persisted copy.
+4. Insert the event ID and redacted payload into `asaas_webhook_events` before applying business effects.
 5. If the unique ID already exists, return HTTP 200 without repeating effects.
 6. In a transaction, resolve the contract by `externalReference` or known provider ID, upsert normalized payment data, and update the contract/access interval.
 7. Mark the event processed and return HTTP 200.
@@ -270,17 +270,17 @@ Processing sequence:
 
 Event policy:
 
-- `CHECKOUT_PAID`: associate the Checkout with the provider resources and record its paid outcome; never trust the browser callback as an equivalent event.
-- `PAYMENT_CONFIRMED`: activate or extend access idempotently.
+- `CHECKOUT_PAID`: associate the Checkout/customer and grant the initial paid interval idempotently; this verified event is not equivalent to the browser callback.
+- `PAYMENT_CONFIRMED`: reconcile the initial interval and extend later monthly cycles idempotently.
 - `PAYMENT_RECEIVED`: update settlement information but do not grant duplicate access.
 - failed, overdue, or declined future monthly payments: do not extend access; preserve only the interval already paid.
 - full refund or chargeback: revoke the affected contract immediately after confirmed provider notification.
 - subscription inactivation or deletion: stop future renewal while preserving access already paid through `access_ends_at`, unless a refund or chargeback requires immediate revocation.
 - unknown events: store and mark ignored; do not fail merely because Asaas added a new event type or payload field.
 
-For the annual purchase, the first confirmed payment grants one 12-month interval. Later per-installment settlement events never add another 12 months.
+For the annual purchase, the first verified paid event grants one 12-month interval. Later payment or per-installment settlement events never add another 12 months.
 
-For the monthly plan, each newly confirmed billing cycle extends access from the later of the current interval end or the payment's covered-period start, preventing duplicate or out-of-order events from shortening or multiplying access.
+For the monthly plan, each newly confirmed billing cycle sets the end to the later of the existing end or that payment's due date plus one month, preventing duplicate or out-of-order events from shortening or multiplying access.
 
 ## 8. Failure and Reconciliation Strategy
 
