@@ -1,85 +1,73 @@
-// import { headers } from "next/headers";
+import { createHash, timingSafeEqual } from "node:crypto";
 
-// export const POST = async (req: Request) => {
-//   try {
-//     const headersList = await headers();
+import { NextResponse } from "next/server";
 
-//     const token = headersList.get("asaas-access-token");
+import { readBillingEnvironment } from "@/config/billing-environment";
+import { createAdminClient } from "@/infrastructure/database/supabase/clients/admin.client";
+import { parseAsaasWebhook } from "@/infrastructure/payments/asaas/webhook.schema";
+import { processAsaasWebhook } from "@/modules/billing/services/process-asaas-webhook.service";
 
-//     if (token !== process.env.ASAAS_WEBHOOK_TOKEN) {
-//       return new Response("Unauthorized", { status: 401 });
-//     }
+function hasValidWebhookToken(
+  received: string | null,
+  expected: string,
+): boolean {
+  if (received === null) return false;
 
-//     const body = await req.json();
+  const receivedDigest = createHash("sha256").update(received, "utf8").digest();
+  const expectedDigest = createHash("sha256").update(expected, "utf8").digest();
 
-//     const { event, payment } = body;
+  return timingSafeEqual(receivedDigest, expectedDigest);
+}
 
-//     if (!event || !payment) return new Response("Bad Request", { status: 400 });
+function json(body: unknown, status: number) {
+  return NextResponse.json(body, {
+    status,
+    headers: { "Cache-Control": "no-store" },
+  });
+}
 
-//     const customerId = payment.customer;
-//     const courseId = payment.externalReference;
+async function POST(request: Request) {
+  let expectedToken: string;
 
-//     const user = await prisma.user.findFirst({
-//       where: {
-//         asaasId: customerId,
-//       },
-//     });
+  try {
+    expectedToken = readBillingEnvironment().asaasWebhookToken;
+  } catch {
+    return json({ error: "service_unavailable" }, 503);
+  }
 
-//     if (!user) return new Response("Customer not found", { status: 404 });
+  if (
+    !hasValidWebhookToken(
+      request.headers.get("asaas-access-token"),
+      expectedToken,
+    )
+  ) {
+    return json({ error: "unauthorized" }, 401);
+  }
 
-//     switch (event) {
-//       case "PAYMENT_RECEIVED":
-//       case "PAYMENT_CONFIRMED":
-//         if (event === "PAYMENT_RECEIVED" && payment.billingType !== "PIX") {
-//           return new Response("Webhook received", { status: 200 });
-//         }
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "invalid_request" }, 400);
+  }
 
-//         const userAlreadyHasCourse = await prisma.coursePurchase.findFirst({
-//           where: {
-//             userId: user.id,
-//             courseId,
-//           },
-//         });
+  const parsed = parseAsaasWebhook(body);
+  if (!parsed.success) return json({ error: "invalid_request" }, 400);
 
-//         if (!userAlreadyHasCourse) {
-//           await prisma.coursePurchase.create({
-//             data: {
-//               courseId,
-//               userId: user.id,
-//             },
-//           });
-//         }
+  try {
+    const result = await processAsaasWebhook({
+      admin: createAdminClient(),
+      event: parsed.event,
+    });
 
-//         return new Response("Webhook received", { status: 200 });
-//       case "PAYMENT_REFUNDED":
-//         const userHasCourse = await prisma.coursePurchase.findFirst({
-//           where: {
-//             userId: user.id,
-//             courseId,
-//           },
-//         });
+    return result === "processed" ||
+      result === "duplicate" ||
+      result === "ignored"
+      ? json({ status: "received" }, 200)
+      : json({ error: "retry_later" }, 503);
+  } catch {
+    return json({ error: "service_unavailable" }, 503);
+  }
+}
 
-//         if (userHasCourse) {
-//           await prisma.coursePurchase.delete({
-//             where: {
-//               id: userHasCourse.id,
-//             },
-//           });
-//           await prisma.completedLesson.deleteMany({
-//             where: {
-//               userId: user.id,
-//               courseId,
-//             },
-//           });
-//         }
-
-//         return new Response("Webhook received", { status: 200 });
-//       default:
-//         return new Response("Unhandled event", { status: 200 });
-//     }
-//   } catch (error) {
-//     console.error(error);
-
-//     return new Response("Internal Server Error", { status: 500 });
-//   }
-// };
+export { hasValidWebhookToken, POST };
