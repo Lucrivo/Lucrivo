@@ -12,6 +12,16 @@ type BillingContractStatus =
 type BillingMode = "monthly" | "annual";
 type BillingPaymentMethod = "credit_card" | "pix";
 
+type ActiveBillingPrice = {
+  id: string;
+  productCode: "quick_diagnosis_pro";
+  billingMode: BillingMode;
+  amountCents: number;
+  currency: "BRL";
+  installmentLimit: number | null;
+  accessMonths: number;
+};
+
 type BillingOverview = {
   tier: "free" | "paid";
   canCreateDiagnosis: boolean;
@@ -29,6 +39,7 @@ type GetBillingOverviewResult =
   { status: "success"; overview: BillingOverview } | { status: "read_failed" };
 
 export type {
+  ActiveBillingPrice,
   BillingContractStatus,
   BillingMode,
   BillingOverview,
