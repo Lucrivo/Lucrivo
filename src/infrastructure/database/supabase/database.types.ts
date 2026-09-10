@@ -539,6 +539,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      apply_asaas_webhook_event: {
+        Args: { p_event_id: string; p_event_type: string; p_payload: Json };
+        Returns: string;
+      };
       create_product_diagnosis_report: {
         Args: {
           p_calculation_version: number;
