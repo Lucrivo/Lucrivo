@@ -18,7 +18,7 @@ type CreateProductReportInput = {
 
 type CreateProductReportResult =
   | { status: "success"; diagnosisId: number }
-  | { status: "error"; error: "create_failed" };
+  | { status: "error"; error: "create_failed" | "limit_reached" };
 
 type GeneratedProductRpcArgs =
   Database["public"]["Functions"]["create_product_diagnosis_report"]["Args"];
@@ -73,6 +73,13 @@ async function createProductReport({
       "create_product_diagnosis_report",
       rpcArgs as GeneratedProductRpcArgs,
     );
+
+    if (
+      error?.code === "P0001" &&
+      error.message === "free_report_limit_reached"
+    ) {
+      return { status: "error", error: "limit_reached" };
+    }
 
     if (
       error ||

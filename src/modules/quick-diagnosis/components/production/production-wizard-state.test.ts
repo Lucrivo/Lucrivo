@@ -258,6 +258,10 @@ describe("production wizard state", () => {
       type: "submitError",
       error: "create_failed",
     });
+    const limited = productionWizardReducer(submitting, {
+      type: "submitError",
+      error: "limit_reached",
+    });
     const reset = productionWizardReducer(retry, {
       type: "reset",
       submissionId: nextSubmissionId,
@@ -275,6 +279,7 @@ describe("production wizard state", () => {
         submitError: "create_failed",
       }),
     );
+    expect(limited.submitError).toBe("limit_reached");
     expect(reset).toEqual(createInitialProductionWizardState(nextSubmissionId));
   });
 });

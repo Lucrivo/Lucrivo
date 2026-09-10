@@ -214,6 +214,18 @@ describe("createProductionDiagnosis", () => {
     expectNoTechnicalDetails(result);
   });
 
+  it("preserves the safe limit_reached result", async () => {
+    createProductionReport.mockResolvedValue({
+      status: "error",
+      error: "limit_reached",
+    });
+
+    const result = await createProductionDiagnosis(validInput);
+
+    expect(result).toEqual({ status: "error", error: "limit_reached" });
+    expectNoTechnicalDetails(result);
+  });
+
   it.each([
     "authentication",
     "composition",

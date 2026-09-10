@@ -166,6 +166,10 @@ describe("product wizard state", () => {
       type: "submitError",
       error: "create_failed",
     });
+    const limited = productWizardReducer(submitting, {
+      type: "submitError",
+      error: "limit_reached",
+    });
 
     expect(submitting).toEqual(
       expect.objectContaining({ status: "submitting", submitError: null }),
@@ -175,6 +179,7 @@ describe("product wizard state", () => {
       status: "editing",
       submitError: "create_failed",
     });
+    expect(limited.submitError).toBe("limit_reached");
   });
 
   it("resets every Product answer with a fresh submission id", () => {

@@ -340,6 +340,25 @@ describe("ServiceDiagnosisWizard", () => {
     ).toHaveAttribute("href", "/login");
   });
 
+  it("offers the plans when the free diagnosis was already used", async () => {
+    const user = userEvent.setup();
+    const createDiagnosis = vi
+      .fn<CreateServiceDiagnosisAction>()
+      .mockResolvedValue({ status: "error", error: "limit_reached" });
+    renderReview(createDiagnosis);
+
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar diagnóstico" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Seu diagnóstico gratuito já foi usado.",
+    );
+    expect(
+      screen.getByRole("link", { name: "Conhecer os planos" }),
+    ).toHaveAttribute("href", "/billing");
+  });
+
   it("returns to and focuses the first invalid visible answer", async () => {
     const user = userEvent.setup();
     const createDiagnosis = vi
