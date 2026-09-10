@@ -4,7 +4,7 @@
 
 **Goal:** Sell Lucrivo monthly and annual access through hosted Asaas Checkout, derive free/paid access safely from synchronized billing records, and enforce the one-free-report rule in Postgres.
 
-**Architecture:** Supabase stores immutable prices, local billing contracts, normalized payments, and an idempotent webhook ledger. Authenticated Next.js routes create Checkout sessions and cancel monthly subscriptions through a small Asaas gateway; a token-protected webhook applies normalized provider events through one service-role-only transactional RPC. Report creation and visibility remain protected by Postgres functions and RLS, while server-rendered pages expose only access-appropriate states.
+**Architecture:** Supabase stores immutable prices, local billing contracts, normalized payments, and an idempotent webhook ledger. Authenticated Next.js routes create method-specific Checkout sessions and cancel monthly card subscriptions through a small Asaas gateway; a token-protected webhook applies normalized provider events through one service-role-only transactional RPC. Report creation and visibility remain protected by Postgres functions and RLS, while server-rendered pages expose only access-appropriate states.
 
 **Tech Stack:** Next.js 16 App Router, React 19, TypeScript 5.9, Zod 4, Supabase JS 2.112.3, PostgreSQL 17, pgTAP, Vitest/Testing Library, hosted Asaas Checkout API v3.
 
@@ -12,9 +12,9 @@
 
 ## Global Constraints
 
-- Monthly v1 is `4990` BRL cents, recurring every month until cancellation.
-- Annual v1 is `47880` BRL cents, one purchase in up to 12 card installments, with 12 months of access and no automatic renewal.
-- Annual copy is exactly: `R$ 478,80 em até 12x sem juros — 12x de R$ 39,90. Sem renovação automática.`
+- Monthly v1 is `4990` BRL cents: credit card recurs every month until cancellation, while Pix is a detached purchase for one non-renewing month.
+- Annual v1 is `47880` BRL cents: Pix is paid up front and credit card is one purchase in up to 12 installments; both grant 12 months without automatic renewal.
+- Annual copy is exactly: `R$ 478,80 no Pix à vista ou em até 12x sem juros no cartão — 12x de R$ 39,90. Sem renovação automática.`
 - Free is derived: no valid paid access interval means free; do not persist a `free` plan row.
 - The first report created by a user is the free report even when that user is paid. A user can own at most one `is_free_report = true` row.
 - A free user can read only the free report and cannot create another. A paid user can create and read additional reports. Downgrade hides, but never deletes, paid reports.
@@ -80,9 +80,7 @@ function readBillingEnvironment(env?: NodeJS.ProcessEnv): BillingEnvironment;
 
 function createAdminClient(): SupabaseClient<Database>;
 
-type AsaasCheckoutRequest = {
-  billingTypes: ["CREDIT_CARD"];
-  chargeTypes: ["RECURRENT"] | ["INSTALLMENT"];
+type AsaasCheckoutRequestBase = {
   minutesToExpire: 60;
   externalReference: string;
   callback: { successUrl: string; cancelUrl: string; expiredUrl: string };
@@ -95,9 +93,29 @@ type AsaasCheckoutRequest = {
     value: number;
   }>;
   customer?: string;
-  subscription?: { cycle: "MONTHLY"; nextDueDate: string };
-  installment?: { maxInstallmentCount: 12 };
 };
+
+type AsaasCheckoutRequest = AsaasCheckoutRequestBase &
+  (
+    | {
+        billingTypes: ["CREDIT_CARD"];
+        chargeTypes: ["RECURRENT"];
+        subscription: { cycle: "MONTHLY"; nextDueDate: string };
+        installment?: never;
+      }
+    | {
+        billingTypes: ["CREDIT_CARD"];
+        chargeTypes: ["INSTALLMENT"];
+        subscription?: never;
+        installment: { maxInstallmentCount: 12 };
+      }
+    | {
+        billingTypes: ["PIX"];
+        chargeTypes: ["DETACHED"];
+        subscription?: never;
+        installment?: never;
+      }
+  );
 
 type AsaasCheckout = { id: string; link: string; status: "ACTIVE" };
 
@@ -131,6 +149,8 @@ Also inspect `.env.example` in the test and assert it declares `SUPABASE_SECRET_
 - [ ] **Step 2: Write failing gateway tests**
 
 Use an injected `fetch` mock. Assert `createCheckout` sends `POST /v3/checkouts`, `access_token`, `Content-Type: application/json`, and the exact input body; it accepts unknown response fields. Assert `deleteSubscription("sub_123")` sends `DELETE /v3/subscriptions/sub_123`. Cover:
+
+Also assert a detached Pix request is sent with `billingTypes: ["PIX"]`, `chargeTypes: ["DETACHED"]`, and no subscription/installment fields. The request union must reject invalid provider combinations at compile time.
 
 ```ts
 it.each([
@@ -218,7 +238,7 @@ git commit -m "feat: add secure Asaas server adapters"
 - Consumes: the approved table/price model from the design.
 - Produces: five RLS-protected billing tables, v1 catalog rows, constraints/indexes, and generated TypeScript table types.
 
-Create `public.billing_prices`, `public.billing_customers`, `public.billing_contracts`, `public.billing_payments`, and `public.asaas_webhook_events` exactly as specified in the design. The application relies on these additional operational columns:
+Create `public.billing_prices`, `public.billing_customers`, `public.billing_contracts`, `public.billing_payments`, and `public.asaas_webhook_events` exactly as specified in the design. Catalog `billing_mode` values are `monthly` and `annual`. Contracts also persist `payment_method` (`credit_card` or `pix`) and `charge_type` (`recurring`, `installment`, or `detached`) with a check that permits only the four approved combinations. The application relies on these additional operational columns:
 
 ```sql
 -- billing_contracts
@@ -271,7 +291,7 @@ select table_privs_are(
 );
 ```
 
-As `anon`, assert exactly two active price rows are readable and retired rows are hidden. As authenticated user A, assert only A's safe contract and payment rows are readable. Assert neither user role can insert/update/delete billing data or read `billing_customers`/`asaas_webhook_events`.
+As `anon`, assert exactly two active price rows are readable and retired rows are hidden. Assert the contract check rejects every payment/charge combination outside the four approved flows. As authenticated user A, assert only A's safe contract and payment rows are readable. Assert neither user role can insert/update/delete billing data or read `billing_customers`/`asaas_webhook_events`.
 
 - [ ] **Step 4: Run the database tests and confirm failure**
 
@@ -311,7 +331,7 @@ on public.asaas_webhook_events (received_at)
 where processing_status = 'failed';
 ```
 
-Add a catalog shape check: monthly rows have null `installment_limit` and `access_months = 1`; annual rows have `installment_limit = 12`, `access_months = 12`, and `amount_cents % installment_limit = 0` so the advertised equal installment is always true. Add a `before update` trigger on `billing_prices` that rejects changes to `product_code`, `billing_mode`, `version`, `amount_cents`, `currency`, `installment_limit`, and `access_months`; only retirement fields may change. Seed production catalog data in the migration:
+Add a catalog shape check: monthly rows have null `installment_limit` and `access_months = 1`; annual rows have `installment_limit = 12`, `access_months = 12`, and `amount_cents % installment_limit = 0` so the advertised equal card installment is always true. Add a `before update` trigger on `billing_prices` that rejects changes to `product_code`, `billing_mode`, `version`, `amount_cents`, `currency`, `installment_limit`, and `access_months`; only retirement fields may change. Seed production catalog data in the migration:
 
 ```sql
 insert into public.billing_prices (
@@ -319,12 +339,12 @@ insert into public.billing_prices (
   installment_limit, access_months, is_active
 ) values
   ('20000000-0000-4000-8000-000000000001', 'quick_diagnosis_pro',
-   'monthly_recurring', 1, 4990, 'BRL', null, 1, true),
+   'monthly', 1, 4990, 'BRL', null, 1, true),
   ('20000000-0000-4000-8000-000000000002', 'quick_diagnosis_pro',
-   'annual_installment', 1, 47880, 'BRL', 12, 12, true);
+   'annual', 1, 47880, 'BRL', 12, 12, true);
 ```
 
-Grant `select` on `billing_prices` to `anon, authenticated, service_role`. Use column-level authenticated grants for contracts (`id`, `price_id`, `billing_mode`, `amount_cents`, `currency`, `status`, access dates, and cancellation flags/dates) and payments (`id`, `contract_id`, status, value, installment number, and financial dates); do not grant provider IDs, Checkout URLs, `external_reference`, or raw operational errors to client roles. Grant required full CRUD only to `service_role`. Explicitly revoke all client access to customers and webhook events. Enable RLS on all five tables, and assert the column grants through `information_schema.column_privileges` in the pgTAP test.
+Grant `select` on `billing_prices` to `anon, authenticated, service_role`. Use column-level authenticated grants for contracts (`id`, `price_id`, `billing_mode`, `payment_method`, `charge_type`, `amount_cents`, `currency`, `status`, access dates, and cancellation flags/dates) and payments (`id`, `contract_id`, status, value, installment number, and financial dates); do not grant provider IDs, Checkout URLs, `external_reference`, or raw operational errors to client roles. Grant required full CRUD only to `service_role`. Explicitly revoke all client access to customers and webhook events. Enable RLS on all five tables, and assert the column grants through `information_schema.column_privileges` in the pgTAP test.
 
 - [ ] **Step 6: Reset, test, lint, advise, and regenerate types**
 
@@ -557,7 +577,8 @@ type BillingOverview = {
   canCreateDiagnosis: boolean;
   freeReportUsed: boolean;
   contract: null | {
-    billingMode: "monthly_recurring" | "annual_installment";
+    billingMode: "monthly" | "annual";
+    paymentMethod: "credit_card" | "pix";
     status: BillingContractStatus;
     accessEndsAt: string | null;
     cancelAtPeriodEnd: boolean;
@@ -655,7 +676,7 @@ git commit -m "feat: surface billing access in reports"
 type ActiveBillingPrice = {
   id: string;
   productCode: "quick_diagnosis_pro";
-  billingMode: "monthly_recurring" | "annual_installment";
+  billingMode: "monthly" | "annual";
   amountCents: number;
   currency: "BRL";
   installmentLimit: number | null;
@@ -671,6 +692,7 @@ function listActivePrices(input: {
 
 function buildCheckoutRequest(input: {
   price: ActiveBillingPrice;
+  paymentMethod: "credit_card" | "pix";
   contractId: string;
   appUrl: URL;
   customerId?: string;
@@ -680,7 +702,7 @@ function buildCheckoutRequest(input: {
 
 - [ ] **Step 1: Write failing price and payload tests**
 
-Assert the catalog service selects only active fields, rejects duplicate/missing modes, and sorts monthly before annual. Assert exact payload snapshots:
+Assert the catalog service selects only active fields, rejects duplicate/missing modes, and sorts monthly before annual. Assert exact payload snapshots for all four supported combinations:
 
 ```ts
 expect(monthly).toMatchObject({
@@ -692,13 +714,26 @@ expect(monthly).toMatchObject({
 });
 
 expect(annual).toMatchObject({
+  billingTypes: ["CREDIT_CARD"],
   chargeTypes: ["INSTALLMENT"],
   installment: { maxInstallmentCount: 12 },
   items: [{ quantity: 1, value: 478.8 }],
 });
+
+expect(monthlyPix).toMatchObject({
+  billingTypes: ["PIX"],
+  chargeTypes: ["DETACHED"],
+  items: [{ quantity: 1, value: 49.9 }],
+});
+
+expect(annualPix).toMatchObject({
+  billingTypes: ["PIX"],
+  chargeTypes: ["DETACHED"],
+  items: [{ quantity: 1, value: 478.8 }],
+});
 ```
 
-Assert all callback URLs use the supplied `APP_URL`, a known customer ID is included, absent customer data stays absent, and every item has a nonempty valid PNG `imageBase64`.
+Assert Pix payloads have neither `subscription` nor `installment`, all callback URLs use the supplied `APP_URL`, a known customer ID is included, absent customer data stays absent, and every item has a nonempty valid PNG `imageBase64`.
 
 - [ ] **Step 2: Run tests and confirm failure**
 
@@ -760,6 +795,7 @@ type CreateHostedCheckoutResult =
 async function createHostedCheckout(input: {
   userId: string;
   priceId: string;
+  paymentMethod: "credit_card" | "pix";
   admin: SupabaseClient<Database>;
   asaas: AsaasGateway;
   appUrl: URL;
@@ -769,6 +805,7 @@ async function createHostedCheckout(input: {
 // POST JSON input
 {
   priceId: string;
+  paymentMethod: "credit_card" | "pix";
 }
 
 // 201/200 JSON output
@@ -779,7 +816,7 @@ async function createHostedCheckout(input: {
 
 - [ ] **Step 1: Write failing orchestration tests**
 
-Test unknown/inactive price, existing valid paid contract, reuse of a non-expired pending Checkout URL, expiry of a stale pending row before creating its replacement, and the first-purchase sequence. Assert the local pending contract uses `crypto.randomUUID()` for both `id` and `external_reference`, copies every commercial field from the database price, and is inserted before `asaas.createCheckout`.
+Test unknown/inactive price, invalid payment method, existing valid paid contract, reuse of a non-expired pending Checkout URL for the same method, expiry of a stale pending row before creating its replacement, and the first-purchase sequence. Assert the local pending contract uses `crypto.randomUUID()` for both `id` and `external_reference`, copies every commercial field from the database price, persists the selected `payment_method` and derived `charge_type`, and is inserted before `asaas.createCheckout`.
 
 Assert provider outcomes:
 
@@ -791,7 +828,7 @@ Assert provider outcomes:
 
 - [ ] **Step 2: Write failing route tests**
 
-Mock `requireUser`, the environment, admin client, gateway, and service. Assert 401 unauthenticated, 400 invalid UUID, 409 already subscribed, 422 provider rejection, 503 reconciliation, and 201 created. Verify responses use `Cache-Control: no-store` and never include internal error text or secrets.
+Mock `requireUser`, the environment, admin client, gateway, and service. Assert 401 unauthenticated, 400 invalid UUID or payment method, 409 already subscribed, 422 provider rejection, 503 reconciliation, and 201 created. Verify responses use `Cache-Control: no-store` and never include internal error text or secrets.
 
 - [ ] **Step 3: Run focused tests and confirm failure**
 
@@ -818,7 +855,7 @@ await admin
   .eq("status", "pending");
 ```
 
-The API route accepts only `priceId`. It authenticates with `requireUser()` before creating the secret clients.
+The API route accepts only `priceId` and the enumerated `paymentMethod`. It authenticates with `requireUser()` before creating the secret clients. Amounts and provider charge types remain server-derived.
 
 - [ ] **Step 5: Run tests and commit**
 
@@ -861,17 +898,18 @@ Return values are `processed`, `duplicate`, `ignored`, or `unresolved`. The func
 pnpm exec supabase migration new apply_asaas_webhook_events
 ```
 
-Create fixtures for one monthly and one annual pending contract. Test:
+Create fixtures for monthly card, monthly Pix, annual card, and annual Pix pending contracts. Test:
 
 - `CHECKOUT_CREATED` attaches checkout/customer IDs without granting access;
 - `CHECKOUT_PAID` grants the initial interval once, using the verified event creation instant;
 - `CHECKOUT_CANCELED` and `CHECKOUT_EXPIRED` close only pending contracts;
 - `SUBSCRIPTION_CREATED` attaches subscription/customer IDs without granting access;
-- the first monthly `PAYMENT_CONFIRMED` reconciles the initial interval without duplicating the `CHECKOUT_PAID` grant;
-- a second monthly confirmation advances access only to that payment's due date plus one month;
+- the first monthly card `PAYMENT_CONFIRMED` reconciles the initial interval without duplicating the `CHECKOUT_PAID` grant;
+- a second monthly card confirmation advances access only to that payment's due date plus one month;
+- monthly Pix grants exactly one month on its first verified paid event and later events never extend that contract;
 - duplicate and out-of-order events never double-extend or shorten access;
 - `PAYMENT_RECEIVED` records settlement without granting a new interval;
-- the first annual verified paid event grants exactly 12 months and later payment/installment events do not extend it;
+- the first annual card or Pix verified paid event grants exactly 12 months and later payment/installment events do not extend it;
 - capture-refused and overdue events update payment state but never extend access;
 - partial refund is recorded for manual review without silently applying the full-refund policy;
 - `PAYMENT_REFUNDED` and chargeback events revoke immediately;
@@ -905,7 +943,7 @@ Lock the chosen contract `for update`. Upsert `billing_customers` by `user_id` a
 
 Read Asaas monetary JSON through `numeric`, multiply by 100, round once, and cast to `bigint`; never cast through PostgreSQL `real`/`double precision`. Accept the documented event datetime form `YYYY-MM-DD HH24:MI:SS`, ISO timestamps, and date-only payment fields, normalizing all access instants to UTC.
 
-For monthly confirmation, set the end deterministically from the payment due date rather than adding blindly:
+For monthly recurring card confirmation, set the end deterministically from the payment due date rather than adding blindly:
 
 ```sql
 new_access_end := p_due_date::timestamptz + interval '1 month';
@@ -915,7 +953,7 @@ access_ends_at := greatest(
 );
 ```
 
-Apply payment-based extension only when the payment transitions from unconfirmed to confirmed. `CHECKOUT_PAID` establishes the initial interval from its event instant; a same-cycle payment confirmation uses `greatest` against its due-date boundary and therefore cannot double it. For annual mode, write the 12-month interval only when `access_starts_at is null`. Full refunds/chargebacks set the corresponding revoked status and `access_ends_at = least(access_ends_at, statement_timestamp())`. `PAYMENT_PARTIALLY_REFUNDED` marks the event/payment for operational review but leaves contract access unchanged.
+Apply payment-based extension only when a monthly card payment transitions from unconfirmed to confirmed. `CHECKOUT_PAID` establishes the initial interval from its event instant; a same-cycle card confirmation uses `greatest` against its due-date boundary and therefore cannot double it. For monthly Pix, write the one-month interval only when `access_starts_at is null`. For either annual method, write the 12-month interval only when `access_starts_at is null`. Full refunds/chargebacks set the corresponding revoked status and `access_ends_at = least(access_ends_at, statement_timestamp())`. `PAYMENT_PARTIALLY_REFUNDED` marks the event/payment for operational review but leaves contract access unchanged.
 
 - [ ] **Step 4: Add explicit privilege and function-security assertions**
 
@@ -1053,7 +1091,7 @@ git commit -m "feat: receive authenticated Asaas webhooks"
 
 **Interfaces:**
 
-- Consumes: Task 1 gateway/admin client and Task 2 monthly contract persistence.
+- Consumes: Task 1 gateway/admin client and Task 2 monthly credit-card contract persistence.
 - Produces: `cancelMonthlyBilling` and `POST /api/billing/cancel` for Task 10.
 
 ```ts
@@ -1072,7 +1110,7 @@ async function cancelMonthlyBilling(input: {
 
 - [ ] **Step 1: Write failing cancellation tests**
 
-Assert the service selects a monthly contract using both trusted `user_id` and active/cancelable status; annual contracts are never deleted as subscriptions. Assert it writes `cancellation_requested_at`, calls `deleteSubscription` with the stored provider ID, and on success sets:
+Assert the service selects a monthly credit-card recurring contract using trusted `user_id`, payment/charge type, and active/cancelable status; Pix and annual contracts are never deleted as subscriptions. Assert it writes `cancellation_requested_at`, calls `deleteSubscription` with the stored provider ID, and on success sets:
 
 ```ts
 {
@@ -1086,7 +1124,7 @@ Assert `access_ends_at` is unchanged. A timeout leaves access/status intact and 
 
 - [ ] **Step 2: Write failing endpoint tests**
 
-Assert 401 unauthenticated, 404 no monthly contract, 200 canceled/already canceled, 422 rejected, and 503 pending reconciliation. The body may include the safe end date but no subscription/customer/provider ID.
+Assert 401 unauthenticated, 404 no monthly card contract, 200 canceled/already canceled, 422 rejected, and 503 pending reconciliation. The body may include the safe end date but no subscription/customer/provider ID.
 
 - [ ] **Step 3: Run tests and confirm failure**
 
@@ -1098,7 +1136,7 @@ Expected: FAIL because cancellation does not exist.
 
 - [ ] **Step 4: Implement cancellation without shortening paid access**
 
-Authenticate first, update only the caller's monthly row, keep the Asaas call outside database transactions, and let later subscription webhooks converge the final state. Do not treat a browser response as a refund or revoke access.
+Authenticate first, update only the caller's monthly/card/recurring row, keep the Asaas call outside database transactions, and let later subscription webhooks converge the final state. Do not treat a browser response as a refund or revoke access.
 
 - [ ] **Step 5: Run tests and commit**
 
@@ -1148,7 +1186,7 @@ type BillingPlansProps = {
 
 - [ ] **Step 1: Write failing component interaction tests**
 
-Assert the monthly card derives `R$ 49,90/mês` from `amountCents`, includes automatic-renewal/cancellation copy, and the annual card derives the exact Global Constraints sentence from `47880 / 12`. Repeat with alternate catalog fixtures (`5990` monthly and `59880` annual) and assert the rendered values change without editing component constants. Assert public CTAs link to `/register`; account CTAs call `POST /api/billing/checkout` with only `{ priceId }` and assign the returned trusted Checkout URL to `window.location`.
+Assert the monthly card derives `R$ 49,90/mês` from `amountCents` and includes automatic-renewal/cancellation copy; monthly Pix says one month without renewal. Assert the annual offer derives the exact Global Constraints sentence from `47880 / 12` and distinguishes Pix up front from card installments. Repeat with alternate catalog fixtures (`5990` monthly and `59880` annual) and assert the rendered values change without editing component constants. Assert public CTAs link to `/register`; account CTAs call `POST /api/billing/checkout` with only `{ priceId, paymentMethod }` and assign the returned trusted Checkout URL to `window.location`.
 
 Assert the cancellation button opens the existing accessible `AlertDialog`, describes the exact access end date, disables while pending, and calls `POST /api/billing/cancel` only after confirmation.
 
@@ -1156,7 +1194,7 @@ Assert the cancellation button opens the existing accessible `AlertDialog`, desc
 
 Make `Home` a server component that loads active prices and passes them to `LandingExperience`; update its test to `render(await Home())` with a mocked catalog service. Assert a catalog failure keeps the free plan visible and shows paid pricing as temporarily unavailable rather than falling back to hardcoded amounts.
 
-For `/billing`, assert active customers see their plan, access end, and monthly cancellation control; free customers see both paid offers. For callback outcomes `success`, `canceled`, and `expired`, assert the page reads server billing state and:
+For `/billing`, assert active customers see their plan, payment method, access end, and cancellation control only for monthly card recurrence; free customers see both paid offers and their method-specific actions. For callback outcomes `success`, `canceled`, and `expired`, assert the page reads server billing state and:
 
 - success + pending contract says `Confirmando pagamento`;
 - success + active contract says `Pagamento confirmado`;
@@ -1180,8 +1218,8 @@ Compose both pages from `requireUser`, `listActivePrices`, and `getBillingOvervi
 Change `LandingExperience` to accept active prices as props. Preserve its current visual language and responsive layout, but render:
 
 - Free: one quick diagnosis and one readable report;
-- Monthly: unlimited diagnoses, R$ 49.90 monthly, automatic renewal, cancel anytime with paid-period access;
-- Annual: unlimited diagnoses, total R$ 478.80, up to 12 installments, no automatic renewal.
+- Monthly: unlimited diagnoses, R$ 49.90; card renews automatically and can be canceled, while Pix grants one non-renewing month;
+- Annual: unlimited diagnoses, total R$ 478.80; Pix up front or card in up to 12 installments, with no automatic renewal.
 
 Do not advertise AI-generated interpretation unless that feature is actually available to the paid tier in this release.
 
@@ -1259,12 +1297,13 @@ Document separate sandbox/production variables, webhook URL `/api/webhooks/asaas
 
 Include these release exercises with recorded event IDs and local contract IDs:
 
-1. monthly Checkout paid, renewal confirmation, cancellation, and paid-period expiry;
-2. annual Checkout paid once in 1x and once in 12x, each granting exactly 12 months;
-3. duplicate delivery, out-of-order `PAYMENT_RECEIVED`, full refund, and chargeback;
-4. success callback arriving before webhook;
-5. forced provider timeout followed by webhook/manual reconciliation;
-6. free first report, blocked second report, paid unlock, expiry lock, and resubscription unlock.
+1. monthly card Checkout paid, renewal confirmation, cancellation, and paid-period expiry;
+2. monthly Pix Checkout paid once, granting exactly one month with no renewal;
+3. annual Pix paid up front plus annual card paid once in 1x and once in 12x, each granting exactly 12 months;
+4. duplicate delivery, out-of-order `PAYMENT_RECEIVED`, full refund, and chargeback;
+5. success callback arriving before webhook;
+6. forced provider timeout followed by webhook/manual reconciliation;
+7. free first report, blocked second report, paid unlock, expiry lock, and resubscription unlock.
 
 Document replay as calling the same `apply_asaas_webhook_event` RPC with the original stored ID/payload after correcting the mapping; never edit access dates manually without an auditable incident record.
 
@@ -1285,7 +1324,7 @@ Expected: every command PASS and database type generation produces no diff.
 
 - [ ] **Step 4: Execute the sandbox release matrix**
 
-Follow the six runbook exercises against Asaas sandbox. For each, verify the browser state, `billing_contracts`, `billing_payments`, `asaas_webhook_events`, and report visibility. Do not enable production CTAs until all six are recorded as successful.
+Follow the seven runbook exercises against Asaas sandbox. For each, verify the browser state, `billing_contracts`, `billing_payments`, `asaas_webhook_events`, and report visibility. Do not enable production CTAs until all seven are recorded as successful.
 
 - [ ] **Step 5: Review the final diff for security and scope**
 

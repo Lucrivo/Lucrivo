@@ -1,7 +1,7 @@
 # Asaas Billing and Quick Diagnosis Access Design
 
 **Date:** 2026-09-09
-**Status:** Approved design, pending implementation plan
+**Status:** Approved design, amended 2026-09-10 for detached Pix payments
 
 ## 1. Objective
 
@@ -9,11 +9,11 @@ Add paid access to Lucrivo through Asaas while preserving a useful free tier and
 
 The product will offer:
 
-- a monthly plan for **R$ 49.90**, charged automatically every month until cancellation;
-- an annual plan for **R$ 478.80**, paid once by credit card in up to 12 installments (12 installments are R$ 39.90 each), with the total purchase consuming the customer's card limit and no automatic renewal;
+- a monthly plan for **R$ 49.90**, either charged automatically to a credit card every month until cancellation or paid by Pix for one non-renewing month of access;
+- an annual plan for **R$ 478.80**, paid either by Pix up front or by credit card in up to 12 installments (12 installments are R$ 39.90 each), with the total card purchase consuming the customer's card limit and no automatic renewal;
 - a free tier that lets each authenticated user create exactly one quick-diagnosis report.
 
-The hosted Asaas Checkout collects customer and card data. Lucrivo does not collect those fields in its UI; if provider webhooks include masked card metadata or a card token, the webhook boundary discards the complete card object before persistence.
+The hosted Asaas Checkout collects customer and payment data. Lucrivo does not collect Pix or card fields in its UI; if provider webhooks include masked card metadata or a card token, the webhook boundary discards the complete card object before persistence.
 
 ## 2. Product Rules
 
@@ -34,18 +34,18 @@ The application does not list locked paid reports to a free user and must not re
 
 ### 2.2 Monthly plan
 
-- Price: R$ 49.90 per monthly cycle.
-- Asaas charge type: recurring subscription (`RECURRENT`) with monthly cycle.
-- Renewal: automatic until cancellation.
-- Cancellation is requested inside Lucrivo.
-- Normal cancellation prevents future renewals but preserves access until the paid period ends.
+- Price: R$ 49.90 for one month of access.
+- Credit card uses a recurring subscription (`RECURRENT`) with monthly cycle and renews automatically until cancellation.
+- Pix uses a detached charge (`DETACHED`), grants one paid month, and never renews automatically. The customer purchases again after access expires.
+- Cancellation inside Lucrivo applies only to the recurring credit-card contract.
+- Normal card cancellation prevents future renewals but preserves access until the paid period ends.
 - A confirmed refund or chargeback may revoke access immediately.
 
 ### 2.3 Annual plan
 
 - Total price: R$ 478.80.
-- Asaas charge type: card installment (`INSTALLMENT`).
-- Checkout offers between 1 and 12 installments; choosing 12 produces 12 charges of R$ 39.90.
+- Credit card uses an installment charge (`INSTALLMENT`) and offers between 1 and 12 installments; choosing 12 produces 12 charges of R$ 39.90.
+- Pix uses a detached charge (`DETACHED`) for the full R$ 478.80 up front.
 - The full R$ 478.80 consumes the customer's card limit at purchase time, regardless of the installment count selected.
 - Access duration: 12 months from confirmed payment.
 - Renewal: none. At expiry, the customer must purchase a new annual plan or start a monthly plan.
@@ -61,8 +61,8 @@ Prices are versioned and immutable:
 - changing a price creates a new version and deactivates the previous version;
 - new checkouts use only the current active version;
 - each contract stores a price snapshot, so later catalog changes cannot alter historical purchases;
-- an existing annual installment remains unchanged;
-- existing monthly subscribers remain on their contracted price unless Lucrivo deliberately performs a migration in Asaas and communicates it to affected customers.
+- an existing annual card installment remains unchanged;
+- existing monthly card subscribers remain on their contracted price unless Lucrivo deliberately performs a migration in Asaas and communicates it to affected customers.
 
 ## 3. Chosen Architecture
 
@@ -79,7 +79,7 @@ Asaas remains the source of truth for payment events. Lucrivo's database remains
 
 ### 4.1 Common flow
 
-1. The authenticated user selects an active price identifier, never an arbitrary amount.
+1. The authenticated user selects an active price identifier and an allow-listed payment method, never an arbitrary amount.
 2. The server reads the price from `billing_prices` and validates that it is active.
 3. The server rejects duplicate purchasing when the user already has an active contract or a still-valid pending Checkout for this product. Plan switching during an active term is out of scope.
 4. In one local transaction, the server creates a pending `billing_contracts` row with a generated internal reference and a snapshot of the selected offer.
@@ -87,15 +87,15 @@ Asaas remains the source of truth for payment events. Lucrivo's database remains
 6. The server calls `POST /v3/checkouts` using the internal contract reference as `externalReference`.
 7. The checkout ID and URL are attached to the pending contract.
 8. The browser is redirected to the Asaas-hosted page.
-9. On a first purchase, the user supplies customer and card data directly to Asaas. The resulting customer ID is later stored from provider data; subsequent purchases reuse it.
+9. On a first purchase, the user supplies customer and payment data directly to Asaas. The resulting customer ID is later stored from provider data; subsequent purchases reuse it.
 10. Callback URLs return the browser to Lucrivo, but never grant access.
 11. Webhooks determine the financial outcome and access window.
 
-The browser must not send or control price, amount, currency, number of allowed installments, cycle, access duration, or callback origin.
+The browser may choose only `credit_card` or `pix`. It must not send or control price, amount, currency, number of allowed installments, cycle, access duration, charge type, or callback origin.
 
-### 4.2 Monthly checkout payload
+### 4.2 Monthly Checkout payloads
 
-The server creates a credit-card Checkout with:
+The server creates a separate Checkout for the selected method. Credit card uses:
 
 - `billingTypes: ["CREDIT_CARD"]`;
 - `chargeTypes: ["RECURRENT"]`;
@@ -105,9 +105,17 @@ The server creates a credit-card Checkout with:
 - a short expiration period;
 - the local contract ID in `externalReference`.
 
-### 4.3 Annual checkout payload
+Pix uses:
 
-The server creates a credit-card Checkout with:
+- `billingTypes: ["PIX"]`;
+- `chargeTypes: ["DETACHED"]`;
+- one item worth R$ 49.90;
+- no `subscription` or `installment` object;
+- the same controlled callbacks, expiration, and local contract reference.
+
+### 4.3 Annual Checkout payloads
+
+The server creates a separate Checkout for the selected method. Credit card uses:
 
 - `billingTypes: ["CREDIT_CARD"]`;
 - `chargeTypes: ["INSTALLMENT"]`;
@@ -118,9 +126,17 @@ The server creates a credit-card Checkout with:
 
 The hosted Checkout may let the customer choose fewer than 12 installments. This does not change the product price or access duration.
 
+Pix uses:
+
+- `billingTypes: ["PIX"]`;
+- `chargeTypes: ["DETACHED"]`;
+- one item worth R$ 478.80;
+- no `subscription` or `installment` object;
+- the same controlled callbacks, expiration, and local contract reference.
+
 ### 4.4 Monthly cancellation flow
 
-1. An authenticated server endpoint resolves the caller's own active monthly contract.
+1. An authenticated server endpoint resolves the caller's own active monthly credit-card contract.
 2. It marks a cancellation request locally and asks Asaas to stop future subscription renewals.
 3. A successful provider response sets `cancel_at_period_end`; access remains valid through `access_ends_at`.
 4. An ambiguous response remains pending reconciliation rather than claiming cancellation succeeded.
@@ -140,7 +156,7 @@ Key fields:
 
 - `id uuid primary key`;
 - `product_code text` (for example `quick_diagnosis_pro`);
-- `billing_mode text` constrained to `monthly_recurring` or `annual_installment`;
+- `billing_mode text` constrained to `monthly` or `annual`;
 - `version integer`;
 - `amount_cents bigint` with a positive check;
 - `currency text` constrained to `BRL` for this release;
@@ -154,8 +170,8 @@ Constraints ensure unique `(product_code, billing_mode, version)` and at most on
 
 Seed rows:
 
-- monthly recurring v1: `4990` cents, one-month cycle;
-- annual installment v1: `47880` cents, maximum 12 installments, 12 months of access.
+- monthly v1: `4990` cents, one month of access;
+- annual v1: `47880` cents, maximum 12 card installments, 12 months of access.
 
 ### 5.2 `billing_customers`
 
@@ -180,6 +196,8 @@ Key fields:
 - `price_id uuid references billing_prices`;
 - `external_reference text unique`;
 - `billing_mode text`;
+- `payment_method text` constrained to `credit_card` or `pix`;
+- `charge_type text` constrained to `recurring`, `installment`, or `detached`, with checks allowing only monthly/card/recurring, monthly/Pix/detached, annual/card/installment, and annual/Pix/detached combinations;
 - immutable snapshot fields: `amount_cents`, `currency`, `installment_limit`, `access_months`;
 - provider IDs, each unique when present: `asaas_checkout_id`, `asaas_subscription_id`, `asaas_installment_id`;
 - `status text` including `pending`, `pending_reconciliation`, `active`, `cancel_at_period_end`, `expired`, `canceled`, `refunded`, `chargeback`, and `failed`;
@@ -271,16 +289,16 @@ Processing sequence:
 Event policy:
 
 - `CHECKOUT_PAID`: associate the Checkout/customer and grant the initial paid interval idempotently; this verified event is not equivalent to the browser callback.
-- `PAYMENT_CONFIRMED`: reconcile the initial interval and extend later monthly cycles idempotently.
+- `PAYMENT_CONFIRMED`: reconcile the initial interval and extend later monthly credit-card cycles idempotently.
 - `PAYMENT_RECEIVED`: update settlement information but do not grant duplicate access.
-- failed, overdue, or declined future monthly payments: do not extend access; preserve only the interval already paid.
+- failed, overdue, or declined future monthly card payments: do not extend access; preserve only the interval already paid.
 - full refund or chargeback: revoke the affected contract immediately after confirmed provider notification.
 - subscription inactivation or deletion: stop future renewal while preserving access already paid through `access_ends_at`, unless a refund or chargeback requires immediate revocation.
 - unknown events: store and mark ignored; do not fail merely because Asaas added a new event type or payload field.
 
-For the annual purchase, the first verified paid event grants one 12-month interval. Later payment or per-installment settlement events never add another 12 months.
+For either annual payment method, the first verified paid event grants one 12-month interval. Later payment or per-installment settlement events never add another 12 months.
 
-For the monthly plan, each newly confirmed billing cycle sets the end to the later of the existing end or that payment's due date plus one month, preventing duplicate or out-of-order events from shortening or multiplying access.
+For monthly credit card, each newly confirmed billing cycle sets the end to the later of the existing end or that payment's due date plus one month, preventing duplicate or out-of-order events from shortening or multiplying access. Monthly Pix grants exactly one month on the first verified paid event and later events for the same contract never extend it.
 
 ## 8. Failure and Reconciliation Strategy
 
@@ -311,8 +329,9 @@ Checkout creation is a distributed operation. The local pending contract is crea
 ## 10. User Experience
 
 - The pricing interface reads the active catalog instead of embedding amounts in components.
-- Monthly copy: **“R$ 49,90/mês, renovação automática. Cancele quando quiser; acesso até o fim do período pago.”**
-- Annual copy: **“R$ 478,80 em até 12x sem juros — 12x de R$ 39,90. Sem renovação automática.”**
+- Monthly card copy: **“R$ 49,90/mês no cartão, com renovação automática. Cancele quando quiser; acesso até o fim do período pago.”**
+- Monthly Pix copy: **“R$ 49,90 no Pix por 1 mês de acesso. Sem renovação automática.”**
+- Annual copy: **“R$ 478,80 no Pix à vista ou em até 12x sem juros no cartão — 12x de R$ 39,90. Sem renovação automática.”**
 - The annual CTA must not describe the offer as a monthly subscription.
 - Checkout return pages show `processing`, `active`, `canceled`, or `expired` based on server state. A success callback initially shows processing until webhook confirmation exists.
 - When a free user attempts a second diagnosis or opens a locked paid report, show the relevant plan choices without leaking report content.
@@ -336,7 +355,7 @@ Checkout creation is a distributed operation. The local pending contract is crea
 
 - requires authentication;
 - rejects inactive/unknown prices and client-supplied monetary overrides;
-- generates the correct monthly and annual payloads;
+- generates the four exact period/payment-method payloads without mixing detached, installment, and recurring fields;
 - stores price snapshots and `externalReference`;
 - reuses or reconciles ambiguous pending attempts;
 - never exposes Asaas secrets.
@@ -349,12 +368,13 @@ Checkout creation is a distributed operation. The local pending contract is crea
 - processes confirmation, receipt, failure, cancellation, refund, and chargeback correctly;
 - records unknown events without applying access;
 - never grants access from callback URLs;
-- annual installment events grant exactly one 12-month interval;
-- monthly confirmations extend access exactly once.
+- annual card/Pix events grant exactly one 12-month interval;
+- monthly card confirmations extend access exactly once;
+- monthly Pix grants exactly one month and does not renew.
 
 ### Integration and UI
 
-- Asaas sandbox monthly Checkout and annual 1x/12x paths;
+- Asaas sandbox monthly card recurring, monthly Pix, annual Pix, and annual card 1x/12x paths;
 - success, cancellation, expiration, and delayed-webhook return states;
 - pricing values render from the active catalog;
 - free-limit, locked-report, cancellation, expiry, and resubscription journeys;
@@ -371,7 +391,7 @@ Checkout creation is a distributed operation. The local pending contract is crea
 
 ## 13. Out of Scope for This Release
 
-- Pix or boleto plan payments;
+- Pix Automático and boleto plan payments;
 - coupon codes, trials, prorating, plan upgrades/downgrades during an active term;
 - automatic annual renewal;
 - automatic migration of existing monthly subscribers to a new price;
@@ -384,10 +404,10 @@ Checkout creation is a distributed operation. The local pending contract is crea
 
 The feature is complete when:
 
-- an authenticated customer can purchase either offer through hosted Asaas Checkout;
+- an authenticated customer can purchase either offer by Pix or credit card through hosted Asaas Checkout;
 - only verified, idempotently processed Asaas events change paid access;
-- the annual purchase commits the full card limit and grants exactly 12 months without renewal;
-- the monthly plan renews and can be canceled while preserving the paid period;
+- the annual card purchase commits the full card limit, while annual Pix is received up front; both grant exactly 12 months without renewal;
+- monthly card renews and can be canceled while preserving the paid period, while monthly Pix grants one non-renewing month;
 - every user who has created reports retains exactly one readable free report after paid access ends;
 - additional reports are protected by database-level authorization;
 - price changes affect new purchases without rewriting historical contracts;
@@ -397,6 +417,7 @@ The feature is complete when:
 
 - [Asaas Checkout](https://docs.asaas.com/docs/checkout-asaas)
 - [Checkout for credit cards](https://docs.asaas.com/docs/checkout-para-cart%C3%A3o-de-cr%C3%A9dito)
+- [Checkout for Pix](https://docs.asaas.com/docs/checkout-para-pix)
 - [Checkout with recurring subscription](https://docs.asaas.com/docs/checkout-com-assinatura-recorrente)
 - [Customer data in Checkout](https://docs.asaas.com/docs/como-informar-os-dados-do-cliente)
 - [Installment charges](https://docs.asaas.com/docs/criar-uma-cobranca-parcelada)
