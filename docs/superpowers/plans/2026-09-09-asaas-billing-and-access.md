@@ -344,7 +344,7 @@ insert into public.billing_prices (
    'annual', 1, 47880, 'BRL', 12, 12, true);
 ```
 
-Grant `select` on `billing_prices` to `anon, authenticated, service_role`. Use column-level authenticated grants for contracts (`id`, `price_id`, `billing_mode`, `payment_method`, `charge_type`, `amount_cents`, `currency`, `status`, access dates, and cancellation flags/dates) and payments (`id`, `contract_id`, status, value, installment number, and financial dates); do not grant provider IDs, Checkout URLs, `external_reference`, or raw operational errors to client roles. Grant required full CRUD only to `service_role`. Explicitly revoke all client access to customers and webhook events. Enable RLS on all five tables, and assert the column grants through `information_schema.column_privileges` in the pgTAP test.
+Grant `select` on `billing_prices` to `anon, authenticated, service_role`. Use column-level authenticated grants for contracts (`id`, `user_id`, `price_id`, `billing_mode`, `payment_method`, `charge_type`, `amount_cents`, `currency`, `status`, access dates, and cancellation flags/dates) and payments (`id`, `contract_id`, status, value, installment number, and financial dates); do not grant provider IDs, Checkout URLs, `external_reference`, or raw operational errors to client roles. Grant required full CRUD only to `service_role`. Explicitly revoke all client access to customers and webhook events. Enable RLS on all five tables, and assert the column grants through `information_schema.column_privileges` in the pgTAP test.
 
 - [ ] **Step 6: Reset, test, lint, advise, and regenerate types**
 
@@ -913,7 +913,7 @@ Create fixtures for monthly card, monthly Pix, annual card, and annual Pix pendi
 - capture-refused and overdue events update payment state but never extend access;
 - partial refund is recorded for manual review without silently applying the full-refund policy;
 - `PAYMENT_REFUNDED` and chargeback events revoke immediately;
-- `SUBSCRIPTION_INACTIVATED`/`DELETED` set `cancel_at_period_end` while preserving `access_ends_at`;
+- `SUBSCRIPTION_INACTIVATED`/`DELETED` set `cancel_at_period_end` and `cancellation_confirmed_at` from the verified event time while preserving `access_ends_at`;
 - an unknown event is stored as ignored;
 - an unresolved known event is stored as failed and may be retried after its contract mapping becomes available;
 - `anon` and `authenticated` cannot execute the RPC.

@@ -9,6 +9,261 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      asaas_webhook_events: {
+        Row: {
+          attempt_count: number;
+          contract_id: string | null;
+          event_type: string;
+          id: string;
+          last_error: string | null;
+          payload: Json;
+          processed_at: string | null;
+          processing_status: string;
+          received_at: string;
+        };
+        Insert: {
+          attempt_count?: number;
+          contract_id?: string | null;
+          event_type: string;
+          id: string;
+          last_error?: string | null;
+          payload: Json;
+          processed_at?: string | null;
+          processing_status?: string;
+          received_at?: string;
+        };
+        Update: {
+          attempt_count?: number;
+          contract_id?: string | null;
+          event_type?: string;
+          id?: string;
+          last_error?: string | null;
+          payload?: Json;
+          processed_at?: string | null;
+          processing_status?: string;
+          received_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "asaas_webhook_events_contract_id_fkey";
+            columns: ["contract_id"];
+            isOneToOne: false;
+            referencedRelation: "billing_contracts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      billing_contracts: {
+        Row: {
+          access_ends_at: string | null;
+          access_months: number;
+          access_starts_at: string | null;
+          amount_cents: number;
+          asaas_checkout_id: string | null;
+          asaas_checkout_url: string | null;
+          asaas_installment_id: string | null;
+          asaas_subscription_id: string | null;
+          billing_mode: string;
+          cancel_at_period_end: boolean;
+          canceled_at: string | null;
+          cancellation_confirmed_at: string | null;
+          cancellation_requested_at: string | null;
+          charge_type: string;
+          checkout_expires_at: string | null;
+          created_at: string;
+          currency: string;
+          external_reference: string;
+          id: string;
+          installment_limit: number | null;
+          payment_method: string;
+          price_id: string;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          access_ends_at?: string | null;
+          access_months: number;
+          access_starts_at?: string | null;
+          amount_cents: number;
+          asaas_checkout_id?: string | null;
+          asaas_checkout_url?: string | null;
+          asaas_installment_id?: string | null;
+          asaas_subscription_id?: string | null;
+          billing_mode: string;
+          cancel_at_period_end?: boolean;
+          canceled_at?: string | null;
+          cancellation_confirmed_at?: string | null;
+          cancellation_requested_at?: string | null;
+          charge_type: string;
+          checkout_expires_at?: string | null;
+          created_at?: string;
+          currency: string;
+          external_reference: string;
+          id?: string;
+          installment_limit?: number | null;
+          payment_method: string;
+          price_id: string;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          access_ends_at?: string | null;
+          access_months?: number;
+          access_starts_at?: string | null;
+          amount_cents?: number;
+          asaas_checkout_id?: string | null;
+          asaas_checkout_url?: string | null;
+          asaas_installment_id?: string | null;
+          asaas_subscription_id?: string | null;
+          billing_mode?: string;
+          cancel_at_period_end?: boolean;
+          canceled_at?: string | null;
+          cancellation_confirmed_at?: string | null;
+          cancellation_requested_at?: string | null;
+          charge_type?: string;
+          checkout_expires_at?: string | null;
+          created_at?: string;
+          currency?: string;
+          external_reference?: string;
+          id?: string;
+          installment_limit?: number | null;
+          payment_method?: string;
+          price_id?: string;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "billing_contracts_price_id_fkey";
+            columns: ["price_id"];
+            isOneToOne: false;
+            referencedRelation: "billing_prices";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      billing_customers: {
+        Row: {
+          asaas_customer_id: string;
+          created_at: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          asaas_customer_id: string;
+          created_at?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          asaas_customer_id?: string;
+          created_at?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      billing_payments: {
+        Row: {
+          asaas_payment_id: string;
+          chargeback_at: string | null;
+          confirmed_at: string | null;
+          contract_id: string;
+          created_at: string;
+          due_date: string | null;
+          id: string;
+          installment_number: number | null;
+          received_at: string | null;
+          refunded_at: string | null;
+          status: string;
+          updated_at: string;
+          value_cents: number;
+        };
+        Insert: {
+          asaas_payment_id: string;
+          chargeback_at?: string | null;
+          confirmed_at?: string | null;
+          contract_id: string;
+          created_at?: string;
+          due_date?: string | null;
+          id?: string;
+          installment_number?: number | null;
+          received_at?: string | null;
+          refunded_at?: string | null;
+          status: string;
+          updated_at?: string;
+          value_cents: number;
+        };
+        Update: {
+          asaas_payment_id?: string;
+          chargeback_at?: string | null;
+          confirmed_at?: string | null;
+          contract_id?: string;
+          created_at?: string;
+          due_date?: string | null;
+          id?: string;
+          installment_number?: number | null;
+          received_at?: string | null;
+          refunded_at?: string | null;
+          status?: string;
+          updated_at?: string;
+          value_cents?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "billing_payments_contract_id_fkey";
+            columns: ["contract_id"];
+            isOneToOne: false;
+            referencedRelation: "billing_contracts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      billing_prices: {
+        Row: {
+          access_months: number;
+          amount_cents: number;
+          billing_mode: string;
+          created_at: string;
+          currency: string;
+          id: string;
+          installment_limit: number | null;
+          is_active: boolean;
+          product_code: string;
+          retired_at: string | null;
+          version: number;
+        };
+        Insert: {
+          access_months: number;
+          amount_cents: number;
+          billing_mode: string;
+          created_at?: string;
+          currency: string;
+          id?: string;
+          installment_limit?: number | null;
+          is_active?: boolean;
+          product_code: string;
+          retired_at?: string | null;
+          version: number;
+        };
+        Update: {
+          access_months?: number;
+          amount_cents?: number;
+          billing_mode?: string;
+          created_at?: string;
+          currency?: string;
+          id?: string;
+          installment_limit?: number | null;
+          is_active?: boolean;
+          product_code?: string;
+          retired_at?: string | null;
+          version?: number;
+        };
+        Relationships: [];
+      };
       diagnoses: {
         Row: {
           business_category: Database["public"]["Enums"]["business_category"];
