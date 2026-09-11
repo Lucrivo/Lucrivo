@@ -266,11 +266,15 @@ pnpm supabase:advisors
 pnpm supabase:types
 git diff --exit-code src/infrastructure/database/supabase/database.types.ts
 pnpm check
-pnpm build
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=ci-turnstile-site-key pnpm build
 ```
 
 Todos os comandos devem passar. A geração de tipos não pode alterar
-`database.types.ts`.
+`database.types.ts`. A sobrescrita acima serve somente para validar localmente o
+build otimizado: `.env.local` usa deliberadamente a chave dummy oficial do
+Turnstile, que a aplicação rejeita sob `NODE_ENV=production`. Não publique o
+artefato local gerado com `ci-turnstile-site-key`; staging e produção devem
+executar o mesmo `pnpm build` com a site key real do respectivo widget Turnstile.
 
 ## Matriz obrigatória no sandbox
 
