@@ -51,6 +51,7 @@ type AsaasCheckout = {
 
 interface AsaasGateway {
   createCheckout(input: AsaasCheckoutRequest): Promise<AsaasCheckout>;
+  cancelCheckout(id: string): Promise<{ id: string; status: "CANCELED" }>;
   deleteSubscription(id: string): Promise<{ id: string; deleted: true }>;
 }
 
@@ -90,6 +91,11 @@ const checkoutResponseSchema = z.looseObject({
   id: z.string().min(1),
   link: z.url(),
   status: z.literal("ACTIVE"),
+});
+
+const cancelCheckoutResponseSchema = z.looseObject({
+  id: z.string().min(1),
+  status: z.literal("CANCELED"),
 });
 
 const deleteResponseSchema = z.looseObject({
@@ -205,6 +211,20 @@ function createAsaasGateway(input: {
       }
 
       return checkout;
+    },
+
+    async cancelCheckout(id) {
+      const checkout = await request(
+        `/v3/checkouts/${encodeURIComponent(id)}/cancel`,
+        { method: "POST" },
+        cancelCheckoutResponseSchema,
+      );
+
+      if (checkout.id !== id) {
+        throw new AsaasGatewayError("ambiguous", 200);
+      }
+
+      return { id: checkout.id, status: checkout.status };
     },
 
     deleteSubscription(id) {

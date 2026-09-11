@@ -13,7 +13,7 @@ import type { ActiveBillingPrice, BillingPaymentMethod } from "../types";
 import { listActivePrices } from "./list-active-prices.service";
 
 const CHECKOUT_CONTRACT_COLUMNS =
-  "id, price_id, payment_method, status, access_starts_at, access_ends_at, asaas_checkout_url, checkout_expires_at" as const;
+  "id, price_id, payment_method, status, access_starts_at, access_ends_at, asaas_checkout_id, asaas_checkout_url, checkout_expires_at" as const;
 
 type CheckoutContractRow = Pick<
   Database["public"]["Tables"]["billing_contracts"]["Row"],
@@ -23,6 +23,7 @@ type CheckoutContractRow = Pick<
   | "status"
   | "access_starts_at"
   | "access_ends_at"
+  | "asaas_checkout_id"
   | "asaas_checkout_url"
   | "checkout_expires_at"
 >;
@@ -172,6 +173,36 @@ async function updatePendingContract(
   return !error;
 }
 
+async function cancelPendingCheckout(
+  admin: SupabaseClient<Database>,
+  asaas: AsaasGateway,
+  userId: string,
+  contract: CheckoutContractRow,
+  now: Date,
+): Promise<boolean> {
+  if (!contract.asaas_checkout_id) return false;
+
+  try {
+    await asaas.cancelCheckout(contract.asaas_checkout_id);
+  } catch {
+    return false;
+  }
+
+  const changedAt = now.toISOString();
+  const { data, error } = await admin
+    .from("billing_contracts")
+    .update({
+      status: "canceled",
+      canceled_at: changedAt,
+      updated_at: changedAt,
+    })
+    .match({ id: contract.id, user_id: userId, status: "pending" })
+    .select("id")
+    .maybeSingle();
+
+  return !error && data?.id === contract.id;
+}
+
 async function createHostedCheckout({
   userId,
   priceId,
@@ -200,13 +231,46 @@ async function createHostedCheckout({
     const contracts = await readContracts(admin, userId);
     if (!contracts) return { status: "pending_reconciliation" };
 
-    const existing = reusableCheckout(
-      contracts,
-      priceId,
-      paymentMethod,
-      instant,
-    );
-    if (existing) return existing;
+    if (contracts.some((contract) => hasPaidAccess(contract, instant))) {
+      return { status: "already_subscribed" };
+    }
+
+    if (
+      contracts.some((contract) => contract.status === "pending_reconciliation")
+    ) {
+      return { status: "pending_reconciliation" };
+    }
+
+    const pending = contracts.find((contract) => contract.status === "pending");
+
+    if (pending) {
+      const expiresAt = timestamp(pending.checkout_expires_at);
+      const isMatchingCheckout =
+        pending.price_id === priceId &&
+        pending.payment_method === paymentMethod;
+
+      if (
+        expiresAt !== null &&
+        expiresAt > instant &&
+        pending.asaas_checkout_url !== null &&
+        hasSafeCheckoutUrl(pending.asaas_checkout_url)
+      ) {
+        if (isMatchingCheckout) {
+          return {
+            status: "reused",
+            checkoutUrl: pending.asaas_checkout_url,
+          };
+        }
+
+        if (
+          !(await cancelPendingCheckout(admin, asaas, userId, pending, now))
+        ) {
+          return { status: "pending_reconciliation" };
+        }
+      } else if (expiresAt === null || expiresAt > instant) {
+        return { status: "pending_reconciliation" };
+      }
+    }
 
     const stalePending = contracts.find(
       (contract) =>

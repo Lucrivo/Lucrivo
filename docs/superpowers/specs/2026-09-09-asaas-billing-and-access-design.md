@@ -81,7 +81,11 @@ Asaas remains the source of truth for payment events. Lucrivo's database remains
 
 1. The authenticated user selects an active price identifier and an allow-listed payment method, never an arbitrary amount.
 2. The server reads the price from `billing_prices` and validates that it is active.
-3. The server rejects duplicate purchasing when the user already has an active contract or a still-valid pending Checkout for this product. Plan switching during an active term is out of scope.
+3. The server rejects duplicate purchasing when the user already has an active
+   contract. A still-valid pending Checkout is reused for the same offer; when
+   the user selects another offer or payment method, the server cancels the old
+   Checkout at Asaas before replacing its local pending contract. Plan switching
+   during an active paid term remains out of scope.
 4. In one local transaction, the server creates a pending `billing_contracts` row with a generated internal reference and a snapshot of the selected offer.
 5. If a verified `billing_customers` mapping already exists, the server sends that customer ID to Asaas. Otherwise, customer data is omitted and collected by Asaas.
 6. The server calls `POST /v3/checkouts` using the internal contract reference as `externalReference`.
@@ -308,6 +312,10 @@ Checkout creation is a distributed operation. The local pending contract is crea
 - Network timeouts or ambiguous provider responses set `pending_reconciliation`; the server must not blindly create another Checkout.
 - Reconciliation searches or receives provider data using `externalReference` and attaches it to the existing contract.
 - Repeated clicks reuse a still-valid pending Checkout when possible.
+- Selecting another offer automatically cancels a still-valid pending Checkout
+  at Asaas before creating its replacement. A rejected or ambiguous cancellation,
+  a missing provider ID, or a concurrent local state change fails closed as
+  `pending_reconciliation` and never creates a second payable Checkout.
 - A paid event with no resolvable contract is stored for investigation and retry rather than discarded.
 - Webhook processing must be replayable from the persisted event ledger.
 

@@ -114,6 +114,12 @@ Respostas `401` indicam token incorreto. Respostas `400` indicam envelope
 inválido. Respostas `503` pedem nova tentativa porque a aplicação não confirmou
 o processamento seguro.
 
+Ao selecionar outra oferta enquanto existe um Checkout válido pendente, a
+aplicação chama `POST /v3/checkouts/{id}/cancel` antes de criar a substituição.
+Ela reutiliza a sessão quando a oferta é a mesma. Nunca libere apenas o registro
+local: uma falha ou resposta ambígua do cancelamento deve impedir o novo
+Checkout até a conciliação, evitando duas sessões simultaneamente pagáveis.
+
 ## Observabilidade segura
 
 Logs de billing ficam limitados a:
@@ -337,20 +343,29 @@ no navegador e consulte `billing_contracts`, `billing_payments` e
 Não marque uma linha como aprovada sem evidência no navegador e nas três tabelas
 locais. Use uma linha adicional para cada variação do caso 3.
 
-| Caso                     | Resultado | Contrato local | Eventos Asaas | Evidência/ticket | Executor | Data UTC |
-| ------------------------ | --------- | -------------- | ------------- | ---------------- | -------- | -------- |
-| 1. Mensal cartão         | Pendente  | —              | —             | —                | —        | —        |
-| 2. Mensal Pix            | Pendente  | —              | —             | —                | —        | —        |
-| 3. Anual Pix             | Pendente  | —              | —             | —                | —        | —        |
-| 3. Anual cartão 1x       | Pendente  | —              | —             | —                | —        | —        |
-| 3. Anual cartão 12x      | Pendente  | —              | —             | —                | —        | —        |
-| 4. Ordem/reversões       | Pendente  | —              | —             | —                | —        | —        |
-| 5. Callback antecipado   | Pendente  | —              | —             | —                | —        | —        |
-| 6. Timeout/reconciliação | Pendente  | —              | —             | —                | —        | —        |
-| 7. Acesso a relatórios   | Pendente  | —              | —             | —                | —        | —        |
+| Caso                     | Resultado | Contrato local                         | Eventos Asaas | Evidência/ticket        | Executor        | Data UTC   |
+| ------------------------ | --------- | -------------------------------------- | ------------- | ----------------------- | --------------- | ---------- |
+| 1. Mensal cartão         | Pendente  | —                                      | —             | —                       | —               | —          |
+| 2. Mensal Pix            | Aprovado  | `012c06dc-fa68-403c-816e-250df28af501` | `M-PIX-01`    | Navegador e banco local | Usuário + Codex | 2026-09-11 |
+| 3. Anual Pix             | Pendente  | —                                      | —             | —                       | —               | —          |
+| 3. Anual cartão 1x       | Pendente  | —                                      | —             | —                       | —               | —          |
+| 3. Anual cartão 12x      | Pendente  | —                                      | —             | —                       | —               | —          |
+| 4. Ordem/reversões       | Pendente  | —                                      | —             | —                       | —               | —          |
+| 5. Callback antecipado   | Pendente  | —                                      | —             | —                       | —               | —          |
+| 6. Timeout/reconciliação | Pendente  | —                                      | —             | —                       | —               | —          |
+| 7. Acesso a relatórios   | Pendente  | —                                      | —             | —                       | —               | —          |
 
 Não disponibilize os CTAs de produção nem promova o release antes de todas as
 linhas estarem aprovadas e vinculadas às evidências.
+
+Evidências de eventos:
+
+- `M-PIX-01`: `evt_37260be8159d4472b4458d3de13efc2d&19619025`
+  (`CHECKOUT_CREATED`), `evt_d26e303b238e509335ac9ba210e51b0f&19619613`
+  (`PAYMENT_RECEIVED`) e `evt_20f793f686aa4783d486a40e3c6b91d1&19619610`
+  (`CHECKOUT_PAID`). Um pagamento de 4990 centavos, acesso de
+  `2026-09-11 21:45:58+00` até `2026-10-11 21:45:58+00`, sem assinatura ou
+  parcelamento; autorização paga confirmada.
 
 ## Checklist de promoção para produção
 

@@ -38,7 +38,11 @@ describe("cancelMonthlyBilling", () => {
   const from = vi.fn(() => ({ select, update }));
   const deleteSubscription = vi.fn();
   const admin = { from };
-  const asaas = { createCheckout: vi.fn(), deleteSubscription };
+  const asaas = {
+    createCheckout: vi.fn(),
+    cancelCheckout: vi.fn(),
+    deleteSubscription,
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
