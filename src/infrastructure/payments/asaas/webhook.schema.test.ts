@@ -25,6 +25,7 @@ const paymentFixture = {
   payment: {
     id: "pay_123",
     customer: "cus_123",
+    checkoutSession: "chk_123",
     subscription: "sub_123",
     externalReference: "contract-123",
     status: "CONFIRMED",
@@ -46,6 +47,7 @@ const subscriptionFixture = {
   subscription: {
     id: "sub_123",
     customer: "cus_123",
+    checkoutSession: "chk_123",
     externalReference: "contract-123",
     cycle: "MONTHLY",
     newlyAddedSubscriptionField: 42,
@@ -105,6 +107,7 @@ describe("parseAsaasWebhook", () => {
     expect(result.event.redactedPayload).toMatchObject({
       payment: {
         id: "pay_123",
+        checkoutSession: "chk_123",
         status: "CONFIRMED",
         value: 49.9,
         dueDate: "2026-09-10",
@@ -147,7 +150,18 @@ describe("parseAsaasWebhook", () => {
       ...paymentFixture,
       payment: { ...paymentFixture.payment, dateCreated: {} },
     },
+    {
+      ...paymentFixture,
+      payment: { ...paymentFixture.payment, checkoutSession: {} },
+    },
     { ...checkoutFixture, checkout: [] },
+    {
+      ...subscriptionFixture,
+      subscription: {
+        ...subscriptionFixture.subscription,
+        checkoutSession: [],
+      },
+    },
     { ...subscriptionFixture, subscription: "sub_123" },
   ])("rejects unsafe known-event monetary and date shapes", (value) => {
     expect(parseAsaasWebhook(value)).toEqual({ success: false });

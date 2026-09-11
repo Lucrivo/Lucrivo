@@ -42,6 +42,7 @@ const checkoutSchema = z.looseObject({
 const paymentSchema = z.looseObject({
   id: optionalProviderId,
   customer: optionalProviderId,
+  checkoutSession: optionalProviderId,
   subscription: optionalProviderId,
   installment: optionalProviderId,
   externalReference: optionalProviderId,
@@ -57,6 +58,7 @@ const paymentSchema = z.looseObject({
 const subscriptionSchema = z.looseObject({
   id: optionalProviderId,
   customer: optionalProviderId,
+  checkoutSession: optionalProviderId,
   externalReference: optionalProviderId,
   cycle: optionalProviderId,
 });

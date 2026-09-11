@@ -175,11 +175,15 @@ Se o Asaas pausar a fila após falhas consecutivas:
 2. identifique a categoria segura do erro usando status HTTP e os IDs dos
    eventos;
 3. corrija configuração, disponibilidade ou mapeamento e valide o endpoint;
-4. reative a fila com entrega sequencial no painel;
-5. conclua a recuperação dentro da retenção de 14 dias do Asaas;
-6. acompanhe o backlog até não haver eventos pendentes e compare os contratos
+4. reative a fila com entrega sequencial no painel ou atualize o webhook com
+   `PUT /v3/webhooks/{id}` e `{"interrupted": false}`;
+5. se houver somente penalização temporária depois da reativação, use
+   `POST /v3/webhooks/{id}/removeBackoff`; essa operação não reativa uma fila
+   marcada como interrompida;
+6. conclua a recuperação dentro da retenção de 14 dias do Asaas;
+7. acompanhe o backlog até não haver eventos pendentes e compare os contratos
    locais com os pagamentos do provedor;
-7. registre início, causa, correção, primeiro/último evento recuperado e horário
+8. registre início, causa, correção, primeiro/último evento recuperado e horário
    de normalização.
 
 Uma resposta ambígua do provedor nunca autoriza repetir cegamente uma operação
@@ -196,6 +200,11 @@ Para eventos `failed` ou contratos `pending_reconciliation`:
 4. invoque a mesma RPC `apply_asaas_webhook_event` com o ID, tipo e payload
    originais armazenados;
 5. confirme o resultado e registre a execução no incidente.
+
+Nos eventos de Checkout v3, cobranças e assinaturas podem referenciar a sessão
+no campo `checkoutSession`. Esse valor deve ser conciliado com
+`billing_contracts.asaas_checkout_id`; não dependa de `externalReference`, pois
+ele pode não estar presente no payload entregue pelo Asaas.
 
 Exemplo administrativo, sempre usando os valores da linha original:
 

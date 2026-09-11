@@ -292,6 +292,20 @@ async function createHostedCheckout({
     } catch (error) {
       const rejected =
         error instanceof AsaasGatewayError && error.kind === "rejected";
+
+      if (rejected) {
+        console.error(
+          JSON.stringify({
+            event: "asaas_checkout_rejected",
+            contractId: newContractId,
+            billingMode: price.billingMode,
+            paymentMethod,
+            httpStatus: error.status ?? null,
+            providerErrorCodes: error.providerCodes,
+          }),
+        );
+      }
+
       await updatePendingContract(admin, newContractId, {
         status: rejected ? "failed" : "pending_reconciliation",
         updated_at: now.toISOString(),

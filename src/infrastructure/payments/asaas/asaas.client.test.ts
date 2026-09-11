@@ -152,6 +152,53 @@ describe("AsaasGateway", () => {
     });
   });
 
+  it("retains only sanitized provider error codes", async () => {
+    fetchMock.mockResolvedValue(
+      Response.json(
+        {
+          errors: [
+            {
+              code: "invalid_billing_type",
+              description: "Private provider detail",
+            },
+            {
+              code: "invalid_billing_type",
+              description: "Repeated detail",
+            },
+            {
+              code: "unsafe code with spaces",
+              description: "Must be discarded",
+            },
+          ],
+          secret: "provider-secret",
+        },
+        { status: 400 },
+      ),
+    );
+
+    const error = await gateway.createCheckout(request).catch((cause) => cause);
+
+    expect(error).toBeInstanceOf(AsaasGatewayError);
+    expect(error).toMatchObject({
+      kind: "rejected",
+      status: 400,
+      providerCodes: ["invalid_billing_type"],
+    });
+    expect(JSON.stringify(error)).not.toMatch(
+      /Private provider detail|Repeated detail|provider-secret/,
+    );
+  });
+
+  it("falls back to no provider codes for a malformed error response", async () => {
+    fetchMock.mockResolvedValue(new Response("not-json", { status: 400 }));
+
+    await expect(gateway.createCheckout(request)).rejects.toMatchObject({
+      kind: "rejected",
+      status: 400,
+      providerCodes: [],
+    });
+  });
+
   it("classifies a network timeout as ambiguous", async () => {
     fetchMock.mockRejectedValue(new TypeError("fetch failed"));
 

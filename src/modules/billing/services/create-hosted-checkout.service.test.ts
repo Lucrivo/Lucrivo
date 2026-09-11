@@ -275,7 +275,10 @@ describe("createHostedCheckout", () => {
   });
 
   it("marks a provider rejection as failed", async () => {
-    createCheckout.mockRejectedValue(new AsaasGatewayError("rejected", 400));
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+    createCheckout.mockRejectedValue(
+      new AsaasGatewayError("rejected", 400, ["invalid_billing_type"]),
+    );
 
     await expect(create()).resolves.toEqual({ status: "rejected" });
     expect(contractUpdate).toHaveBeenCalledWith({
@@ -284,6 +287,16 @@ describe("createHostedCheckout", () => {
     });
     expect(updatedPendingContract).toHaveBeenCalledWith("status", "pending");
     expect(createCheckout).toHaveBeenCalledTimes(1);
+    expect(errorLog).toHaveBeenCalledOnce();
+    expect(JSON.parse(errorLog.mock.calls[0][0] as string)).toEqual({
+      event: "asaas_checkout_rejected",
+      contractId,
+      billingMode: "monthly",
+      paymentMethod: "credit_card",
+      httpStatus: 400,
+      providerErrorCodes: ["invalid_billing_type"],
+    });
+    expect(errorLog.mock.calls[0][0]).not.toContain("user-123");
   });
 
   it("marks an ambiguous provider outcome for reconciliation without retrying", async () => {
