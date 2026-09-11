@@ -99,6 +99,10 @@ rastreabilidade e compatibilidade operacional; na versão atual, são registrado
 como ignorados e não concedem acesso. Eventos desconhecidos também devem ser
 aceitos de forma compatível e ignorados com segurança.
 
+Antes de homologar Pix, cadastre uma chave Pix na conta Asaas do mesmo ambiente.
+Sem uma chave ativa, a API recusa corretamente o Checkout com HTTP `400`, ainda
+que o payload `PIX` + `DETACHED` esteja válido.
+
 Após salvar a configuração, envie um evento de teste e confirme:
 
 1. resposta HTTP `200` com corpo sanitizado;
@@ -287,6 +291,9 @@ no navegador e consulte `billing_contracts`, `billing_payments` e
 
 ### 3. Anual no Pix e no cartão
 
+- Confirmar que o Checkout anual no cartão foi criado com os tipos de cobrança
+  `DETACHED` e `INSTALLMENT`; o Asaas exige ambos para oferecer pagamento à
+  vista ou parcelado.
 - Pagar o anual no Pix à vista e confirmar exatamente 12 meses.
 - Fazer uma compra anual no cartão em 1x e confirmar exatamente 12 meses.
 - Fazer outra compra anual no cartão em 12x e confirmar exatamente 12 meses.

@@ -105,7 +105,7 @@ type AsaasCheckoutRequest = AsaasCheckoutRequestBase &
       }
     | {
         billingTypes: ["CREDIT_CARD"];
-        chargeTypes: ["INSTALLMENT"];
+        chargeTypes: ["DETACHED", "INSTALLMENT"];
         subscription?: never;
         installment: { maxInstallmentCount: 12 };
       }
@@ -715,7 +715,7 @@ expect(monthly).toMatchObject({
 
 expect(annual).toMatchObject({
   billingTypes: ["CREDIT_CARD"],
-  chargeTypes: ["INSTALLMENT"],
+  chargeTypes: ["DETACHED", "INSTALLMENT"],
   installment: { maxInstallmentCount: 12 },
   items: [{ quantity: 1, value: 478.8 }],
 });

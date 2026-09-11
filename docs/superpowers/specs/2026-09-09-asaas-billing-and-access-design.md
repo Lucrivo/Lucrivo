@@ -118,7 +118,7 @@ Pix uses:
 The server creates a separate Checkout for the selected method. Credit card uses:
 
 - `billingTypes: ["CREDIT_CARD"]`;
-- `chargeTypes: ["INSTALLMENT"]`;
+- `chargeTypes: ["DETACHED", "INSTALLMENT"]`;
 - one item worth R$ 478.80;
 - `installment.maxInstallmentCount: 12`;
 - controlled callback URLs and expiration;

@@ -31,7 +31,7 @@ type AsaasCheckoutRequest = AsaasCheckoutRequestBase &
       }
     | {
         billingTypes: ["CREDIT_CARD"];
-        chargeTypes: ["INSTALLMENT"];
+        chargeTypes: ["DETACHED", "INSTALLMENT"];
         subscription?: never;
         installment: { maxInstallmentCount: 12 };
       }
