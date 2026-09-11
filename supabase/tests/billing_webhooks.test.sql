@@ -64,7 +64,7 @@ select
   'authenticated',
   'authenticated',
   format('webhook-%s@example.com', value)
-from generate_series(1, 10) as value;
+from generate_series(1, 12) as value;
 
 insert into public.billing_contracts (
   id,
@@ -149,7 +149,33 @@ insert into public.billing_contracts (
     '20000000-0000-4000-8000-000000000002',
     'contract-ambiguous-b',
     'annual', 'pix', 'detached', 47880, 'BRL', 12, 12, 'active'
+  ),
+  (
+    '92000000-0000-4000-8000-000000000011',
+    '91000000-0000-4000-8000-000000000011',
+    '20000000-0000-4000-8000-000000000001',
+    'contract-payment-checkout-session',
+    'monthly', 'credit_card', 'recurring', 4990, 'BRL', null, 1, 'pending'
+  ),
+  (
+    '92000000-0000-4000-8000-000000000012',
+    '91000000-0000-4000-8000-000000000012',
+    '20000000-0000-4000-8000-000000000001',
+    'contract-subscription-checkout-session',
+    'monthly', 'credit_card', 'recurring', 4990, 'BRL', null, 1, 'pending'
   );
+
+update public.billing_contracts
+set asaas_checkout_id = case id
+  when '92000000-0000-4000-8000-000000000011'
+    then 'chk_payment_checkout_session'
+  when '92000000-0000-4000-8000-000000000012'
+    then 'chk_subscription_checkout_session'
+end
+where id in (
+  '92000000-0000-4000-8000-000000000011',
+  '92000000-0000-4000-8000-000000000012'
+);
 
 update public.billing_contracts
 set access_starts_at = '2026-01-01T00:00:00Z',
@@ -160,6 +186,66 @@ where id in (
 );
 
 set local role service_role;
+
+select is(
+  public.apply_asaas_webhook_event(
+    'evt-payment-checkout-session',
+    'PAYMENT_CONFIRMED',
+    '{
+      "dateCreated":"2026-09-09T12:00:00Z",
+      "payment":{
+        "id":"pay_checkout_session",
+        "checkoutSession":"chk_payment_checkout_session",
+        "subscription":"sub_payment_checkout_session",
+        "customer":"cus_payment_checkout_session",
+        "value":49.90,
+        "dueDate":"2026-09-09"
+      }
+    }'::jsonb
+  ),
+  'processed',
+  'PAYMENT_CONFIRMED resolves its contract by checkoutSession'
+);
+select results_eq(
+  $$
+    select c.status, c.asaas_subscription_id, p.status
+    from public.billing_contracts as c
+    join public.billing_payments as p on p.contract_id = c.id
+    where c.id = '92000000-0000-4000-8000-000000000011'
+  $$,
+  $$ values (
+    'active'::text,
+    'sub_payment_checkout_session'::text,
+    'confirmed'::text
+  ) $$,
+  'payment checkoutSession attaches identifiers and grants access'
+);
+
+select is(
+  public.apply_asaas_webhook_event(
+    'evt-subscription-checkout-session',
+    'SUBSCRIPTION_CREATED',
+    '{
+      "dateCreated":"2026-09-09T12:01:00Z",
+      "subscription":{
+        "id":"sub_checkout_session",
+        "checkoutSession":"chk_subscription_checkout_session",
+        "customer":"cus_subscription_checkout_session"
+      }
+    }'::jsonb
+  ),
+  'processed',
+  'SUBSCRIPTION_CREATED resolves its contract by checkoutSession'
+);
+select results_eq(
+  $$
+    select status, asaas_subscription_id
+    from public.billing_contracts
+    where id = '92000000-0000-4000-8000-000000000012'
+  $$,
+  $$ values ('pending'::text, 'sub_checkout_session'::text) $$,
+  'subscription checkoutSession attaches its identifier without access'
+);
 
 select is(
   public.apply_asaas_webhook_event(

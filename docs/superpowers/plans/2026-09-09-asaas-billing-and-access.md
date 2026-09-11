@@ -105,7 +105,7 @@ type AsaasCheckoutRequest = AsaasCheckoutRequestBase &
       }
     | {
         billingTypes: ["CREDIT_CARD"];
-        chargeTypes: ["INSTALLMENT"];
+        chargeTypes: ["DETACHED", "INSTALLMENT"];
         subscription?: never;
         installment: { maxInstallmentCount: 12 };
       }
@@ -121,6 +121,7 @@ type AsaasCheckout = { id: string; link: string; status: "ACTIVE" };
 
 interface AsaasGateway {
   createCheckout(input: AsaasCheckoutRequest): Promise<AsaasCheckout>;
+  cancelCheckout(id: string): Promise<{ id: string; status: "CANCELED" }>;
   deleteSubscription(id: string): Promise<{ id: string; deleted: true }>;
 }
 
@@ -715,7 +716,7 @@ expect(monthly).toMatchObject({
 
 expect(annual).toMatchObject({
   billingTypes: ["CREDIT_CARD"],
-  chargeTypes: ["INSTALLMENT"],
+  chargeTypes: ["DETACHED", "INSTALLMENT"],
   installment: { maxInstallmentCount: 12 },
   items: [{ quantity: 1, value: 478.8 }],
 });
@@ -816,7 +817,17 @@ async function createHostedCheckout(input: {
 
 - [ ] **Step 1: Write failing orchestration tests**
 
-Test unknown/inactive price, invalid payment method, existing valid paid contract, reuse of a non-expired pending Checkout URL for the same method, expiry of a stale pending row before creating its replacement, and the first-purchase sequence. Assert the local pending contract uses `crypto.randomUUID()` for both `id` and `external_reference`, copies every commercial field from the database price, persists the selected `payment_method` and derived `charge_type`, and is inserted before `asaas.createCheckout`.
+Test unknown/inactive price, invalid payment method, existing valid paid contract,
+reuse of a non-expired pending Checkout URL for the same method, automatic
+provider cancellation before replacing a pending Checkout for another offer,
+expiry of a stale pending row before creating its replacement, and the
+first-purchase sequence. Fail closed without creating a replacement when the
+old Checkout has no provider ID, its cancellation fails, or its pending row
+changes concurrently. Assert the local pending contract uses
+`crypto.randomUUID()` for both `id` and `external_reference`, copies every
+commercial field from the database price, persists the selected
+`payment_method` and derived `charge_type`, and is inserted before
+`asaas.createCheckout`.
 
 Assert provider outcomes:
 

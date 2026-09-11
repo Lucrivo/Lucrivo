@@ -39,15 +39,23 @@ describe("createHostedCheckout", () => {
   const contractsByUser = vi.fn();
   const contractInsert = vi.fn();
   const contractUpdate = vi.fn();
+  const canceledContractMatch = vi.fn();
   const updatedContractById = vi.fn();
   const updatedPendingContract = vi.fn();
+  const updatedContractSelect = vi.fn();
+  const updatedContractMaybeSingle = vi.fn();
   const customerSelect = vi.fn();
   const customerByUser = vi.fn();
   const customerMaybeSingle = vi.fn();
   const from = vi.fn();
   const createCheckout = vi.fn();
+  const cancelCheckout = vi.fn();
   const admin = { from };
-  const asaas = { createCheckout, deleteSubscription: vi.fn() };
+  const asaas = {
+    createCheckout,
+    cancelCheckout,
+    deleteSubscription: vi.fn(),
+  };
 
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -77,9 +85,23 @@ describe("createHostedCheckout", () => {
     contractSelect.mockReturnValue({ eq: contractsByUser });
     contractsByUser.mockResolvedValue({ data: [], error: null });
     contractInsert.mockResolvedValue({ error: null });
-    contractUpdate.mockReturnValue({ eq: updatedContractById });
+    contractUpdate.mockReturnValue({
+      eq: updatedContractById,
+      match: canceledContractMatch,
+    });
+    canceledContractMatch.mockReturnValue({ select: updatedContractSelect });
     updatedContractById.mockReturnValue({ eq: updatedPendingContract });
-    updatedPendingContract.mockResolvedValue({ error: null });
+    updatedPendingContract.mockReturnValue({
+      error: null,
+      select: updatedContractSelect,
+    });
+    updatedContractSelect.mockReturnValue({
+      maybeSingle: updatedContractMaybeSingle,
+    });
+    updatedContractMaybeSingle.mockResolvedValue({
+      data: { id: "pending-contract" },
+      error: null,
+    });
 
     customerSelect.mockReturnValue({ eq: customerByUser });
     customerByUser.mockReturnValue({ maybeSingle: customerMaybeSingle });
@@ -89,6 +111,10 @@ describe("createHostedCheckout", () => {
       id: "checkout_123",
       link: "https://sandbox.asaas.com/checkoutSession/show/checkout_123",
       status: "ACTIVE",
+    });
+    cancelCheckout.mockResolvedValue({
+      id: "checkout_existing",
+      status: "CANCELED",
     });
   });
 
@@ -165,6 +191,7 @@ describe("createHostedCheckout", () => {
       data: [
         {
           id: "pending-contract",
+          asaas_checkout_id: "checkout_existing",
           price_id: monthlyPriceId,
           payment_method: "credit_card",
           status: "pending",
@@ -184,6 +211,140 @@ describe("createHostedCheckout", () => {
     });
     expect(contractInsert).not.toHaveBeenCalled();
     expect(createCheckout).not.toHaveBeenCalled();
+    expect(cancelCheckout).not.toHaveBeenCalled();
+  });
+
+  it("cancels a non-expired pending Checkout before creating a different offer", async () => {
+    contractsByUser.mockResolvedValue({
+      data: [
+        {
+          id: "pending-contract",
+          asaas_checkout_id: "checkout_existing",
+          price_id: monthlyPriceId,
+          payment_method: "credit_card",
+          status: "pending",
+          access_starts_at: null,
+          access_ends_at: null,
+          asaas_checkout_url:
+            "https://sandbox.asaas.com/checkoutSession/show/existing",
+          checkout_expires_at: "2026-09-09T12:30:00.000Z",
+        },
+      ],
+      error: null,
+    });
+
+    await expect(
+      create({ priceId: annualPriceId, paymentMethod: "pix" }),
+    ).resolves.toEqual({
+      status: "created",
+      checkoutUrl:
+        "https://sandbox.asaas.com/checkoutSession/show/checkout_123",
+    });
+
+    expect(cancelCheckout).toHaveBeenCalledWith("checkout_existing");
+    expect(contractUpdate).toHaveBeenNthCalledWith(1, {
+      status: "canceled",
+      canceled_at: now.toISOString(),
+      updated_at: now.toISOString(),
+    });
+    expect(canceledContractMatch).toHaveBeenCalledWith({
+      id: "pending-contract",
+      user_id: "user-123",
+      status: "pending",
+    });
+    expect(updatedContractSelect).toHaveBeenCalledWith("id");
+    expect(cancelCheckout.mock.invocationCallOrder[0]).toBeLessThan(
+      contractInsert.mock.invocationCallOrder[0],
+    );
+    expect(updatedContractMaybeSingle.mock.invocationCallOrder[0]).toBeLessThan(
+      contractInsert.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("fails closed when a pending Checkout has no provider ID", async () => {
+    contractsByUser.mockResolvedValue({
+      data: [
+        {
+          id: "pending-contract",
+          asaas_checkout_id: null,
+          price_id: monthlyPriceId,
+          payment_method: "credit_card",
+          status: "pending",
+          access_starts_at: null,
+          access_ends_at: null,
+          asaas_checkout_url:
+            "https://sandbox.asaas.com/checkoutSession/show/existing",
+          checkout_expires_at: "2026-09-09T12:30:00.000Z",
+        },
+      ],
+      error: null,
+    });
+
+    await expect(
+      create({ priceId: annualPriceId, paymentMethod: "pix" }),
+    ).resolves.toEqual({ status: "pending_reconciliation" });
+    expect(cancelCheckout).not.toHaveBeenCalled();
+    expect(contractInsert).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    new AsaasGatewayError("rejected", 400),
+    new AsaasGatewayError("ambiguous", 500),
+  ])(
+    "does not create a replacement when Checkout cancellation fails",
+    async (error) => {
+      contractsByUser.mockResolvedValue({
+        data: [
+          {
+            id: "pending-contract",
+            asaas_checkout_id: "checkout_existing",
+            price_id: monthlyPriceId,
+            payment_method: "credit_card",
+            status: "pending",
+            access_starts_at: null,
+            access_ends_at: null,
+            asaas_checkout_url:
+              "https://sandbox.asaas.com/checkoutSession/show/existing",
+            checkout_expires_at: "2026-09-09T12:30:00.000Z",
+          },
+        ],
+        error: null,
+      });
+      cancelCheckout.mockRejectedValue(error);
+
+      await expect(
+        create({ priceId: annualPriceId, paymentMethod: "pix" }),
+      ).resolves.toEqual({ status: "pending_reconciliation" });
+      expect(contractInsert).not.toHaveBeenCalled();
+      expect(contractUpdate).not.toHaveBeenCalled();
+    },
+  );
+
+  it("does not create a replacement when the pending row changed concurrently", async () => {
+    contractsByUser.mockResolvedValue({
+      data: [
+        {
+          id: "pending-contract",
+          asaas_checkout_id: "checkout_existing",
+          price_id: monthlyPriceId,
+          payment_method: "credit_card",
+          status: "pending",
+          access_starts_at: null,
+          access_ends_at: null,
+          asaas_checkout_url:
+            "https://sandbox.asaas.com/checkoutSession/show/existing",
+          checkout_expires_at: "2026-09-09T12:30:00.000Z",
+        },
+      ],
+      error: null,
+    });
+    updatedContractMaybeSingle.mockResolvedValue({ data: null, error: null });
+
+    await expect(
+      create({ priceId: annualPriceId, paymentMethod: "pix" }),
+    ).resolves.toEqual({ status: "pending_reconciliation" });
+    expect(cancelCheckout).toHaveBeenCalledWith("checkout_existing");
+    expect(contractInsert).not.toHaveBeenCalled();
   });
 
   it("expires a stale pending row before creating its replacement", async () => {
@@ -275,7 +436,10 @@ describe("createHostedCheckout", () => {
   });
 
   it("marks a provider rejection as failed", async () => {
-    createCheckout.mockRejectedValue(new AsaasGatewayError("rejected", 400));
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+    createCheckout.mockRejectedValue(
+      new AsaasGatewayError("rejected", 400, ["invalid_billing_type"]),
+    );
 
     await expect(create()).resolves.toEqual({ status: "rejected" });
     expect(contractUpdate).toHaveBeenCalledWith({
@@ -284,6 +448,16 @@ describe("createHostedCheckout", () => {
     });
     expect(updatedPendingContract).toHaveBeenCalledWith("status", "pending");
     expect(createCheckout).toHaveBeenCalledTimes(1);
+    expect(errorLog).toHaveBeenCalledOnce();
+    expect(JSON.parse(errorLog.mock.calls[0][0] as string)).toEqual({
+      event: "asaas_checkout_rejected",
+      contractId,
+      billingMode: "monthly",
+      paymentMethod: "credit_card",
+      httpStatus: 400,
+      providerErrorCodes: ["invalid_billing_type"],
+    });
+    expect(errorLog.mock.calls[0][0]).not.toContain("user-123");
   });
 
   it("marks an ambiguous provider outcome for reconciliation without retrying", async () => {

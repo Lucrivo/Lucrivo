@@ -99,6 +99,10 @@ rastreabilidade e compatibilidade operacional; na versão atual, são registrado
 como ignorados e não concedem acesso. Eventos desconhecidos também devem ser
 aceitos de forma compatível e ignorados com segurança.
 
+Antes de homologar Pix, cadastre uma chave Pix na conta Asaas do mesmo ambiente.
+Sem uma chave ativa, a API recusa corretamente o Checkout com HTTP `400`, ainda
+que o payload `PIX` + `DETACHED` esteja válido.
+
 Após salvar a configuração, envie um evento de teste e confirme:
 
 1. resposta HTTP `200` com corpo sanitizado;
@@ -109,6 +113,12 @@ Após salvar a configuração, envie um evento de teste e confirme:
 Respostas `401` indicam token incorreto. Respostas `400` indicam envelope
 inválido. Respostas `503` pedem nova tentativa porque a aplicação não confirmou
 o processamento seguro.
+
+Ao selecionar outra oferta enquanto existe um Checkout válido pendente, a
+aplicação chama `POST /v3/checkouts/{id}/cancel` antes de criar a substituição.
+Ela reutiliza a sessão quando a oferta é a mesma. Nunca libere apenas o registro
+local: uma falha ou resposta ambígua do cancelamento deve impedir o novo
+Checkout até a conciliação, evitando duas sessões simultaneamente pagáveis.
 
 ## Observabilidade segura
 
@@ -175,11 +185,15 @@ Se o Asaas pausar a fila após falhas consecutivas:
 2. identifique a categoria segura do erro usando status HTTP e os IDs dos
    eventos;
 3. corrija configuração, disponibilidade ou mapeamento e valide o endpoint;
-4. reative a fila com entrega sequencial no painel;
-5. conclua a recuperação dentro da retenção de 14 dias do Asaas;
-6. acompanhe o backlog até não haver eventos pendentes e compare os contratos
+4. reative a fila com entrega sequencial no painel ou atualize o webhook com
+   `PUT /v3/webhooks/{id}` e `{"interrupted": false}`;
+5. se houver somente penalização temporária depois da reativação, use
+   `POST /v3/webhooks/{id}/removeBackoff`; essa operação não reativa uma fila
+   marcada como interrompida;
+6. conclua a recuperação dentro da retenção de 14 dias do Asaas;
+7. acompanhe o backlog até não haver eventos pendentes e compare os contratos
    locais com os pagamentos do provedor;
-7. registre início, causa, correção, primeiro/último evento recuperado e horário
+8. registre início, causa, correção, primeiro/último evento recuperado e horário
    de normalização.
 
 Uma resposta ambígua do provedor nunca autoriza repetir cegamente uma operação
@@ -196,6 +210,11 @@ Para eventos `failed` ou contratos `pending_reconciliation`:
 4. invoque a mesma RPC `apply_asaas_webhook_event` com o ID, tipo e payload
    originais armazenados;
 5. confirme o resultado e registre a execução no incidente.
+
+Nos eventos de Checkout v3, cobranças e assinaturas podem referenciar a sessão
+no campo `checkoutSession`. Esse valor deve ser conciliado com
+`billing_contracts.asaas_checkout_id`; não dependa de `externalReference`, pois
+ele pode não estar presente no payload entregue pelo Asaas.
 
 Exemplo administrativo, sempre usando os valores da linha original:
 
@@ -247,11 +266,15 @@ pnpm supabase:advisors
 pnpm supabase:types
 git diff --exit-code src/infrastructure/database/supabase/database.types.ts
 pnpm check
-pnpm build
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=ci-turnstile-site-key pnpm build
 ```
 
 Todos os comandos devem passar. A geração de tipos não pode alterar
-`database.types.ts`.
+`database.types.ts`. A sobrescrita acima serve somente para validar localmente o
+build otimizado: `.env.local` usa deliberadamente a chave dummy oficial do
+Turnstile, que a aplicação rejeita sob `NODE_ENV=production`. Não publique o
+artefato local gerado com `ci-turnstile-site-key`; staging e produção devem
+executar o mesmo `pnpm build` com a site key real do respectivo widget Turnstile.
 
 ## Matriz obrigatória no sandbox
 
@@ -278,6 +301,9 @@ no navegador e consulte `billing_contracts`, `billing_payments` e
 
 ### 3. Anual no Pix e no cartão
 
+- Confirmar que o Checkout anual no cartão foi criado com os tipos de cobrança
+  `DETACHED` e `INSTALLMENT`; o Asaas exige ambos para oferecer pagamento à
+  vista ou parcelado.
 - Pagar o anual no Pix à vista e confirmar exatamente 12 meses.
 - Fazer uma compra anual no cartão em 1x e confirmar exatamente 12 meses.
 - Fazer outra compra anual no cartão em 12x e confirmar exatamente 12 meses.
@@ -321,20 +347,29 @@ no navegador e consulte `billing_contracts`, `billing_payments` e
 Não marque uma linha como aprovada sem evidência no navegador e nas três tabelas
 locais. Use uma linha adicional para cada variação do caso 3.
 
-| Caso                     | Resultado | Contrato local | Eventos Asaas | Evidência/ticket | Executor | Data UTC |
-| ------------------------ | --------- | -------------- | ------------- | ---------------- | -------- | -------- |
-| 1. Mensal cartão         | Pendente  | —              | —             | —                | —        | —        |
-| 2. Mensal Pix            | Pendente  | —              | —             | —                | —        | —        |
-| 3. Anual Pix             | Pendente  | —              | —             | —                | —        | —        |
-| 3. Anual cartão 1x       | Pendente  | —              | —             | —                | —        | —        |
-| 3. Anual cartão 12x      | Pendente  | —              | —             | —                | —        | —        |
-| 4. Ordem/reversões       | Pendente  | —              | —             | —                | —        | —        |
-| 5. Callback antecipado   | Pendente  | —              | —             | —                | —        | —        |
-| 6. Timeout/reconciliação | Pendente  | —              | —             | —                | —        | —        |
-| 7. Acesso a relatórios   | Pendente  | —              | —             | —                | —        | —        |
+| Caso                     | Resultado | Contrato local                         | Eventos Asaas | Evidência/ticket        | Executor        | Data UTC   |
+| ------------------------ | --------- | -------------------------------------- | ------------- | ----------------------- | --------------- | ---------- |
+| 1. Mensal cartão         | Pendente  | —                                      | —             | —                       | —               | —          |
+| 2. Mensal Pix            | Aprovado  | `012c06dc-fa68-403c-816e-250df28af501` | `M-PIX-01`    | Navegador e banco local | Usuário + Codex | 2026-09-11 |
+| 3. Anual Pix             | Pendente  | —                                      | —             | —                       | —               | —          |
+| 3. Anual cartão 1x       | Pendente  | —                                      | —             | —                       | —               | —          |
+| 3. Anual cartão 12x      | Pendente  | —                                      | —             | —                       | —               | —          |
+| 4. Ordem/reversões       | Pendente  | —                                      | —             | —                       | —               | —          |
+| 5. Callback antecipado   | Pendente  | —                                      | —             | —                       | —               | —          |
+| 6. Timeout/reconciliação | Pendente  | —                                      | —             | —                       | —               | —          |
+| 7. Acesso a relatórios   | Pendente  | —                                      | —             | —                       | —               | —          |
 
 Não disponibilize os CTAs de produção nem promova o release antes de todas as
 linhas estarem aprovadas e vinculadas às evidências.
+
+Evidências de eventos:
+
+- `M-PIX-01`: `evt_37260be8159d4472b4458d3de13efc2d&19619025`
+  (`CHECKOUT_CREATED`), `evt_d26e303b238e509335ac9ba210e51b0f&19619613`
+  (`PAYMENT_RECEIVED`) e `evt_20f793f686aa4783d486a40e3c6b91d1&19619610`
+  (`CHECKOUT_PAID`). Um pagamento de 4990 centavos, acesso de
+  `2026-09-11 21:45:58+00` até `2026-10-11 21:45:58+00`, sem assinatura ou
+  parcelamento; autorização paga confirmada.
 
 ## Checklist de promoção para produção
 

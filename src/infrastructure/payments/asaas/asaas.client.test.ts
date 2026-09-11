@@ -116,6 +116,42 @@ describe("AsaasGateway", () => {
     );
   });
 
+  it("cancels a checkout and safely encodes its ID", async () => {
+    fetchMock.mockResolvedValue(
+      Response.json({
+        id: "checkout/123",
+        status: "CANCELED",
+        ignored: "field",
+      }),
+    );
+
+    await expect(gateway.cancelCheckout("checkout/123")).resolves.toEqual({
+      id: "checkout/123",
+      status: "CANCELED",
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api-sandbox.asaas.com/v3/checkouts/checkout%2F123/cancel",
+      {
+        method: "POST",
+        headers: {
+          access_token: "asaas-api-key",
+          "Content-Type": "application/json",
+        },
+      },
+    );
+  });
+
+  it("rejects an inconsistent checkout cancellation response", async () => {
+    fetchMock.mockResolvedValue(
+      Response.json({ id: "another-checkout", status: "CANCELED" }),
+    );
+
+    await expect(gateway.cancelCheckout("checkout-123")).rejects.toMatchObject({
+      kind: "ambiguous",
+      status: 200,
+    });
+  });
+
   it("deletes a subscription and safely encodes its ID", async () => {
     fetchMock.mockResolvedValue(
       Response.json({ id: "sub/123", deleted: true, ignored: "field" }),
@@ -149,6 +185,53 @@ describe("AsaasGateway", () => {
     await expect(gateway.createCheckout(request)).rejects.toMatchObject({
       kind,
       status,
+    });
+  });
+
+  it("retains only sanitized provider error codes", async () => {
+    fetchMock.mockResolvedValue(
+      Response.json(
+        {
+          errors: [
+            {
+              code: "invalid_billing_type",
+              description: "Private provider detail",
+            },
+            {
+              code: "invalid_billing_type",
+              description: "Repeated detail",
+            },
+            {
+              code: "unsafe code with spaces",
+              description: "Must be discarded",
+            },
+          ],
+          secret: "provider-secret",
+        },
+        { status: 400 },
+      ),
+    );
+
+    const error = await gateway.createCheckout(request).catch((cause) => cause);
+
+    expect(error).toBeInstanceOf(AsaasGatewayError);
+    expect(error).toMatchObject({
+      kind: "rejected",
+      status: 400,
+      providerCodes: ["invalid_billing_type"],
+    });
+    expect(JSON.stringify(error)).not.toMatch(
+      /Private provider detail|Repeated detail|provider-secret/,
+    );
+  });
+
+  it("falls back to no provider codes for a malformed error response", async () => {
+    fetchMock.mockResolvedValue(new Response("not-json", { status: 400 }));
+
+    await expect(gateway.createCheckout(request)).rejects.toMatchObject({
+      kind: "rejected",
+      status: 400,
+      providerCodes: [],
     });
   });
 

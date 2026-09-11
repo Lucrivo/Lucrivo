@@ -79,7 +79,7 @@ function buildCheckoutRequest({
   return {
     ...baseRequest,
     billingTypes: ["CREDIT_CARD"],
-    chargeTypes: ["INSTALLMENT"],
+    chargeTypes: ["DETACHED", "INSTALLMENT"],
     installment: { maxInstallmentCount: price.installmentLimit },
   };
 }

@@ -579,3 +579,26 @@
 :global(.dark) .unavailableCard {
   background: oklch(0.18 0.032 258);
 }
+
+.annualPrice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  line-height: 1;
+}
+
+.installmentCount {
+  display: block;
+  font-size: 0.3em;
+  font-weight: 600;
+  line-height: 1;
+  margin-bottom: 0.35rem;
+  letter-spacing: -0.5;
+}
+
+.installmentValue {
+  display: block;
+  text-align: left;
+}

@@ -60,7 +60,7 @@ describe("buildCheckoutRequest", () => {
   it("builds the annual installment credit-card payload", () => {
     expect(build(annualPrice, "credit_card")).toMatchObject({
       billingTypes: ["CREDIT_CARD"],
-      chargeTypes: ["INSTALLMENT"],
+      chargeTypes: ["DETACHED", "INSTALLMENT"],
       installment: { maxInstallmentCount: 12 },
       externalReference: contractId,
       items: [{ quantity: 1, value: 478.8 }],

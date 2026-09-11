@@ -66,8 +66,13 @@ versionar qualquer alteração de schema.
 pnpm check
 pnpm supabase:lint
 pnpm supabase:advisors
-pnpm build
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=ci-turnstile-site-key pnpm build
 ```
+
+O valor de CI permite apenas verificar localmente o build otimizado sem usar a
+chave dummy oficial presente em `.env.local`. Esse artefato não deve ser
+publicado. Em staging e produção, `pnpm build` deve receber a site key real do
+widget Turnstile configurado para o ambiente.
 
 ## Integração contínua
 
