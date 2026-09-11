@@ -70,6 +70,7 @@ function PlanHeader({
       <span className={styles.planIcon} data-tone={tone}>
         <Icon aria-hidden="true" />
       </span>
+
       <div>
         <Heading className={styles.planName}>{name}</Heading>
         <p className={styles.planTagline}>{tagline}</p>
@@ -87,23 +88,28 @@ function TrustRail() {
     >
       <div>
         <LockKeyholeIcon aria-hidden="true" />
+
         <span>
-          <strong>Checkout protegido pelo Asaas</strong>
-          <small>Seus dados de pagamento não ficam no Lucrivo</small>
+          <strong>Pagamento seguro com Asaas</strong>
+          <small>Seus dados protegidos</small>
         </span>
       </div>
+
       <div>
         <ReceiptTextIcon aria-hidden="true" />
+
         <span>
-          <strong>Cobrança explicada antes de pagar</strong>
-          <small>Período e renovação sem letras miúdas</small>
+          <strong>Sem letras miúdas</strong>
+          <small>Preços e condições transparentes</small>
         </span>
       </div>
+
       <div>
         <BadgeCheckIcon aria-hidden="true" />
+
         <span>
           <strong>Acesso liberado após confirmação</strong>
-          <small>Seu plano acompanha o pagamento confirmado</small>
+          <small>Comece a usar em instantes</small>
         </span>
       </div>
     </div>
@@ -113,20 +119,30 @@ function TrustRail() {
 function BillingPlans({ prices, overview, context }: BillingPlansProps) {
   const monthly = prices.find((price) => price.billingMode === "monthly");
   const annual = prices.find((price) => price.billingMode === "annual");
+
   const catalogReady = monthly !== undefined && annual !== undefined;
+
   const Heading = context === "public" ? "h3" : "h2";
+
   const freeHref =
     context === "public"
       ? "/register"
       : overview?.canCreateDiagnosis
         ? "/quick-diagnosis"
         : "/reports";
+
   const freeAction =
     context === "public"
       ? "Fazer diagnóstico grátis"
       : overview?.canCreateDiagnosis
         ? "Fazer diagnóstico"
         : "Ver meu relatório";
+
+  const annualInstallmentLimit = annual?.installmentLimit ?? 1;
+
+  const annualInstallmentAmountCents = annual
+    ? Math.round(annual.amountCents / annualInstallmentLimit)
+    : 0;
 
   function checkoutActions(
     price: ActiveBillingPrice,
@@ -141,11 +157,14 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
             className={featured ? styles.primaryAction : styles.darkAction}
           >
             <CreditCardIcon aria-hidden="true" />
+
             {cardLabel}
+
             <span aria-hidden="true" className={styles.actionArrow}>
               →
             </span>
           </Link>
+
           <Link href="/register" className={styles.secondaryAction}>
             <QrCodeIcon aria-hidden="true" />
             Pagar com Pix
@@ -162,11 +181,14 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
           className={featured ? styles.primaryAction : styles.darkAction}
         >
           <CreditCardIcon aria-hidden="true" />
+
           {cardLabel}
+
           <span aria-hidden="true" className={styles.actionArrow}>
             →
           </span>
         </CheckoutButton>
+
         <CheckoutButton
           priceId={price.id}
           paymentMethod="pix"
@@ -195,24 +217,30 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
             tone="neutral"
             Heading={Heading}
           />
+
           <div className={styles.priceBlock}>
             <p className={styles.planPrice}>R$ 0</p>
+
             <p className={styles.planDescription}>
-              Uma resposta objetiva para começar com clareza.
+              Conheça o Lucrivo sem compromisso.
             </p>
           </div>
+
           <ul className={styles.benefits}>
             <Benefit>1 diagnóstico rápido</Benefit>
-            <Benefit>1 relatório disponível para consulta</Benefit>
+            <Benefit>1 relatório completo</Benefit>
           </ul>
+
           <div className={styles.freeAction}>
             <Link href={freeHref} className={styles.outlineAction}>
               {freeAction}
+
               <span aria-hidden="true" className={styles.actionArrow}>
                 →
               </span>
             </Link>
-            <small>Sem cartão de crédito. Sem compromisso.</small>
+
+            <small>Sem cartão de crédito.</small>
           </div>
         </article>
 
@@ -220,61 +248,36 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
           <>
             <article
               className={`${styles.card} ${styles.featuredCard}`}
-              aria-label="Plano Mensal"
+              aria-label="Plano Anual"
             >
               <div className={styles.popularBadge}>
                 <SparklesIcon aria-hidden="true" />
-                Mais popular
+                Mais vantajoso
               </div>
-              <PlanHeader
-                icon={ChartNoAxesColumnIncreasingIcon}
-                name="Mensal"
-                tagline="Flexibilidade para crescer"
-                tone="brand"
-                Heading={Heading}
-              />
-              <div className={styles.priceBlock}>
-                <p className={styles.planPrice}>
-                  {formatBRL(monthly.amountCents)}/mês
-                </p>
-                <p className={styles.planDescription}>
-                  Para usar o Lucrivo continuamente nas decisões do negócio.
-                </p>
-              </div>
-              <ul className={styles.benefits}>
-                <Benefit>Diagnósticos ilimitados</Benefit>
-                <Benefit>Todos os relatórios disponíveis</Benefit>
-                <Benefit icon={CreditCardIcon} accent="brand">
-                  Renovação automática no cartão. Cancele quando quiser.
-                </Benefit>
-                <Benefit icon={QrCodeIcon} accent="brand">
-                  No Pix, você recebe 1 mês de acesso sem renovação automática.
-                </Benefit>
-              </ul>
-              {checkoutActions(monthly, "Assinar no cartão", true)}
-            </article>
 
-            <article className={styles.card} aria-label="Plano Anual">
               <PlanHeader
                 icon={CrownIcon}
                 name="Anual"
-                tagline="Mais economia no ano"
+                tagline="Melhor custo-benefício"
                 tone="warm"
                 Heading={Heading}
               />
+
               <div className={styles.priceBlock}>
-                <p className={styles.planPrice}>
-                  {formatBRL(annual.amountCents)}/ano
+                <p className={`${styles.planPrice} ${styles.annualPrice}`}>
+                  <span className={styles.installmentCount}>
+                    {annualInstallmentLimit}x de
+                  </span>
+
+                  <span className={styles.installmentValue}>
+                    {formatBRL(annualInstallmentAmountCents)}
+                  </span>
                 </p>
+
                 <p className={styles.planDescription}>
-                  {formatBRL(annual.amountCents)} no Pix à vista ou em até{" "}
-                  {annual.installmentLimit ?? 1}x sem juros no cartão —{" "}
-                  {annual.installmentLimit ?? 1}x de{" "}
-                  {formatBRL(
-                    annual.amountCents / (annual.installmentLimit ?? 1),
-                  )}
-                  . Sem renovação automática.
+                  ou {formatBRL(annual.amountCents)} à vista
                 </p>
+
                 {monthly.amountCents * 12 > annual.amountCents ? (
                   <p className={styles.saving}>
                     <BadgeCheckIcon aria-hidden="true" />
@@ -286,12 +289,60 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
                   </p>
                 ) : null}
               </div>
+
               <ul className={styles.benefits}>
-                <Benefit>Diagnósticos ilimitados por 12 meses</Benefit>
-                <Benefit>Todos os relatórios disponíveis</Benefit>
-                <Benefit>Uma compra, sem renovação automática</Benefit>
+                <Benefit>Diagnósticos rápidos e detalhados ilimitados</Benefit>
+
+                <Benefit>Relatórios completos ilimitados</Benefit>
+
+                <Benefit>
+                  IA para explicar e interpretar seus relatórios
+                </Benefit>
+
+                <Benefit>
+                  Cadastro de múltiplos produtos e controle de estoque
+                </Benefit>
+
+                <Benefit>12 meses de acesso</Benefit>
               </ul>
-              {checkoutActions(annual, "Pagar no cartão")}
+
+              {checkoutActions(annual, "Assinar anual", true)}
+            </article>
+
+            <article className={styles.card} aria-label="Plano Mensal">
+              <PlanHeader
+                icon={ChartNoAxesColumnIncreasingIcon}
+                name="Mensal"
+                tagline="Mais flexibilidade"
+                tone="brand"
+                Heading={Heading}
+              />
+
+              <div className={styles.priceBlock}>
+                <p className={styles.planPrice}>
+                  {formatBRL(monthly.amountCents)}/mês
+                </p>
+
+                <p className={styles.planDescription}>
+                  Ideal para pagar mês a mês com flexibilidade.
+                </p>
+              </div>
+
+              <ul className={styles.benefits}>
+                <Benefit>Diagnósticos rápidos e detalhados ilimitados</Benefit>
+
+                <Benefit>Relatórios completos ilimitados</Benefit>
+
+                <Benefit>
+                  IA para explicar e interpretar seus relatórios
+                </Benefit>
+
+                <Benefit>
+                  Cadastro de múltiplos produtos e controle de estoque
+                </Benefit>
+              </ul>
+
+              {checkoutActions(monthly, "Assinar mensal")}
             </article>
           </>
         ) : (
@@ -302,6 +353,7 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
             <span className={styles.unavailableIcon}>
               <ReceiptTextIcon aria-hidden="true" />
             </span>
+
             <div>
               <Heading
                 id="paid-plans-unavailable"
@@ -309,6 +361,7 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
               >
                 Planos pagos temporariamente indisponíveis
               </Heading>
+
               <p className={styles.planDescription} role="status">
                 Não conseguimos carregar os valores agora. Atualize a página em
                 alguns instantes para tentar novamente.
