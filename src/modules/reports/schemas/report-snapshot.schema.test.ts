@@ -443,6 +443,59 @@ const validProductionV2Snapshot = {
   contentVersion: 2,
 };
 
+const validProductionV3Snapshot = {
+  schemaVersion: 2,
+  calculationVersion: 2,
+  contentVersion: 3,
+  category: "production",
+  scenario: "manufacturing",
+  currency: "BRL",
+  unit: "unit",
+  policy: {
+    attentionBandBasisPoints: 2000,
+    weeklyDivisorHundredths: 433,
+    operatingDaysPerWeek: 6,
+    maximumDiscountPercent: 50,
+    proLaboreIncluded: true,
+  },
+  inputs: { ...validProductionSnapshot.inputs },
+  results: {
+    effectiveFixedCostCents: 300000,
+    productionUnitCostCents: 5000,
+    fixedAllocationCents: 3000,
+    totalUnitCostCents: 8000,
+    currentPriceCents: 10000,
+    feeAmountCents: 800,
+    netRevenueCents: 9200,
+    unitContributionCents: 4200,
+    unitProfitCents: 1200,
+    monthlySalesVolumeUsed: 100,
+    monthlyGrossRevenueCents: 1000000,
+    monthlyNetRevenueCents: 920000,
+    monthlyResultCents: 120000,
+    realMarginBasisPoints: 1200,
+    minimumPriceCents: 8696,
+    priceReferencesPartial: false,
+    monthlySalesGoal: 72,
+    weeklySalesGoal: 17,
+    dailySalesGoal: 3,
+    breakEvenDiscountPercent: 13,
+    totalFeeBasisPoints: 800,
+    verdict: "tight_margin",
+    priority: "margin",
+  },
+  executiveSummary,
+  sections,
+  discountSimulationBase: {
+    originalPriceCents: 10000,
+    unitCostCents: 8000,
+    totalFeeBasisPoints: 800,
+    attentionBandBasisPoints: 2000,
+    minimumPriceCents: 8696,
+    partial: false,
+  },
+};
+
 const validServiceV4Snapshot = {
   ...validServiceV3Snapshot,
   contentVersion: 4,
@@ -628,16 +681,50 @@ describe("category-versioned report snapshots", () => {
     );
   });
 
-  it("parses the current Production content version without dropping V1", () => {
+  it("parses the current Production content version without dropping V1/V2", () => {
     expect(
-      parseCurrentProductionReportSnapshot(validProductionV2Snapshot),
-    ).toEqual(validProductionV2Snapshot);
+      parseCurrentProductionReportSnapshot(validProductionV3Snapshot),
+    ).toEqual(validProductionV3Snapshot);
     expect(parseProductionReportSnapshot(validProductionV2Snapshot)).toEqual(
       validProductionV2Snapshot,
     );
-    expect(parseReportSnapshot(validProductionV2Snapshot)).toEqual(
-      validProductionV2Snapshot,
+    expect(parseReportSnapshot(validProductionV3Snapshot)).toEqual(
+      validProductionV3Snapshot,
     );
+  });
+
+  it("rejects incoherent Production V3 contracts", () => {
+    for (const invalid of [
+      {
+        ...validProductionV3Snapshot,
+        results: {
+          ...validProductionV3Snapshot.results,
+          monthlySalesVolumeUsed: 0,
+        },
+      },
+      {
+        ...validProductionV3Snapshot,
+        results: {
+          ...validProductionV3Snapshot.results,
+          targetPriceCents: 11112,
+        },
+      },
+      {
+        ...validProductionV3Snapshot,
+        results: {
+          ...validProductionV3Snapshot.results,
+          verdict: "incomplete_volume",
+        },
+      },
+      {
+        ...validProductionV3Snapshot,
+        inputs: {
+          ...validProductionV3Snapshot.inputs,
+          materialUnitCostCents: 3001,
+        },
+      },
+    ])
+      expect(() => parseProductionReportSnapshot(invalid)).toThrow();
   });
 
   it.each([

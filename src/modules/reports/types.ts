@@ -4,9 +4,9 @@ const SERVICE_REPORT_CONTENT_VERSION = 5;
 const PRODUCT_REPORT_SCHEMA_VERSION = 2;
 const PRODUCT_CALCULATION_VERSION = 2;
 const PRODUCT_CONTENT_VERSION = 3;
-const PRODUCTION_REPORT_SCHEMA_VERSION = 1;
-const PRODUCTION_CALCULATION_VERSION = 1;
-const PRODUCTION_CONTENT_VERSION = 2;
+const PRODUCTION_REPORT_SCHEMA_VERSION = 2;
+const PRODUCTION_CALCULATION_VERSION = 2;
+const PRODUCTION_CONTENT_VERSION = 3;
 
 const reportTones = ["neutral", "positive", "warning", "critical"] as const;
 const serviceReportVerdicts = [
@@ -228,6 +228,7 @@ export type {
   ProductionReportSnapshot,
   ProductionReportSnapshotV1,
   ProductionReportSnapshotV2,
+  ProductionReportSnapshotV3,
 } from "./schemas/production-report-snapshot.schema";
 export type {
   ReportDiscountSimulationBase,
