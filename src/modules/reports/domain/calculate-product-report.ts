@@ -8,42 +8,38 @@ import type {
 import { ceilDivide, multiplyDivideRound, roundDivide } from "./integer-math";
 
 const RATE_SCALE = 10_000;
-const PRODUCT_TARGET_MARGIN_BPS = 2_000;
-const PRODUCT_MARGIN_TOLERANCE_BPS = 50;
-const PRODUCT_ABOVE_TARGET_BPS = 300;
+const PRODUCT_ATTENTION_BAND_BPS = 2_000;
 const WEEKLY_DIVISOR_HUNDREDTHS = 433;
 const PRODUCT_OPERATING_DAYS_PER_WEEK = 6;
 
 function classifyProductMargin(input: {
   unitContributionCents: number;
-  monthlySalesVolume: number | null;
+  monthlySalesVolumeUsed: number;
+  effectiveFixedCostCents: number;
+  monthlyResultCents: number;
   realMarginBasisPoints: number | null;
 }): { verdict: ProductReportVerdict; priority: ProductReportPriority } {
   if (input.unitContributionCents <= 0) {
     return { verdict: "direct_loss", priority: "cost" };
   }
-  if (input.monthlySalesVolume === null) {
-    return { verdict: "incomplete_volume", priority: "data" };
+  if (input.monthlySalesVolumeUsed === 0) {
+    return input.effectiveFixedCostCents > 0
+      ? { verdict: "operational_loss", priority: "volume" }
+      : { verdict: "no_sales", priority: "volume" };
   }
-  if (
-    input.realMarginBasisPoints === null ||
-    input.realMarginBasisPoints <= 0
-  ) {
+  if (input.monthlyResultCents < 0) {
     return { verdict: "operational_loss", priority: "price" };
   }
+  if (input.monthlyResultCents === 0) {
+    return { verdict: "break_even", priority: "margin" };
+  }
   if (
-    input.realMarginBasisPoints <
-    PRODUCT_TARGET_MARGIN_BPS - PRODUCT_MARGIN_TOLERANCE_BPS
+    input.realMarginBasisPoints !== null &&
+    input.realMarginBasisPoints < PRODUCT_ATTENTION_BAND_BPS
   ) {
     return { verdict: "tight_margin", priority: "margin" };
   }
-  if (
-    input.realMarginBasisPoints <=
-    PRODUCT_TARGET_MARGIN_BPS + PRODUCT_ABOVE_TARGET_BPS
-  ) {
-    return { verdict: "adequate_margin", priority: "volume" };
-  }
-  return { verdict: "above_target", priority: "volume" };
+  return { verdict: "adequate_margin", priority: "volume" };
 }
 
 function calculateProductReport(
@@ -58,22 +54,26 @@ function calculateProductReport(
     BigInt(1),
   );
   const netRateBasisPoints = RATE_SCALE - totalFeeBasisPoints;
-  const targetRateBasisPoints = netRateBasisPoints - PRODUCT_TARGET_MARGIN_BPS;
-  const netRevenueCents = multiplyDivideRound(
+  const monthlySalesVolumeUsed = command.monthlySalesVolume ?? 0;
+  const feeAmountCents = multiplyDivideRound(
     command.unitSalePriceCents,
-    netRateBasisPoints,
+    totalFeeBasisPoints,
     RATE_SCALE,
+  );
+  const netRevenueCents = roundDivide(
+    BigInt(command.unitSalePriceCents) - BigInt(feeAmountCents),
+    BigInt(1),
   );
   const unitContributionCents = roundDivide(
     BigInt(netRevenueCents) - BigInt(command.purchaseUnitCostCents),
     BigInt(1),
   );
   const fixedAllocationCents =
-    command.monthlySalesVolume === null
+    monthlySalesVolumeUsed === 0
       ? null
       : ceilDivide(
           BigInt(effectiveFixedCostCents),
-          BigInt(command.monthlySalesVolume),
+          BigInt(monthlySalesVolumeUsed),
         );
   const totalUnitCostCents =
     fixedAllocationCents === null
@@ -89,12 +89,25 @@ function calculateProductReport(
           BigInt(netRevenueCents) - BigInt(totalUnitCostCents),
           BigInt(1),
         );
+  const monthlyGrossRevenueCents = roundDivide(
+    BigInt(command.unitSalePriceCents) * BigInt(monthlySalesVolumeUsed),
+    BigInt(1),
+  );
+  const monthlyNetRevenueCents = roundDivide(
+    BigInt(netRevenueCents) * BigInt(monthlySalesVolumeUsed),
+    BigInt(1),
+  );
+  const monthlyResultCents = roundDivide(
+    BigInt(unitContributionCents) * BigInt(monthlySalesVolumeUsed) -
+      BigInt(effectiveFixedCostCents),
+    BigInt(1),
+  );
   const realMarginBasisPoints =
-    unitProfitCents === null || command.unitSalePriceCents <= 0
+    monthlyGrossRevenueCents === 0
       ? null
       : roundDivide(
-          BigInt(unitProfitCents) * BigInt(RATE_SCALE),
-          BigInt(command.unitSalePriceCents),
+          BigInt(monthlyResultCents) * BigInt(RATE_SCALE),
+          BigInt(monthlyGrossRevenueCents),
         );
   const referenceCostCents =
     totalUnitCostCents ?? command.purchaseUnitCostCents;
@@ -103,13 +116,6 @@ function calculateProductReport(
       ? ceilDivide(
           BigInt(referenceCostCents) * BigInt(RATE_SCALE),
           BigInt(netRateBasisPoints),
-        )
-      : null;
-  const targetPriceCents =
-    targetRateBasisPoints > 0
-      ? ceilDivide(
-          BigInt(referenceCostCents) * BigInt(RATE_SCALE),
-          BigInt(targetRateBasisPoints),
         )
       : null;
   const monthlySalesGoal =
@@ -146,7 +152,9 @@ function calculateProductReport(
         );
   const { verdict, priority } = classifyProductMargin({
     unitContributionCents,
-    monthlySalesVolume: command.monthlySalesVolume,
+    monthlySalesVolumeUsed,
+    effectiveFixedCostCents,
+    monthlyResultCents,
     realMarginBasisPoints,
   });
 
@@ -156,12 +164,16 @@ function calculateProductReport(
     fixedAllocationCents,
     totalUnitCostCents,
     currentPriceCents: command.unitSalePriceCents,
+    feeAmountCents,
     netRevenueCents,
     unitContributionCents,
     unitProfitCents,
+    monthlySalesVolumeUsed,
+    monthlyGrossRevenueCents,
+    monthlyNetRevenueCents,
+    monthlyResultCents,
     realMarginBasisPoints,
     minimumPriceCents,
-    targetPriceCents,
     priceReferencesPartial: command.monthlySalesVolume === null,
     monthlySalesGoal,
     weeklySalesGoal,
@@ -174,10 +186,8 @@ function calculateProductReport(
 }
 
 export {
-  PRODUCT_ABOVE_TARGET_BPS,
-  PRODUCT_MARGIN_TOLERANCE_BPS,
+  PRODUCT_ATTENTION_BAND_BPS,
   PRODUCT_OPERATING_DAYS_PER_WEEK,
-  PRODUCT_TARGET_MARGIN_BPS,
   calculateProductReport,
   classifyProductMargin,
 };

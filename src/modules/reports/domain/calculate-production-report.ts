@@ -8,15 +8,15 @@ import type {
 import { ceilDivide, multiplyDivideRound, roundDivide } from "./integer-math";
 
 const RATE_SCALE = 10_000;
-const PRODUCTION_TARGET_MARGIN_BPS = 2_000;
-const PRODUCTION_MARGIN_TOLERANCE_BPS = 50;
-const PRODUCTION_ABOVE_TARGET_BPS = 300;
+const PRODUCTION_ATTENTION_BAND_BPS = 2_000;
 const WEEKLY_DIVISOR_HUNDREDTHS = 433;
 const PRODUCTION_OPERATING_DAYS_PER_WEEK = 6;
 
 function classifyProductionMargin(input: {
   unitContributionCents: number;
-  monthlySalesVolume: number | null;
+  monthlySalesVolumeUsed: number;
+  effectiveFixedCostCents: number;
+  monthlyResultCents: number;
   realMarginBasisPoints: number | null;
 }): {
   verdict: ProductionReportVerdict;
@@ -25,28 +25,24 @@ function classifyProductionMargin(input: {
   if (input.unitContributionCents <= 0) {
     return { verdict: "direct_loss", priority: "cost" };
   }
-  if (input.monthlySalesVolume === null) {
-    return { verdict: "incomplete_volume", priority: "data" };
+  if (input.monthlySalesVolumeUsed === 0) {
+    return input.effectiveFixedCostCents > 0
+      ? { verdict: "operational_loss", priority: "volume" }
+      : { verdict: "no_sales", priority: "volume" };
   }
-  if (
-    input.realMarginBasisPoints === null ||
-    input.realMarginBasisPoints <= 0
-  ) {
+  if (input.monthlyResultCents < 0) {
     return { verdict: "operational_loss", priority: "price" };
   }
+  if (input.monthlyResultCents === 0) {
+    return { verdict: "break_even", priority: "margin" };
+  }
   if (
-    input.realMarginBasisPoints <
-    PRODUCTION_TARGET_MARGIN_BPS - PRODUCTION_MARGIN_TOLERANCE_BPS
+    input.realMarginBasisPoints !== null &&
+    input.realMarginBasisPoints < PRODUCTION_ATTENTION_BAND_BPS
   ) {
     return { verdict: "tight_margin", priority: "margin" };
   }
-  if (
-    input.realMarginBasisPoints <=
-    PRODUCTION_TARGET_MARGIN_BPS + PRODUCTION_ABOVE_TARGET_BPS
-  ) {
-    return { verdict: "adequate_margin", priority: "volume" };
-  }
-  return { verdict: "above_target", priority: "volume" };
+  return { verdict: "adequate_margin", priority: "volume" };
 }
 
 function calculateProductionReport(
@@ -61,23 +57,26 @@ function calculateProductionReport(
     BigInt(1),
   );
   const netRateBasisPoints = RATE_SCALE - totalFeeBasisPoints;
-  const targetRateBasisPoints =
-    netRateBasisPoints - PRODUCTION_TARGET_MARGIN_BPS;
-  const netRevenueCents = multiplyDivideRound(
+  const monthlySalesVolumeUsed = command.monthlySalesVolume ?? 0;
+  const feeAmountCents = multiplyDivideRound(
     command.unitSalePriceCents,
-    netRateBasisPoints,
+    totalFeeBasisPoints,
     RATE_SCALE,
+  );
+  const netRevenueCents = roundDivide(
+    BigInt(command.unitSalePriceCents) - BigInt(feeAmountCents),
+    BigInt(1),
   );
   const unitContributionCents = roundDivide(
     BigInt(netRevenueCents) - BigInt(command.productionUnitCostCents),
     BigInt(1),
   );
   const fixedAllocationCents =
-    command.monthlySalesVolume === null
+    monthlySalesVolumeUsed === 0
       ? null
       : ceilDivide(
           BigInt(effectiveFixedCostCents),
-          BigInt(command.monthlySalesVolume),
+          BigInt(monthlySalesVolumeUsed),
         );
   const totalUnitCostCents =
     fixedAllocationCents === null
@@ -94,12 +93,25 @@ function calculateProductionReport(
           BigInt(netRevenueCents) - BigInt(totalUnitCostCents),
           BigInt(1),
         );
+  const monthlyGrossRevenueCents = roundDivide(
+    BigInt(command.unitSalePriceCents) * BigInt(monthlySalesVolumeUsed),
+    BigInt(1),
+  );
+  const monthlyNetRevenueCents = roundDivide(
+    BigInt(netRevenueCents) * BigInt(monthlySalesVolumeUsed),
+    BigInt(1),
+  );
+  const monthlyResultCents = roundDivide(
+    BigInt(unitContributionCents) * BigInt(monthlySalesVolumeUsed) -
+      BigInt(effectiveFixedCostCents),
+    BigInt(1),
+  );
   const realMarginBasisPoints =
-    unitProfitCents === null || command.unitSalePriceCents <= 0
+    monthlyGrossRevenueCents === 0
       ? null
       : roundDivide(
-          BigInt(unitProfitCents) * BigInt(RATE_SCALE),
-          BigInt(command.unitSalePriceCents),
+          BigInt(monthlyResultCents) * BigInt(RATE_SCALE),
+          BigInt(monthlyGrossRevenueCents),
         );
   const referenceCostCents =
     totalUnitCostCents ?? command.productionUnitCostCents;
@@ -109,13 +121,6 @@ function calculateProductionReport(
       ? ceilDivide(
           BigInt(referenceCostCents) * BigInt(RATE_SCALE),
           BigInt(netRateBasisPoints),
-        )
-      : null;
-  const targetPriceCents =
-    targetRateBasisPoints > 0
-      ? ceilDivide(
-          BigInt(referenceCostCents) * BigInt(RATE_SCALE),
-          BigInt(targetRateBasisPoints),
         )
       : null;
   const monthlySalesGoal =
@@ -152,7 +157,9 @@ function calculateProductionReport(
         );
   const { verdict, priority } = classifyProductionMargin({
     unitContributionCents,
-    monthlySalesVolume: command.monthlySalesVolume,
+    monthlySalesVolumeUsed,
+    effectiveFixedCostCents,
+    monthlyResultCents,
     realMarginBasisPoints,
   });
 
@@ -162,12 +169,16 @@ function calculateProductionReport(
     fixedAllocationCents,
     totalUnitCostCents,
     currentPriceCents: command.unitSalePriceCents,
+    feeAmountCents,
     netRevenueCents,
     unitContributionCents,
     unitProfitCents,
+    monthlySalesVolumeUsed,
+    monthlyGrossRevenueCents,
+    monthlyNetRevenueCents,
+    monthlyResultCents,
     realMarginBasisPoints,
     minimumPriceCents,
-    targetPriceCents,
     priceReferencesPartial,
     monthlySalesGoal,
     weeklySalesGoal,
@@ -180,10 +191,8 @@ function calculateProductionReport(
 }
 
 export {
-  PRODUCTION_ABOVE_TARGET_BPS,
-  PRODUCTION_MARGIN_TOLERANCE_BPS,
+  PRODUCTION_ATTENTION_BAND_BPS,
   PRODUCTION_OPERATING_DAYS_PER_WEEK,
-  PRODUCTION_TARGET_MARGIN_BPS,
   calculateProductionReport,
   classifyProductionMargin,
 };

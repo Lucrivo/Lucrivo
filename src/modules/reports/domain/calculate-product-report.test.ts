@@ -28,12 +28,16 @@ describe("calculateProductReport", () => {
       fixedAllocationCents: 3000,
       totalUnitCostCents: 8000,
       currentPriceCents: 10000,
+      feeAmountCents: 800,
       netRevenueCents: 9200,
       unitContributionCents: 4200,
       unitProfitCents: 1200,
+      monthlySalesVolumeUsed: 100,
+      monthlyGrossRevenueCents: 1000000,
+      monthlyNetRevenueCents: 920000,
+      monthlyResultCents: 120000,
       realMarginBasisPoints: 1200,
       minimumPriceCents: 8696,
-      targetPriceCents: 11112,
       priceReferencesPartial: false,
       monthlySalesGoal: 72,
       weeklySalesGoal: 17,
@@ -53,16 +57,19 @@ describe("calculateProductReport", () => {
         fixedAllocationCents: null,
         totalUnitCostCents: null,
         unitProfitCents: null,
+        monthlySalesVolumeUsed: 0,
+        monthlyGrossRevenueCents: 0,
+        monthlyNetRevenueCents: 0,
+        monthlyResultCents: -300000,
         realMarginBasisPoints: null,
         minimumPriceCents: 5435,
-        targetPriceCents: 6945,
         priceReferencesPartial: true,
         monthlySalesGoal: 72,
         weeklySalesGoal: 17,
         dailySalesGoal: 3,
         breakEvenDiscountPercent: 46,
-        verdict: "incomplete_volume",
-        priority: "data",
+        verdict: "operational_loss",
+        priority: "volume",
       }),
     );
   });
@@ -73,19 +80,23 @@ describe("calculateProductReport", () => {
         ...completeCommand,
         purchaseUnitCostCents: 0,
         fixedMonthlyExpensesCents: 0,
+        monthlySalesVolume: null,
         proLaboreIncluded: false,
         proLaboreCents: 0,
       }),
     ).toEqual(
       expect.objectContaining({
         purchaseUnitCostCents: 0,
-        fixedAllocationCents: 0,
-        totalUnitCostCents: 0,
+        fixedAllocationCents: null,
+        totalUnitCostCents: null,
         unitContributionCents: 9200,
-        unitProfitCents: 9200,
-        realMarginBasisPoints: 9200,
+        unitProfitCents: null,
+        monthlySalesVolumeUsed: 0,
+        monthlyResultCents: 0,
+        realMarginBasisPoints: null,
         minimumPriceCents: 0,
-        targetPriceCents: 0,
+        breakEvenDiscountPercent: 100,
+        verdict: "no_sales",
       }),
     );
   });
@@ -119,7 +130,8 @@ describe("calculateProductReport", () => {
     ).toEqual(
       expect.objectContaining({
         minimumPriceCents: null,
-        targetPriceCents: null,
+        feeAmountCents: 10000,
+        netRevenueCents: 0,
       }),
     );
 
@@ -132,7 +144,6 @@ describe("calculateProductReport", () => {
     ).toEqual(
       expect.objectContaining({
         minimumPriceCents: 40000,
-        targetPriceCents: null,
       }),
     );
   });
@@ -155,7 +166,6 @@ describe("calculateProductReport", () => {
         fixedAllocationCents: 4,
         totalUnitCostCents: 5,
         minimumPriceCents: 6,
-        targetPriceCents: 7,
         monthlySalesGoal: 1,
         weeklySalesGoal: 1,
         dailySalesGoal: 1,
@@ -171,20 +181,34 @@ describe("calculateProductReport", () => {
       }).breakEvenDiscountPercent,
     ).toBe(0);
   });
+
+  it("classifies an exact zero monthly result as break even", () => {
+    expect(
+      calculateProductReport({
+        ...completeCommand,
+        fixedMonthlyExpensesCents: 220000,
+      }),
+    ).toEqual(
+      expect.objectContaining({
+        monthlyResultCents: 0,
+        realMarginBasisPoints: 0,
+        verdict: "break_even",
+      }),
+    );
+  });
 });
 
 describe("classifyProductMargin", () => {
   it.each([
-    [1, 100, 0, "operational_loss", "price"],
-    [1, 100, 1949, "tight_margin", "margin"],
-    [1, 100, 1950, "adequate_margin", "volume"],
-    [1, 100, 2300, "adequate_margin", "volume"],
-    [1, 100, 2301, "above_target", "volume"],
+    [1, 100, 100, 1, 1999, "tight_margin", "margin"],
+    [1, 100, 100, 1, 2000, "adequate_margin", "volume"],
   ] as const)(
     "classifies contribution %s, volume %s, and margin %s as %s",
     (
       unitContributionCents,
       monthlySalesVolume,
+      effectiveFixedCostCents,
+      monthlyResultCents,
       realMarginBasisPoints,
       verdict,
       priority,
@@ -192,7 +216,9 @@ describe("classifyProductMargin", () => {
       expect(
         classifyProductMargin({
           unitContributionCents,
-          monthlySalesVolume,
+          monthlySalesVolumeUsed: monthlySalesVolume,
+          effectiveFixedCostCents,
+          monthlyResultCents,
           realMarginBasisPoints,
         }),
       ).toEqual({ verdict, priority });
@@ -203,19 +229,23 @@ describe("classifyProductMargin", () => {
     expect(
       classifyProductMargin({
         unitContributionCents: 0,
-        monthlySalesVolume: null,
+        monthlySalesVolumeUsed: 0,
+        effectiveFixedCostCents: 0,
+        monthlyResultCents: 0,
         realMarginBasisPoints: null,
       }),
     ).toEqual({ verdict: "direct_loss", priority: "cost" });
   });
 
-  it("requests volume when contribution is positive and volume is missing", () => {
+  it("reports no sales when contribution is positive and monthly costs are zero", () => {
     expect(
       classifyProductMargin({
         unitContributionCents: 1,
-        monthlySalesVolume: null,
+        monthlySalesVolumeUsed: 0,
+        effectiveFixedCostCents: 0,
+        monthlyResultCents: 0,
         realMarginBasisPoints: null,
       }),
-    ).toEqual({ verdict: "incomplete_volume", priority: "data" });
+    ).toEqual({ verdict: "no_sales", priority: "volume" });
   });
 });

@@ -21,6 +21,8 @@ const productReportVerdicts = [
   "direct_loss",
   "incomplete_volume",
   "operational_loss",
+  "no_sales",
+  "break_even",
   "tight_margin",
   "adequate_margin",
   "above_target",
@@ -29,6 +31,8 @@ const productionReportVerdicts = [
   "direct_loss",
   "incomplete_volume",
   "operational_loss",
+  "no_sales",
+  "break_even",
   "tight_margin",
   "adequate_margin",
   "above_target",
@@ -38,6 +42,8 @@ const reportVerdicts = [
   "direct_loss",
   "incomplete_volume",
   "operational_loss",
+  "no_sales",
+  "break_even",
   "tight_margin",
   "adequate_margin",
   "above_target",
@@ -108,12 +114,16 @@ type ProductReportCalculation = {
   fixedAllocationCents: number | null;
   totalUnitCostCents: number | null;
   currentPriceCents: number;
+  feeAmountCents: number;
   netRevenueCents: number;
   unitContributionCents: number;
   unitProfitCents: number | null;
+  monthlySalesVolumeUsed: number;
+  monthlyGrossRevenueCents: number;
+  monthlyNetRevenueCents: number;
+  monthlyResultCents: number;
   realMarginBasisPoints: number | null;
   minimumPriceCents: number | null;
-  targetPriceCents: number | null;
   priceReferencesPartial: boolean;
   monthlySalesGoal: number | null;
   weeklySalesGoal: number | null;
@@ -130,12 +140,16 @@ type ProductionReportCalculation = {
   fixedAllocationCents: number | null;
   totalUnitCostCents: number | null;
   currentPriceCents: number;
+  feeAmountCents: number;
   netRevenueCents: number;
   unitContributionCents: number;
   unitProfitCents: number | null;
+  monthlySalesVolumeUsed: number;
+  monthlyGrossRevenueCents: number;
+  monthlyNetRevenueCents: number;
+  monthlyResultCents: number;
   realMarginBasisPoints: number | null;
   minimumPriceCents: number | null;
-  targetPriceCents: number | null;
   priceReferencesPartial: boolean;
   monthlySalesGoal: number | null;
   weeklySalesGoal: number | null;
