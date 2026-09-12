@@ -11,7 +11,7 @@ type ProductStepProps = {
 };
 
 const productStepFields = {
-  productValues: ["purchaseUnitCost", "unitSalePrice"],
+  productValues: ["productKind", "purchaseUnitCost", "unitSalePrice"],
   fixedExpenses: ["fixedMonthlyExpenses"],
   monthlyVolume: ["monthlySalesVolume"],
   ownerCompensation: ["proLabore"],

@@ -8,6 +8,7 @@ import { calculateProductReport } from "./calculate-product-report";
 
 const completeCommand: ProductDiagnosisCommand = {
   submissionId: "550e8400-e29b-41d4-a716-446655440000",
+  productKind: "resale",
   purchaseUnitCostCents: 5000,
   unitSalePriceCents: 10000,
   fixedMonthlyExpensesCents: 100000,

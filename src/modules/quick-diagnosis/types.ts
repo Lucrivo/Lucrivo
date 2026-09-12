@@ -6,9 +6,11 @@ import type {
 
 const pricingMethods = ["hour", "minute", "appointment"] as const;
 const serviceWorkPeriods = ["day", "week", "month"] as const;
+const productKinds = ["resale", "digital"] as const;
 
 type ServicePricingMethod = (typeof pricingMethods)[number];
 type ServiceWorkPeriod = (typeof serviceWorkPeriods)[number];
+type ProductKind = (typeof productKinds)[number];
 
 type ServiceDiagnosisInput = {
   submissionId: string;
@@ -78,6 +80,7 @@ type CreateServiceDiagnosisActionResult =
 
 type ProductDiagnosisInput = {
   submissionId: string;
+  productKind: string;
   purchaseUnitCost: string;
   unitSalePrice: string;
   fixedMonthlyExpenses: string;
@@ -90,6 +93,7 @@ type ProductDiagnosisInput = {
 
 type ProductDiagnosisCommand = {
   submissionId: string;
+  productKind: ProductKind;
   purchaseUnitCostCents: number;
   unitSalePriceCents: number;
   fixedMonthlyExpensesCents: number;
@@ -177,6 +181,7 @@ type CreateProductionDiagnosisActionResult =
 
 export {
   pricingMethods,
+  productKinds,
   serviceWorkPeriods,
   type CreateProductDiagnosisActionResult,
   type CreateProductionDiagnosisActionResult,
@@ -185,6 +190,7 @@ export {
   type ProductDiagnosisField,
   type ProductDiagnosisFieldErrors,
   type ProductDiagnosisInput,
+  type ProductKind,
   type ProductionDiagnosisCommand,
   type ProductionDiagnosisField,
   type ProductionDiagnosisFieldErrors,

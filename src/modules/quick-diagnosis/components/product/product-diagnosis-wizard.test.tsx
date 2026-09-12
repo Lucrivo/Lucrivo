@@ -67,9 +67,12 @@ describe("ProductDiagnosisWizard", () => {
     await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(screen.getByText("3 de 8")).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("radio", { name: "Produto para revenda" }),
+    );
     if (purchaseCost) {
       await user.type(
-        screen.getByLabelText("Quanto você paga por unidade?"),
+        screen.getByLabelText("Quanto você paga ao fornecedor por unidade?"),
         purchaseCost,
       );
     }
@@ -176,7 +179,7 @@ describe("ProductDiagnosisWizard", () => {
 
       if (buttonName === "Editar valores do produto") {
         expect(
-          screen.getByLabelText("Quanto você paga por unidade?"),
+          screen.getByLabelText("Quanto você paga ao fornecedor por unidade?"),
         ).toHaveValue("50");
         expect(
           screen.getByLabelText("Por quanto você vende cada unidade?"),
@@ -258,7 +261,9 @@ describe("ProductDiagnosisWizard", () => {
     );
 
     expect(
-      await screen.findByLabelText("Quanto você paga por unidade?"),
+      await screen.findByLabelText(
+        "Quanto você paga ao fornecedor por unidade?",
+      ),
     ).toHaveFocus();
     expect(screen.getByRole("alert")).toHaveTextContent("Custo inválido.");
     expect(replace).not.toHaveBeenCalled();

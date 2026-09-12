@@ -17,6 +17,7 @@ function withProductValues(): ProductWizardState {
     analysisMode: "quick",
     values: {
       ...createInitialProductWizardState(firstSubmissionId).values,
+      productKind: "resale",
       purchaseUnitCost: "50,00",
       unitSalePrice: "100.00",
       fixedMonthlyExpenses: "0",
@@ -37,6 +38,7 @@ describe("product wizard state", () => {
       analysisModeError: null,
       values: {
         submissionId: firstSubmissionId,
+        productKind: "",
         purchaseUnitCost: "",
         unitSalePrice: "",
         fixedMonthlyExpenses: "",
@@ -59,6 +61,30 @@ describe("product wizard state", () => {
       "fees",
       "review",
     ]);
+  });
+
+  it("stores either Product kind without erasing the entered cost", () => {
+    const initial = {
+      ...createInitialProductWizardState(firstSubmissionId),
+      values: {
+        ...createInitialProductWizardState(firstSubmissionId).values,
+        purchaseUnitCost: "50,00",
+      },
+    };
+    const resale = productWizardReducer(initial, {
+      type: "setField",
+      field: "productKind",
+      value: "resale",
+    });
+    const digital = productWizardReducer(resale, {
+      type: "setField",
+      field: "productKind",
+      value: "digital",
+    });
+
+    expect(resale.values.productKind).toBe("resale");
+    expect(digital.values.productKind).toBe("digital");
+    expect(digital.values.purchaseUnitCost).toBe("50,00");
   });
 
   it("selects quick analysis and clears its validation error", () => {

@@ -6,6 +6,7 @@ import type {
   ProductDiagnosisFieldErrors,
   ProductDiagnosisInput,
 } from "../types";
+import { productKinds } from "../types";
 import { moneySchema, percentageSchema, scaledInteger } from "./decimal-input";
 
 const POSTGRES_INTEGER_MAX = 2_147_483_647;
@@ -48,6 +49,9 @@ const requiredPercentageSchema = z
 
 const rawProductDiagnosisSchema = z.strictObject({
   submissionId: z.uuid("Envie um identificador de submissão válido."),
+  productKind: z.enum(productKinds, {
+    error: "Escolha se você vende um produto para revenda ou um produto digital.",
+  }),
   purchaseUnitCost: moneySchema,
   unitSalePrice: moneySchema,
   fixedMonthlyExpenses: requiredMoneySchema,
@@ -85,6 +89,7 @@ const productDiagnosisSchema: z.ZodType<
   })
   .transform((input) => ({
     submissionId: input.submissionId,
+    productKind: input.productKind,
     purchaseUnitCostCents: input.purchaseUnitCost,
     unitSalePriceCents: input.unitSalePrice,
     fixedMonthlyExpensesCents: input.fixedMonthlyExpenses,

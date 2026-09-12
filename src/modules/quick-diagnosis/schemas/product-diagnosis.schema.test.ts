@@ -8,6 +8,7 @@ import {
 
 const validProduct: ProductDiagnosisInput = {
   submissionId: "550e8400-e29b-41d4-a716-446655440000",
+  productKind: "resale",
   purchaseUnitCost: "50,00",
   unitSalePrice: "100",
   fixedMonthlyExpenses: "1.000,00",
@@ -29,6 +30,7 @@ describe("productDiagnosisSchema", () => {
   it("normalizes the canonical complete Product input", () => {
     expect(productDiagnosisSchema.parse(validProduct)).toEqual({
       submissionId: validProduct.submissionId,
+      productKind: "resale",
       purchaseUnitCostCents: 5000,
       unitSalePriceCents: 10000,
       fixedMonthlyExpensesCents: 100000,
@@ -38,6 +40,38 @@ describe("productDiagnosisSchema", () => {
       taxRateBasisPoints: 600,
       cardFeeRateBasisPoints: 200,
     });
+  });
+
+  it.each(["resale", "digital"] as const)(
+    "accepts %s with no direct cost",
+    (productKind) => {
+      const parsed = productDiagnosisSchema.parse({
+        ...validProduct,
+        productKind,
+        purchaseUnitCost: "",
+      });
+
+      expect(parsed.productKind).toBe(productKind);
+      expect(parsed.purchaseUnitCostCents).toBe(0);
+    },
+  );
+
+  it("requires a known Product kind", () => {
+    const empty = productDiagnosisSchema.safeParse({
+      ...validProduct,
+      productKind: "",
+    });
+    const unknown = productDiagnosisSchema.safeParse({
+      ...validProduct,
+      productKind: "subscription",
+    });
+
+    expect(empty.success).toBe(false);
+    expect(unknown.success).toBe(false);
+    if (empty.success) return;
+    expect(empty.error.flatten().fieldErrors.productKind).toEqual([
+      "Escolha se você vende um produto para revenda ou um produto digital.",
+    ]);
   });
 
   it("normalizes missing volume and disabled stale compensation", () => {

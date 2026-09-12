@@ -52,6 +52,7 @@ function createInitialProductWizardState(
     analysisModeError: null,
     values: {
       submissionId,
+      productKind: "",
       purchaseUnitCost: "",
       unitSalePrice: "",
       fixedMonthlyExpenses: "",
