@@ -2,7 +2,7 @@
 
 **Data:** 2026-09-11
 
-**Status:** Aguardando revisão do documento
+**Status:** Aprovado para planejamento e implementação
 
 **Documentos relacionados:**
 
