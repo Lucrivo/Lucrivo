@@ -148,7 +148,7 @@ describe("toReportViewModel", () => {
     );
     expect(viewModel.discountSimulationContext).toEqual({
       category: "service",
-      usesAttentionBand: true,
+      mode: "service_attention",
     });
     expect(viewModel.language.isPlainLanguage).toBe(true);
     expect(viewModel).not.toHaveProperty("summary");
@@ -259,10 +259,10 @@ describe("toReportViewModel", () => {
       viewModel.numbers.map(({ label, value }) => ({ label, value })),
     ).toEqual([
       { label: "Preço atual", value: "R$ 100,00" },
-      { label: "Quanto sobra a cada R$ 100", value: "12%" },
-      { label: "Quanto sobra por unidade", value: "R$ 12,00" },
       { label: "Menor preço sem prejuízo", value: "R$ 86,96" },
-      { label: "Preço para alcançar a meta (20%)", value: "R$ 111,12" },
+      { label: "Quanto sobra a cada R$ 100", value: "R$ 12,00" },
+      { label: "Resultado do mês", value: "R$ 1.200,00" },
+      { label: "Vendas necessárias no mês", value: "72 vendas" },
     ]);
   });
 
@@ -276,19 +276,16 @@ describe("toReportViewModel", () => {
       viewModel.numbers.map(({ label, value }) => ({ label, value })),
     ).toEqual([
       { label: "Preço atual", value: "R$ 100,00" },
-      { label: "Quanto sobra a cada R$ 100", value: "Indisponível" },
-      {
-        label: "Quanto sobra antes dos gastos mensais",
-        value: "R$ 42,00",
-      },
       {
         label: "Menor preço antes dos gastos mensais",
         value: "R$ 54,35",
       },
       {
-        label: "Preço para a meta, sem gastos mensais",
-        value: "R$ 69,45",
+        label: "Quanto sobra a cada R$ 100",
+        value: "Sem vendas para calcular",
       },
+      { label: "Resultado do mês", value: "-R$ 3.000,00" },
+      { label: "Vendas necessárias no mês", value: "72 vendas" },
     ]);
   });
 
@@ -307,14 +304,14 @@ describe("toReportViewModel", () => {
       viewModel.numbers.map(({ label, value }) => ({ label, value })),
     ).toEqual([
       { label: "Preço atual", value: "R$ 100,00" },
-      { label: "Quanto sobra a cada R$ 100", value: "12%" },
-      { label: "Quanto sobra por unidade", value: "R$ 12,00" },
       { label: "Menor preço sem prejuízo", value: "R$ 86,96" },
-      { label: "Preço para alcançar a meta (20%)", value: "R$ 111,12" },
+      { label: "Quanto sobra a cada R$ 100", value: "R$ 12,00" },
+      { label: "Resultado do mês", value: "R$ 1.200,00" },
+      { label: "Vendas necessárias no mês", value: "72 unidades" },
     ]);
     expect(viewModel.discountSimulationContext).toEqual({
       category: "production",
-      usesAttentionBand: false,
+      mode: "unit_attention",
     });
   });
 
@@ -328,19 +325,16 @@ describe("toReportViewModel", () => {
       viewModel.numbers.map(({ label, value }) => ({ label, value })),
     ).toEqual([
       { label: "Preço atual", value: "R$ 100,00" },
-      { label: "Quanto sobra a cada R$ 100", value: "Indisponível" },
-      {
-        label: "Quanto sobra antes dos gastos mensais",
-        value: "R$ 42,00",
-      },
       {
         label: "Menor preço antes dos gastos mensais",
         value: "R$ 54,35",
       },
       {
-        label: "Preço para a meta, sem gastos mensais",
-        value: "R$ 69,45",
+        label: "Quanto sobra a cada R$ 100",
+        value: "Sem vendas para calcular",
       },
+      { label: "Resultado do mês", value: "-R$ 3.000,00" },
+      { label: "Vendas necessárias no mês", value: "72 unidades" },
     ]);
   });
 
@@ -398,7 +392,7 @@ describe("toReportViewModel", () => {
     ]);
     expect(v4.discountSimulationContext).toEqual({
       category: "service",
-      usesAttentionBand: false,
+      mode: "legacy_target",
     });
   });
 });

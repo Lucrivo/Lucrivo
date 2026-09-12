@@ -16,6 +16,8 @@ const report = {
   verdict: "adequate_margin",
   priority: "volume",
   unit: "hour",
+  schemaVersion: 3,
+  calculationVersion: 2,
   contentVersion: 3,
 } satisfies OwnedReportSummary;
 
@@ -30,6 +32,8 @@ const productReport = {
   verdict: "incomplete_volume",
   priority: "data",
   unit: "unit",
+  schemaVersion: 1,
+  calculationVersion: 1,
   contentVersion: 2,
 } satisfies OwnedReportSummary;
 
@@ -44,6 +48,8 @@ const productionReport = {
   verdict: "tight_margin",
   priority: "margin",
   unit: "unit",
+  schemaVersion: 1,
+  calculationVersion: 1,
   contentVersion: 2,
 } satisfies OwnedReportSummary;
 

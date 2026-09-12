@@ -36,6 +36,7 @@ const scenarioLabels = {
   week: "Por semana",
   month: "Por mês",
   resale: "Revenda",
+  digital: "Produto digital",
   manufacturing: "Fabricação própria",
 } as const satisfies Record<ReportScenario, string>;
 
@@ -60,6 +61,14 @@ const verdictPresentation: Record<
   },
   operational_loss: {
     badge: "destructive",
+    icon: CircleAlertIcon,
+  },
+  no_sales: {
+    badge: "info",
+    icon: CircleGaugeIcon,
+  },
+  break_even: {
+    badge: "warning",
     icon: CircleAlertIcon,
   },
   tight_margin: {
@@ -87,6 +96,8 @@ function optionalMargin(value: number | null): string {
 function ReportListCard({ report }: { report: OwnedReportSummary }) {
   const language = getReportLanguageProfile({
     category: report.businessCategory,
+    schemaVersion: report.schemaVersion,
+    calculationVersion: report.calculationVersion,
     contentVersion: report.contentVersion,
   });
   const category = categoryLabels[report.businessCategory];

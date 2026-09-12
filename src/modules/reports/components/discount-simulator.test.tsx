@@ -30,6 +30,15 @@ const partialProductBase = {
   partial: true,
 } satisfies ReportDiscountSimulationBase;
 
+const zeroCostCurrentBase = {
+  originalPriceCents: 10_000,
+  unitCostCents: 0,
+  totalFeeBasisPoints: 0,
+  attentionBandBasisPoints: 2_000,
+  minimumPriceCents: 0,
+  partial: true,
+} satisfies ReportDiscountSimulationBase;
+
 describe("simulateDiscount", () => {
   it.each([
     {
@@ -145,6 +154,16 @@ describe("simulateDiscount", () => {
       status: "break_even",
     });
   });
+
+  it.each([0, 10, 50])(
+    "keeps a zero-minimum current simulation available at %i%%",
+    (discount) => {
+      expect(simulateDiscount(zeroCostCurrentBase, discount)).toMatchObject({
+        discountPercent: discount,
+        status: "target",
+      });
+    },
+  );
 });
 
 describe("DiscountSimulator", () => {
@@ -152,7 +171,7 @@ describe("DiscountSimulator", () => {
     render(
       <DiscountSimulator
         base={base}
-        context={{ category: "service", usesAttentionBand: false }}
+        context={{ category: "service", mode: "legacy_target" }}
       />,
     );
 
@@ -166,7 +185,7 @@ describe("DiscountSimulator", () => {
     render(
       <DiscountSimulator
         base={base}
-        context={{ category: "service", usesAttentionBand: false }}
+        context={{ category: "service", mode: "legacy_target" }}
       />,
     );
     const simulator = screen.getByTestId("discount-simulator");
@@ -210,7 +229,7 @@ describe("DiscountSimulator", () => {
     render(
       <DiscountSimulator
         base={{ ...base, unitCostCents: null }}
-        context={{ category: "service", usesAttentionBand: false }}
+        context={{ category: "service", mode: "legacy_target" }}
       />,
     );
 
@@ -226,7 +245,7 @@ describe("DiscountSimulator", () => {
     render(
       <DiscountSimulator
         base={completeProductBase}
-        context={{ category: "product", usesAttentionBand: false }}
+        context={{ category: "product", mode: "legacy_target" }}
       />,
     );
 
@@ -241,7 +260,7 @@ describe("DiscountSimulator", () => {
     render(
       <DiscountSimulator
         base={partialProductBase}
-        context={{ category: "product", usesAttentionBand: false }}
+        context={{ category: "product", mode: "legacy_target" }}
       />,
     );
 
@@ -268,7 +287,7 @@ describe("DiscountSimulator", () => {
     render(
       <DiscountSimulator
         base={base}
-        context={{ category: "service", usesAttentionBand: false }}
+        context={{ category: "service", mode: "legacy_target" }}
       />,
     );
 
@@ -286,7 +305,7 @@ describe("DiscountSimulator", () => {
     render(
       <DiscountSimulator
         base={base}
-        context={{ category: "service", usesAttentionBand: true }}
+        context={{ category: "service", mode: "service_attention" }}
       />,
     );
 
@@ -302,7 +321,7 @@ describe("DiscountSimulator", () => {
     render(
       <DiscountSimulator
         base={completeProductBase}
-        context={{ category: "production", usesAttentionBand: false }}
+        context={{ category: "production", mode: "legacy_target" }}
       />,
     );
 
@@ -318,7 +337,7 @@ describe("DiscountSimulator", () => {
     render(
       <DiscountSimulator
         base={partialProductBase}
-        context={{ category: "production", usesAttentionBand: false }}
+        context={{ category: "production", mode: "legacy_target" }}
       />,
     );
 
@@ -333,6 +352,28 @@ describe("DiscountSimulator", () => {
     );
     expect(screen.getByTestId("discount-safety")).not.toHaveTextContent(
       "custo de compra",
+    );
+  });
+
+  it("uses current partial wording without legacy financial terms", () => {
+    render(
+      <DiscountSimulator
+        base={zeroCostCurrentBase}
+        context={{ category: "product", mode: "unit_attention" }}
+      />,
+    );
+    const simulator = screen.getByTestId("discount-simulator");
+    expect(simulator).toHaveTextContent(
+      "Esta simulação ainda não inclui os gastos mensais, porque nenhuma venda foi informada.",
+    );
+    expect(simulator).toHaveTextContent("Lucro");
+    expect(simulator.textContent).not.toMatch(
+      /despesas fixas|pró-labore|rateados|margem de contribuição/i,
+    );
+    fireEvent.change(screen.getByRole("slider"), { target: { value: "50" } });
+    expect(screen.getByTestId("discount-safety")).toHaveTextContent("Lucro");
+    expect(screen.getByTestId("discount-safety")).not.toHaveTextContent(
+      "limite de 50%",
     );
   });
 });

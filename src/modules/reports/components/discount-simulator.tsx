@@ -21,7 +21,7 @@ type DiscountSimulationStatus =
 
 type DiscountSimulationContext = {
   category: "service" | "product" | "production";
-  usesAttentionBand: boolean;
+  mode: "legacy_target" | "service_attention" | "unit_attention";
 };
 
 type DiscountSimulation = {
@@ -74,7 +74,7 @@ function simulateDiscount(
   if (
     originalPriceCents <= 0 ||
     minimumPriceCents === null ||
-    minimumPriceCents <= 0 ||
+    minimumPriceCents < 0 ||
     unitCostCents === null
   ) {
     return {
@@ -112,7 +112,10 @@ function simulateDiscount(
     status = "break_even";
   } else if (
     realMarginBasisPoints !== null &&
-    realMarginBasisPoints >= base.targetMarginBasisPoints
+    realMarginBasisPoints >=
+      ("attentionBandBasisPoints" in base
+        ? base.attentionBandBasisPoints
+        : base.targetMarginBasisPoints)
   ) {
     status = "target";
   } else {
@@ -130,17 +133,17 @@ function simulateDiscount(
 
 function safetyMessage(
   simulation: DiscountSimulation,
-  targetMarginBasisPoints: number,
+  attentionBasisPoints: number,
   partial: boolean,
   context: DiscountSimulationContext,
 ): string {
-  const target = formatBasisPoints(targetMarginBasisPoints);
+  const target = formatBasisPoints(attentionBasisPoints);
   const partialCost =
     context.category === "production"
       ? "custo de fabricação"
       : "custo de compra";
 
-  if (context.usesAttentionBand) {
+  if (context.mode === "service_attention") {
     switch (simulation.status) {
       case "unavailable":
         return "Não foi possível simular o desconto porque faltam dados para calcular o menor preço sem prejuízo.";
@@ -152,6 +155,36 @@ function safetyMessage(
         return "No limite: este preço apenas paga os gastos, sem deixar dinheiro.";
       case "loss":
         return "Prejuízo: este preço não paga todos os gastos. Reduza o desconto antes de fechar a venda.";
+    }
+  }
+
+  if (context.mode === "unit_attention") {
+    const directCost =
+      context.category === "production"
+        ? "custo de fabricação"
+        : "custo por venda";
+    if (partial) {
+      if (simulation.status === "unavailable")
+        return `Não foi possível simular o desconto porque o menor preço ou o ${directCost} está indisponível.`;
+      const label = {
+        target: "Lucro",
+        below_target: "Margem apertada",
+        break_even: "No limite",
+        loss: "Prejuízo",
+      }[simulation.status];
+      return `${label}. Esta simulação ainda não inclui os gastos mensais, porque nenhuma venda foi informada.`;
+    }
+    switch (simulation.status) {
+      case "unavailable":
+        return "Não foi possível simular o desconto porque faltam dados para calcular o menor preço sem prejuízo.";
+      case "target":
+        return "Lucro: depois deste desconto, ainda sobram pelo menos R$ 20 a cada R$ 100 vendidos.";
+      case "below_target":
+        return "Margem apertada: o preço paga os gastos, mas sobram menos de R$ 20 a cada R$ 100 vendidos.";
+      case "break_even":
+        return "No limite: este preço apenas paga os gastos, sem deixar dinheiro.";
+      case "loss":
+        return "Prejuízo: este preço não paga todos os gastos. Reduza o desconto.";
     }
   }
 
@@ -219,7 +252,7 @@ function DiscountSimulator({
       <CardHeader className="gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <h3 className="max-w-2xl text-lg font-semibold sm:text-xl">
-            {context.usesAttentionBand
+            {context.mode !== "legacy_target"
               ? "Quanto de desconto posso dar sem ter prejuízo?"
               : "Quanto de desconto eu consigo dar sem destruir minha margem?"}
           </h3>
@@ -232,14 +265,15 @@ function DiscountSimulator({
         <p className="text-muted-foreground max-w-3xl text-[0.9375rem] leading-6">
           {partial
             ? "Arraste e veja como o desconto altera o preço e a contribuição disponível para pagar a operação."
-            : context.usesAttentionBand
+            : context.mode === "service_attention"
               ? "Arraste e veja como o desconto muda o preço e quanto sobra depois dos gastos."
               : "Arraste e veja o preço, a margem e o lucro mudarem — e onde está o seu limite."}
         </p>
         {partial ? (
           <p className="border-info/25 bg-info/8 text-info rounded-xl border px-4 py-3 text-sm leading-5 font-medium">
-            Simulação parcial: despesas fixas e pró-labore não foram rateados
-            por unidade.
+            {context.mode === "unit_attention"
+              ? "Esta simulação ainda não inclui os gastos mensais, porque nenhuma venda foi informada."
+              : "Simulação parcial: despesas fixas e pró-labore não foram rateados por unidade."}
           </p>
         ) : null}
       </CardHeader>
@@ -294,10 +328,13 @@ function DiscountSimulator({
             <div className="border-border/70 bg-card grid gap-1 rounded-xl border p-3">
               <dt className="text-muted-foreground text-xs">
                 {partial
-                  ? "Margem de contribuição"
+                  ? context.mode === "unit_attention"
+                    ? "Quanto sobra a cada R$ 100"
+                    : "Margem de contribuição"
                   : isUnitReport
                     ? "Margem real"
-                    : context.usesAttentionBand
+                    : context.mode === "service_attention" ||
+                        context.mode === "unit_attention"
                       ? "Quanto sobra a cada R$ 100"
                       : "Nova margem"}
               </dt>
@@ -308,10 +345,13 @@ function DiscountSimulator({
             <div className="border-border/70 bg-card grid gap-1 rounded-xl border p-3">
               <dt className="text-muted-foreground text-xs">
                 {partial
-                  ? "Contribuição por unidade"
+                  ? context.mode === "unit_attention"
+                    ? "Valor deixado por unidade"
+                    : "Contribuição por unidade"
                   : isUnitReport
                     ? "Lucro por unidade"
-                    : context.usesAttentionBand
+                    : context.mode === "service_attention" ||
+                        context.mode === "unit_attention"
                       ? "Quanto sobra por serviço"
                       : "Lucro por venda"}
               </dt>
@@ -333,7 +373,9 @@ function DiscountSimulator({
             <StatusIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
             {safetyMessage(
               simulation,
-              base.targetMarginBasisPoints,
+              "attentionBandBasisPoints" in base
+                ? base.attentionBandBasisPoints
+                : base.targetMarginBasisPoints,
               partial,
               context,
             )}

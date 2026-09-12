@@ -15,6 +15,11 @@ type ReportLanguageProfile = {
   verdictLabels: Record<ReportVerdict, string>;
 };
 
+type ReportVersionIdentity = Pick<
+  ReportSnapshot,
+  "category" | "schemaVersion" | "calculationVersion" | "contentVersion"
+>;
+
 const legacyReportLanguage = {
   isPlainLanguage: false,
   reportEyebrow: "Seu relatório financeiro",
@@ -38,6 +43,8 @@ const legacyReportLanguage = {
     direct_loss: "Prejuízo direto",
     incomplete_volume: "Complete o diagnóstico",
     operational_loss: "Preço não cobre a operação",
+    no_sales: "Sem vendas no mês",
+    break_even: "No limite",
     tight_margin: "Margem apertada",
     adequate_margin: "Margem adequada",
     above_target: "Acima da meta",
@@ -67,6 +74,8 @@ const plainReportLanguage = {
     direct_loss: "Venda com prejuízo",
     incomplete_volume: "Falta informar as vendas",
     operational_loss: "Preço abaixo dos gastos",
+    no_sales: "Sem vendas no mês",
+    break_even: "No limite",
     tight_margin: "Abaixo da meta",
     adequate_margin: "Meta alcançada",
     above_target: "Acima da meta",
@@ -79,15 +88,28 @@ const normalizedServiceReportLanguage = {
     ...plainReportLanguage.verdictLabels,
     direct_loss: "Prejuízo",
     operational_loss: "Prejuízo",
+    no_sales: "Sem vendas no mês",
+    break_even: "No limite",
     tight_margin: "Pouca folga",
     adequate_margin: "Boa folga",
     above_target: "Boa folga",
   },
 } as const satisfies ReportLanguageProfile;
 
-function usesPlainLanguage(
-  snapshot: Pick<ReportSnapshot, "category" | "contentVersion">,
-): boolean {
+const currentUnitReportLanguage = {
+  ...plainReportLanguage,
+  verdictLabels: {
+    ...plainReportLanguage.verdictLabels,
+    direct_loss: "Prejuízo por venda",
+    operational_loss: "Prejuízo no mês",
+    no_sales: "Sem vendas no mês",
+    break_even: "No limite",
+    tight_margin: "Margem apertada",
+    adequate_margin: "Lucro",
+  },
+} as const satisfies ReportLanguageProfile;
+
+function usesPlainLanguage(snapshot: ReportVersionIdentity): boolean {
   return (
     (snapshot.category === "service" &&
       (snapshot.contentVersion === 4 || snapshot.contentVersion === 5)) ||
@@ -97,8 +119,16 @@ function usesPlainLanguage(
 }
 
 function getReportLanguageProfile(
-  snapshot: Pick<ReportSnapshot, "category" | "contentVersion">,
+  snapshot: ReportVersionIdentity,
 ): ReportLanguageProfile {
+  if (
+    (snapshot.category === "product" || snapshot.category === "production") &&
+    snapshot.schemaVersion === 2 &&
+    snapshot.calculationVersion === 2 &&
+    snapshot.contentVersion === 3
+  ) {
+    return currentUnitReportLanguage;
+  }
   if (snapshot.category === "service" && snapshot.contentVersion === 5) {
     return normalizedServiceReportLanguage;
   }

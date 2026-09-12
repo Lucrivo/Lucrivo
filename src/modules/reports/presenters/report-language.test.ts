@@ -4,14 +4,19 @@ import { getReportLanguageProfile } from "./report-language";
 
 describe("getReportLanguageProfile", () => {
   it.each([
-    ["service", 2],
-    ["service", 3],
-    ["product", 1],
-    ["production", 1],
+    ["service", 2, 1, 2],
+    ["service", 3, 2, 3],
+    ["product", 1, 1, 1],
+    ["production", 1, 1, 1],
   ] as const)(
-    "keeps legacy language for %s content %s",
-    (category, contentVersion) => {
-      const language = getReportLanguageProfile({ category, contentVersion });
+    "keeps legacy language for %s tuple %s/%s/%s",
+    (category, schemaVersion, calculationVersion, contentVersion) => {
+      const language = getReportLanguageProfile({
+        category,
+        schemaVersion,
+        calculationVersion,
+        contentVersion,
+      });
 
       expect(language.isPlainLanguage).toBe(false);
       expect(language.reportEyebrow).toBe("Seu relatório financeiro");
@@ -24,14 +29,19 @@ describe("getReportLanguageProfile", () => {
   );
 
   it.each([
-    ["service", 4],
-    ["product", 2],
-    ["production", 2],
+    ["service", 3, 2, 4],
+    ["product", 1, 1, 2],
+    ["production", 1, 1, 2],
   ] as const)(
-    "uses plain language for %s content %s",
-    (category, contentVersion) => {
+    "uses plain language for %s tuple %s/%s/%s",
+    (category, schemaVersion, calculationVersion, contentVersion) => {
       expect(
-        getReportLanguageProfile({ category, contentVersion }),
+        getReportLanguageProfile({
+          category,
+          schemaVersion,
+          calculationVersion,
+          contentVersion,
+        }),
       ).toMatchObject({
         isPlainLanguage: true,
         reportEyebrow: "Resultado do seu diagnóstico",
@@ -55,6 +65,8 @@ describe("getReportLanguageProfile", () => {
           direct_loss: "Venda com prejuízo",
           incomplete_volume: "Falta informar as vendas",
           operational_loss: "Preço abaixo dos gastos",
+          no_sales: "Sem vendas no mês",
+          break_even: "No limite",
           tight_margin: "Abaixo da meta",
           adequate_margin: "Meta alcançada",
           above_target: "Acima da meta",
@@ -65,8 +77,12 @@ describe("getReportLanguageProfile", () => {
 
   it("uses the attention-band labels for current Service reports", () => {
     expect(
-      getReportLanguageProfile({ category: "service", contentVersion: 5 })
-        .verdictLabels,
+      getReportLanguageProfile({
+        category: "service",
+        schemaVersion: 4,
+        calculationVersion: 3,
+        contentVersion: 5,
+      }).verdictLabels,
     ).toMatchObject({
       direct_loss: "Prejuízo",
       operational_loss: "Prejuízo",
@@ -75,4 +91,30 @@ describe("getReportLanguageProfile", () => {
       above_target: "Boa folga",
     });
   });
+
+  it.each(["product", "production"] as const)(
+    "uses the current unit profile only for the full %s tuple",
+    (category) => {
+      const current = getReportLanguageProfile({
+        category,
+        schemaVersion: 2,
+        calculationVersion: 2,
+        contentVersion: 3,
+      });
+      const mismatched = getReportLanguageProfile({
+        category,
+        schemaVersion: 1,
+        calculationVersion: 1,
+        contentVersion: 3,
+      });
+      expect(current.verdictLabels).toMatchObject({
+        no_sales: "Sem vendas no mês",
+        break_even: "No limite",
+        tight_margin: "Margem apertada",
+        adequate_margin: "Lucro",
+      });
+      expect(mismatched).toBeDefined();
+      expect(mismatched.verdictLabels.adequate_margin).not.toBe("Lucro");
+    },
+  );
 });
