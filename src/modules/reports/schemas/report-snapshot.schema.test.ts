@@ -375,6 +375,69 @@ const validProductV2Snapshot = {
   contentVersion: 2,
 };
 
+const validProductV3Snapshot = {
+  schemaVersion: 2,
+  calculationVersion: 2,
+  contentVersion: 3,
+  category: "product",
+  scenario: "resale",
+  currency: "BRL",
+  unit: "unit",
+  policy: {
+    attentionBandBasisPoints: 2000,
+    weeklyDivisorHundredths: 433,
+    operatingDaysPerWeek: 6,
+    maximumDiscountPercent: 50,
+    proLaboreIncluded: true,
+  },
+  inputs: {
+    productKind: "resale",
+    purchaseUnitCostCents: 5000,
+    unitSalePriceCents: 10000,
+    fixedMonthlyExpensesCents: 100000,
+    monthlySalesVolume: 100,
+    proLaboreIncluded: true,
+    proLaboreCents: 200000,
+    taxRateBasisPoints: 600,
+    cardFeeRateBasisPoints: 200,
+  },
+  results: {
+    effectiveFixedCostCents: 300000,
+    purchaseUnitCostCents: 5000,
+    fixedAllocationCents: 3000,
+    totalUnitCostCents: 8000,
+    currentPriceCents: 10000,
+    feeAmountCents: 800,
+    netRevenueCents: 9200,
+    unitContributionCents: 4200,
+    unitProfitCents: 1200,
+    monthlySalesVolumeUsed: 100,
+    monthlyGrossRevenueCents: 1000000,
+    monthlyNetRevenueCents: 920000,
+    monthlyResultCents: 120000,
+    realMarginBasisPoints: 1200,
+    minimumPriceCents: 8696,
+    priceReferencesPartial: false,
+    monthlySalesGoal: 72,
+    weeklySalesGoal: 17,
+    dailySalesGoal: 3,
+    breakEvenDiscountPercent: 13,
+    totalFeeBasisPoints: 800,
+    verdict: "tight_margin",
+    priority: "margin",
+  },
+  executiveSummary,
+  sections,
+  discountSimulationBase: {
+    originalPriceCents: 10000,
+    unitCostCents: 8000,
+    totalFeeBasisPoints: 800,
+    attentionBandBasisPoints: 2000,
+    minimumPriceCents: 8696,
+    partial: false,
+  },
+};
+
 const validProductionV2Snapshot = {
   ...validProductionSnapshot,
   contentVersion: 2,
@@ -509,16 +572,45 @@ describe("category-versioned report snapshots", () => {
     );
   });
 
-  it("parses the current Product content version without dropping V1", () => {
-    expect(parseCurrentProductReportSnapshot(validProductV2Snapshot)).toEqual(
-      validProductV2Snapshot,
+  it("parses the current Product content version without dropping V1/V2", () => {
+    expect(parseCurrentProductReportSnapshot(validProductV3Snapshot)).toEqual(
+      validProductV3Snapshot,
     );
     expect(parseProductReportSnapshot(validProductV2Snapshot)).toEqual(
       validProductV2Snapshot,
     );
-    expect(parseReportSnapshot(validProductV2Snapshot)).toEqual(
-      validProductV2Snapshot,
+    expect(parseReportSnapshot(validProductV3Snapshot)).toEqual(
+      validProductV3Snapshot,
     );
+  });
+
+  it("accepts Digital Product V3 and rejects incoherent current contracts", () => {
+    const digital = {
+      ...validProductV3Snapshot,
+      scenario: "digital",
+      inputs: { ...validProductV3Snapshot.inputs, productKind: "digital" },
+    };
+    expect(parseProductReportSnapshot(digital)).toEqual(digital);
+    for (const invalid of [
+      { ...validProductV3Snapshot, scenario: "digital" },
+      { ...validProductV3Snapshot, calculationVersion: 1 },
+      {
+        ...validProductV3Snapshot,
+        results: {
+          ...validProductV3Snapshot.results,
+          monthlySalesVolumeUsed: 0,
+        },
+      },
+      {
+        ...validProductV3Snapshot,
+        results: { ...validProductV3Snapshot.results, targetPriceCents: 11112 },
+      },
+      {
+        ...validProductV3Snapshot,
+        results: { ...validProductV3Snapshot.results, verdict: "above_target" },
+      },
+    ])
+      expect(() => parseProductReportSnapshot(invalid)).toThrow();
   });
 
   it("parses a complete composed Production V1 snapshot", () => {

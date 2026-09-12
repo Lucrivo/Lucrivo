@@ -1,9 +1,9 @@
 const SERVICE_REPORT_SCHEMA_VERSION = 4;
 const SERVICE_REPORT_CALCULATION_VERSION = 3;
 const SERVICE_REPORT_CONTENT_VERSION = 5;
-const PRODUCT_REPORT_SCHEMA_VERSION = 1;
-const PRODUCT_CALCULATION_VERSION = 1;
-const PRODUCT_CONTENT_VERSION = 2;
+const PRODUCT_REPORT_SCHEMA_VERSION = 2;
+const PRODUCT_CALCULATION_VERSION = 2;
+const PRODUCT_CONTENT_VERSION = 3;
 const PRODUCTION_REPORT_SCHEMA_VERSION = 1;
 const PRODUCTION_CALCULATION_VERSION = 1;
 const PRODUCTION_CONTENT_VERSION = 2;
@@ -76,6 +76,8 @@ const reportScenarios = [
   "week",
   "month",
   "resale",
+  "digital",
+  "digital",
   "manufacturing",
 ] as const;
 const reportSectionKeys = [
@@ -218,6 +220,7 @@ export type {
   ProductReportSnapshot,
   ProductReportSnapshotV1,
   ProductReportSnapshotV2,
+  ProductReportSnapshotV3,
 } from "./schemas/product-report-snapshot.schema";
 export type {
   CurrentProductionReportSnapshot,

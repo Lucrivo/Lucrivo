@@ -1,11 +1,7 @@
 import { z } from "zod";
 
 import {
-  PRODUCT_CALCULATION_VERSION,
-  PRODUCT_CONTENT_VERSION,
-  PRODUCT_REPORT_SCHEMA_VERSION,
   productReportPriorities,
-  productReportVerdicts,
   reportExecutiveSummaryAnswerKeys,
   reportExecutiveSummaryFactKeys,
   reportSectionKeys,
@@ -18,15 +14,38 @@ import {
   safeIntegerSchema,
 } from "./report-content.schema";
 
-const productReportPolicySchema = z.strictObject({
+const legacyProductVerdicts = [
+  "direct_loss",
+  "incomplete_volume",
+  "operational_loss",
+  "tight_margin",
+  "adequate_margin",
+  "above_target",
+] as const;
+const currentProductVerdicts = [
+  "direct_loss",
+  "operational_loss",
+  "no_sales",
+  "break_even",
+  "tight_margin",
+  "adequate_margin",
+] as const;
+
+const legacyProductReportPolicySchema = z.strictObject({
   targetMarginBasisPoints: z.literal(2000),
   weeklyDivisorHundredths: z.literal(433),
   operatingDaysPerWeek: z.literal(6),
   maximumDiscountPercent: z.literal(50),
   proLaboreIncluded: z.boolean(),
 });
-
-const productReportInputsSchema = z.strictObject({
+const productReportPolicySchema = z.strictObject({
+  attentionBandBasisPoints: z.literal(2000),
+  weeklyDivisorHundredths: z.literal(433),
+  operatingDaysPerWeek: z.literal(6),
+  maximumDiscountPercent: z.literal(50),
+  proLaboreIncluded: z.boolean(),
+});
+const legacyProductReportInputsSchema = z.strictObject({
   purchaseUnitCostCents: nonNegativeSafeIntegerSchema,
   unitSalePriceCents: positiveSafeIntegerSchema,
   fixedMonthlyExpensesCents: nonNegativeSafeIntegerSchema,
@@ -36,8 +55,11 @@ const productReportInputsSchema = z.strictObject({
   taxRateBasisPoints: z.number().int().min(0).max(10_000),
   cardFeeRateBasisPoints: z.number().int().min(0).max(10_000),
 });
+const productReportInputsSchema = legacyProductReportInputsSchema.extend({
+  productKind: z.enum(["resale", "digital"]),
+});
 
-const productReportResultsSchema = z.strictObject({
+const legacyProductReportResultsSchema = z.strictObject({
   effectiveFixedCostCents: nonNegativeSafeIntegerSchema,
   purchaseUnitCostCents: nonNegativeSafeIntegerSchema,
   fixedAllocationCents: nonNegativeSafeIntegerSchema.nullable(),
@@ -54,11 +76,36 @@ const productReportResultsSchema = z.strictObject({
   weeklySalesGoal: nonNegativeSafeIntegerSchema.nullable(),
   dailySalesGoal: nonNegativeSafeIntegerSchema.nullable(),
   breakEvenDiscountPercent: nonNegativeSafeIntegerSchema.nullable(),
-  verdict: z.enum(productReportVerdicts),
+  verdict: z.enum(legacyProductVerdicts),
+  priority: z.enum(productReportPriorities),
+});
+const productReportResultsSchema = z.strictObject({
+  effectiveFixedCostCents: nonNegativeSafeIntegerSchema,
+  purchaseUnitCostCents: nonNegativeSafeIntegerSchema,
+  fixedAllocationCents: nonNegativeSafeIntegerSchema.nullable(),
+  totalUnitCostCents: nonNegativeSafeIntegerSchema.nullable(),
+  currentPriceCents: positiveSafeIntegerSchema,
+  feeAmountCents: safeIntegerSchema,
+  netRevenueCents: safeIntegerSchema,
+  unitContributionCents: safeIntegerSchema,
+  unitProfitCents: safeIntegerSchema.nullable(),
+  monthlySalesVolumeUsed: nonNegativeSafeIntegerSchema,
+  monthlyGrossRevenueCents: nonNegativeSafeIntegerSchema,
+  monthlyNetRevenueCents: safeIntegerSchema,
+  monthlyResultCents: safeIntegerSchema,
+  realMarginBasisPoints: safeIntegerSchema.nullable(),
+  minimumPriceCents: nonNegativeSafeIntegerSchema.nullable(),
+  priceReferencesPartial: z.boolean(),
+  monthlySalesGoal: nonNegativeSafeIntegerSchema.nullable(),
+  weeklySalesGoal: nonNegativeSafeIntegerSchema.nullable(),
+  dailySalesGoal: nonNegativeSafeIntegerSchema.nullable(),
+  breakEvenDiscountPercent: nonNegativeSafeIntegerSchema.nullable(),
+  totalFeeBasisPoints: z.number().int().min(0).max(20_000),
+  verdict: z.enum(currentProductVerdicts),
   priority: z.enum(productReportPriorities),
 });
 
-const productReportDiscountSimulationBaseSchema = z.strictObject({
+const legacyProductReportDiscountSimulationBaseSchema = z.strictObject({
   originalPriceCents: positiveSafeIntegerSchema,
   unitCostCents: nonNegativeSafeIntegerSchema,
   totalFeeBasisPoints: z.number().int().min(0).max(20_000),
@@ -66,118 +113,123 @@ const productReportDiscountSimulationBaseSchema = z.strictObject({
   minimumPriceCents: nonNegativeSafeIntegerSchema.nullable(),
   partial: z.boolean(),
 });
+const productReportDiscountSimulationBaseSchema = z.strictObject({
+  originalPriceCents: positiveSafeIntegerSchema,
+  unitCostCents: nonNegativeSafeIntegerSchema,
+  totalFeeBasisPoints: z.number().int().min(0).max(20_000),
+  attentionBandBasisPoints: z.literal(2000),
+  minimumPriceCents: nonNegativeSafeIntegerSchema.nullable(),
+  partial: z.boolean(),
+});
 
-const productReportSnapshotCoreSchema = z.strictObject({
+type OrderedSnapshot = {
+  executiveSummary: z.infer<typeof reportExecutiveSummarySchema>;
+  sections: z.infer<typeof reportSectionSchema>[];
+};
+function validateOrderedContent(
+  snapshot: OrderedSnapshot,
+  context: z.RefinementCtx,
+) {
+  for (const [index, key] of reportExecutiveSummaryFactKeys.entries())
+    if (snapshot.executiveSummary.facts[index]?.key !== key)
+      context.addIssue({
+        code: "custom",
+        path: ["executiveSummary", "facts", index, "key"],
+        message: `O fato ${index + 1} deve usar a chave ${key}.`,
+      });
+  for (const [index, key] of reportExecutiveSummaryAnswerKeys.entries())
+    if (snapshot.executiveSummary.answers[index]?.key !== key)
+      context.addIssue({
+        code: "custom",
+        path: ["executiveSummary", "answers", index, "key"],
+        message: `A resposta ${index + 1} deve usar a chave ${key}.`,
+      });
+  for (const [index, key] of reportSectionKeys.entries())
+    if (snapshot.sections[index]?.key !== key)
+      context.addIssue({
+        code: "custom",
+        path: ["sections", index, "key"],
+        message: `A seção ${index + 1} deve usar a chave ${key}.`,
+      });
+}
+
+const legacyProductReportSnapshotCoreSchema = z.strictObject({
   category: z.literal("product"),
   scenario: z.literal("resale"),
   currency: z.literal("BRL"),
   unit: z.literal("unit"),
-  policy: productReportPolicySchema,
-  inputs: productReportInputsSchema,
-  results: productReportResultsSchema,
+  policy: legacyProductReportPolicySchema,
+  inputs: legacyProductReportInputsSchema,
+  results: legacyProductReportResultsSchema,
   executiveSummary: reportExecutiveSummarySchema,
   sections: z.array(reportSectionSchema).length(reportSectionKeys.length),
-  discountSimulationBase: productReportDiscountSimulationBaseSchema,
+  discountSimulationBase: legacyProductReportDiscountSimulationBaseSchema,
 });
-
-function createProductReportSnapshotSchema(contentVersion: 1 | 2) {
-  return productReportSnapshotCoreSchema
+function createLegacyProductReportSnapshotSchema(contentVersion: 1 | 2) {
+  return legacyProductReportSnapshotCoreSchema
     .extend({
-      schemaVersion: z.literal(PRODUCT_REPORT_SCHEMA_VERSION),
-      calculationVersion: z.literal(PRODUCT_CALCULATION_VERSION),
+      schemaVersion: z.literal(1),
+      calculationVersion: z.literal(1),
       contentVersion: z.literal(contentVersion),
     })
     .superRefine((snapshot, context) => {
       const { inputs, policy, results, discountSimulationBase } = snapshot;
-      const hasCompensation = inputs.proLaboreCents > 0;
-
-      if (inputs.proLaboreIncluded !== hasCompensation) {
+      const partial = inputs.monthlySalesVolume === null;
+      if (inputs.proLaboreIncluded !== inputs.proLaboreCents > 0)
         context.addIssue({
           code: "custom",
           path: ["inputs", "proLaboreCents"],
-          message:
-            "O pró-labore deve ser positivo quando incluído e zero quando desabilitado.",
+          message: "O valor mensal deve corresponder à seleção.",
         });
-      }
-
-      if (policy.proLaboreIncluded !== inputs.proLaboreIncluded) {
+      if (policy.proLaboreIncluded !== inputs.proLaboreIncluded)
         context.addIssue({
           code: "custom",
           path: ["policy", "proLaboreIncluded"],
-          message: "A política de pró-labore deve corresponder às entradas.",
+          message: "A política deve corresponder às entradas.",
         });
-      }
-
-      if (results.purchaseUnitCostCents !== inputs.purchaseUnitCostCents) {
+      if (results.purchaseUnitCostCents !== inputs.purchaseUnitCostCents)
         context.addIssue({
           code: "custom",
           path: ["results", "purchaseUnitCostCents"],
-          message:
-            "O custo de compra do resultado deve corresponder às entradas.",
+          message: "O custo deve corresponder às entradas.",
         });
-      }
-
-      if (results.currentPriceCents !== inputs.unitSalePriceCents) {
+      if (results.currentPriceCents !== inputs.unitSalePriceCents)
         context.addIssue({
           code: "custom",
           path: ["results", "currentPriceCents"],
-          message: "O preço atual do resultado deve corresponder às entradas.",
+          message: "O preço deve corresponder às entradas.",
         });
-      }
-
-      const completeResultFields = [
+      for (const [field, value] of [
         ["fixedAllocationCents", results.fixedAllocationCents],
         ["totalUnitCostCents", results.totalUnitCostCents],
         ["unitProfitCents", results.unitProfitCents],
         ["realMarginBasisPoints", results.realMarginBasisPoints],
-      ] as const;
-      const shouldBePartial = inputs.monthlySalesVolume === null;
-
-      for (const [field, value] of completeResultFields) {
-        if (
-          (shouldBePartial && value === null) ||
-          (!shouldBePartial && value !== null)
-        ) {
-          continue;
-        }
-
-        context.addIssue({
-          code: "custom",
-          path: ["results", field],
-          message: shouldBePartial
-            ? "O campo deve ser nulo quando o volume mensal não foi informado."
-            : "O campo deve ser preenchido quando o volume mensal foi informado.",
-        });
-      }
-
-      if (results.priceReferencesPartial !== shouldBePartial) {
+      ] as const)
+        if ((partial && value !== null) || (!partial && value === null))
+          context.addIssue({
+            code: "custom",
+            path: ["results", field],
+            message: "O campo não corresponde ao volume.",
+          });
+      if (results.priceReferencesPartial !== partial)
         context.addIssue({
           code: "custom",
           path: ["results", "priceReferencesPartial"],
-          message:
-            "O indicador de referência parcial não corresponde ao volume.",
+          message: "O indicador parcial não corresponde ao volume.",
         });
-      }
-
-      const applicableUnitCost =
+      const applicableCost =
         results.totalUnitCostCents ?? results.purchaseUnitCostCents;
-      const expectedTotalFeeBasisPoints =
-        inputs.taxRateBasisPoints + inputs.cardFeeRateBasisPoints;
-      const baseChecks = [
+      const checks = [
         [
           "originalPriceCents",
           discountSimulationBase.originalPriceCents,
           results.currentPriceCents,
         ],
-        [
-          "unitCostCents",
-          discountSimulationBase.unitCostCents,
-          applicableUnitCost,
-        ],
+        ["unitCostCents", discountSimulationBase.unitCostCents, applicableCost],
         [
           "totalFeeBasisPoints",
           discountSimulationBase.totalFeeBasisPoints,
-          expectedTotalFeeBasisPoints,
+          inputs.taxRateBasisPoints + inputs.cardFeeRateBasisPoints,
         ],
         [
           "targetMarginBasisPoints",
@@ -189,84 +241,157 @@ function createProductReportSnapshotSchema(contentVersion: 1 | 2) {
           discountSimulationBase.minimumPriceCents,
           results.minimumPriceCents,
         ],
-        ["partial", discountSimulationBase.partial, shouldBePartial],
+        ["partial", discountSimulationBase.partial, partial],
       ] as const;
+      for (const [field, actual, expected] of checks)
+        if (actual !== expected)
+          context.addIssue({
+            code: "custom",
+            path: ["discountSimulationBase", field],
+            message: "A base do simulador deve corresponder ao diagnóstico.",
+          });
+      validateOrderedContent(snapshot, context);
+    });
+}
+const productReportSnapshotV1Schema =
+  createLegacyProductReportSnapshotSchema(1);
+const productReportSnapshotV2Schema =
+  createLegacyProductReportSnapshotSchema(2);
 
-      for (const [field, actual, expected] of baseChecks) {
-        if (actual === expected) continue;
-
+const productReportSnapshotV3Schema = z
+  .strictObject({
+    schemaVersion: z.literal(2),
+    calculationVersion: z.literal(2),
+    contentVersion: z.literal(3),
+    category: z.literal("product"),
+    scenario: z.enum(["resale", "digital"]),
+    currency: z.literal("BRL"),
+    unit: z.literal("unit"),
+    policy: productReportPolicySchema,
+    inputs: productReportInputsSchema,
+    results: productReportResultsSchema,
+    executiveSummary: reportExecutiveSummarySchema,
+    sections: z.array(reportSectionSchema).length(reportSectionKeys.length),
+    discountSimulationBase: productReportDiscountSimulationBaseSchema,
+  })
+  .superRefine((snapshot, context) => {
+    const { inputs, policy, results, discountSimulationBase } = snapshot;
+    const usedVolume = inputs.monthlySalesVolume ?? 0;
+    const partial = inputs.monthlySalesVolume === null;
+    if (snapshot.scenario !== inputs.productKind)
+      context.addIssue({
+        code: "custom",
+        path: ["scenario"],
+        message: "O cenário deve corresponder ao tipo de produto.",
+      });
+    if (inputs.proLaboreIncluded !== inputs.proLaboreCents > 0)
+      context.addIssue({
+        code: "custom",
+        path: ["inputs", "proLaboreCents"],
+        message: "O valor mensal deve corresponder à seleção.",
+      });
+    if (policy.proLaboreIncluded !== inputs.proLaboreIncluded)
+      context.addIssue({
+        code: "custom",
+        path: ["policy", "proLaboreIncluded"],
+        message: "A política deve corresponder às entradas.",
+      });
+    if (results.purchaseUnitCostCents !== inputs.purchaseUnitCostCents)
+      context.addIssue({
+        code: "custom",
+        path: ["results", "purchaseUnitCostCents"],
+        message: "O custo deve corresponder às entradas.",
+      });
+    if (results.currentPriceCents !== inputs.unitSalePriceCents)
+      context.addIssue({
+        code: "custom",
+        path: ["results", "currentPriceCents"],
+        message: "O preço deve corresponder às entradas.",
+      });
+    if (results.monthlySalesVolumeUsed !== usedVolume)
+      context.addIssue({
+        code: "custom",
+        path: ["results", "monthlySalesVolumeUsed"],
+        message: "A quantidade usada deve corresponder à entrada.",
+      });
+    for (const [field, value] of [
+      ["fixedAllocationCents", results.fixedAllocationCents],
+      ["totalUnitCostCents", results.totalUnitCostCents],
+      ["unitProfitCents", results.unitProfitCents],
+      ["realMarginBasisPoints", results.realMarginBasisPoints],
+    ] as const)
+      if (
+        (usedVolume === 0 && value !== null) ||
+        (usedVolume > 0 && value === null)
+      )
+        context.addIssue({
+          code: "custom",
+          path: ["results", field],
+          message: "O campo deve corresponder à quantidade usada.",
+        });
+    if (results.priceReferencesPartial !== partial)
+      context.addIssue({
+        code: "custom",
+        path: ["results", "priceReferencesPartial"],
+        message: "O indicador parcial não corresponde ao volume original.",
+      });
+    const applicableCost =
+      results.totalUnitCostCents ?? results.purchaseUnitCostCents;
+    const checks = [
+      [
+        "originalPriceCents",
+        discountSimulationBase.originalPriceCents,
+        results.currentPriceCents,
+      ],
+      ["unitCostCents", discountSimulationBase.unitCostCents, applicableCost],
+      [
+        "totalFeeBasisPoints",
+        discountSimulationBase.totalFeeBasisPoints,
+        results.totalFeeBasisPoints,
+      ],
+      [
+        "attentionBandBasisPoints",
+        discountSimulationBase.attentionBandBasisPoints,
+        policy.attentionBandBasisPoints,
+      ],
+      [
+        "minimumPriceCents",
+        discountSimulationBase.minimumPriceCents,
+        results.minimumPriceCents,
+      ],
+      ["partial", discountSimulationBase.partial, partial],
+    ] as const;
+    for (const [field, actual, expected] of checks)
+      if (actual !== expected)
         context.addIssue({
           code: "custom",
           path: ["discountSimulationBase", field],
           message: "A base do simulador deve corresponder ao diagnóstico.",
         });
-      }
+    validateOrderedContent(snapshot, context);
+  });
 
-      for (const [
-        index,
-        expectedKey,
-      ] of reportExecutiveSummaryFactKeys.entries()) {
-        if (snapshot.executiveSummary.facts[index]?.key === expectedKey)
-          continue;
-
-        context.addIssue({
-          code: "custom",
-          path: ["executiveSummary", "facts", index, "key"],
-          message: `O fato ${index + 1} deve usar a chave ${expectedKey}.`,
-        });
-      }
-
-      for (const [
-        index,
-        expectedKey,
-      ] of reportExecutiveSummaryAnswerKeys.entries()) {
-        if (snapshot.executiveSummary.answers[index]?.key === expectedKey)
-          continue;
-
-        context.addIssue({
-          code: "custom",
-          path: ["executiveSummary", "answers", index, "key"],
-          message: `A resposta ${index + 1} deve usar a chave ${expectedKey}.`,
-        });
-      }
-
-      for (const [index, expectedKey] of reportSectionKeys.entries()) {
-        if (snapshot.sections[index]?.key === expectedKey) continue;
-
-        context.addIssue({
-          code: "custom",
-          path: ["sections", index, "key"],
-          message: `A seção ${index + 1} deve usar a chave ${expectedKey}.`,
-        });
-      }
-    });
-}
-
-const productReportSnapshotV1Schema = createProductReportSnapshotSchema(1);
-const productReportSnapshotV2Schema = createProductReportSnapshotSchema(
-  PRODUCT_CONTENT_VERSION,
-);
 const productReportSnapshotSchema = z.union([
   productReportSnapshotV1Schema,
   productReportSnapshotV2Schema,
+  productReportSnapshotV3Schema,
 ]);
-
 type ProductReportDiscountSimulationBase = z.infer<
   typeof productReportDiscountSimulationBaseSchema
 >;
 type ProductReportSnapshotV1 = z.infer<typeof productReportSnapshotV1Schema>;
 type ProductReportSnapshotV2 = z.infer<typeof productReportSnapshotV2Schema>;
+type ProductReportSnapshotV3 = z.infer<typeof productReportSnapshotV3Schema>;
 type ProductReportSnapshot = z.infer<typeof productReportSnapshotSchema>;
-type CurrentProductReportSnapshot = ProductReportSnapshotV2;
+type CurrentProductReportSnapshot = ProductReportSnapshotV3;
 
 function parseProductReportSnapshot(value: unknown): ProductReportSnapshot {
   return productReportSnapshotSchema.parse(value);
 }
-
 function parseCurrentProductReportSnapshot(
   value: unknown,
 ): CurrentProductReportSnapshot {
-  return productReportSnapshotV2Schema.parse(value);
+  return productReportSnapshotV3Schema.parse(value);
 }
 
 export {
@@ -279,9 +404,11 @@ export {
   productReportSnapshotSchema,
   productReportSnapshotV1Schema,
   productReportSnapshotV2Schema,
+  productReportSnapshotV3Schema,
   type CurrentProductReportSnapshot,
   type ProductReportDiscountSimulationBase,
   type ProductReportSnapshot,
   type ProductReportSnapshotV1,
   type ProductReportSnapshotV2,
+  type ProductReportSnapshotV3,
 };

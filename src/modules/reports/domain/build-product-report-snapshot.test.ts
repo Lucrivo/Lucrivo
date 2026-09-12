@@ -6,7 +6,7 @@ import { parseProductReportSnapshot } from "../schemas/product-report-snapshot.s
 import { buildProductReportSnapshot } from "./build-product-report-snapshot";
 import { calculateProductReport } from "./calculate-product-report";
 
-const completeCommand: ProductDiagnosisCommand = {
+const command: ProductDiagnosisCommand = {
   submissionId: "550e8400-e29b-41d4-a716-446655440000",
   productKind: "resale",
   purchaseUnitCostCents: 5000,
@@ -19,130 +19,76 @@ const completeCommand: ProductDiagnosisCommand = {
   cardFeeRateBasisPoints: 200,
 };
 
-function build(command: ProductDiagnosisCommand) {
-  return buildProductReportSnapshot(command, calculateProductReport(command));
+function build(input: ProductDiagnosisCommand) {
+  return buildProductReportSnapshot(input, calculateProductReport(input));
 }
 
 describe("buildProductReportSnapshot", () => {
-  it("assembles the canonical complete Product content V2 snapshot", () => {
-    const calculation = calculateProductReport(completeCommand);
-    const snapshot = buildProductReportSnapshot(completeCommand, calculation);
-
+  it("builds and parses the Product 2/2/3 contract", () => {
+    const snapshot = build(command);
     expect(snapshot).toEqual(
       expect.objectContaining({
-        schemaVersion: 1,
-        calculationVersion: 1,
-        contentVersion: 2,
-        category: "product",
+        schemaVersion: 2,
+        calculationVersion: 2,
+        contentVersion: 3,
         scenario: "resale",
-        currency: "BRL",
-        unit: "unit",
-        policy: {
-          targetMarginBasisPoints: 2000,
-          weeklyDivisorHundredths: 433,
-          operatingDaysPerWeek: 6,
-          maximumDiscountPercent: 50,
-          proLaboreIncluded: true,
-        },
-        inputs: {
-          purchaseUnitCostCents: 5000,
-          unitSalePriceCents: 10000,
-          fixedMonthlyExpensesCents: 100000,
-          monthlySalesVolume: 100,
-          proLaboreIncluded: true,
-          proLaboreCents: 200000,
-          taxRateBasisPoints: 600,
-          cardFeeRateBasisPoints: 200,
-        },
       }),
     );
-    expect(snapshot.results).toEqual({
-      effectiveFixedCostCents: 300000,
-      purchaseUnitCostCents: 5000,
-      fixedAllocationCents: 3000,
-      totalUnitCostCents: 8000,
-      currentPriceCents: 10000,
-      netRevenueCents: 9200,
-      unitContributionCents: 4200,
-      unitProfitCents: 1200,
-      realMarginBasisPoints: 1200,
-      minimumPriceCents: 8696,
-      targetPriceCents: 11112,
-      priceReferencesPartial: false,
-      monthlySalesGoal: 72,
-      weeklySalesGoal: 17,
-      dailySalesGoal: 3,
-      breakEvenDiscountPercent: 13,
-      verdict: "tight_margin",
-      priority: "margin",
-    });
-    expect(snapshot.discountSimulationBase).toEqual({
-      originalPriceCents: 10000,
-      unitCostCents: 8000,
-      totalFeeBasisPoints: 800,
-      targetMarginBasisPoints: 2000,
-      minimumPriceCents: 8696,
-      partial: false,
-    });
-    expect(parseProductReportSnapshot(snapshot)).toEqual(snapshot);
-  });
-
-  it("assembles the canonical partial Product content V2 snapshot", () => {
-    const command = { ...completeCommand, monthlySalesVolume: null };
-    const snapshot = build(command);
-
+    expect(snapshot.policy).toEqual(
+      expect.objectContaining({ attentionBandBasisPoints: 2000 }),
+    );
+    expect(snapshot.inputs.productKind).toBe("resale");
     expect(snapshot.results).toEqual(
       expect.objectContaining({
-        fixedAllocationCents: null,
-        totalUnitCostCents: null,
-        unitProfitCents: null,
-        realMarginBasisPoints: null,
-        minimumPriceCents: 5435,
-        targetPriceCents: 6945,
-        priceReferencesPartial: true,
-        verdict: "incomplete_volume",
-        priority: "data",
+        feeAmountCents: 800,
+        monthlySalesVolumeUsed: 100,
+        monthlyGrossRevenueCents: 1000000,
+        monthlyNetRevenueCents: 920000,
+        monthlyResultCents: 120000,
       }),
     );
-    expect(snapshot.discountSimulationBase).toEqual({
-      originalPriceCents: 10000,
-      unitCostCents: 5000,
-      totalFeeBasisPoints: 800,
-      targetMarginBasisPoints: 2000,
-      minimumPriceCents: 5435,
-      partial: true,
-    });
+    expect(snapshot.results).not.toHaveProperty("targetPriceCents");
     expect(parseProductReportSnapshot(snapshot)).toEqual(snapshot);
   });
 
-  it.each([100, null] as const)(
-    "accepts a zero-cost digital Product snapshot with volume %s",
-    (monthlySalesVolume) => {
-      const snapshot = build({
-        ...completeCommand,
-        purchaseUnitCostCents: 0,
+  it.each([
+    [{ unitSalePriceCents: 5000, monthlySalesVolume: null }, "direct_loss"],
+    [{ monthlySalesVolume: null }, "operational_loss"],
+    [
+      {
+        monthlySalesVolume: null,
         fixedMonthlyExpensesCents: 0,
-        monthlySalesVolume,
         proLaboreIncluded: false,
         proLaboreCents: 0,
-      });
-
-      expect(snapshot.inputs.purchaseUnitCostCents).toBe(0);
-      expect(snapshot.results.purchaseUnitCostCents).toBe(0);
-      expect(snapshot.discountSimulationBase.unitCostCents).toBe(0);
-      expect(parseProductReportSnapshot(snapshot)).toEqual(snapshot);
-    },
-  );
-
-  it.each([
-    [completeCommand, false],
-    [{ ...completeCommand, monthlySalesVolume: null }, true],
+      },
+      "no_sales",
+    ],
+    [{ monthlySalesVolume: 10 }, "operational_loss"],
+    [{ fixedMonthlyExpensesCents: 220000 }, "break_even"],
+    [{}, "tight_margin"],
+    [
+      {
+        fixedMonthlyExpensesCents: 0,
+        proLaboreIncluded: false,
+        proLaboreCents: 0,
+      },
+      "adequate_margin",
+    ],
   ] as const)(
-    "builds five ordered Product sections with deterministic terminology %#",
-    (command, partial) => {
-      const snapshot = build(command);
-      const content = snapshot.sections.map(({ body }) => body).join(" ");
-
+    "builds scenario-specific content for %s",
+    (overrides, verdict) => {
+      const snapshot = build({ ...command, ...overrides });
+      expect(snapshot.results.verdict).toBe(verdict);
+      expect(snapshot.executiveSummary.verdict.label).toBe(
+        {
+          direct_loss: "Prejuízo por venda",
+          operational_loss: "Prejuízo no mês",
+          no_sales: "Sem vendas no mês",
+          break_even: "No limite",
+          tight_margin: "Margem apertada",
+          adequate_margin: "Lucro",
+        }[verdict],
+      );
       expect(snapshot.sections.map(({ key }) => key)).toEqual([
         "break_even",
         "hidden_cost",
@@ -150,36 +96,40 @@ describe("buildProductReportSnapshot", () => {
         "sales_goal",
         "discount_simulator",
       ]);
-      expect(snapshot.sections.every(({ body }) => body.length > 0)).toBe(true);
-      expect(content).toContain("unidade");
-      expect(content).toContain("custo de compra");
-      expect(content).toContain("20%");
-      expect(content).toContain("6 dias");
-      expect(content).not.toContain("hora faturável");
-      expect(content).not.toContain("atendimento");
-
-      if (partial) {
-        expect(content).toContain("sem rateio fixo");
-        expect(content).toContain("contribuição por unidade");
-        expect(content).not.toContain("lucro real por unidade");
-      } else {
-        expect(content).toContain("lucro por unidade");
-        expect(content).toContain("margem real");
-      }
+      expect(snapshot.sections.map(({ title }) => title)).toEqual([
+        "Seu menor preço sem prejuízo",
+        "O que sai de cada venda",
+        "Quanto sobra no mês",
+        "Quanto você precisa vender",
+        "Como um desconto muda o resultado",
+      ]);
     },
   );
 
-  it("suppresses the volume goal when contribution is non-positive", () => {
+  it("uses Digital cost language and preserves omitted volume", () => {
     const snapshot = build({
-      ...completeCommand,
-      unitSalePriceCents: 5000,
+      ...command,
+      productKind: "digital",
+      purchaseUnitCostCents: 0,
       monthlySalesVolume: null,
     });
-
-    expect(snapshot.results.monthlySalesGoal).toBeNull();
-    expect(snapshot.sections[3].body).toContain(
-      "Corrija o custo de compra ou o preço antes de buscar volume",
+    const content = JSON.stringify({
+      executiveSummary: snapshot.executiveSummary,
+      sections: snapshot.sections,
+    });
+    expect(snapshot.scenario).toBe("digital");
+    expect(snapshot.inputs.monthlySalesVolume).toBeNull();
+    expect(snapshot.results.monthlySalesVolumeUsed).toBe(0);
+    expect(content).toContain("custo por venda");
+    expect(content).not.toMatch(/fornecedor|custo de compra|fabricação/i);
+    expect(content).not.toMatch(
+      /ponto de equilíbrio|pró-labore|alíquota|rateio|receita líquida|margem de contribuição|preço-alvo|custo operacional|meta de 20%|margem ideal/i,
     );
-    expect(snapshot.sections[3].body).not.toContain("meta é de");
+  });
+
+  it("keeps Resale supplier-domain wording separate", () => {
+    const content = JSON.stringify(build(command));
+    expect(content).toContain("custo de compra");
+    expect(content).not.toMatch(/produto digital|fabricação/i);
   });
 });
