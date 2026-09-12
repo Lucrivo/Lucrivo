@@ -757,6 +757,33 @@ select results_eq(
   'the paid user keeps one free report and one paid report'
 );
 
+select ok(
+  has_function_privilege(
+    'authenticated',
+    'public.create_product_diagnosis_report_v2(uuid,text,bigint,bigint,bigint,integer,boolean,bigint,integer,integer,smallint,smallint,smallint,text,bigint,integer,bigint,bigint,text,text,text,jsonb)',
+    'execute'
+  )
+  and not has_function_privilege(
+    'service_role',
+    'public.create_product_diagnosis_report_v2(uuid,text,bigint,bigint,bigint,integer,boolean,bigint,integer,integer,smallint,smallint,smallint,text,bigint,integer,bigint,bigint,text,text,text,jsonb)',
+    'execute'
+  ),
+  'Product V2 exposes billing-aware creation only to authenticated users'
+);
+select ok(
+  has_function_privilege(
+    'authenticated',
+    'public.create_production_diagnosis_report_v2(uuid,boolean,bigint,bigint,bigint,bigint,bigint,bigint,bigint,integer,boolean,bigint,integer,integer,smallint,smallint,smallint,text,bigint,integer,bigint,bigint,text,text,text,jsonb)',
+    'execute'
+  )
+  and not has_function_privilege(
+    'service_role',
+    'public.create_production_diagnosis_report_v2(uuid,boolean,bigint,bigint,bigint,bigint,bigint,bigint,bigint,integer,boolean,bigint,integer,integer,smallint,smallint,smallint,text,bigint,integer,bigint,bigint,text,text,text,jsonb)',
+    'execute'
+  ),
+  'Production V2 exposes billing-aware creation only to authenticated users'
+);
+
 select * from finish();
 
 rollback;

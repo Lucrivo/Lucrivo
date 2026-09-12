@@ -18,6 +18,7 @@ select columns_are(
     'diagnosis_id',
     'submission_id',
     'user_id',
+    'product_kind',
     'purchase_unit_cost_cents',
     'unit_sale_price_cents',
     'fixed_monthly_expenses_cents',
@@ -78,6 +79,7 @@ select ok(
       "product_diagnoses_fixed_expenses_check",
       "product_diagnoses_prices_check",
       "product_diagnoses_pro_labore_shape_check",
+      "product_diagnoses_product_kind_check",
       "product_diagnoses_tax_check",
       "product_diagnoses_volume_check"
     ]
@@ -190,6 +192,17 @@ select has_function(
     'jsonb'
   ],
   'atomic Product report creation function exists'
+);
+select has_function(
+  'public',
+  'create_product_diagnosis_report_v2',
+  array[
+    'uuid', 'text', 'bigint', 'bigint', 'bigint', 'integer', 'boolean',
+    'bigint', 'integer', 'integer', 'smallint', 'smallint', 'smallint',
+    'text', 'bigint', 'integer', 'bigint', 'bigint', 'text', 'text',
+    'text', 'jsonb'
+  ],
+  'versioned Product report creation function exists'
 );
 select ok(
   not (
@@ -1159,6 +1172,260 @@ select results_eq(
   $$,
   array[0::bigint],
   'a second user cannot read another owner Product detail'
+);
+
+reset role;
+
+create function pg_temp.product_snapshot_v2(
+  p_kind text default 'digital',
+  p_volume integer default null
+)
+returns jsonb
+language sql
+immutable
+as $$
+  select jsonb_build_object(
+    'schemaVersion', 2,
+    'calculationVersion', 2,
+    'contentVersion', 3,
+    'category', 'product',
+    'scenario', p_kind,
+    'currency', 'BRL',
+    'unit', 'unit',
+    'policy', jsonb_build_object('attentionBandBasisPoints', 2000),
+    'inputs', jsonb_build_object(
+      'productKind', p_kind,
+      'purchaseUnitCostCents', 0,
+      'unitSalePriceCents', 10000,
+      'fixedMonthlyExpensesCents', 100000,
+      'monthlySalesVolume', p_volume,
+      'proLaboreIncluded', true,
+      'proLaboreCents', 200000,
+      'taxRateBasisPoints', 600,
+      'cardFeeRateBasisPoints', 200
+    ),
+    'results', jsonb_build_object(
+      'purchaseUnitCostCents', 0,
+      'currentPriceCents', 10000,
+      'monthlySalesVolumeUsed', coalesce(p_volume, 0),
+      'realMarginBasisPoints', case when p_volume is null then null else 6200 end,
+      'unitProfitCents', case when p_volume is null then null else 6200 end,
+      'monthlyResultCents', case when p_volume is null then -300000 else 620000 end,
+      'verdict', case when p_volume is null then 'operational_loss' else 'adequate_margin' end,
+      'priority', case when p_volume is null then 'volume' else 'margin' end
+    ),
+    'executiveSummary', jsonb_build_object('headline', 'Diagnóstico'),
+    'sections', jsonb_build_array(),
+    'discountSimulationBase', jsonb_build_object('partial', p_volume is null)
+  );
+$$;
+
+create function pg_temp.create_product_report_v2(
+  p_submission_id uuid,
+  p_product_kind text default 'digital',
+  p_monthly_sales_volume integer default null,
+  p_schema_version smallint default 2,
+  p_calculation_version smallint default 2,
+  p_content_version smallint default 3,
+  p_scenario text default 'digital',
+  p_monthly_result_cents bigint default -300000,
+  p_verdict text default 'operational_loss',
+  p_priority text default 'volume',
+  p_unit text default 'unit',
+  p_report_snapshot jsonb default pg_temp.product_snapshot_v2()
+)
+returns bigint
+language sql
+as $$
+  select public.create_product_diagnosis_report_v2(
+    p_submission_id, p_product_kind, 0, 10000, 100000,
+    p_monthly_sales_volume, true, 200000, 600, 200,
+    p_schema_version, p_calculation_version, p_content_version, p_scenario,
+    10000,
+    case when p_monthly_sales_volume is null then null else 6200 end,
+    case when p_monthly_sales_volume is null then null else 6200 end,
+    p_monthly_result_cents, p_verdict, p_priority, p_unit, p_report_snapshot
+  );
+$$;
+
+select ok(
+  not has_function_privilege(
+    'service_role',
+    'public.create_product_diagnosis_report_v2(uuid,text,bigint,bigint,bigint,integer,boolean,bigint,integer,integer,smallint,smallint,smallint,text,bigint,integer,bigint,bigint,text,text,text,jsonb)',
+    'execute'
+  ),
+  'service role cannot execute Product V2 creation'
+);
+select ok(
+  not has_function_privilege(
+    'anon',
+    'public.create_product_diagnosis_report_v2(uuid,text,bigint,bigint,bigint,integer,boolean,bigint,integer,integer,smallint,smallint,smallint,text,bigint,integer,bigint,bigint,text,text,text,jsonb)',
+    'execute'
+  ),
+  'anon cannot execute Product V2 creation'
+);
+select ok(
+  not exists (
+    select 1
+    from pg_proc as p
+    cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) as privilege
+    where p.oid = 'public.create_product_diagnosis_report_v2(uuid,text,bigint,bigint,bigint,integer,boolean,bigint,integer,integer,smallint,smallint,smallint,text,bigint,integer,bigint,bigint,text,text,text,jsonb)'::regprocedure
+      and privilege.grantee = 0
+      and privilege.privilege_type = 'EXECUTE'
+  ),
+  'PUBLIC cannot execute Product V2 creation'
+);
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '', true);
+select throws_ok(
+  $$ select pg_temp.create_product_report_v2(
+    '50000000-0000-4000-8000-000000000069'
+  ) $$,
+  '42501', 'authentication required', 'Product V2 requires a JWT subject'
+);
+select set_config(
+  'request.jwt.claim.sub',
+  '55555555-5555-4555-8555-555555555555',
+  true
+);
+select lives_ok(
+  $$ select pg_temp.create_product_report_v2(
+    '50000000-0000-4000-8000-000000000070'
+  ) $$,
+  'Digital V2 report persists with omitted volume'
+);
+select results_eq(
+  $$
+    select d.scenario, p.product_kind, p.monthly_sales_volume,
+      d.report_snapshot #>> '{results,monthlySalesVolumeUsed}',
+      d.report_snapshot #>> '{results,monthlyResultCents}', d.is_free_report
+    from public.diagnoses d
+    join public.product_diagnoses p on p.diagnosis_id = d.id
+    where d.submission_id = '50000000-0000-4000-8000-000000000070'
+  $$,
+  $$ values ('digital'::text, 'digital'::text, null::integer, '0'::text, '-300000'::text, false) $$,
+  'Digital V2 keeps null input, zero interpreted volume, monthly result, and paid flag'
+);
+select results_eq(
+  $$ select pg_temp.create_product_report_v2('50000000-0000-4000-8000-000000000070') $$,
+  $$ select id from public.diagnoses where submission_id = '50000000-0000-4000-8000-000000000070' $$,
+  'Digital V2 retry returns the same id'
+);
+select lives_ok(
+  $$ select pg_temp.create_product_report_v2(
+    p_submission_id => '50000000-0000-4000-8000-000000000071',
+    p_product_kind => 'resale',
+    p_monthly_sales_volume => 100,
+    p_scenario => 'resale',
+    p_monthly_result_cents => 620000,
+    p_verdict => 'adequate_margin',
+    p_priority => 'margin',
+    p_report_snapshot => pg_temp.product_snapshot_v2('resale', 100)
+  ) $$,
+  'Resale V2 report persists'
+);
+select throws_ok(
+  $$ select pg_temp.create_product_report_v2(
+    '50000000-0000-4000-8000-000000000072', p_product_kind => 'resale'
+  ) $$,
+  '22023', 'invalid product report snapshot',
+  'Product kind and snapshot kind must match'
+);
+select throws_ok(
+  $$ select pg_temp.create_product_report_v2(
+    '50000000-0000-4000-8000-000000000073', p_scenario => 'resale'
+  ) $$,
+  '22023', 'invalid product report snapshot',
+  'Product kind and scenario must match'
+);
+select throws_ok(
+  $$ select pg_temp.create_product_report_v2(
+    '50000000-0000-4000-8000-000000000074', p_schema_version => 1::smallint
+  ) $$,
+  '22023', 'invalid product report snapshot', 'Product V2 rejects wrong schema version'
+);
+select throws_ok(
+  $$ select pg_temp.create_product_report_v2(
+    '50000000-0000-4000-8000-000000000075', p_calculation_version => 1::smallint
+  ) $$,
+  '22023', 'invalid product report snapshot', 'Product V2 rejects wrong calculation version'
+);
+select throws_ok(
+  $$ select pg_temp.create_product_report_v2(
+    '50000000-0000-4000-8000-000000000076', p_content_version => 2::smallint
+  ) $$,
+  '22023', 'invalid product report snapshot', 'Product V2 rejects wrong content version'
+);
+select throws_ok(
+  $$ select pg_temp.create_product_report_v2(
+    '50000000-0000-4000-8000-000000000077', p_monthly_result_cents => -1
+  ) $$,
+  '22023', 'invalid product report snapshot', 'Product V2 rejects a tampered monthly result'
+);
+select throws_ok(
+  $$ select pg_temp.create_product_report_v2(
+    '50000000-0000-4000-8000-000000000078',
+    p_report_snapshot => jsonb_set(pg_temp.product_snapshot_v2(), '{results,monthlySalesVolumeUsed}', '1')
+  ) $$,
+  '22023', 'invalid product report snapshot', 'Product V2 rejects a tampered interpreted volume'
+);
+select throws_ok(
+  $$ select pg_temp.create_product_report_v2(
+    '50000000-0000-4000-8000-000000000079',
+    p_report_snapshot => jsonb_set(pg_temp.product_snapshot_v2(), '{category}', '"production"')
+  ) $$,
+  '22023', 'invalid product report snapshot', 'Product V2 rejects a tampered category'
+);
+select throws_ok(
+  $$ select pg_temp.create_product_report_v2(
+    '50000000-0000-4000-8000-000000000080', p_unit => 'hour'
+  ) $$,
+  '22023', 'invalid product report snapshot', 'Product V2 rejects a tampered unit'
+);
+select throws_ok(
+  $$ select pg_temp.create_product_report_v2(
+    '50000000-0000-4000-8000-000000000081', p_verdict => 'no_sales'
+  ) $$,
+  '22023', 'invalid product report snapshot', 'Product V2 rejects a tampered verdict'
+);
+select throws_ok(
+  $$ select pg_temp.create_product_report_v2(
+    '50000000-0000-4000-8000-000000000082', p_priority => 'price'
+  ) $$,
+  '22023', 'invalid product report snapshot', 'Product V2 rejects a tampered priority'
+);
+select throws_ok(
+  $$ select pg_temp.create_product_report_v2(
+    '50000000-0000-4000-8000-000000000083',
+    p_report_snapshot => jsonb_set(pg_temp.product_snapshot_v2(), '{inputs,unitSalePriceCents}', '9999')
+  ) $$,
+  '22023', 'invalid product report snapshot', 'Product V2 rejects a tampered input'
+);
+select throws_ok(
+  $$ select pg_temp.create_product_report_v2(
+    '50000000-0000-4000-8000-000000000051'
+  ) $$,
+  '23505', 'submission id belongs to another diagnosis',
+  'Product V2 cannot reuse a Service submission id'
+);
+select set_config(
+  'request.jwt.claim.sub',
+  '66666666-6666-4666-8666-666666666666',
+  true
+);
+select lives_ok(
+  $$ select pg_temp.create_product_report_v2(
+    '50000000-0000-4000-8000-000000000084'
+  ) $$,
+  'a free user creates one Product V2 report'
+);
+select throws_ok(
+  $$ select pg_temp.create_product_report_v2(
+    '50000000-0000-4000-8000-000000000085'
+  ) $$,
+  'P0001', 'free_report_limit_reached',
+  'Product V2 preserves the one-free-report rule'
 );
 
 reset role;

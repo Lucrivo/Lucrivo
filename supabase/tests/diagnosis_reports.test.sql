@@ -769,6 +769,22 @@ select results_eq(
 );
 reset role;
 
+select ok(
+  pg_get_constraintdef(
+    (select oid from pg_constraint where conrelid = 'public.diagnoses'::regclass and conname = 'diagnoses_scenario_check')
+  ) like '%digital%',
+  'registry scenario constraint accepts Digital Product'
+);
+select ok(
+  pg_get_constraintdef(
+    (select oid from pg_constraint where conrelid = 'public.diagnoses'::regclass and conname = 'diagnoses_verdict_check')
+  ) like '%no_sales%'
+  and pg_get_constraintdef(
+    (select oid from pg_constraint where conrelid = 'public.diagnoses'::regclass and conname = 'diagnoses_verdict_check')
+  ) like '%break_even%',
+  'registry verdict constraint includes the current unit-report verdicts'
+);
+
 select * from finish();
 
 rollback;
