@@ -103,12 +103,16 @@ describe("Product diagnosis steps", () => {
 
     resale.focus();
     await user.keyboard("{ArrowRight}");
-    expect(screen.getByRole("radio", { name: "Produto digital" })).toBeChecked();
-    expect(screen.getByLabelText("Existe algum gasto a cada venda?")).toHaveValue(
-      "50,00",
-    );
+    expect(
+      screen.getByRole("radio", { name: "Produto digital" }),
+    ).toBeChecked();
+    expect(
+      screen.getByLabelText("Existe algum gasto a cada venda?"),
+    ).toHaveValue("50,00");
 
-    await user.click(screen.getByRole("button", { name: "Entenda este custo" }));
+    await user.click(
+      screen.getByRole("button", { name: "Entenda este custo" }),
+    );
     expect(
       screen.getByText(
         "Um produto digital pode não ter custo direto. Se houver licença, plataforma, entrega ou outra cobrança que acontece a cada venda, informe esse valor.",

@@ -10,7 +10,7 @@ O diagnóstico rápido do Lucrivo procura responder, em linguagem simples, três
 
 Este documento trata somente do **diagnóstico rápido de um único produto, produção ou serviço**. A análise detalhada de vários produtos, a ficha técnica completa do estoque, o painel demonstrativo e a comparação histórica não fazem parte deste escopo.
 
-O sistema não pesquisa preços de concorrentes e não determina um “preço correto de mercado”. Ele calcula referências com base exclusivamente nos números informados pelo usuário e na meta de lucro adotada.
+O sistema não pesquisa preços de concorrentes e não determina um “preço correto de mercado”. Ele calcula referências com base exclusivamente nos números informados pelo usuário. Nos relatórios atuais de Produto e Produção, R$ 20 a cada R$ 100 é apenas uma faixa interna de atenção, não uma meta universal.
 
 ---
 
@@ -29,6 +29,7 @@ Escolha do que será analisado
         |
         +--> Produto
         |      +--> diagnóstico rápido de revenda
+        |      +--> diagnóstico rápido de produto digital
         |      +--> sair do rápido e abrir análise detalhada
         |
         +--> Produção
@@ -47,7 +48,7 @@ Resultado imediato
         +--> veredito de margem
         +--> principal ponto a corrigir
         +--> preço atual e menor preço sem prejuízo
-        +--> lucro e margem por unidade/atendimento
+        +--> resultado do mês e quanto sobra a cada R$ 100
         +--> meta de vendas
         +--> simulador de desconto
         +--> ajustar respostas
@@ -101,16 +102,16 @@ A duração do serviço é obrigatória quando a cobrança é por atendimento. E
 
 O relatório mostra a conversão em um popover, com o preço original e seu equivalente por hora. Os dois valores são salvos para que o cálculo continue verificável.
 
-### 3.2 Produto de revenda
+### 3.2 Produto para revenda ou digital
 
 Depois de escolher “Um produto”, o usuário decide entre:
 
 - **Diagnóstico rápido:** analisa um único produto com poucos dados;
 - **Análise detalhada:** deixa o fluxo rápido e abre o cadastro de vários itens.
 
-No caminho rápido de revenda, são solicitados:
+No caminho rápido, o usuário escolhe entre **Produto para revenda** e **Produto digital**. São solicitados:
 
-- custo de compra de uma unidade, opcional para produtos sem custo direto;
+- custo de compra de uma unidade na revenda ou gasto que acontece a cada venda no produto digital; ambos aceitam zero;
 - preço de venda de uma unidade;
 - contas fixas mensais;
 - volume médio vendido por mês, opcional;
@@ -136,16 +137,16 @@ O volume mensal significa **unidades vendidas**, não unidades apenas produzidas
 
 ### 4.1 Parâmetros comuns
 
-| Parâmetro            | Significado para o negócio                                                        | Efeito no resultado                                                                                                   |
-| -------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Preço atual          | Valor cobrado do cliente                                                          | Base da receita e de todas as margens                                                                                 |
-| Custos fixos mensais | Gastos que existem mesmo sem vender, como aluguel, luz, contador e salários fixos | Precisam ser absorvidos pelas vendas ou horas faturáveis                                                              |
-| Pró-labore           | Salário desejado pelo dono                                                        | Quando ligado, é tratado como parte do custo mensal                                                                   |
-| Imposto              | Percentual do preço destinado a tributos                                          | Reduz o valor líquido de cada venda                                                                                   |
-| Taxa de cartão       | Percentual descontado pela forma de pagamento                                     | Reduz o valor líquido de cada venda                                                                                   |
-| Meta de margem       | Percentual de lucro usado como referência                                         | Define o preço-alvo e a classificação da margem; no fluxo atual é um valor inicial interno, não perguntado ao usuário |
-| Dias por semana      | Dias de funcionamento ou atendimento                                              | Divide a meta mensal em metas semanais e diárias                                                                      |
-| Desconto simulado    | Redução percentual aplicada ao preço atual                                        | Recalcula preço, lucro e margem após o desconto                                                                       |
+| Parâmetro            | Significado para o negócio                                                        | Efeito no resultado                                                                      |
+| -------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Preço atual          | Valor cobrado do cliente                                                          | Base da receita e de todas as margens                                                    |
+| Custos fixos mensais | Gastos que existem mesmo sem vender, como aluguel, luz, contador e salários fixos | Precisam ser absorvidos pelas vendas ou horas faturáveis                                 |
+| Pró-labore           | Salário desejado pelo dono                                                        | Quando ligado, é tratado como parte do custo mensal                                      |
+| Imposto              | Percentual do preço destinado a tributos                                          | Reduz o valor líquido de cada venda                                                      |
+| Taxa de cartão       | Percentual descontado pela forma de pagamento                                     | Reduz o valor líquido de cada venda                                                      |
+| Faixa de atenção     | Leitura interna de quanto sobra a cada R$ 100                                     | Abaixo de R$ 20 sinaliza pouca folga em Produto e Produção; não define preço recomendado |
+| Dias por semana      | Dias de funcionamento ou atendimento                                              | Divide a meta mensal em metas semanais e diárias                                         |
+| Desconto simulado    | Redução percentual aplicada ao preço atual                                        | Recalcula preço, lucro e margem após o desconto                                          |
 
 ### 4.2 Parâmetros de produtos
 
@@ -173,7 +174,7 @@ O volume mensal significa **unidades vendidas**, não unidades apenas produzidas
 
 O comportamento atual começa com alguns valores predefinidos:
 
-- meta de margem de **20% para produtos e produção própria**;
+- faixa interna de atenção abaixo de **R$ 20 a cada R$ 100** para produtos e produção própria;
 - faixa de atenção interna de **R$ 15 a cada R$ 100** para serviços;
 - simulação inicial de **10% de desconto**;
 - referência de **6 dias por semana para produtos e produção própria**;
@@ -181,7 +182,7 @@ O comportamento atual começa com alguns valores predefinidos:
 - pró-labore inicialmente desligado para produtos e produção própria;
 - pró-labore mensal informado diretamente no fluxo de serviços.
 
-No fluxo de Produto e Produção, a meta não é perguntada e permanece uma referência interna de 20%. No relatório atual de Serviço, R$ 15 a cada R$ 100 separa “Pouca folga” de “Boa folga”; essa faixa serve como alerta e não como recomendação universal para todos os negócios.
+No fluxo atual de Produto e Produção, 20% serve somente para separar `Margem apertada` de `Lucro`. Não é meta obrigatória, margem ideal nem base para um preço recomendado. No relatório atual de Serviço, R$ 15 a cada R$ 100 separa “Pouca folga” de “Boa folga”; essa faixa também é apenas um alerta.
 
 Campos numéricos vazios ou inválidos são tratados como **zero**. Isso permite continuar o diagnóstico, mas também significa que um campo esquecido pode tornar o resultado incompleto.
 
@@ -252,12 +253,10 @@ Para facilitar a leitura, considere:
 
 - **P** = preço atual;
 - **CD** = custo direto por unidade;
-- **FE** = frete ou embalagem por unidade;
 - **CF** = custo fixo mensal;
 - **PL** = pró-labore mensal, quando ligado;
 - **Q** = quantidade vendida por mês;
 - **T** = soma percentual de imposto, cartão e eventual comissão;
-- **M** = meta de margem.
 
 ### 6.1 Custo direto
 
@@ -267,7 +266,7 @@ Na revenda:
 CD = custo de compra por unidade
 ```
 
-O custo de compra é opcional. Se o campo ficar vazio ou for informado como zero, o diagnóstico considera **CD = R$ 0,00**, como pode ocorrer na venda de produtos digitais sem custo direto por unidade.
+Na revenda, o custo de compra pode ser zero. No produto digital, **CD** representa licença, plataforma, entrega ou outra cobrança que acontece a cada venda; vazio ou zero significa ausência de custo direto.
 
 Na produção rápida:
 
@@ -301,21 +300,25 @@ Custo fixo efetivo = CF + PL, quando o pró-labore está ligado
 
 Se o pró-labore estiver desligado, apenas o custo fixo operacional é considerado.
 
-### 6.3 Rateio do custo fixo por unidade
+### 6.3 Quantidade usada e resultado mensal
 
-Quando o volume mensal foi informado:
+Os relatórios atuais preservam a resposta original. Quando a quantidade mensal é omitida, ela continua `null`, mas o resultado do mês usa zero vendas:
 
 ```text
-Rateio por unidade = custo fixo efetivo ÷ Q
+quantidade usada = quantidade informada ou 0
+valor deixado por venda = preço após impostos/cartão - custo direto
+resultado do mês = valor deixado por venda × quantidade usada - gastos mensais
 ```
 
-Quando o volume não foi informado, o rateio é considerado zero. Nesse caso, o sistema avisa que a margem é anterior ao rateio dos custos fixos e não deve ser tratada como resultado definitivo.
+Os gastos mensais permanecem inteiros. O sistema nunca os divide por zero; resultados unitários que dependem dessa divisão ficam indisponíveis.
 
 ### 6.4 Custo total considerado por unidade
 
 ```text
-Custo total por unidade = CD + FE + rateio por unidade
+Custo total por unidade = CD + gastos mensais ÷ Q
 ```
+
+Esse valor só existe quando `Q > 0`.
 
 ### 6.5 Percentuais descontados da venda
 
@@ -325,46 +328,45 @@ T = imposto + cartão + comissão de plataforma, quando aplicável
 
 Exemplo: imposto de 6% e cartão de 3% resultam em T = 9%. Portanto, de cada R$ 100 vendidos, R$ 91 permanecem antes dos demais custos.
 
-### 6.6 Lucro por unidade
+### 6.6 Valor deixado por venda e resultado do mês
 
 ```text
-Lucro por unidade = P × (1 - T) - custo total por unidade
+Valor deixado por venda = P × (1 - T) - CD
+Resultado do mês = valor deixado por venda × quantidade usada - custo fixo efetivo
 ```
 
 ### 6.7 Margem real
 
 ```text
-Margem real = lucro por unidade ÷ P
+Quanto sobra a cada R$ 100 = resultado do mês ÷ vendas brutas do mês
 ```
+
+Sem vendas, esse percentual não é calculado.
 
 ### 6.8 Preço mínimo para não ter prejuízo
 
 ```text
-Preço mínimo = custo total por unidade ÷ (1 - T)
+Preço mínimo = custo total por unidade ÷ (1 - T), quando Q > 0
 ```
 
-Nesse valor, a margem é zero. Abaixo dele, há prejuízo; acima dele, existe alguma sobra.
+Sem quantidade informada, a referência cobre apenas o custo direto e as cobranças da venda. Os gastos mensais são pagos pela quantidade necessária mostrada no relatório. Zero é um preço mínimo válido quando não há custo direto.
 
-### 6.9 Preço-alvo
+### 6.9 Ausência de preço-alvo
 
-```text
-Preço-alvo = custo total por unidade ÷ (1 - T - M)
-```
-
-O preço-alvo é o necessário para atingir a meta de referência. No fluxo rápido atual, essa referência é 20% para produto e produção própria. Ele só é possível quando a soma das taxas e da meta é menor que 100%.
+Os relatórios atuais de Produto e Produção não calculam nem exibem preço-alvo. Relatórios antigos preservam esse campo somente como parte de seus snapshots imutáveis.
 
 ### 6.10 Quantidade necessária para cobrir o mês
 
 Primeiro é calculado quanto cada unidade contribui para pagar a estrutura:
 
 ```text
-Contribuição por unidade = P × (1 - T) - CD - FE
+Valor deixado por venda = P × (1 - T) - CD
 ```
 
 Depois:
 
 ```text
-Quantidade mínima mensal = custo fixo efetivo ÷ contribuição por unidade
+Quantidade mínima mensal = custo fixo efetivo ÷ valor deixado por venda
 ```
 
 O resultado é arredondado para cima, pois não é possível vender uma fração de unidade. Se a contribuição for zero ou negativa, o sistema informa que não existe volume capaz de fechar a conta nesse preço.
@@ -468,21 +470,18 @@ Essa meta representa quantas horas ou atendimentos precisam contribuir para paga
 
 ## 8. Regras do veredito
 
-### 8.1 Classificação da margem
+### 8.1 Classificação atual de Produto e Produção
 
-| Situação             | Condição usada                                                     | Resultado apresentado                          |
-| -------------------- | ------------------------------------------------------------------ | ---------------------------------------------- |
-| Sem preço            | Preço igual ou menor que zero                                      | Solicita o preenchimento do preço              |
-| Prejuízo direto      | Produto não cobre custo direto, frete e taxas                      | Cada venda tira dinheiro do caixa              |
-| Prejuízo operacional | O custo direto é coberto, mas a margem real é zero ou negativa     | Preço não cobre toda a operação                |
-| Margem apertada      | Margem positiva, porém mais de 0,5 ponto percentual abaixo da meta | Cobre custos, mas sobra menos que o desejado   |
-| Margem adequada      | Margem alcança a faixa da meta                                     | Preço considerado suficiente para a meta       |
-| Acima da meta        | Margem supera a meta em mais de 3 pontos percentuais               | Há folga; deve-se validar aceitação do mercado |
+| Situação             | Condição usada                                                      | Resultado apresentado                       |
+| -------------------- | ------------------------------------------------------------------- | ------------------------------------------- |
+| Prejuízo direto      | Cada venda deixa valor negativo após custo direto e taxas           | Vender mais aumenta a perda                 |
+| Sem vendas           | Quantidade omitida e gastos mensais iguais a zero                   | Não há movimento mensal para avaliar        |
+| Prejuízo operacional | Quantidade omitida com gastos mensais, ou resultado mensal negativo | O mês não pagou os gastos informados        |
+| No limite            | Resultado mensal igual a zero                                       | O mês pagou exatamente os gastos            |
+| Margem apertada      | Resultado positivo abaixo de R$ 20 a cada R$ 100 vendidos           | Há lucro, mas pouca folga                   |
+| Lucro                | Resultado positivo a partir de R$ 20 a cada R$ 100 vendidos         | Há folga segundo a faixa interna de atenção |
 
-As tolerâncias evitam que diferenças mínimas de arredondamento mudem a classificação:
-
-- até **0,5 ponto percentual abaixo da meta** ainda pode ser tratado como adequado;
-- só é “acima da meta” quando ultrapassa a meta em mais de **3 pontos percentuais**.
+Relatórios antigos e Serviço mantêm as classificações de suas próprias versões e não são recalculados.
 
 ### 8.2 Escolha do principal ponto a corrigir
 
@@ -492,8 +491,8 @@ O sistema escolhe apenas uma prioridade principal:
 | ---------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | Custo      | Produto não cobre nem os custos variáveis da unidade                                  | Reduzir custo ou elevar preço antes de buscar volume |
 | Preço      | A venda cobre o variável, mas não paga toda a estrutura; ou serviço fecha no vermelho | Corrigir o preço para sair do prejuízo               |
-| Margem     | Existe lucro, porém está abaixo da meta                                               | Subir preço, reduzir custo ou agregar valor          |
-| Volume     | O preço já cobre os custos e alcança a meta                                           | Buscar o número necessário de clientes ou vendas     |
+| Margem     | Existe lucro, porém com pouca folga                                                   | Rever preço e gastos                                 |
+| Volume     | O preço deixa valor positivo, mas o mês depende de mais vendas                        | Buscar o número necessário de clientes ou vendas     |
 
 Essa prioridade também orienta a resposta “O que preciso fazer agora?” e a interpretação enviada à IA.
 
@@ -502,27 +501,27 @@ Essa prioridade também orienta a resposta “O que preciso fazer agora?” e a 
 O resumo transforma os cálculos em três respostas diretas:
 
 - **Estou ganhando dinheiro?** Usa a situação da margem.
-- **Estou cobrando o preço certo?** Compara o preço atual com o preço mínimo e o preço-alvo.
+- **Meu preço paga tudo?** Compara o preço atual com o menor preço sem prejuízo aplicável.
 - **O que preciso fazer agora?** Usa a prioridade entre custo, preço, margem e volume.
 
 ---
 
-## 9. Régua de preço
+## 9. Referências de preço
 
-A régua organiza os valores em três zonas:
+Nos relatórios atuais de Produto e Produção, a referência principal é o menor preço sem prejuízo:
 
 ```text
-Abaixo do preço mínimo
+Abaixo do menor preço
         = prejuízo
 
-Do preço mínimo até o preço-alvo
-        = cobre os custos, mas fica abaixo da meta
+No menor preço
+        = no limite
 
-No preço-alvo ou acima
-        = alcança a meta definida
+Acima do menor preço
+        = existe alguma sobra; a leitura mensal depende das vendas e gastos
 ```
 
-O preço-alvo não é uma recomendação de mercado. É uma referência financeira baseada nos custos, taxas e meta utilizada pelo sistema. Atualmente, essa meta é predefinida no fluxo rápido.
+Preço-alvo aparece somente em relatórios legados. Os relatórios `2/2/3` não o calculam nem o apresentam.
 
 ---
 
@@ -627,12 +626,12 @@ No protótipo fora do ambiente original, o salvamento pode não persistir após 
 ## 15. Premissas, limites e cuidados de interpretação
 
 1. **A qualidade do resultado depende dos dados informados.** Um custo omitido é interpretado como zero.
-2. **Produto ou produção sem volume mensal gera análise parcial.** O custo fixo não é dividido por unidade, deixando a margem aparentemente maior.
+2. **Produto ou produção sem volume mensal usa zero vendas no resultado do mês.** Os gastos mensais permanecem inteiros, nunca são divididos por zero e os resultados unitários dependentes da quantidade ficam indisponíveis.
 3. **Serviço sem horas faturáveis também fica incompleto.** O custo da hora passa a zero, tornando o resultado irreal.
 4. **Imposto e cartão em branco são considerados zero.** Isso pode superestimar a margem.
 5. **O sistema não avalia demanda ou concorrência.** Um preço financeiramente saudável ainda pode não ser aceito pelo mercado.
-6. **As faixas internas não são recomendações setoriais.** Os 20% de Produto e Produção e a faixa de atenção de R$ 15 a cada R$ 100 em Serviço não garantem adequação ao ramo, à região ou ao mercado.
-7. **Taxas mais meta precisam somar menos de 100%.** Caso contrário, não existe preço-alvo matematicamente possível.
+6. **As faixas internas não são recomendações setoriais.** R$ 20 a cada R$ 100 em Produto e Produção e R$ 15 a cada R$ 100 em Serviço não garantem adequação ao ramo, à região ou ao mercado.
+7. **Taxas iguais ou superiores a 100% impedem uma referência de menor preço.** O relatório explica essa limitação sem inventar um valor.
 8. **Rendimento e perda de produção não fazem parte do diagnóstico rápido atual.** Essas informações serão tratadas apenas na futura análise detalhada/ficha técnica.
 9. **O ponto de equilíbrio não representa necessariamente crescimento.** Ele mostra o mínimo para cobrir a estrutura; lucro adicional exige margem ou volume superior.
 10. **O teto de desconto significa lucro zero, não margem saudável.** A empresa pode continuar no azul e, ainda assim, ficar abaixo da meta.
@@ -649,25 +648,26 @@ Considere um produto com:
 - custos fixos com pró-labore: R$ 3.000 por mês;
 - volume: 200 unidades por mês;
 - imposto + cartão: 10%;
-- meta de margem: 20%.
+- faixa interna de atenção: R$ 20 a cada R$ 100.
 
 ```text
-Rateio fixo = 3.000 ÷ 200 = R$ 15
+Custo mensal por unidade = 3.000 ÷ 200 = R$ 15
 
 Custo total por unidade = 20 + 2 + 15 = R$ 37
 
-Receita líquida após taxas = 50 × 90% = R$ 45
+Preço após impostos e cartão = 50 × 90% = R$ 45
 
-Lucro por unidade = 45 - 37 = R$ 8
+Valor deixado por venda = 45 - 22 = R$ 23
 
-Margem real = 8 ÷ 50 = 16%
+Resultado do mês = 23 × 200 - 3.000 = R$ 1.600
+
+Quanto sobra a cada R$ 100 = 1.600 ÷ 10.000 = R$ 16
 
 Preço mínimo = 37 ÷ 90% = R$ 41,11
 
-Preço-alvo = 37 ÷ (100% - 10% - 20%) = R$ 52,86
 ```
 
-Interpretação: o produto não dá prejuízo, mas a margem de 16% está abaixo da meta de 20%. A prioridade será **margem**, e os caminhos são elevar o preço ou reduzir custos.
+Interpretação: o produto fecha o mês com R$ 1.600 de resultado. Como sobram R$ 16 a cada R$ 100 vendidos, ele fica na faixa de **Margem apertada**. Os R$ 20 são apenas um sinal interno de atenção; o sistema não apresenta preço-alvo.
 
 ---
 

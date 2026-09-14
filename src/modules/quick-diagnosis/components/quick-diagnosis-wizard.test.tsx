@@ -77,8 +77,11 @@ describe("QuickDiagnosisWizard category orchestration", () => {
   ) {
     await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(
+      screen.getByRole("radio", { name: "Produto para revenda" }),
+    );
     await user.type(
-      screen.getByLabelText("Quanto você paga por unidade?"),
+      screen.getByLabelText("Quanto você paga ao fornecedor por unidade?"),
       "50",
     );
     await user.type(
@@ -365,8 +368,11 @@ describe("QuickDiagnosisWizard category orchestration", () => {
           screen.getByRole("radio", { name: "Diagnóstico rápido" }),
         );
         await user.click(screen.getByRole("button", { name: "Continuar" }));
+        await user.click(
+          screen.getByRole("radio", { name: "Produto para revenda" }),
+        );
         await user.type(
-          screen.getByLabelText("Quanto você paga por unidade?"),
+          screen.getByLabelText("Quanto você paga ao fornecedor por unidade?"),
           "77",
         );
         await user.click(screen.getByRole("button", { name: "Voltar" }));
@@ -433,8 +439,11 @@ describe("QuickDiagnosisWizard category orchestration", () => {
 
     await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(
+      screen.getByRole("radio", { name: "Produto para revenda" }),
+    );
     await user.type(
-      screen.getByLabelText("Quanto você paga por unidade?"),
+      screen.getByLabelText("Quanto você paga ao fornecedor por unidade?"),
       "50",
     );
     await user.type(
@@ -446,9 +455,9 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     expect(screen.getByRole("radio", { name: "Produto" })).toBeChecked();
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    expect(screen.getByLabelText("Quanto você paga por unidade?")).toHaveValue(
-      "50",
-    );
+    expect(
+      screen.getByLabelText("Quanto você paga ao fornecedor por unidade?"),
+    ).toHaveValue("50");
     expect(
       screen.getByLabelText("Por quanto você vende cada unidade?"),
     ).toHaveValue("100");
@@ -465,9 +474,12 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     expect(createSubmissionId).toHaveBeenCalledTimes(3);
     await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    expect(screen.getByLabelText("Quanto você paga por unidade?")).toHaveValue(
-      "",
+    await user.click(
+      screen.getByRole("radio", { name: "Produto para revenda" }),
     );
+    expect(
+      screen.getByLabelText("Quanto você paga ao fornecedor por unidade?"),
+    ).toHaveValue("");
 
     await user.click(screen.getByRole("button", { name: "Voltar" }));
     await completeProductDiagnosis(user);

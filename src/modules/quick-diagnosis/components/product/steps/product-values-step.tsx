@@ -41,7 +41,11 @@ function ProductValuesStep(props: ProductStepProps) {
           ))}
         </RadioGroup>
         {kindError ? (
-          <p id="productKind-error" role="alert" className="text-destructive text-sm">
+          <p
+            id="productKind-error"
+            role="alert"
+            className="text-destructive text-sm"
+          >
             {kindError}
           </p>
         ) : null}

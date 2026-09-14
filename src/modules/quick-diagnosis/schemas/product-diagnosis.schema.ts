@@ -50,7 +50,8 @@ const requiredPercentageSchema = z
 const rawProductDiagnosisSchema = z.strictObject({
   submissionId: z.uuid("Envie um identificador de submissão válido."),
   productKind: z.enum(productKinds, {
-    error: "Escolha se você vende um produto para revenda ou um produto digital.",
+    error:
+      "Escolha se você vende um produto para revenda ou um produto digital.",
   }),
   purchaseUnitCost: moneySchema,
   unitSalePrice: moneySchema,
