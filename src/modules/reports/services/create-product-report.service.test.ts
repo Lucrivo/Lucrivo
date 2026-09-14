@@ -51,8 +51,9 @@ describe("createProductReport", () => {
 
     expect(result).toEqual({ status: "success", diagnosisId: 42 });
     expect(rpc).toHaveBeenCalledOnce();
-    expect(rpc).toHaveBeenCalledWith("create_product_diagnosis_report", {
+    expect(rpc).toHaveBeenCalledWith("create_product_diagnosis_report_v2", {
       p_submission_id: completeCommand.submissionId,
+      p_product_kind: completeCommand.productKind,
       p_purchase_unit_cost_cents: completeCommand.purchaseUnitCostCents,
       p_unit_sale_price_cents: completeCommand.unitSalePriceCents,
       p_fixed_monthly_expenses_cents: completeCommand.fixedMonthlyExpensesCents,
@@ -61,13 +62,14 @@ describe("createProductReport", () => {
       p_pro_labore_cents: completeCommand.proLaboreCents,
       p_tax_rate_basis_points: completeCommand.taxRateBasisPoints,
       p_card_fee_rate_basis_points: completeCommand.cardFeeRateBasisPoints,
-      p_schema_version: 1,
-      p_calculation_version: 1,
-      p_content_version: 2,
+      p_schema_version: 2,
+      p_calculation_version: 2,
+      p_content_version: 3,
       p_scenario: "resale",
       p_current_price_cents: snapshot.results.currentPriceCents,
       p_real_margin_basis_points: snapshot.results.realMarginBasisPoints,
       p_unit_profit_cents: snapshot.results.unitProfitCents,
+      p_monthly_result_cents: snapshot.results.monthlyResultCents,
       p_verdict: snapshot.results.verdict,
       p_priority: snapshot.results.priority,
       p_unit: "unit",
@@ -83,11 +85,13 @@ describe("createProductReport", () => {
 
     expect(result).toEqual({ status: "success", diagnosisId: 42 });
     expect(rpc).toHaveBeenCalledWith(
-      "create_product_diagnosis_report",
+      "create_product_diagnosis_report_v2",
       expect.objectContaining({
+        p_product_kind: "resale",
         p_monthly_sales_volume: null,
         p_real_margin_basis_points: null,
         p_unit_profit_cents: null,
+        p_monthly_result_cents: snapshot.results.monthlyResultCents,
         p_report_snapshot: snapshot,
       }),
     );

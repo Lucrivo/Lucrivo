@@ -1,17 +1,8 @@
 import { z } from "zod";
 
-import {
-  productReportSnapshotSchema,
-  type ProductReportDiscountSimulationBase,
-} from "./product-report-snapshot.schema";
-import {
-  productionReportSnapshotSchema,
-  type ProductionReportDiscountSimulationBase,
-} from "./production-report-snapshot.schema";
-import {
-  serviceReportSnapshotSchema,
-  type ServiceReportDiscountSimulationBase,
-} from "./service-report-snapshot.schema";
+import { productReportSnapshotSchema } from "./product-report-snapshot.schema";
+import { productionReportSnapshotSchema } from "./production-report-snapshot.schema";
+import { serviceReportSnapshotSchema } from "./service-report-snapshot.schema";
 
 const reportSnapshotSchema = z.union([
   serviceReportSnapshotSchema,
@@ -20,10 +11,7 @@ const reportSnapshotSchema = z.union([
 ]);
 
 type ReportSnapshot = z.infer<typeof reportSnapshotSchema>;
-type ReportDiscountSimulationBase =
-  | ServiceReportDiscountSimulationBase
-  | ProductReportDiscountSimulationBase
-  | ProductionReportDiscountSimulationBase;
+type ReportDiscountSimulationBase = ReportSnapshot["discountSimulationBase"];
 
 function parseReportSnapshot(value: unknown): ReportSnapshot {
   return reportSnapshotSchema.parse(value);
