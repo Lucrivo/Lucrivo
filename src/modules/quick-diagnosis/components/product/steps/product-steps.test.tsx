@@ -1,4 +1,4 @@
-import { useReducer } from "react";
+import { useReducer, useState } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
@@ -13,10 +13,12 @@ import { MonthlyVolumeStep } from "./monthly-volume-step";
 import { OwnerCompensationStep } from "./owner-compensation-step";
 import { ProductFeesStep } from "./product-fees-step";
 import { ProductFixedExpensesStep } from "./product-fixed-expenses-step";
+import { ProductReviewStep } from "./product-review-step";
 import { ProductValuesStep } from "./product-values-step";
 
 const values: ProductDiagnosisInput = {
   submissionId: "550e8400-e29b-41d4-a716-446655440000",
+  productKind: "resale",
   purchaseUnitCost: "50,00",
   unitSalePrice: "100,00",
   fixedMonthlyExpenses: "0",
@@ -57,7 +59,9 @@ describe("Product diagnosis steps", () => {
       />,
     );
 
-    const purchaseCost = screen.getByLabelText("Quanto você paga por unidade?");
+    const purchaseCost = screen.getByLabelText(
+      "Quanto você paga ao fornecedor por unidade?",
+    );
     expect(purchaseCost).toHaveAttribute("aria-invalid", "true");
     expect(purchaseCost).toHaveAttribute(
       "aria-describedby",
@@ -73,6 +77,49 @@ describe("Product diagnosis steps", () => {
     expect(screen.queryByText(/atendimento/i)).not.toBeInTheDocument();
   });
 
+  it("switches Product kind by keyboard and preserves the direct cost", async () => {
+    const user = userEvent.setup();
+
+    function ValuesHarness() {
+      const [currentValues, setCurrentValues] = useState(values);
+
+      return (
+        <ProductValuesStep
+          values={currentValues}
+          errors={{}}
+          onChange={(field, value) =>
+            setCurrentValues((current) => ({ ...current, [field]: value }))
+          }
+        />
+      );
+    }
+
+    render(<ValuesHarness />);
+    const resale = screen.getByRole("radio", { name: "Produto para revenda" });
+    expect(resale).toBeChecked();
+    expect(
+      screen.getByLabelText("Quanto você paga ao fornecedor por unidade?"),
+    ).toHaveValue("50,00");
+
+    resale.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(
+      screen.getByRole("radio", { name: "Produto digital" }),
+    ).toBeChecked();
+    expect(
+      screen.getByLabelText("Existe algum gasto a cada venda?"),
+    ).toHaveValue("50,00");
+
+    await user.click(
+      screen.getByRole("button", { name: "Entenda este custo" }),
+    );
+    expect(
+      screen.getByText(
+        "Um produto digital pode não ter custo direto. Se houver licença, plataforma, entrega ou outra cobrança que acontece a cada venda, informe esse valor.",
+      ),
+    ).toBeVisible();
+  });
+
   it("marks purchase cost as optional and explains the zero-cost case", () => {
     render(
       <ProductValuesStep
@@ -82,9 +129,9 @@ describe("Product diagnosis steps", () => {
       />,
     );
 
-    expect(screen.getByLabelText("Quanto você paga por unidade?")).toHaveValue(
-      "",
-    );
+    expect(
+      screen.getByLabelText("Quanto você paga ao fornecedor por unidade?"),
+    ).toHaveValue("");
     expect(
       screen.getByText(
         "Opcional. Deixe em branco se o produto não tiver custo direto.",
@@ -190,5 +237,30 @@ describe("Product diagnosis steps", () => {
         "Qual porcentagem fica com o cartão ou a plataforma?",
       ),
     ).toHaveValue("2");
+  });
+
+  it("reviews Digital zero cost and keeps supplier wording for Resale", () => {
+    const props = {
+      errors: {},
+      pending: false,
+      submitError: null,
+      onEdit: vi.fn(),
+      onBackToType: vi.fn(),
+      onSubmit: vi.fn(),
+    } as const;
+    const { rerender } = render(
+      <ProductReviewStep
+        {...props}
+        values={{ ...values, productKind: "digital", purchaseUnitCost: "" }}
+      />,
+    );
+
+    expect(screen.getByText("Produto digital")).toBeVisible();
+    expect(screen.getByText("Sem custo por venda")).toBeVisible();
+
+    rerender(<ProductReviewStep {...props} values={values} />);
+    expect(screen.getByText("Produto para revenda")).toBeVisible();
+    expect(screen.getByText("Custo de compra por unidade")).toBeVisible();
+    expect(screen.getByText("R$ 50,00")).toBeVisible();
   });
 });

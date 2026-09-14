@@ -44,6 +44,7 @@ O usuário autenticado inicia um diagnóstico rápido e escolhe entre três
 contextos de negócio:
 
 - produto adquirido para revenda;
+- produto digital, com custo direto por venda opcional;
 - produção própria de uma unidade;
 - prestação de serviço cobrada por hora, minuto ou atendimento.
 
@@ -59,15 +60,16 @@ podem ser reabertos na biblioteca privada de relatórios.
 ## Capabilities and Constraints
 
 - Cadastro, autenticação, recuperação e atualização de senha.
-- Diagnóstico rápido para revenda, produção própria e serviços.
+- Diagnóstico rápido para revenda, produto digital, produção própria e serviços.
 - Cálculos financeiros determinísticos separados por categoria de negócio.
 - Relatórios privados com resumo executivo, números principais, explicações e
   simulação de desconto.
 - Histórico paginado de diagnósticos pertencentes ao usuário autenticado.
 - Valores monetários apresentados em real brasileiro (`BRL`) e conteúdo de
   interface em português brasileiro.
-- Margem de referência interna de 20% para produto e produção e de 15% para
-  serviço nas versões atuais.
+- Faixa interna de atenção abaixo de R$ 20 a cada R$ 100 para produto e
+  produção; ela não é uma meta universal nem gera preço recomendado. Serviço
+  mantém suas próprias regras versionadas.
 - Os resultados dependem dos dados fornecidos pelo usuário; dados ausentes
   podem produzir um diagnóstico parcial ou referências indisponíveis.
 - Análise detalhada, ficha técnica completa, múltiplos produtos, estoque,

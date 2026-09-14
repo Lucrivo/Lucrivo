@@ -20,11 +20,11 @@ type CreateProductReportResult =
   | { status: "success"; diagnosisId: number }
   | { status: "error"; error: "create_failed" | "limit_reached" };
 
-type GeneratedProductRpcArgs =
-  Database["public"]["Functions"]["create_product_diagnosis_report"]["Args"];
+type GeneratedProductV2RpcArgs =
+  Database["public"]["Functions"]["create_product_diagnosis_report_v2"]["Args"];
 
 type ProductRpcArgs = Omit<
-  GeneratedProductRpcArgs,
+  GeneratedProductV2RpcArgs,
   | "p_monthly_sales_volume"
   | "p_real_margin_basis_points"
   | "p_unit_profit_cents"
@@ -40,6 +40,7 @@ function toProductRpcArgs(
 ): ProductRpcArgs {
   return {
     p_submission_id: command.submissionId,
+    p_product_kind: command.productKind,
     p_purchase_unit_cost_cents: command.purchaseUnitCostCents,
     p_unit_sale_price_cents: command.unitSalePriceCents,
     p_fixed_monthly_expenses_cents: command.fixedMonthlyExpensesCents,
@@ -55,6 +56,7 @@ function toProductRpcArgs(
     p_current_price_cents: snapshot.results.currentPriceCents,
     p_real_margin_basis_points: snapshot.results.realMarginBasisPoints,
     p_unit_profit_cents: snapshot.results.unitProfitCents,
+    p_monthly_result_cents: snapshot.results.monthlyResultCents,
     p_verdict: snapshot.results.verdict,
     p_priority: snapshot.results.priority,
     p_unit: snapshot.unit,
@@ -70,8 +72,8 @@ async function createProductReport({
   try {
     const rpcArgs = toProductRpcArgs(command, snapshot);
     const { data, error } = await supabase.rpc(
-      "create_product_diagnosis_report",
-      rpcArgs as GeneratedProductRpcArgs,
+      "create_product_diagnosis_report_v2",
+      rpcArgs as GeneratedProductV2RpcArgs,
     );
 
     if (

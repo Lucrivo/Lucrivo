@@ -71,6 +71,7 @@ const legacyServiceSnapshot = {
 
 const productCommand: ProductDiagnosisCommand = {
   submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  productKind: "resale",
   purchaseUnitCostCents: 5000,
   unitSalePriceCents: 10000,
   fixedMonthlyExpensesCents: 100000,

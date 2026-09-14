@@ -32,6 +32,8 @@ function row(
     verdict: "adequate_margin",
     priority: "volume",
     unit: "hour",
+    schema_version: 3,
+    calculation_version: 2,
     content_version: 4,
   };
 }
@@ -98,6 +100,8 @@ describe("listOwnedReports", () => {
           verdict: "adequate_margin",
           priority: "volume",
           unit: "hour",
+          schemaVersion: 3,
+          calculationVersion: 2,
           contentVersion: 4,
         },
       ],
@@ -106,7 +110,7 @@ describe("listOwnedReports", () => {
 
     expect(from).toHaveBeenCalledWith("diagnoses");
     expect(select).toHaveBeenCalledWith(
-      "id, business_category, scenario, created_at, current_price_cents, real_margin_basis_points, unit_profit_cents, verdict, priority, unit, content_version",
+      "id, business_category, scenario, created_at, current_price_cents, real_margin_basis_points, unit_profit_cents, verdict, priority, unit, schema_version, calculation_version, content_version",
     );
     expect(select.mock.calls[0]?.[0]).not.toContain("report_snapshot");
     expect(byUser).toHaveBeenCalledWith("user_id", "trusted-user");

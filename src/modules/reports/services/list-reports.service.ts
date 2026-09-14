@@ -8,7 +8,7 @@ import type { ReportSnapshot } from "../types";
 
 const REPORTS_PAGE_SIZE = 12;
 const REPORT_SUMMARY_COLUMNS =
-  "id, business_category, scenario, created_at, current_price_cents, real_margin_basis_points, unit_profit_cents, verdict, priority, unit, content_version" as const;
+  "id, business_category, scenario, created_at, current_price_cents, real_margin_basis_points, unit_profit_cents, verdict, priority, unit, schema_version, calculation_version, content_version" as const;
 
 const reportsCursorSchema = z.strictObject({
   createdAt: z.iso.datetime({ offset: true }),
@@ -29,6 +29,8 @@ type OwnedReportSummary = {
   verdict: string;
   priority: string;
   unit: string;
+  schemaVersion: ReportSnapshot["schemaVersion"];
+  calculationVersion: ReportSnapshot["calculationVersion"];
   contentVersion: ReportSnapshot["contentVersion"];
 };
 
@@ -88,6 +90,8 @@ function toOwnedReportSummary(
     | "verdict"
     | "priority"
     | "unit"
+    | "schema_version"
+    | "calculation_version"
     | "content_version"
   >,
 ): OwnedReportSummary {
@@ -102,6 +106,9 @@ function toOwnedReportSummary(
     verdict: row.verdict,
     priority: row.priority,
     unit: row.unit,
+    schemaVersion: row.schema_version as ReportSnapshot["schemaVersion"],
+    calculationVersion:
+      row.calculation_version as ReportSnapshot["calculationVersion"],
     contentVersion: row.content_version as ReportSnapshot["contentVersion"],
   };
 }

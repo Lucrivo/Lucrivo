@@ -50,6 +50,7 @@ const stepTitles: Record<ProductWizardStep, string> = {
 
 const fieldStep: Record<ProductDiagnosisField, ProductWizardStep> = {
   submissionId: "analysisMode",
+  productKind: "productValues",
   purchaseUnitCost: "productValues",
   unitSalePrice: "productValues",
   fixedMonthlyExpenses: "fixedExpenses",
@@ -62,6 +63,7 @@ const fieldStep: Record<ProductDiagnosisField, ProductWizardStep> = {
 
 const fieldOrder: ProductDiagnosisField[] = [
   "submissionId",
+  "productKind",
   "purchaseUnitCost",
   "unitSalePrice",
   "fixedMonthlyExpenses",

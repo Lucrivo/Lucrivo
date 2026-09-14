@@ -45,6 +45,7 @@ import { createProductDiagnosis } from "./create-product-diagnosis.action";
 
 const validInput: ProductDiagnosisInput = {
   submissionId: "550e8400-e29b-41d4-a716-446655440000",
+  productKind: "resale",
   purchaseUnitCost: "50,00",
   unitSalePrice: "100,00",
   fixedMonthlyExpenses: "1.000,00",
@@ -57,6 +58,7 @@ const validInput: ProductDiagnosisInput = {
 
 const command: ProductDiagnosisCommand = {
   submissionId: validInput.submissionId,
+  productKind: "resale",
   purchaseUnitCostCents: 5000,
   unitSalePriceCents: 10000,
   fixedMonthlyExpensesCents: 100000,

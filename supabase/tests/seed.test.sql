@@ -50,8 +50,8 @@ select results_eq(
     order by business_category::text
   $$,
   $$ values
-    ('product'::text, 1::smallint, 1::smallint, 2::smallint, 3::bigint),
-    ('production'::text, 1::smallint, 1::smallint, 2::smallint, 3::bigint),
+    ('product'::text, 1::smallint, 1::smallint, 2::smallint, 5::bigint),
+    ('production'::text, 1::smallint, 1::smallint, 2::smallint, 4::bigint),
     ('service'::text, 4::smallint, 3::smallint, 5::smallint, 3::bigint)
   $$,
   'seed creates three current reports for every category'
@@ -96,10 +96,11 @@ select results_eq(
   $$ values
     ('product'::text, 'above_target'::text, 1::bigint),
     ('product'::text, 'direct_loss'::text, 1::bigint),
-    ('product'::text, 'tight_margin'::text, 1::bigint),
+    ('product'::text, 'operational_loss'::text, 1::bigint),
+    ('product'::text, 'tight_margin'::text, 2::bigint),
     ('production'::text, 'above_target'::text, 1::bigint),
     ('production'::text, 'direct_loss'::text, 1::bigint),
-    ('production'::text, 'tight_margin'::text, 1::bigint),
+    ('production'::text, 'tight_margin'::text, 2::bigint),
     ('service'::text, 'above_target'::text, 1::bigint),
     ('service'::text, 'operational_loss'::text, 1::bigint),
     ('service'::text, 'tight_margin'::text, 1::bigint)
@@ -178,8 +179,42 @@ select is(
     from public.product_diagnoses
     where user_id = '10000000-0000-4000-8000-000000000001'
   ),
-  3::bigint,
-  'seed creates three Product detail rows'
+  5::bigint,
+  'seed creates Product detail rows including current Resale and Digital examples'
+);
+
+select results_eq(
+  $$
+    select d.scenario, d.schema_version, d.calculation_version,
+      d.content_version, p.product_kind
+    from public.diagnoses d
+    join public.product_diagnoses p on p.diagnosis_id = d.id
+    where d.user_id = '10000000-0000-4000-8000-000000000001'
+      and d.schema_version = 2
+    order by d.scenario
+  $$,
+  $$ values
+    ('digital'::text, 2::smallint, 2::smallint, 3::smallint, 'digital'::text),
+    ('resale'::text, 2::smallint, 2::smallint, 3::smallint, 'resale'::text)
+  $$,
+  'seed includes coherent current Product examples for both kinds'
+);
+
+select results_eq(
+  $$
+    select p.purchase_unit_cost_cents, p.monthly_sales_volume,
+      d.report_snapshot #>> '{inputs,productKind}',
+      d.report_snapshot #>> '{inputs,purchaseUnitCostCents}',
+      d.report_snapshot #>> '{inputs,monthlySalesVolume}',
+      d.report_snapshot #>> '{results,monthlySalesVolumeUsed}'
+    from public.diagnoses d
+    join public.product_diagnoses p on p.diagnosis_id = d.id
+    where d.user_id = '10000000-0000-4000-8000-000000000001'
+      and d.scenario = 'digital'
+      and d.schema_version = 2
+  $$,
+  $$ values (0::bigint, null::integer, 'digital'::text, '0'::text, null::text, '0'::text) $$,
+  'Digital seed preserves zero cost, null original volume, and zero interpreted volume'
 );
 
 select is(
@@ -188,8 +223,24 @@ select is(
     from public.production_diagnoses
     where user_id = '10000000-0000-4000-8000-000000000001'
   ),
-  3::bigint,
-  'seed creates three Production detail rows'
+  4::bigint,
+  'seed creates Production detail rows including a current composed example'
+);
+
+select is(
+  (
+    select count(*)::bigint
+    from public.diagnoses d
+    join public.production_diagnoses p on p.diagnosis_id = d.id
+    where d.user_id = '10000000-0000-4000-8000-000000000001'
+      and d.scenario = 'manufacturing'
+      and (d.schema_version, d.calculation_version, d.content_version) = (2, 2, 3)
+      and p.cost_composition_enabled
+      and d.report_snapshot #>> '{inputs,productionUnitCostCents}' = p.production_unit_cost_cents::text
+      and d.report_snapshot #>> '{results,monthlySalesVolumeUsed}' = p.monthly_sales_volume::text
+  ),
+  1::bigint,
+  'seed includes one coherent current composed Production example'
 );
 
 set local role authenticated;

@@ -40,6 +40,7 @@ const scenarioLabels = {
   week: "Por semana",
   month: "Por mês",
   resale: "Revenda",
+  digital: "Produto digital",
   manufacturing: "Fabricação própria",
 } as const satisfies Record<ReportScenario, string>;
 

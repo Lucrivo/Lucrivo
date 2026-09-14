@@ -55,7 +55,7 @@ describe("createProductionReport", () => {
 
     expect(result).toEqual({ status: "success", diagnosisId: 42 });
     expect(rpc).toHaveBeenCalledOnce();
-    expect(rpc).toHaveBeenCalledWith("create_production_diagnosis_report", {
+    expect(rpc).toHaveBeenCalledWith("create_production_diagnosis_report_v2", {
       p_submission_id: composedCommand.submissionId,
       p_cost_composition_enabled: true,
       p_production_unit_cost_cents: 5000,
@@ -70,13 +70,14 @@ describe("createProductionReport", () => {
       p_pro_labore_cents: 200000,
       p_tax_rate_basis_points: 600,
       p_card_fee_rate_basis_points: 200,
-      p_schema_version: 1,
-      p_calculation_version: 1,
-      p_content_version: 2,
+      p_schema_version: 2,
+      p_calculation_version: 2,
+      p_content_version: 3,
       p_scenario: "manufacturing",
       p_current_price_cents: snapshot.results.currentPriceCents,
       p_real_margin_basis_points: snapshot.results.realMarginBasisPoints,
       p_unit_profit_cents: snapshot.results.unitProfitCents,
+      p_monthly_result_cents: snapshot.results.monthlyResultCents,
       p_verdict: snapshot.results.verdict,
       p_priority: snapshot.results.priority,
       p_unit: "unit",
@@ -100,7 +101,7 @@ describe("createProductionReport", () => {
 
     expect(result).toEqual({ status: "success", diagnosisId: 42 });
     expect(rpc).toHaveBeenCalledWith(
-      "create_production_diagnosis_report",
+      "create_production_diagnosis_report_v2",
       expect.objectContaining({
         p_cost_composition_enabled: false,
         p_material_unit_cost_cents: null,
@@ -110,6 +111,7 @@ describe("createProductionReport", () => {
         p_monthly_sales_volume: null,
         p_real_margin_basis_points: null,
         p_unit_profit_cents: null,
+        p_monthly_result_cents: snapshot.results.monthlyResultCents,
         p_scenario: "manufacturing",
         p_report_snapshot: snapshot,
       }),

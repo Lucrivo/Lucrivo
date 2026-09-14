@@ -1787,6 +1787,92 @@ select public.create_production_diagnosis_report(
 $report$::jsonb
 );
 
+-- Relatórios atuais de Produto e Produção (contrato 2/2/3).
+select public.create_product_diagnosis_report_v2(
+  p_submission_id => '12000000-0000-4000-8000-000000000101'::uuid,
+  p_product_kind => 'resale'::text,
+  p_purchase_unit_cost_cents => 5000::bigint,
+  p_unit_sale_price_cents => 10000::bigint,
+  p_fixed_monthly_expenses_cents => 100000::bigint,
+  p_monthly_sales_volume => 100::integer,
+  p_pro_labore_included => true::boolean,
+  p_pro_labore_cents => 200000::bigint,
+  p_tax_rate_basis_points => 600::integer,
+  p_card_fee_rate_basis_points => 200::integer,
+  p_schema_version => 2::smallint,
+  p_calculation_version => 2::smallint,
+  p_content_version => 3::smallint,
+  p_scenario => 'resale'::text,
+  p_current_price_cents => 10000::bigint,
+  p_real_margin_basis_points => 1200::integer,
+  p_unit_profit_cents => 1200::bigint,
+  p_monthly_result_cents => 120000::bigint,
+  p_verdict => 'tight_margin'::text,
+  p_priority => 'margin'::text,
+  p_unit => 'unit'::text,
+  p_report_snapshot => $report$
+{"schemaVersion":2,"calculationVersion":2,"contentVersion":3,"category":"product","scenario":"resale","currency":"BRL","unit":"unit","policy":{"attentionBandBasisPoints":2000,"weeklyDivisorHundredths":433,"operatingDaysPerWeek":6,"maximumDiscountPercent":50,"proLaboreIncluded":true},"inputs":{"purchaseUnitCostCents":5000,"unitSalePriceCents":10000,"fixedMonthlyExpensesCents":100000,"monthlySalesVolume":100,"proLaboreIncluded":true,"proLaboreCents":200000,"taxRateBasisPoints":600,"cardFeeRateBasisPoints":200,"productKind":"resale"},"results":{"effectiveFixedCostCents":300000,"purchaseUnitCostCents":5000,"fixedAllocationCents":3000,"totalUnitCostCents":8000,"currentPriceCents":10000,"feeAmountCents":800,"netRevenueCents":9200,"unitContributionCents":4200,"unitProfitCents":1200,"monthlySalesVolumeUsed":100,"monthlyGrossRevenueCents":1000000,"monthlyNetRevenueCents":920000,"monthlyResultCents":120000,"realMarginBasisPoints":1200,"minimumPriceCents":8696,"priceReferencesPartial":false,"monthlySalesGoal":72,"weeklySalesGoal":17,"dailySalesGoal":3,"breakEvenDiscountPercent":13,"totalFeeBasisPoints":800,"verdict":"tight_margin","priority":"margin"},"executiveSummary":{"headline":"Seu produto para revenda dá lucro?","introduction":"Veja o resultado do mês, o menor preço, o custo de compra e o primeiro ponto que merece atenção.","verdict":{"label":"Margem apertada","body":"O mês terminou positivo, mas com pouca folga para imprevistos.","tone":"warning"},"facts":[{"key":"margin","currentLabel":"Resultado do mês","currentValue":"R$ 1.200,00","referenceLabel":"Quanto sobra a cada R$ 100","referenceValue":"12%"},{"key":"price","currentLabel":"Preço atual","currentValue":"R$ 100,00","referenceLabel":"Menor preço sem prejuízo","referenceValue":"R$ 86,96"}],"priority":{"label":"Folga do resultado","body":"Proteja a pouca folga revendo preço e gastos."},"answers":[{"key":"profitability","question":"Estou ganhando dinheiro?","answer":"Sim — o resultado do mês foi R$ 1.200,00."},{"key":"price_sufficiency","question":"Meu preço paga tudo?","answer":"Sim — o preço atual está acima do menor preço de R$ 86,96 que paga os gastos informados."},{"key":"immediate_action","question":"O que preciso fazer agora?","answer":"Proteja a pouca folga revendo preço e gastos."}]},"sections":[{"key":"break_even","title":"Seu menor preço sem prejuízo","body":"Este preço paga o custo de compra, as cobranças da venda e a parte dos gastos mensais por unidade.","emphasisLabel":"Menor preço sem prejuízo","emphasisValue":"R$ 86,96","tone":"positive"},{"key":"hidden_cost","title":"O que sai de cada venda","body":"Do preço saem R$ 8,00 em impostos e cartão, R$ 50,00 de custo de compra e R$ 30,00 dos gastos mensais.","emphasisLabel":"Resultado por unidade","emphasisValue":"R$ 12,00","tone":"positive"},{"key":"margin_diagnosis","title":"Quanto sobra no mês","body":"O resultado considera R$ 9.200,00 recebidos depois de impostos e cartão, menos os custos das vendas e os gastos mensais. Quanto sobra a cada R$ 100: 12%.","emphasisLabel":"Margem apertada","emphasisValue":"R$ 1.200,00","tone":"warning"},{"key":"sales_goal","title":"Quanto você precisa vender","body":"Para pagar os gastos mensais, a referência é 72 vendas no mês, 17 por semana e 3 por dia, considerando 6 dias por semana.","emphasisLabel":"Vendas necessárias no mês","emphasisValue":"72 unidades","tone":"neutral"},{"key":"discount_simulator","title":"Como um desconto muda o resultado","body":"Veja como o desconto altera o valor deixado por unidade e o resultado esperado.","emphasisLabel":"Desconto matemático antes da perda","emphasisValue":"13%","tone":"neutral"}],"discountSimulationBase":{"originalPriceCents":10000,"unitCostCents":8000,"totalFeeBasisPoints":800,"attentionBandBasisPoints":2000,"minimumPriceCents":8696,"partial":false}}
+$report$::jsonb
+);
+
+select public.create_product_diagnosis_report_v2(
+  p_submission_id => '12000000-0000-4000-8000-000000000102'::uuid,
+  p_product_kind => 'digital'::text,
+  p_purchase_unit_cost_cents => 0::bigint,
+  p_unit_sale_price_cents => 10000::bigint,
+  p_fixed_monthly_expenses_cents => 100000::bigint,
+  p_monthly_sales_volume => null::integer,
+  p_pro_labore_included => true::boolean,
+  p_pro_labore_cents => 200000::bigint,
+  p_tax_rate_basis_points => 600::integer,
+  p_card_fee_rate_basis_points => 200::integer,
+  p_schema_version => 2::smallint,
+  p_calculation_version => 2::smallint,
+  p_content_version => 3::smallint,
+  p_scenario => 'digital'::text,
+  p_current_price_cents => 10000::bigint,
+  p_real_margin_basis_points => null::integer,
+  p_unit_profit_cents => null::bigint,
+  p_monthly_result_cents => -300000::bigint,
+  p_verdict => 'operational_loss'::text,
+  p_priority => 'volume'::text,
+  p_unit => 'unit'::text,
+  p_report_snapshot => $report$
+{"schemaVersion":2,"calculationVersion":2,"contentVersion":3,"category":"product","scenario":"digital","currency":"BRL","unit":"unit","policy":{"attentionBandBasisPoints":2000,"weeklyDivisorHundredths":433,"operatingDaysPerWeek":6,"maximumDiscountPercent":50,"proLaboreIncluded":true},"inputs":{"purchaseUnitCostCents":0,"unitSalePriceCents":10000,"fixedMonthlyExpensesCents":100000,"monthlySalesVolume":null,"proLaboreIncluded":true,"proLaboreCents":200000,"taxRateBasisPoints":600,"cardFeeRateBasisPoints":200,"productKind":"digital"},"results":{"effectiveFixedCostCents":300000,"purchaseUnitCostCents":0,"fixedAllocationCents":null,"totalUnitCostCents":null,"currentPriceCents":10000,"feeAmountCents":800,"netRevenueCents":9200,"unitContributionCents":9200,"unitProfitCents":null,"monthlySalesVolumeUsed":0,"monthlyGrossRevenueCents":0,"monthlyNetRevenueCents":0,"monthlyResultCents":-300000,"realMarginBasisPoints":null,"minimumPriceCents":0,"priceReferencesPartial":true,"monthlySalesGoal":33,"weeklySalesGoal":8,"dailySalesGoal":2,"breakEvenDiscountPercent":100,"totalFeeBasisPoints":800,"verdict":"operational_loss","priority":"volume"},"executiveSummary":{"headline":"Seu produto digital dá lucro?","introduction":"Veja o resultado do mês, o menor preço, o custo por venda e o primeiro ponto que merece atenção.","verdict":{"label":"Prejuízo no mês","body":"O resultado do mês ficou negativo com as vendas e os gastos informados.","tone":"critical"},"facts":[{"key":"margin","currentLabel":"Resultado do mês","currentValue":"-R$ 3.000,00","referenceLabel":"Quanto sobra a cada R$ 100","referenceValue":"Sem vendas para calcular"},{"key":"price","currentLabel":"Preço atual","currentValue":"R$ 100,00","referenceLabel":"Menor preço antes dos gastos mensais","referenceValue":"R$ 0,00"}],"priority":{"label":"Quantidade de vendas","body":"Comece pelas vendas necessárias para pagar os gastos mensais."},"answers":[{"key":"profitability","question":"Estou ganhando dinheiro?","answer":"Não neste mês — sem vendas, o resultado foi -R$ 3.000,00. Uma futura venda deixa R$ 92,00 para pagar os gastos mensais."},{"key":"price_sufficiency","question":"Meu preço paga tudo?","answer":"O menor preço de R$ 0,00 evita prejuízo direto e considera o custo por venda. Os gastos mensais dependem da quantidade mostrada abaixo."},{"key":"immediate_action","question":"O que preciso fazer agora?","answer":"Comece pelas vendas necessárias para pagar os gastos mensais."}]},"sections":[{"key":"break_even","title":"Seu menor preço sem prejuízo","body":"Este valor evita prejuízo direto na venda e considera o custo por venda. Os gastos mensais dependem da quantidade mostrada abaixo.","emphasisLabel":"Menor preço antes dos gastos mensais","emphasisValue":"R$ 0,00","tone":"positive"},{"key":"hidden_cost","title":"O que sai de cada venda","body":"Do preço saem R$ 8,00 em impostos e cartão e R$ 0,00 de custo por venda. Uma futura venda deixa R$ 92,00 para pagar os gastos mensais.","emphasisLabel":"Valor deixado por uma venda","emphasisValue":"R$ 92,00","tone":"neutral"},{"key":"margin_diagnosis","title":"Quanto sobra no mês","body":"O resultado considera R$ 0,00 recebidos depois de impostos e cartão, menos os custos das vendas e os gastos mensais. Quanto sobra a cada R$ 100: Sem vendas para calcular.","emphasisLabel":"Prejuízo no mês","emphasisValue":"-R$ 3.000,00","tone":"critical"},{"key":"sales_goal","title":"Quanto você precisa vender","body":"Para pagar os gastos mensais, a referência é 33 vendas no mês, 8 por semana e 2 por dia, considerando 6 dias por semana.","emphasisLabel":"Vendas necessárias no mês","emphasisValue":"33 unidades","tone":"neutral"},{"key":"discount_simulator","title":"Como um desconto muda o resultado","body":"Esta simulação ainda não inclui os gastos mensais, porque nenhuma venda foi informada.","emphasisLabel":"Desconto matemático antes da perda","emphasisValue":"100%","tone":"neutral"}],"discountSimulationBase":{"originalPriceCents":10000,"unitCostCents":0,"totalFeeBasisPoints":800,"attentionBandBasisPoints":2000,"minimumPriceCents":0,"partial":true}}
+$report$::jsonb
+);
+
+select public.create_production_diagnosis_report_v2(
+  p_submission_id => '13000000-0000-4000-8000-000000000101'::uuid,
+  p_cost_composition_enabled => true::boolean,
+  p_production_unit_cost_cents => 5000::bigint,
+  p_material_unit_cost_cents => 3000::bigint,
+  p_packaging_unit_cost_cents => 500::bigint,
+  p_direct_labor_unit_cost_cents => 1000::bigint,
+  p_other_variable_unit_cost_cents => 500::bigint,
+  p_unit_sale_price_cents => 10000::bigint,
+  p_fixed_monthly_expenses_cents => 100000::bigint,
+  p_monthly_sales_volume => 100::integer,
+  p_pro_labore_included => true::boolean,
+  p_pro_labore_cents => 200000::bigint,
+  p_tax_rate_basis_points => 600::integer,
+  p_card_fee_rate_basis_points => 200::integer,
+  p_schema_version => 2::smallint,
+  p_calculation_version => 2::smallint,
+  p_content_version => 3::smallint,
+  p_scenario => 'manufacturing'::text,
+  p_current_price_cents => 10000::bigint,
+  p_real_margin_basis_points => 1200::integer,
+  p_unit_profit_cents => 1200::bigint,
+  p_monthly_result_cents => 120000::bigint,
+  p_verdict => 'tight_margin'::text,
+  p_priority => 'margin'::text,
+  p_unit => 'unit'::text,
+  p_report_snapshot => $report$
+{"schemaVersion":2,"calculationVersion":2,"contentVersion":3,"category":"production","scenario":"manufacturing","currency":"BRL","unit":"unit","policy":{"attentionBandBasisPoints":2000,"weeklyDivisorHundredths":433,"operatingDaysPerWeek":6,"maximumDiscountPercent":50,"proLaboreIncluded":true},"inputs":{"costCompositionEnabled":true,"productionUnitCostCents":5000,"materialUnitCostCents":3000,"packagingUnitCostCents":500,"directLaborUnitCostCents":1000,"otherVariableUnitCostCents":500,"unitSalePriceCents":10000,"fixedMonthlyExpensesCents":100000,"monthlySalesVolume":100,"proLaboreIncluded":true,"proLaboreCents":200000,"taxRateBasisPoints":600,"cardFeeRateBasisPoints":200},"results":{"effectiveFixedCostCents":300000,"productionUnitCostCents":5000,"fixedAllocationCents":3000,"totalUnitCostCents":8000,"currentPriceCents":10000,"feeAmountCents":800,"netRevenueCents":9200,"unitContributionCents":4200,"unitProfitCents":1200,"monthlySalesVolumeUsed":100,"monthlyGrossRevenueCents":1000000,"monthlyNetRevenueCents":920000,"monthlyResultCents":120000,"realMarginBasisPoints":1200,"minimumPriceCents":8696,"priceReferencesPartial":false,"monthlySalesGoal":72,"weeklySalesGoal":17,"dailySalesGoal":3,"breakEvenDiscountPercent":13,"totalFeeBasisPoints":800,"verdict":"tight_margin","priority":"margin"},"executiveSummary":{"headline":"Sua produção dá lucro?","introduction":"Veja o resultado do mês, as unidades vendidas, o custo de fabricação, o menor preço e o primeiro ponto que merece atenção.","verdict":{"label":"Margem apertada","body":"O mês terminou positivo, mas com pouca folga para imprevistos.","tone":"warning"},"facts":[{"key":"margin","currentLabel":"Resultado do mês","currentValue":"R$ 1.200,00","referenceLabel":"Quanto sobra a cada R$ 100","referenceValue":"12%"},{"key":"price","currentLabel":"Preço atual","currentValue":"R$ 100,00","referenceLabel":"Menor preço sem prejuízo","referenceValue":"R$ 86,96"}],"priority":{"label":"Folga do resultado","body":"Proteja a pouca folga revendo preço e gastos."},"answers":[{"key":"profitability","question":"Estou ganhando dinheiro?","answer":"Sim — o resultado do mês foi R$ 1.200,00."},{"key":"price_sufficiency","question":"Meu preço paga tudo?","answer":"Sim — o preço atual está acima do menor preço de R$ 86,96 que paga os gastos informados."},{"key":"immediate_action","question":"O que preciso fazer agora?","answer":"Proteja a pouca folga revendo preço e gastos."}]},"sections":[{"key":"break_even","title":"Seu menor preço sem prejuízo","body":"Este preço paga o custo de fabricação, as cobranças da venda e a parte dos gastos mensais por unidade.","emphasisLabel":"Menor preço sem prejuízo","emphasisValue":"R$ 86,96","tone":"positive"},{"key":"hidden_cost","title":"O que sai de cada venda","body":"O custo de fabricação reúne materiais (R$ 30,00), embalagem (R$ 5,00), seu trabalho por unidade (R$ 10,00) e outros gastos por unidade (R$ 5,00). Impostos e cartão retiram R$ 8,00, e cada unidade vendida recebe R$ 30,00 dos gastos mensais.","emphasisLabel":"Resultado por unidade vendida","emphasisValue":"R$ 12,00","tone":"positive"},{"key":"margin_diagnosis","title":"Quanto sobra no mês","body":"O resultado considera R$ 9.200,00 recebidos pelas unidades vendidas depois de impostos e cartão, menos a fabricação e os gastos mensais. Quanto sobra a cada R$ 100: 12%.","emphasisLabel":"Margem apertada","emphasisValue":"R$ 1.200,00","tone":"warning"},{"key":"sales_goal","title":"Quanto você precisa vender","body":"Para pagar os gastos mensais, a referência é 72 unidades vendidas no mês, 17 por semana e 3 por dia, considerando 6 dias por semana.","emphasisLabel":"Unidades vendidas necessárias no mês","emphasisValue":"72 unidades","tone":"neutral"},{"key":"discount_simulator","title":"Como um desconto muda o resultado","body":"Veja como o desconto altera o valor deixado por unidade vendida e o resultado esperado.","emphasisLabel":"Desconto matemático antes da perda","emphasisValue":"13%","tone":"neutral"}],"discountSimulationBase":{"originalPriceCents":10000,"unitCostCents":8000,"totalFeeBasisPoints":800,"attentionBandBasisPoints":2000,"minimumPriceCents":8696,"partial":false}}
+$report$::jsonb
+);
+
 update public.billing_contracts
 set status = 'expired',
     access_ends_at = '2001-01-01T00:00:00Z',

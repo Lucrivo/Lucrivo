@@ -37,7 +37,8 @@ function decimalNumber(value: string): number {
 }
 
 function formatMoney(value: string): string {
-  return currencyFormatter.format(decimalNumber(value));
+  const parsed = decimalNumber(value);
+  return currencyFormatter.format(Number.isFinite(parsed) ? parsed : 0);
 }
 
 function ReviewItem({ label, value }: { label: string; value: string }) {
@@ -99,7 +100,14 @@ function ProductReviewStep({
           editName="Editar tipo de diagnóstico"
           onEdit={onBackToType}
         >
-          <ReviewItem label="O que será analisado" value="Produto" />
+          <ReviewItem
+            label="O que será analisado"
+            value={
+              values.productKind === "digital"
+                ? "Produto digital"
+                : "Produto para revenda"
+            }
+          />
         </ReviewGroup>
 
         <ReviewGroup
@@ -116,8 +124,17 @@ function ProductReviewStep({
           onEdit={() => onEdit("productValues")}
         >
           <ReviewItem
-            label="Quanto você paga por unidade?"
-            value={formatMoney(values.purchaseUnitCost)}
+            label={
+              values.productKind === "digital"
+                ? "Custo por venda"
+                : "Custo de compra por unidade"
+            }
+            value={
+              values.productKind === "digital" &&
+              decimalNumber(values.purchaseUnitCost || "0") === 0
+                ? "Sem custo por venda"
+                : formatMoney(values.purchaseUnitCost)
+            }
           />
           <ReviewItem
             label="Por quanto você vende cada unidade?"

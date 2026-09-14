@@ -56,6 +56,8 @@ const legacyViewModel = {
   ...viewModel,
   language: getReportLanguageProfile({
     category: "service",
+    schemaVersion: 3,
+    calculationVersion: 2,
     contentVersion: 3,
   }),
   executiveSummary: {
@@ -78,6 +80,8 @@ const legacyViewModel = {
     ...section,
     toneLabel: getReportLanguageProfile({
       category: "service",
+      schemaVersion: 3,
+      calculationVersion: 2,
       contentVersion: 3,
     }).toneLabels[section.tone],
   })),
@@ -85,6 +89,7 @@ const legacyViewModel = {
 
 const productCommand: ProductDiagnosisCommand = {
   submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  productKind: "resale",
   purchaseUnitCostCents: 5000,
   unitSalePriceCents: 10000,
   fixedMonthlyExpensesCents: 100000,
@@ -199,13 +204,15 @@ describe("ReportDetail", () => {
       screen.getByRole("heading", { name: "Diagnóstico de Produto" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Revenda")).toBeInTheDocument();
+    expect(screen.getByText("Valor deixado por unidade")).toBeInTheDocument();
     expect(
-      screen.getAllByText("Contribuição por unidade").length,
+      screen.getAllByText("Quanto sobra a cada R$ 100").length,
     ).toBeGreaterThan(0);
-    expect(screen.getByText("Margem de contribuição")).toBeInTheDocument();
     expect(
-      screen.getByText("Simulação parcial", { exact: false }),
-    ).toBeInTheDocument();
+      screen.getAllByText("Esta simulação ainda não inclui os gastos mensais", {
+        exact: false,
+      }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("passes Production context to partial simulation wording", () => {
@@ -215,13 +222,15 @@ describe("ReportDetail", () => {
       screen.getByRole("heading", { name: "Diagnóstico de Produção" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Fabricação própria")).toBeInTheDocument();
+    expect(screen.getByText("Valor deixado por unidade")).toBeInTheDocument();
     expect(
-      screen.getAllByText("Contribuição por unidade").length,
+      screen.getAllByText("Quanto sobra a cada R$ 100").length,
     ).toBeGreaterThan(0);
-    expect(screen.getByText("Margem de contribuição")).toBeInTheDocument();
     expect(
-      screen.getByText("Simulação parcial", { exact: false }),
-    ).toBeInTheDocument();
+      screen.getAllByText("Esta simulação ainda não inclui os gastos mensais", {
+        exact: false,
+      }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("keeps report chrome unchanged for a legacy snapshot", () => {
