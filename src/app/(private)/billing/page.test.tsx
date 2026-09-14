@@ -78,11 +78,16 @@ describe("BillingPage", () => {
     expect(
       screen.getByRole("article", { name: "Plano Anual" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Mais popular")).toBeInTheDocument();
+    expect(screen.getByText("Mais vantajoso")).toBeInTheDocument();
     expect(
       screen.getByRole("region", { name: "Segurança e transparência" }),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /cartão/i })).toHaveLength(2);
+    expect(
+      screen.getByRole("button", { name: "Assinar mensal" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Assinar anual" }),
+    ).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /Pix/i })).toHaveLength(2);
     expect(requireUser).toHaveBeenCalledOnce();
     expect(getBillingOverview).toHaveBeenCalledWith({

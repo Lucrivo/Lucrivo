@@ -33,37 +33,30 @@ describe("BillingPlans", () => {
 
     expect(screen.getByRole("heading", { name: "Grátis" })).toBeInTheDocument();
     expect(screen.getByText("1 diagnóstico rápido")).toBeInTheDocument();
-    expect(
-      screen.getByText("1 relatório disponível para consulta"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("1 relatório completo")).toBeInTheDocument();
 
     expect(screen.getByText("R$ 49,90/mês")).toBeInTheDocument();
-    expect(screen.getByText("Mais popular")).toBeInTheDocument();
+    expect(screen.getByText("Mais vantajoso")).toBeInTheDocument();
     expect(screen.getByText("Comece sem custo")).toBeInTheDocument();
-    expect(screen.getByText("Flexibilidade para crescer")).toBeInTheDocument();
-    expect(screen.getByText("Mais economia no ano")).toBeInTheDocument();
+    expect(screen.getByText("Mais flexibilidade")).toBeInTheDocument();
+    expect(screen.getByText("Melhor custo-benefício")).toBeInTheDocument();
+
+    const annual = screen.getByRole("article", { name: "Plano Anual" });
+
+    expect(within(annual).getByText("12x de")).toBeInTheDocument();
+    expect(within(annual).getByText("R$ 39,90")).toBeInTheDocument();
     expect(
-      screen.getByText(
-        "Renovação automática no cartão. Cancele quando quiser.",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "No Pix, você recebe 1 mês de acesso sem renovação automática.",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "R$ 478,80 no Pix à vista ou em até 12x sem juros no cartão — 12x de R$ 39,90. Sem renovação automática.",
-      ),
+      within(annual).getByText("ou R$ 478,80 à vista"),
     ).toBeInTheDocument();
     expect(screen.getByText("Economize R$ 120,00 no ano.")).toBeInTheDocument();
     expect(
       screen.getByRole("region", { name: "Segurança e transparência" }),
     ).toHaveTextContent(
-      /Checkout protegido pelo Asaas[\s\S]*Cobrança explicada antes de pagar[\s\S]*Acesso liberado após confirmação/,
+      /Pagamento seguro com Asaas[\s\S]*Sem letras miúdas[\s\S]*Acesso liberado após confirmação/,
     );
-    expect(container).not.toHaveTextContent(/interpretad[oa] por IA/i);
+    expect(container).toHaveTextContent(
+      "IA para explicar e interpretar seus relatórios",
+    );
 
     for (const link of screen.getAllByRole("link")) {
       expect(link).toHaveAttribute("href", "/register");
@@ -82,10 +75,13 @@ describe("BillingPlans", () => {
     );
 
     expect(screen.getByText("R$ 59,90/mês")).toBeInTheDocument();
+
+    const annual = screen.getByRole("article", { name: "Plano Anual" });
+
+    expect(within(annual).getByText("12x de")).toBeInTheDocument();
+    expect(within(annual).getByText("R$ 49,90")).toBeInTheDocument();
     expect(
-      screen.getByText(
-        "R$ 598,80 no Pix à vista ou em até 12x sem juros no cartão — 12x de R$ 49,90. Sem renovação automática.",
-      ),
+      within(annual).getByText("ou R$ 598,80 à vista"),
     ).toBeInTheDocument();
     expect(screen.getByText("Economize R$ 120,00 no ano.")).toBeInTheDocument();
     expect(screen.queryByText("R$ 49,90/mês")).not.toBeInTheDocument();
@@ -110,13 +106,13 @@ describe("BillingPlans", () => {
     const annual = screen.getByRole("article", { name: "Plano Anual" });
 
     expect(
-      within(monthly).getByRole("button", { name: "Assinar no cartão" }),
+      within(monthly).getByRole("button", { name: "Assinar mensal" }),
     ).toBeInTheDocument();
     expect(
       within(monthly).getByRole("button", { name: "Pagar com Pix" }),
     ).toBeInTheDocument();
     expect(
-      within(annual).getByRole("button", { name: "Pagar no cartão" }),
+      within(annual).getByRole("button", { name: "Assinar anual" }),
     ).toBeInTheDocument();
     expect(
       within(annual).getByRole("button", { name: "Pagar com Pix" }),
