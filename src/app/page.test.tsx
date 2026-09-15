@@ -173,11 +173,8 @@ describe("Home", () => {
     ).toBeInTheDocument();
   });
 
-  it("covers all supported business contexts", async () => {
+  it("keeps the later business-context chapter", async () => {
     await renderHome();
-    expect(screen.getByRole("main")).toHaveTextContent(
-      /Para revenda, produção ou serviço/i,
-    );
     expect(
       screen.getByRole("heading", {
         name: "Você vende, produz ou presta serviço?",

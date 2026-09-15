@@ -14,6 +14,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
 import { HeroSection } from "@/components/landing/hero-section";
+import { ProblemSection } from "@/components/landing/problem-section";
 import { BillingPlans } from "@/modules/billing/components/billing-plans";
 import type { ActiveBillingPrice } from "@/modules/billing/types";
 
@@ -218,74 +219,7 @@ export function LandingExperience({
 
       <HeroSection />
 
-      <section id="como-funciona" className="light-section chapter">
-        <div className="section-heading">
-          <p className="eyebrow">Antes de mudar o preço</p>
-          <h2>
-            Seus números viram uma resposta.
-            <br />
-            Você entende o caminho.
-          </h2>
-        </div>
-
-        <div className="diagnostic-bento">
-          <article className="bento-card bento-wide bento-dark">
-            <div>
-              <p className="card-label">Margem real</p>
-              <h3>Veja quanto sobra depois de considerar todos os custos.</h3>
-            </div>
-            <div className="margin-graph" aria-hidden="true">
-              <span style={{ height: "38%" }} />
-              <span style={{ height: "52%" }} />
-              <span style={{ height: "68%" }} />
-              <span className="active" style={{ height: "86%" }} />
-            </div>
-          </article>
-
-          <article className="bento-card bento-narrow bento-lime">
-            <p className="card-label">Preço-alvo</p>
-            <div className="target-ring">
-              <span>equilíbrio</span>
-            </div>
-            <h3>Um preço que faz a conta fechar e cabe o seu lucro.</h3>
-          </article>
-
-          <article className="bento-card bento-third bento-paper">
-            <p className="card-label">Ponto de equilíbrio</p>
-            <h3>Saiba quanto precisa vender para sair do zero.</h3>
-            <div className="balance-line">
-              <span />
-            </div>
-          </article>
-
-          <article className="bento-card bento-third bento-green">
-            <p className="card-label">Desconto seguro</p>
-            <h3>Negocie olhando para o impacto, não para o impulso.</h3>
-            <div className="discount-control">
-              <span />
-              <i />
-            </div>
-          </article>
-
-          <article className="bento-card bento-third bento-image">
-            <div className="bento-image-photo" />
-            <div className="bento-image-copy">
-              <p className="card-label">Orientação prática</p>
-              <h3>O cálculo aponta. A IA explica.</h3>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section className="statement-section">
-        <p className="word-reveal statement-copy">
-          {"Preço não é só colocar um número. Para revenda, produção ou serviço, ele precisa considerar custos, impostos, taxas, estrutura, tempo de trabalho e o quanto você quer ganhar."
-            .split(" ")
-            .map((word, index) => (
-              <span key={`${word}-${index}`}>{word} </span>
-            ))}
-        </p>
-      </section>
+      <ProblemSection />
 
       <section id="recursos" className="features-section chapter">
         <div className="section-heading section-heading-light">

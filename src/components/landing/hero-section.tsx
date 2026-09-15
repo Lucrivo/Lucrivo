@@ -2,13 +2,10 @@ import Image from "next/image";
 
 import {
   ArrowRightIcon,
-  BriefcaseIcon,
   ChartBarIcon,
   ChatCircleTextIcon,
   CreditCardIcon,
-  FactoryIcon,
   PlayCircleIcon,
-  StorefrontIcon,
   TableIcon,
 } from "@phosphor-icons/react";
 
@@ -30,12 +27,6 @@ const trustItems = [
     description: "Informações claras e fáceis de entender",
     icon: ChatCircleTextIcon,
   },
-] as const;
-
-const businessContexts = [
-  { label: "Revenda", icon: StorefrontIcon },
-  { label: "Produção própria", icon: FactoryIcon },
-  { label: "Prestação de serviço", icon: BriefcaseIcon },
 ] as const;
 
 function HeroSection() {
@@ -116,26 +107,6 @@ function HeroSection() {
             />
           </div>
         </figure>
-      </div>
-
-      <div className="hero-contexts hero-copy-reveal">
-        <div className="hero-contexts-label">
-          <span aria-hidden="true" />
-
-          <p>Feito para a realidade de quem empreende</p>
-
-          <span aria-hidden="true" />
-        </div>
-
-        <ul>
-          {businessContexts.map(({ label, icon: Icon }) => (
-            <li key={label}>
-              <Icon aria-hidden="true" size={24} weight="duotone" />
-
-              {label}
-            </li>
-          ))}
-        </ul>
       </div>
     </section>
   );
