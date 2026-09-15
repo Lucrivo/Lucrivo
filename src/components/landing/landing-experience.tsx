@@ -114,24 +114,44 @@ export function LandingExperience({
           "-=0.52",
         );
 
-      gsap.utils.toArray<HTMLElement>(".word-reveal").forEach((section) => {
-        const words = section.querySelectorAll("span");
-        gsap.fromTo(
-          words,
-          { opacity: 0.12 },
-          {
-            opacity: 1,
-            stagger: 0.05,
-            ease: "none",
-            scrollTrigger: {
-              trigger: section,
-              start: "top 76%",
-              end: "bottom 42%",
-              scrub: 1,
-            },
+      gsap
+        .timeline({
+          scrollTrigger: {
+            trigger: ".problem-section",
+            start: "top 76%",
+            once: true,
           },
+        })
+        .from(".problem-reveal", {
+          y: 18,
+          opacity: 0,
+          duration: 0.48,
+          stagger: 0.08,
+          ease: "power2.out",
+        })
+        .from(
+          ".problem-card, .problem-conclusion",
+          {
+            y: 22,
+            opacity: 0,
+            duration: 0.52,
+            stagger: 0.06,
+            ease: "power2.out",
+          },
+          "-=0.2",
+        )
+        .from(
+          ".problem-visual > *, .problem-conclusion-bars > *",
+          {
+            scaleY: 0.3,
+            opacity: 0,
+            duration: 0.38,
+            stagger: 0.025,
+            transformOrigin: "bottom",
+            ease: "power2.out",
+          },
+          "-=0.42",
         );
-      });
 
       gsap.utils.toArray<HTMLElement>(".scroll-visual").forEach((visual) => {
         gsap

@@ -185,7 +185,10 @@ function ProblemSection() {
                   <span className="problem-card-icon" aria-hidden="true">
                     <Icon size={30} weight="duotone" />
                   </span>
-                  <span className="problem-card-index" aria-hidden="true">
+                  <span
+                    className="problem-card-index"
+                    aria-label={`Item ${index + 1} de ${pricingFactors.length}`}
+                  >
                     {String(index + 1).padStart(2, "0")}
                   </span>
                 </div>
