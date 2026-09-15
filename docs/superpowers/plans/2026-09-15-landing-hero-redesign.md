@@ -37,10 +37,12 @@
 ### Task 1: Lock the new hero contract with a failing page test
 
 **Files:**
+
 - Modify: `src/app/page.test.tsx`
 - Test: `src/app/page.test.tsx`
 
 **Interfaces:**
+
 - Consumes: asynchronous `Home(): Promise<ReactElement>` and the existing `renderHome()` test helper.
 - Produces: a DOM contract for `#top`, the hero `h1`, `/register` primary CTA, `#como-funciona` secondary CTA, reassurance text, dashboard image alternative text, and an unchanged downstream section.
 
@@ -121,12 +123,14 @@ git commit -m "test: define redesigned landing hero contract"
 ### Task 2: Build and integrate the responsive hero
 
 **Files:**
+
 - Create: `src/components/landing/hero-section.tsx`
 - Modify: `src/components/landing/landing-experience.tsx`
 - Modify: `src/components/landing/landing-experience.css`
 - Test: `src/app/page.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `src/public/lp/hero-image.png`, `next/image`, and Phosphor icon components.
 - Produces: `export function HeroSection(): ReactElement`, rendered by `LandingExperience` directly after the unchanged navigation.
 
@@ -188,8 +192,12 @@ function HeroSection() {
 
           <h1 id="hero-title" className="hero-copy-reveal">
             <span>Você sabe se o preço</span>
-            <span>que cobra <em>realmente</em></span>
-            <span><em>dá lucro?</em></span>
+            <span>
+              que cobra <em>realmente</em>
+            </span>
+            <span>
+              <em>dá lucro?</em>
+            </span>
           </h1>
 
           <p className="hero-description hero-copy-reveal">
@@ -209,7 +217,10 @@ function HeroSection() {
             </a>
           </div>
 
-          <ul className="hero-trust hero-copy-reveal" aria-label="Vantagens do diagnóstico">
+          <ul
+            className="hero-trust hero-copy-reveal"
+            aria-label="Vantagens do diagnóstico"
+          >
             {trustItems.map(({ title, description, icon: Icon }) => (
               <li key={title}>
                 <span className="hero-trust-icon" aria-hidden="true">
@@ -327,8 +338,16 @@ with rules implementing these exact responsibilities:
   overflow: hidden;
   grid-template-rows: minmax(0, 1fr) auto;
   background:
-    radial-gradient(circle at 76% 42%, oklch(0.59 0.2 250 / 0.18), transparent 30%),
-    radial-gradient(circle at 12% 76%, oklch(0.52 0.2 259 / 0.08), transparent 30%),
+    radial-gradient(
+      circle at 76% 42%,
+      oklch(0.59 0.2 250 / 0.18),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 12% 76%,
+      oklch(0.52 0.2 259 / 0.08),
+      transparent 30%
+    ),
     var(--ink);
 }
 
@@ -697,6 +716,7 @@ git commit -m "feat: redesign landing hero"
 ### Task 3: Remove the legacy landing tree and perform bounded final verification
 
 **Files:**
+
 - Delete: `src/components/landing/landing-page.tsx`
 - Delete: `src/components/landing/hero-diagnosis-visual.tsx`
 - Delete: `src/components/landing/diagnosis-showcase.tsx`
@@ -708,6 +728,7 @@ git commit -m "feat: redesign landing hero"
 - Verify: `src/app/page.test.tsx`
 
 **Interfaces:**
+
 - Consumes: active imports discovered with `rg` and the completed `HeroSection` integration.
 - Produces: one active landing implementation with no source reference to the deleted legacy tree.
 

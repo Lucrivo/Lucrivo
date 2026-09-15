@@ -177,7 +177,7 @@ html:has(.landing-experience) {
   width: min(100%, 1540px);
   margin: 0 auto;
   align-items: center;
-  grid-template-columns: minmax(430px, 0.9fr) minmax(540px, 1.1fr);
+  grid-template-columns: minmax(0, 0.98fr) minmax(0, 1.02fr);
   gap: clamp(24px, 3vw, 64px);
 }
 
@@ -216,7 +216,7 @@ html:has(.landing-experience) {
 
 .landing-experience .hero-copy h1 {
   margin: 0;
-  font-size: clamp(3.25rem, 5.35vw, 6rem);
+  font-size: clamp(3.25rem, 4.25vw, 4.3rem);
   font-weight: 610;
   line-height: 0.95;
   letter-spacing: -0.04em;
