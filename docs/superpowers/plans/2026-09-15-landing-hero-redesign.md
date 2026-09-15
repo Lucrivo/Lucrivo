@@ -203,7 +203,7 @@ function HeroSection() {
           <p className="hero-description hero-copy-reveal">
             Seu preço pode parecer certo e ainda estar fazendo você perder
             dinheiro. Descubra se ele faz sentido para a realidade do seu
-            negócio com uma análise objetiva e completa.
+            negócio.
           </p>
 
           <div className="hero-actions hero-copy-reveal">

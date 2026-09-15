@@ -1,33 +1,34 @@
 import Image from "next/image";
+
 import {
   ArrowRightIcon,
   BriefcaseIcon,
   ChartBarIcon,
+  ChatCircleTextIcon,
+  CreditCardIcon,
   FactoryIcon,
-  LightningIcon,
-  LockKeyIcon,
   PlayCircleIcon,
   StorefrontIcon,
-  TrendUpIcon,
+  TableIcon,
 } from "@phosphor-icons/react";
 
 import heroImage from "@/public/lp/hero-image.png";
 
 const trustItems = [
   {
-    title: "Rápido e prático",
-    description: "Em poucos minutos",
-    icon: LightningIcon,
+    title: "Sem cartão para começar",
+    description: "Faça seu primeiro diagnóstico grátis",
+    icon: CreditCardIcon,
   },
   {
-    title: "Sem cartão de crédito",
-    description: "Comece sem compromisso",
-    icon: LockKeyIcon,
+    title: "Sem planilhas",
+    description: "Deixe os cálculos com o Lucrivo",
+    icon: TableIcon,
   },
   {
-    title: "Orientação objetiva",
-    description: "Saiba o que revisar primeiro",
-    icon: TrendUpIcon,
+    title: "Sem falar contabilês",
+    description: "Informações claras e fáceis de entender",
+    icon: ChatCircleTextIcon,
   },
 ] as const;
 
@@ -55,9 +56,11 @@ function HeroSection() {
             aria-label="Você sabe se o preço que cobra realmente dá lucro?"
           >
             <span>Você sabe se o preço</span>
+
             <span>
               que cobra <em>realmente</em>
             </span>
+
             <span>
               <em>dá lucro?</em>
             </span>
@@ -66,7 +69,7 @@ function HeroSection() {
           <p className="hero-description hero-copy-reveal">
             Seu preço pode parecer certo e ainda estar fazendo você perder
             dinheiro. Descubra se ele faz sentido para a realidade do seu
-            negócio com uma análise objetiva dos seus números.
+            negócio.
           </p>
 
           <div className="hero-actions hero-copy-reveal">
@@ -74,6 +77,7 @@ function HeroSection() {
               Fazer diagnóstico gratuito
               <ArrowRightIcon aria-hidden="true" size={18} weight="bold" />
             </a>
+
             <a className="button button-secondary" href="#como-funciona">
               <PlayCircleIcon aria-hidden="true" size={19} weight="bold" />
               Conhecer o Lucrivo
@@ -89,6 +93,7 @@ function HeroSection() {
                 <span className="hero-trust-icon" aria-hidden="true">
                   <Icon size={22} weight="fill" />
                 </span>
+
                 <span>
                   <strong>{title}</strong>
                   <small>{description}</small>
@@ -99,28 +104,34 @@ function HeroSection() {
         </div>
 
         <figure className="hero-visual hero-visual-reveal">
-          <Image
-            src={heroImage}
-            alt="Painel ilustrativo do Lucrivo com indicadores financeiros."
-            width={1448}
-            height={1086}
-            priority
-            sizes="(max-width: 720px) 100vw, (max-width: 1100px) 86vw, 58vw"
-            className="hero-dashboard-image"
-          />
+          <div className="hero-dashboard-motion">
+            <Image
+              src={heroImage}
+              alt="Painel ilustrativo do Lucrivo com indicadores financeiros."
+              width={1448}
+              height={1086}
+              priority
+              sizes="(max-width: 720px) 100vw, (max-width: 1100px) 86vw, 58vw"
+              className="hero-dashboard-image"
+            />
+          </div>
         </figure>
       </div>
 
       <div className="hero-contexts hero-copy-reveal">
         <div className="hero-contexts-label">
           <span aria-hidden="true" />
+
           <p>Feito para a realidade de quem empreende</p>
+
           <span aria-hidden="true" />
         </div>
+
         <ul>
           {businessContexts.map(({ label, icon: Icon }) => (
             <li key={label}>
               <Icon aria-hidden="true" size={24} weight="duotone" />
+
               {label}
             </li>
           ))}
