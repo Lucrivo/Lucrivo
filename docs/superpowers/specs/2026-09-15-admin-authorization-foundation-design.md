@@ -1,7 +1,7 @@
 # Admin Authorization Foundation Design
 
 **Date:** 2026-09-15
-**Status:** Awaiting written review
+**Status:** Approved
 
 ## 1. Objective
 
@@ -225,7 +225,9 @@ Add a pgTAP test file that proves:
   and Auth foreign-key constraints;
 - direct table privileges are absent for `anon`, `authenticated`, and
   `service_role`;
-- anonymous and ordinary authenticated callers receive false;
+- the private helper returns false without a JWT subject, anonymous callers
+  cannot execute the public RPC, and ordinary authenticated callers receive
+  false;
 - the assigned administrator receives true from `is_admin()`;
 - the assigned administrator at `aal1` receives false from
   `has_admin_access()`;
