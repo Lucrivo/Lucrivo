@@ -90,30 +90,87 @@ describe("Home", () => {
         name: "Painel ilustrativo do Lucrivo com indicadores financeiros.",
       }),
     ).toBeInTheDocument();
-    expect(view.getByText("Em poucos minutos")).toBeInTheDocument();
-    expect(view.getByText("Sem cartão de crédito")).toBeInTheDocument();
-    expect(view.getByText("Saiba o que revisar primeiro")).toBeInTheDocument();
+    expect(view.getByText("Sem cartão para começar")).toBeInTheDocument();
+    expect(view.getByText("Sem planilhas")).toBeInTheDocument();
+    expect(view.getByText("Sem falar contabilês")).toBeInTheDocument();
     expect(listActivePrices).toHaveBeenCalledWith({ supabase });
   });
 
-  it("keeps the existing landing content after the hero", async () => {
+  it("introduces every factor that shapes a viable price", async () => {
     await renderHome();
 
+    const problem = document.querySelector("#como-funciona");
+    expect(problem).not.toBeNull();
+
+    const view = within(problem as HTMLElement);
     expect(
-      screen.getByRole("heading", {
-        name: /Seus números viram uma resposta\.\s*Você entende o caminho\./,
+      view.getByRole("heading", {
+        level: 2,
+        name: "Preço não é só colocar um número.",
       }),
     ).toBeInTheDocument();
-    expect(document.querySelector("#recursos")).not.toBeNull();
-    expect(document.querySelector("#planos")).not.toBeNull();
-    expect(document.querySelector("#diagnostico")).not.toBeNull();
+    expect(view.getByText("O problema")).toBeInTheDocument();
+    expect(
+      view.getByText(/Estes são os pontos que costumam mudar tudo/),
+    ).toBeInTheDocument();
+
+    const factors = [
+      ["Custos", "Tudo que sai para o produto ou serviço existir."],
+      ["Impostos", "A fatia que vai embora em cada venda."],
+      ["Taxas", "Cartão, app, marketplace — descontam sem avisar."],
+      ["Tempo", "Seu trabalho e suas horas também têm valor."],
+      ["Estrutura", "Aluguel, luz, sistema: o custo de manter tudo de pé."],
+      [
+        "O quanto você quer ganhar",
+        "O preço tem que caber o seu lucro também.",
+      ],
+    ] as const;
+
+    for (const [title, description] of factors) {
+      expect(
+        view.getByRole("heading", { level: 3, name: title }),
+      ).toBeInTheDocument();
+      expect(view.getByText(description)).toBeInTheDocument();
+    }
   });
 
-  it("explains every part considered when pricing", async () => {
+  it("uses the business contexts as a bridge into the pricing problem", async () => {
     await renderHome();
-    expect(screen.getByRole("main")).toHaveTextContent(
-      /custos, impostos, taxas, estrutura, tempo de trabalho e o quanto você quer ganhar/i,
-    );
+
+    const problem = document.querySelector("#como-funciona");
+    const view = within(problem as HTMLElement);
+
+    expect(
+      view.getByText("Feito para a realidade de quem empreende"),
+    ).toBeInTheDocument();
+    expect(
+      view.getByText("Antes de mudar seu preço, descubra se a conta fecha."),
+    ).toBeInTheDocument();
+
+    for (const context of [
+      "Revenda",
+      "Produção própria",
+      "Prestação de serviço",
+    ]) {
+      expect(view.getByText(context)).toBeInTheDocument();
+    }
+  });
+
+  it("closes the problem section with the approved outcome message", async () => {
+    await renderHome();
+
+    const problem = document.querySelector("#como-funciona");
+    const view = within(problem as HTMLElement);
+
+    expect(
+      view.getByText(
+        "Quando você considera todos os pontos, o preço trabalha a seu favor.",
+      ),
+    ).toBeInTheDocument();
+    expect(view.getByText("Preço certo abre caminhos.")).toBeInTheDocument();
+    expect(
+      view.getByText("E a Lucrivo te ajuda a chegar lá."),
+    ).toBeInTheDocument();
   });
 
   it("covers all supported business contexts", async () => {
@@ -128,24 +185,12 @@ describe("Home", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows the financial references produced by the diagnosis", async () => {
+  it("keeps the later landing chapters mounted", async () => {
     await renderHome();
-    for (const label of [
-      "Margem real",
-      "Preço-alvo",
-      "Ponto de equilíbrio",
-      "Desconto seguro",
-      "Orientação prática",
-    ]) {
-      expect(
-        screen.getAllByText(label, { exact: true }).length,
-      ).toBeGreaterThan(0);
-    }
-    expect(
-      screen.getByRole("heading", {
-        name: "Veja quanto sobra depois de considerar todos os custos.",
-      }),
-    ).toBeInTheDocument();
+
+    expect(document.querySelector("#recursos")).not.toBeNull();
+    expect(document.querySelector("#planos")).not.toBeNull();
+    expect(document.querySelector("#diagnostico")).not.toBeNull();
   });
 
   it("uses registration for every public plan action", async () => {
