@@ -303,27 +303,37 @@ html:has(.landing-experience) {
 
 .landing-experience .hero-trust {
   display: grid;
-  margin: 30px 0 0;
+  margin: 34px 0 0;
   padding: 0;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+  gap: clamp(18px, 2vw, 28px);
   list-style: none;
 }
 
 .landing-experience .hero-trust li {
-  display: flex;
+  display: grid;
   min-width: 0;
+  min-height: 54px;
+  grid-template-columns: 46px minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
+  column-gap: 12px;
+}
+
+.landing-experience .hero-trust li > span:last-child {
+  min-width: 0;
 }
 
 .landing-experience .hero-trust-icon {
   display: grid;
-  flex: 0 0 auto;
-  width: 38px;
-  height: 38px;
+  width: 46px;
+  height: 46px;
   place-items: center;
   color: oklch(0.68 0.2 250);
+}
+
+.landing-experience .hero-trust-icon svg {
+  width: 28px;
+  height: 28px;
 }
 
 .landing-experience .hero-trust strong,
@@ -332,16 +342,18 @@ html:has(.landing-experience) {
 }
 
 .landing-experience .hero-trust strong {
-  color: oklch(0.96 0.012 255);
-  font-size: 0.76rem;
-  line-height: 1.3;
+  color: oklch(0.97 0.01 255);
+  font-size: clamp(0.8rem, 0.86vw, 0.9rem);
+  font-weight: 680;
+  line-height: 1.28;
+  letter-spacing: -0.012em;
 }
 
 .landing-experience .hero-trust small {
-  margin-top: 3px;
-  color: oklch(0.82 0.035 255 / 0.7);
-  font-size: 0.66rem;
-  line-height: 1.35;
+  margin-top: 5px;
+  color: oklch(0.84 0.035 255 / 0.72);
+  font-size: clamp(0.7rem, 0.74vw, 0.78rem);
+  line-height: 1.4;
 }
 
 .landing-experience .hero-visual {
@@ -1333,14 +1345,34 @@ html:has(.landing-experience) {
   }
 
   .landing-experience .hero-trust {
-    margin-top: 28px;
+    margin-top: 30px;
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 14px;
+  }
+
+  .landing-experience .hero-trust li {
+    min-height: 52px;
+    grid-template-columns: 44px minmax(0, 1fr);
+    column-gap: 12px;
   }
 
   .landing-experience .hero-trust-icon {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .landing-experience .hero-trust-icon svg {
+    width: 27px;
+    height: 27px;
+  }
+
+  .landing-experience .hero-trust strong {
+    font-size: 0.86rem;
+  }
+
+  .landing-experience .hero-trust small {
+    margin-top: 4px;
+    font-size: 0.74rem;
   }
 
   .landing-experience .hero-visual {

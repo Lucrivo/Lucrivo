@@ -91,7 +91,7 @@ function HeroSection() {
             {trustItems.map(({ title, description, icon: Icon }) => (
               <li key={title}>
                 <span className="hero-trust-icon" aria-hidden="true">
-                  <Icon size={22} weight="fill" />
+                  <Icon size={28} weight="fill" />
                 </span>
 
                 <span>
