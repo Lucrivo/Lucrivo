@@ -424,6 +424,7 @@ html:has(.landing-experience) {
 
 .landing-experience .problem-section {
   position: relative;
+  scroll-margin-top: 104px;
   background: var(--paper);
   color: var(--ink);
 }
@@ -653,6 +654,10 @@ html:has(.landing-experience) {
   line-height: 0.98;
   letter-spacing: -0.04em;
   text-wrap: balance;
+}
+
+.landing-experience .problem-conclusion h3 {
+  font-size: clamp(1.8rem, 2.2vw, 2.65rem);
 }
 
 .landing-experience .problem-card-copy p {
@@ -905,7 +910,6 @@ html:has(.landing-experience) {
   padding: 180px max(5vw, 24px);
 }
 
-.landing-experience .light-section,
 .landing-experience .pricing-section {
   background: var(--paper);
   color: var(--ink);
@@ -933,210 +937,6 @@ html:has(.landing-experience) {
 .landing-experience .section-heading .eyebrow {
   align-self: start;
   color: oklch(0.32 0.095 258);
-}
-
-.landing-experience .diagnostic-bento {
-  display: grid;
-  grid-auto-flow: dense;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 1px;
-  width: min(100%, 1240px);
-  margin: 0 auto;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 24px;
-  background: var(--line);
-}
-
-.landing-experience .bento-card {
-  position: relative;
-  display: flex;
-  min-height: 360px;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 40px;
-  overflow: hidden;
-  transition: transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.landing-experience .bento-card:hover {
-  transform: scale(0.985);
-}
-
-.landing-experience .bento-wide {
-  grid-column: span 7;
-}
-
-.landing-experience .bento-narrow {
-  grid-column: span 5;
-}
-
-.landing-experience .bento-third {
-  grid-column: span 4;
-}
-
-.landing-experience .bento-dark {
-  background: var(--ink);
-  color: oklch(0.955 0.012 255);
-}
-
-.landing-experience .bento-lime {
-  background: var(--landing-primary);
-  color: var(--landing-primary-foreground);
-}
-
-.landing-experience .bento-paper {
-  background: var(--paper-bright);
-}
-
-.landing-experience .bento-green {
-  background: oklch(0.28 0.075 258);
-  color: oklch(0.955 0.012 255);
-}
-
-.landing-experience .card-label {
-  margin: 0 0 28px;
-  font-size: 0.72rem;
-  font-weight: 680;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  opacity: 0.62;
-}
-
-.landing-experience .bento-card h3 {
-  max-width: 520px;
-  margin: 0;
-  font-size: clamp(1.6rem, 2.6vw, 2.8rem);
-  font-weight: 520;
-  line-height: 1.06;
-  letter-spacing: -0.045em;
-}
-
-.landing-experience .margin-graph {
-  display: flex;
-  height: 125px;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-.landing-experience .margin-graph span {
-  flex: 1;
-  border-radius: 5px 5px 0 0;
-  background: oklch(0.955 0.012 255 / 0.12);
-}
-
-.landing-experience .margin-graph .active {
-  background: var(--landing-primary-bright);
-}
-
-.landing-experience .target-ring {
-  display: grid;
-  width: 148px;
-  height: 148px;
-  place-items: center;
-  align-self: flex-end;
-  border: 18px solid oklch(0.99 0.005 255 / 0.18);
-  border-top-color: var(--landing-primary-foreground);
-  border-radius: 50%;
-  transform: rotate(28deg);
-}
-
-.landing-experience .target-ring span {
-  font-size: 0.7rem;
-  font-weight: 650;
-  transform: rotate(-28deg);
-}
-
-.landing-experience .balance-line {
-  position: relative;
-  height: 4px;
-  margin-top: 48px;
-  background: oklch(0.205 0.045 258 / 0.12);
-}
-
-.landing-experience .balance-line span {
-  position: absolute;
-  top: -6px;
-  left: 64%;
-  width: 16px;
-  height: 16px;
-  border: 4px solid var(--paper-bright);
-  border-radius: 50%;
-  background: var(--ink);
-  box-shadow: 0 0 0 1px var(--ink);
-}
-
-.landing-experience .discount-control {
-  position: relative;
-  height: 82px;
-  margin-top: 40px;
-  border-radius: 50px;
-  background: oklch(0.955 0.012 255 / 0.1);
-}
-
-.landing-experience .discount-control span {
-  position: absolute;
-  top: 50%;
-  left: 12%;
-  width: 70%;
-  height: 2px;
-  background: oklch(0.955 0.012 255 / 0.4);
-}
-
-.landing-experience .discount-control i {
-  position: absolute;
-  top: 25px;
-  left: 58%;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--landing-primary-bright);
-  box-shadow: 0 8px 22px oklch(0.03 0.02 258 / 0.2);
-}
-
-.landing-experience .bento-image {
-  min-height: 430px;
-  padding: 0;
-  background: oklch(0.245 0.04 258);
-  color: oklch(0.955 0.012 255);
-}
-
-.landing-experience .bento-image-photo {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(180deg, transparent 20%, oklch(0.145 0.03 258 / 0.9) 100%),
-    url("https://picsum.photos/seed/lucrivo-owner/900/1100") center/cover;
-  filter: grayscale(1) contrast(1.18);
-  transition: transform 700ms ease-out;
-}
-
-.landing-experience .bento-image:hover .bento-image-photo {
-  transform: scale(1.05);
-}
-
-.landing-experience .bento-image-copy {
-  position: relative;
-  z-index: 2;
-  margin-top: auto;
-  padding: 40px;
-}
-
-.landing-experience .statement-section {
-  display: grid;
-  min-height: 90vh;
-  place-items: center;
-  padding: 150px max(6vw, 24px);
-  background: oklch(0.175 0.032 258);
-}
-
-.landing-experience .statement-copy {
-  max-width: 1260px;
-  margin: 0;
-  font-size: clamp(2.4rem, 5.5vw, 6.2rem);
-  font-weight: 500;
-  line-height: 1.02;
-  letter-spacing: -0.06em;
 }
 
 .landing-experience .features-section {
@@ -1687,10 +1487,6 @@ html:has(.landing-experience) {
     margin: -24px auto -16px;
   }
 
-  .landing-experience .hero-contexts {
-    margin-top: 24px;
-  }
-
   .landing-experience .section-heading,
   .landing-experience .section-heading-light,
   .landing-experience .pricing-heading {
@@ -1700,15 +1496,6 @@ html:has(.landing-experience) {
 
   .landing-experience .section-heading > p:last-child {
     max-width: 600px;
-  }
-
-  .landing-experience .bento-wide,
-  .landing-experience .bento-narrow {
-    grid-column: span 12;
-  }
-
-  .landing-experience .bento-third {
-    grid-column: span 4;
   }
 
   .landing-experience .method-layout {
@@ -1826,16 +1613,16 @@ html:has(.landing-experience) {
     margin: -12px -18px -18px;
   }
 
-  .landing-experience .hero-contexts {
-    display: none;
-  }
-
   .landing-experience .chapter {
     padding: 120px 20px;
   }
 
   .landing-experience .problem-bridge {
     padding: 34px 20px 64px;
+  }
+
+  .landing-experience .problem-section {
+    scroll-margin-top: 84px;
   }
 
   .landing-experience .problem-contexts-label {
@@ -1903,8 +1690,10 @@ html:has(.landing-experience) {
 
   .landing-experience .problem-visual {
     right: 28px;
-    bottom: 58px;
+    bottom: 50px;
     max-width: 44%;
+    transform: scale(0.78);
+    transform-origin: right bottom;
   }
 
   .landing-experience .problem-conclusion {
@@ -1914,7 +1703,7 @@ html:has(.landing-experience) {
   .landing-experience .problem-conclusion-primary,
   .landing-experience .problem-conclusion-secondary {
     min-height: 330px;
-    padding: 28px;
+    padding: 24px;
   }
 
   .landing-experience .section-heading {
@@ -1924,30 +1713,6 @@ html:has(.landing-experience) {
   .landing-experience .section-heading h2,
   .landing-experience .method-title h2 {
     font-size: clamp(2.6rem, 12vw, 4rem);
-  }
-
-  .landing-experience .diagnostic-bento {
-    grid-template-columns: 1fr;
-  }
-
-  .landing-experience .bento-wide,
-  .landing-experience .bento-narrow,
-  .landing-experience .bento-third {
-    grid-column: span 1;
-  }
-
-  .landing-experience .bento-card {
-    min-height: 330px;
-    padding: 28px;
-  }
-
-  .landing-experience .bento-image-copy {
-    padding: 28px;
-  }
-
-  .landing-experience .statement-section {
-    min-height: 78vh;
-    padding: 110px 20px;
   }
 
   .landing-experience .horizontal-accordion {
