@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import {
-  ArrowDownIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
   ArrowUpRightIcon,
@@ -14,6 +13,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
+import { HeroSection } from "@/components/landing/hero-section";
 import { BillingPlans } from "@/modules/billing/components/billing-plans";
 import type { ActiveBillingPrice } from "@/modules/billing/types";
 
@@ -90,13 +90,28 @@ export function LandingExperience({
 
       if (reducedMotion) return;
 
-      gsap.from(".hero-reveal", {
-        y: 48,
-        opacity: 0,
-        duration: 1.1,
-        stagger: 0.12,
-        ease: "power3.out",
-      });
+      gsap
+        .timeline()
+        .from(".hero-copy-reveal", {
+          y: 28,
+          opacity: 0,
+          duration: 0.78,
+          stagger: 0.08,
+          ease: "power3.out",
+        })
+        .from(
+          ".hero-visual-reveal",
+          {
+            x: 44,
+            y: 18,
+            scale: 0.96,
+            rotate: 1.5,
+            opacity: 0,
+            duration: 1.05,
+            ease: "power3.out",
+          },
+          "-=0.52",
+        );
 
       gsap.utils.toArray<HTMLElement>(".word-reveal").forEach((section) => {
         const words = section.querySelectorAll("span");
@@ -201,43 +216,7 @@ export function LandingExperience({
         )}
       </nav>
 
-      <section id="top" className="hero-section">
-        <div className="hero-orbit orbit-one" />
-        <div className="hero-orbit orbit-two" />
-        <div className="hero-copy">
-          <p className="hero-kicker hero-reveal">
-            Diagnóstico de preço e rentabilidade
-          </p>
-          <h1 className="hero-reveal max-w-[1120px]">
-            <span className="hero-line">Você sabe se o preço que</span>
-            <span className="hero-line">
-              cobra <em>realmente dá lucro?</em>
-            </span>
-          </h1>
-          <p className="hero-description hero-reveal">
-            Seu preço pode estar errado — e você pode estar perdendo dinheiro
-            sem perceber. Descubra se ele faz sentido para a realidade do seu
-            negócio
-          </p>
-          <div className="hero-actions hero-reveal">
-            <a className="button button-primary" href="#diagnostico">
-              Fazer meu diagnóstico gratuito
-              <ArrowRightIcon size={18} weight="bold" />
-            </a>
-            <a className="button button-secondary" href="#como-funciona">
-              Entender o Lucrivo <ArrowDownIcon size={18} weight="bold" />
-            </a>
-          </div>
-        </div>
-
-        <a
-          className="hero-scroll"
-          href="#como-funciona"
-          aria-label="Ir para a próxima seção"
-        >
-          Role para descobrir <ArrowDownIcon size={16} />
-        </a>
-      </section>
+      <HeroSection />
 
       <section id="como-funciona" className="light-section chapter">
         <div className="section-heading">
