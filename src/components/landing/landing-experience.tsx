@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import {
-  ArrowDownIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
   ArrowUpRightIcon,
@@ -14,6 +13,8 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
+import { HeroSection } from "@/components/landing/hero-section";
+import { ProblemSection } from "@/components/landing/problem-section";
 import { BillingPlans } from "@/modules/billing/components/billing-plans";
 import type { ActiveBillingPrice } from "@/modules/billing/types";
 
@@ -90,32 +91,67 @@ export function LandingExperience({
 
       if (reducedMotion) return;
 
-      gsap.from(".hero-reveal", {
-        y: 48,
-        opacity: 0,
-        duration: 1.1,
-        stagger: 0.12,
-        ease: "power3.out",
-      });
-
-      gsap.utils.toArray<HTMLElement>(".word-reveal").forEach((section) => {
-        const words = section.querySelectorAll("span");
-        gsap.fromTo(
-          words,
-          { opacity: 0.12 },
+      gsap
+        .timeline()
+        .from(".hero-copy-reveal", {
+          y: 28,
+          opacity: 0,
+          duration: 0.78,
+          stagger: 0.08,
+          ease: "power3.out",
+        })
+        .from(
+          ".hero-visual-reveal",
           {
-            opacity: 1,
-            stagger: 0.05,
-            ease: "none",
-            scrollTrigger: {
-              trigger: section,
-              start: "top 76%",
-              end: "bottom 42%",
-              scrub: 1,
-            },
+            x: 44,
+            y: 18,
+            scale: 0.96,
+            rotate: 1.5,
+            opacity: 0,
+            duration: 1.05,
+            ease: "power3.out",
           },
+          "-=0.52",
         );
-      });
+
+      gsap
+        .timeline({
+          scrollTrigger: {
+            trigger: ".problem-section",
+            start: "top 76%",
+            once: true,
+          },
+        })
+        .from(".problem-reveal", {
+          y: 18,
+          opacity: 0,
+          duration: 0.48,
+          stagger: 0.08,
+          ease: "power2.out",
+        })
+        .from(
+          ".problem-card, .problem-conclusion",
+          {
+            y: 22,
+            opacity: 0,
+            duration: 0.52,
+            stagger: 0.06,
+            ease: "power2.out",
+          },
+          "-=0.2",
+        )
+        .from(
+          ".problem-visual > *, .problem-conclusion-bars > *",
+          {
+            scaleY: 0.3,
+            opacity: 0,
+            duration: 0.38,
+            stagger: 0.025,
+            transformOrigin: "bottom",
+            ease: "power2.out",
+          },
+          "-=0.42",
+        );
 
       gsap.utils.toArray<HTMLElement>(".scroll-visual").forEach((visual) => {
         gsap
@@ -201,112 +237,9 @@ export function LandingExperience({
         )}
       </nav>
 
-      <section id="top" className="hero-section">
-        <div className="hero-orbit orbit-one" />
-        <div className="hero-orbit orbit-two" />
-        <div className="hero-copy">
-          <p className="hero-kicker hero-reveal">
-            Diagnóstico de preço e rentabilidade
-          </p>
-          <h1 className="hero-reveal max-w-[1120px]">
-            <span className="hero-line">Você sabe se o preço que</span>
-            <span className="hero-line">
-              cobra <em>realmente dá lucro?</em>
-            </span>
-          </h1>
-          <p className="hero-description hero-reveal">
-            Seu preço pode estar errado — e você pode estar perdendo dinheiro
-            sem perceber. Descubra se ele faz sentido para a realidade do seu
-            negócio
-          </p>
-          <div className="hero-actions hero-reveal">
-            <a className="button button-primary" href="#diagnostico">
-              Fazer meu diagnóstico gratuito
-              <ArrowRightIcon size={18} weight="bold" />
-            </a>
-            <a className="button button-secondary" href="#como-funciona">
-              Entender o Lucrivo <ArrowDownIcon size={18} weight="bold" />
-            </a>
-          </div>
-        </div>
+      <HeroSection />
 
-        <a
-          className="hero-scroll"
-          href="#como-funciona"
-          aria-label="Ir para a próxima seção"
-        >
-          Role para descobrir <ArrowDownIcon size={16} />
-        </a>
-      </section>
-
-      <section id="como-funciona" className="light-section chapter">
-        <div className="section-heading">
-          <p className="eyebrow">Antes de mudar o preço</p>
-          <h2>
-            Seus números viram uma resposta.
-            <br />
-            Você entende o caminho.
-          </h2>
-        </div>
-
-        <div className="diagnostic-bento">
-          <article className="bento-card bento-wide bento-dark">
-            <div>
-              <p className="card-label">Margem real</p>
-              <h3>Veja quanto sobra depois de considerar todos os custos.</h3>
-            </div>
-            <div className="margin-graph" aria-hidden="true">
-              <span style={{ height: "38%" }} />
-              <span style={{ height: "52%" }} />
-              <span style={{ height: "68%" }} />
-              <span className="active" style={{ height: "86%" }} />
-            </div>
-          </article>
-
-          <article className="bento-card bento-narrow bento-lime">
-            <p className="card-label">Preço-alvo</p>
-            <div className="target-ring">
-              <span>equilíbrio</span>
-            </div>
-            <h3>Um preço que faz a conta fechar e cabe o seu lucro.</h3>
-          </article>
-
-          <article className="bento-card bento-third bento-paper">
-            <p className="card-label">Ponto de equilíbrio</p>
-            <h3>Saiba quanto precisa vender para sair do zero.</h3>
-            <div className="balance-line">
-              <span />
-            </div>
-          </article>
-
-          <article className="bento-card bento-third bento-green">
-            <p className="card-label">Desconto seguro</p>
-            <h3>Negocie olhando para o impacto, não para o impulso.</h3>
-            <div className="discount-control">
-              <span />
-              <i />
-            </div>
-          </article>
-
-          <article className="bento-card bento-third bento-image">
-            <div className="bento-image-photo" />
-            <div className="bento-image-copy">
-              <p className="card-label">Orientação prática</p>
-              <h3>O cálculo aponta. A IA explica.</h3>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section className="statement-section">
-        <p className="word-reveal statement-copy">
-          {"Preço não é só colocar um número. Para revenda, produção ou serviço, ele precisa considerar custos, impostos, taxas, estrutura, tempo de trabalho e o quanto você quer ganhar."
-            .split(" ")
-            .map((word, index) => (
-              <span key={`${word}-${index}`}>{word} </span>
-            ))}
-        </p>
-      </section>
+      <ProblemSection />
 
       <section id="recursos" className="features-section chapter">
         <div className="section-heading section-heading-light">
