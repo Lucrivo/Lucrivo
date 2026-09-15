@@ -10,11 +10,11 @@ import {
   StorefrontIcon,
 } from "@phosphor-icons/react";
 
-const businessContexts = [
-  { label: "Revenda", icon: StorefrontIcon },
-  { label: "Produção própria", icon: FactoryIcon },
-  { label: "Prestação de serviço", icon: BriefcaseIcon },
-] as const;
+// const businessContexts = [
+//   { label: "Revenda", icon: StorefrontIcon },
+//   { label: "Produção própria", icon: FactoryIcon },
+//   { label: "Prestação de serviço", icon: BriefcaseIcon },
+// ] as const;
 
 const pricingFactors = [
   {
@@ -138,23 +138,6 @@ function ProblemSection() {
       aria-labelledby="problem-title"
     >
       <div className="problem-bridge problem-reveal">
-        <div className="problem-contexts">
-          <div className="problem-contexts-label">
-            <span aria-hidden="true" />
-            <p>Feito para a realidade de quem empreende</p>
-            <span aria-hidden="true" />
-          </div>
-
-          <ul>
-            {businessContexts.map(({ label, icon: Icon }) => (
-              <li key={label}>
-                <Icon aria-hidden="true" size={24} weight="duotone" />
-                {label}
-              </li>
-            ))}
-          </ul>
-        </div>
-
         <p className="problem-bridge-statement">
           Antes de mudar seu preço, descubra se a conta fecha.
         </p>
