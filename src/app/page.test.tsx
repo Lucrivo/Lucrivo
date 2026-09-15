@@ -66,18 +66,47 @@ describe("Home", () => {
     render(await Home());
   }
 
-  it("introduces the profitability diagnosis", async () => {
+  it("presents the profitability diagnosis and its next actions", async () => {
     await renderHome();
 
-    const main = screen.getByRole("main");
-    expect(main).toHaveTextContent("Lucrivo");
+    const hero = document.querySelector("#top");
+    expect(hero).not.toBeNull();
+
+    const view = within(hero as HTMLElement);
     expect(
-      screen.getByRole("heading", {
+      view.getByRole("heading", {
         level: 1,
-        name: /Você sabe se o preço que\s*cobra realmente dá lucro\?/,
+        name: /Você sabe se o preço\s*que\s*cobra\s*realmente\s*dá lucro\?/,
       }),
     ).toBeInTheDocument();
+    expect(
+      view.getByRole("link", { name: /Fazer diagnóstico gratuito/i }),
+    ).toHaveAttribute("href", "/register");
+    expect(
+      view.getByRole("link", { name: /Conhecer o Lucrivo/i }),
+    ).toHaveAttribute("href", "#como-funciona");
+    expect(
+      view.getByRole("img", {
+        name: "Painel ilustrativo do Lucrivo com indicadores financeiros.",
+      }),
+    ).toBeInTheDocument();
+    expect(view.getByText("Em poucos minutos")).toBeInTheDocument();
+    expect(view.getByText("Sem cartão de crédito")).toBeInTheDocument();
+    expect(view.getByText("Saiba o que revisar primeiro")).toBeInTheDocument();
     expect(listActivePrices).toHaveBeenCalledWith({ supabase });
+  });
+
+  it("keeps the existing landing content after the hero", async () => {
+    await renderHome();
+
+    expect(
+      screen.getByRole("heading", {
+        name: /Seus números viram uma resposta\.\s*Você entende o caminho\./,
+      }),
+    ).toBeInTheDocument();
+    expect(document.querySelector("#recursos")).not.toBeNull();
+    expect(document.querySelector("#planos")).not.toBeNull();
+    expect(document.querySelector("#diagnostico")).not.toBeNull();
   });
 
   it("explains every part considered when pricing", async () => {
