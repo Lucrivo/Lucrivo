@@ -78,6 +78,16 @@ on conflict (provider_id, provider) do update set
   identity_data = excluded.identity_data,
   updated_at = now();
 
+-- Administrador exclusivo do ambiente local.
+insert into private.app_administrator (singleton, user_id)
+values (
+  1,
+  '10000000-0000-4000-8000-000000000001'::uuid
+)
+on conflict (singleton) do update set
+  user_id = excluded.user_id,
+  created_at = statement_timestamp();
+
 select set_config(
   'request.jwt.claim.sub',
   '10000000-0000-4000-8000-000000000001',

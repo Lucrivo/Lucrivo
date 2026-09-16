@@ -182,6 +182,8 @@ select ok(
   'service role cannot use the user-facing status RPC'
 );
 
+delete from private.app_administrator;
+
 insert into auth.users (id, aud, role, email)
 values
   (
