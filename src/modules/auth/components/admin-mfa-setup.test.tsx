@@ -31,14 +31,15 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("next/image", () => ({
-  default: ({ alt, src }: { alt: string; src: string }) => (
-    <span role="img" aria-label={alt} data-src={src} />
-  ),
+  default: () => {
+    throw new Error("next/image must not render Supabase QR codes");
+  },
 }));
 
 import { AdminMfaSetup } from "./admin-mfa-setup";
 
-const qrCode = "data:image/svg+xml;base64,PHN2Zy8+";
+const qrCode =
+  "data:image/svg+xml;utf-8,<svg xmlns='http://www.w3.org/2000/svg' width='219' height='219'></svg>";
 
 function factor(
   id: string,
@@ -106,7 +107,7 @@ describe("AdminMfaSetup", () => {
       await screen.findByRole("img", {
         name: "QR Code para configurar o autenticador",
       }),
-    ).toHaveAttribute("data-src", qrCode);
+    ).toHaveAttribute("src", qrCode);
     expect(screen.getByText("SECRET123")).toBeVisible();
   });
 

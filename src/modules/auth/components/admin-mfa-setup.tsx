@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CheckIcon, CopyIcon } from "lucide-react";
@@ -168,12 +167,13 @@ function AdminMfaSetup() {
   return (
     <form className="space-y-6" onSubmit={verifyEnrollment} noValidate>
       <div className="bg-muted/40 grid place-items-center rounded-xl p-4">
-        <Image
+        {/* Supabase returns this QR as an inline SVG data URL. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src={enrollment.qrCode}
           alt="QR Code para configurar o autenticador"
           width={220}
           height={220}
-          unoptimized
           className="size-[220px] max-w-full rounded-lg"
         />
       </div>
