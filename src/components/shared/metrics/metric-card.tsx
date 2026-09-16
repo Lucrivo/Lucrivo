@@ -1,4 +1,18 @@
-import { type LucideIcon, ArrowDown, ArrowUp, Minus } from "lucide-react";
+import type { ReactNode } from "react";
+import {
+  type LucideIcon,
+  ArrowDown,
+  ArrowUp,
+  CircleHelpIcon,
+  Minus,
+} from "lucide-react";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { cn } from "@/lib/utils";
 
@@ -23,6 +37,8 @@ interface MetricCardProps {
   description?: string;
   trend?: MetricTrend;
   status?: MetricStatus;
+  helpText?: string;
+  details?: ReactNode;
   className?: string;
   valueClassName?: string;
 }
@@ -77,14 +93,14 @@ function TrendIcon({ direction }: { direction: TrendDirection }) {
   const iconClassName = "size-3 stroke-[2.5]";
 
   if (direction === "up") {
-    return <ArrowUp className={iconClassName} />;
+    return <ArrowUp aria-hidden="true" className={iconClassName} />;
   }
 
   if (direction === "down") {
-    return <ArrowDown className={iconClassName} />;
+    return <ArrowDown aria-hidden="true" className={iconClassName} />;
   }
 
-  return <Minus className={iconClassName} />;
+  return <Minus aria-hidden="true" className={iconClassName} />;
 }
 
 export function MetricCard({
@@ -94,6 +110,8 @@ export function MetricCard({
   description,
   trend,
   status,
+  helpText,
+  details,
   className,
   valueClassName,
 }: MetricCardProps) {
@@ -114,13 +132,30 @@ export function MetricCard({
       )}
     >
       <div className="flex items-start justify-between gap-4">
-        <span className="text-muted-foreground text-sm font-medium">
-          {title}
-        </span>
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="text-muted-foreground text-sm font-medium">
+            {title}
+          </span>
+
+          {helpText && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger
+                  aria-label={`Entenda ${title}`}
+                  closeOnClick={false}
+                  className="text-muted-foreground hover:text-foreground focus-visible:ring-ring -m-3 grid size-11 shrink-0 place-items-center rounded-lg focus-visible:ring-2 focus-visible:outline-none"
+                >
+                  <CircleHelpIcon aria-hidden="true" className="size-4" />
+                </TooltipTrigger>
+                <TooltipContent role="tooltip">{helpText}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
 
         {Icon && (
           <div className="flex size-8 shrink-0 items-center justify-center rounded-lg">
-            <Icon className="text-primary size-[18px]" />
+            <Icon aria-hidden="true" className="text-primary size-[18px]" />
           </div>
         )}
       </div>
@@ -171,6 +206,8 @@ export function MetricCard({
           )}
         </div>
       )}
+
+      {details && <div className="mt-4">{details}</div>}
     </div>
   );
 }
