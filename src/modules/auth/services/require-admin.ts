@@ -31,9 +31,15 @@ async function requireAdminIdentity(): Promise<AdminIdentity> {
   const supabase = await createClient();
   const { data: claimsData, error: claimsError } =
     await supabase.auth.getClaims();
-  const subject = claimsData?.claims?.sub;
+  const claims = claimsData?.claims;
+  const subject = claims?.sub;
 
-  if (claimsError || typeof subject !== "string" || subject.length === 0) {
+  if (
+    claimsError ||
+    !claims ||
+    typeof subject !== "string" ||
+    subject.length === 0
+  ) {
     throw new AuthRequiredError();
   }
 
@@ -46,13 +52,11 @@ async function requireAdminIdentity(): Promise<AdminIdentity> {
   }
 
   const email =
-    typeof claimsData.claims.email === "string"
-      ? claimsData.claims.email
-      : "Sua conta";
+    typeof claims.email === "string" ? claims.email : "Sua conta";
 
   return {
     userId: subject,
-    aal: claimsData.claims.aal,
+    aal: claims.aal,
     email,
     supabase,
   };
