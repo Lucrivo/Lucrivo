@@ -728,6 +728,7 @@ export type Database = {
         Returns: number;
       };
       current_user_is_admin: { Args: never; Returns: boolean };
+      get_admin_dashboard_v1: { Args: never; Returns: Json };
     };
     Enums: {
       business_category: "service" | "product" | "production";
