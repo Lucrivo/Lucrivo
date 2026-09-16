@@ -20,10 +20,14 @@ class AdminMfaRequiredError extends Error {
   }
 }
 
-async function requireAdmin(): Promise<{
+type AdminIdentity = {
   userId: string;
+  aal: unknown;
+  email: string;
   supabase: SupabaseClient<Database>;
-}> {
+};
+
+async function requireAdminIdentity(): Promise<AdminIdentity> {
   const supabase = await createClient();
   const { data: claimsData, error: claimsError } =
     await supabase.auth.getClaims();
@@ -41,11 +45,34 @@ async function requireAdmin(): Promise<{
     throw new AdminRequiredError();
   }
 
-  if (claimsData?.claims?.aal !== "aal2") {
-    throw new AdminMfaRequiredError();
-  }
+  const email =
+    typeof claimsData.claims.email === "string"
+      ? claimsData.claims.email
+      : "Sua conta";
 
-  return { userId: subject, supabase };
+  return {
+    userId: subject,
+    aal: claimsData.claims.aal,
+    email,
+    supabase,
+  };
 }
 
-export { AdminMfaRequiredError, AdminRequiredError, requireAdmin };
+async function requireAdmin(): Promise<{
+  userId: string;
+  supabase: SupabaseClient<Database>;
+}> {
+  const { userId, aal, supabase } = await requireAdminIdentity();
+
+  if (aal !== "aal2") throw new AdminMfaRequiredError();
+
+  return { userId, supabase };
+}
+
+export {
+  AdminMfaRequiredError,
+  AdminRequiredError,
+  requireAdmin,
+  requireAdminIdentity,
+  type AdminIdentity,
+};

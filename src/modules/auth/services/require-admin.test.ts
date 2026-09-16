@@ -16,6 +16,7 @@ import {
   AdminMfaRequiredError,
   AdminRequiredError,
   requireAdmin,
+  requireAdminIdentity,
 } from "./require-admin";
 
 describe("requireAdmin", () => {
@@ -85,6 +86,43 @@ describe("requireAdmin", () => {
       });
     },
   );
+
+  it("allows the configured admin identity into the aal1 MFA flow", async () => {
+    getClaims.mockResolvedValue({
+      data: {
+        claims: {
+          sub: "admin-123",
+          aal: "aal1",
+          email: "admin@example.com",
+          role: "authenticated",
+        },
+      },
+      error: null,
+    });
+    rpc.mockResolvedValue({ data: true, error: null });
+
+    await expect(requireAdminIdentity()).resolves.toEqual({
+      userId: "admin-123",
+      aal: "aal1",
+      email: "admin@example.com",
+      supabase,
+    });
+  });
+
+  it("normalizes an unusable email without exposing all claims", async () => {
+    getClaims.mockResolvedValue({
+      data: { claims: { sub: "admin-123", aal: "aal1", email: 42 } },
+      error: null,
+    });
+    rpc.mockResolvedValue({ data: true, error: null });
+
+    await expect(requireAdminIdentity()).resolves.toEqual({
+      userId: "admin-123",
+      aal: "aal1",
+      email: "Sua conta",
+      supabase,
+    });
+  });
 
   it("returns the verified admin subject and request-scoped client at aal2", async () => {
     getClaims.mockResolvedValue({
