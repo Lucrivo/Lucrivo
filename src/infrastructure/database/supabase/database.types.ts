@@ -727,6 +727,7 @@ export type Database = {
         };
         Returns: number;
       };
+      current_user_is_admin: { Args: never; Returns: boolean };
     };
     Enums: {
       business_category: "service" | "product" | "production";
