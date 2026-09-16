@@ -1,10 +1,8 @@
-export default function AdminDashboardPage() {
-  return (
-    <section className="space-y-2">
-      <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-      <p className="text-muted-foreground">
-        A visão operacional do sistema será construída aqui.
-      </p>
-    </section>
-  );
+import { AdminDashboard } from "@/modules/admin/dashboard/components/admin-dashboard";
+import { getAdminDashboard } from "@/modules/admin/dashboard/get-admin-dashboard.service";
+
+export default async function AdminDashboardPage() {
+  const dashboard = await getAdminDashboard();
+
+  return <AdminDashboard dashboard={dashboard} />;
 }

@@ -1,17 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import AdminDashboardPage from "./page";
 import AdminSubscriptionsPage from "./subscriptions/page";
 import AdminUsersPage from "./users/page";
 
-describe("minimal admin pages", () => {
+describe("remaining admin scaffold pages", () => {
   it.each([
-    [
-      "Dashboard",
-      "A visão operacional do sistema será construída aqui.",
-      AdminDashboardPage,
-    ],
     ["Usuários", "A gestão de usuários será construída aqui.", AdminUsersPage],
     [
       "Assinaturas",
