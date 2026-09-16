@@ -60,6 +60,16 @@ const dashboardFixture: AdminDashboardViewModel = {
 };
 
 describe("AdminDashboard", () => {
+  it("keeps the dashboard grid shrinkable at the tablet breakpoint", () => {
+    const { container } = render(
+      <AdminDashboard dashboard={dashboardFixture} />,
+    );
+
+    expect(container.querySelector("main")).toHaveClass(
+      "grid-cols-[minmax(0,1fr)]",
+    );
+  });
+
   it("renders operational KPIs, analysis, and subscriptions without fake actions", () => {
     render(<AdminDashboard dashboard={dashboardFixture} />);
 

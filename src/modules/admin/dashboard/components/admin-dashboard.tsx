@@ -5,13 +5,13 @@ import { RecentSubscriptions } from "./recent-subscriptions";
 
 function AdminDashboard({ dashboard }: { dashboard: AdminDashboardViewModel }) {
   return (
-    <main className="mx-auto grid w-full max-w-[100rem] gap-6 lg:gap-8">
+    <main className="mx-auto grid w-full max-w-[100rem] grid-cols-[minmax(0,1fr)] gap-6 lg:gap-8">
       <header className="border-primary/10 relative overflow-hidden rounded-3xl border bg-[linear-gradient(135deg,var(--card)_0%,color-mix(in_oklab,var(--primary)_7%,var(--card))_100%)] px-5 py-6 shadow-sm sm:px-7 sm:py-7">
         <div
           aria-hidden="true"
           className="bg-primary/8 absolute -top-20 -right-16 size-56 rounded-full blur-3xl"
         />
-        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-1.5">
             <p className="text-primary text-sm font-semibold tracking-wide uppercase">
               Operação
