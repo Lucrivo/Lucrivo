@@ -38,6 +38,18 @@ select is(
 
 select results_eq(
   $$
+    select singleton, user_id
+    from private.app_administrator
+  $$,
+  $$ values (
+    1::smallint,
+    '10000000-0000-4000-8000-000000000001'::uuid
+  ) $$,
+  'seed assigns the sole local administrator by Auth user id'
+);
+
+select results_eq(
+  $$
     select
       business_category::text,
       min(schema_version)::smallint,

@@ -4,28 +4,42 @@ import { createClient } from "@/infrastructure/database/supabase/clients/server.
 
 const otpFlows = {
   email: {
-    successPath: "/dashboard",
+    successPath: "/auth/continue",
+    successQuery: {},
     failurePath: "/login",
     failureCode: "confirmation_failed",
   },
   recovery: {
     successPath: "/update-password",
+    successQuery: {},
     failurePath: "/forgot-password",
     failureCode: "invalid_or_expired_link",
+  },
+  invite: {
+    successPath: "/update-password",
+    successQuery: { flow: "invite" },
+    failurePath: "/login",
+    failureCode: "invalid_or_expired_invite",
   },
 } as const;
 
 type SupportedOtpType = keyof typeof otpFlows;
 
 function isSupportedOtpType(type: string | null): type is SupportedOtpType {
-  return type === "email" || type === "recovery";
+  return type === "email" || type === "recovery" || type === "invite";
 }
 
-function safeRedirect(request: NextRequest, pathname: string, error?: string) {
+function safeRedirect(
+  request: NextRequest,
+  pathname: string,
+  query: Readonly<Record<string, string>> = {},
+) {
   const redirectTo = request.nextUrl.clone();
   redirectTo.pathname = pathname;
   redirectTo.search = "";
-  if (error) redirectTo.searchParams.set("error", error);
+  Object.entries(query).forEach(([key, value]) => {
+    redirectTo.searchParams.set(key, value);
+  });
 
   return NextResponse.redirect(redirectTo);
 }
@@ -36,12 +50,14 @@ export async function GET(request: NextRequest) {
 
   if (!isSupportedOtpType(type)) {
     const fallback = otpFlows.email;
-    return safeRedirect(request, fallback.failurePath, fallback.failureCode);
+    return safeRedirect(request, fallback.failurePath, {
+      error: fallback.failureCode,
+    });
   }
 
   const flow = otpFlows[type];
   const failureRedirect = () =>
-    safeRedirect(request, flow.failurePath, flow.failureCode);
+    safeRedirect(request, flow.failurePath, { error: flow.failureCode });
 
   if (!tokenHash) return failureRedirect();
 
@@ -57,5 +73,5 @@ export async function GET(request: NextRequest) {
     return failureRedirect();
   }
 
-  return safeRedirect(request, flow.successPath);
+  return safeRedirect(request, flow.successPath, flow.successQuery);
 }

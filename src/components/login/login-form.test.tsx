@@ -76,4 +76,20 @@ describe("LoginForm", () => {
       screen.queryByRole("button", { name: /google/i }),
     ).not.toBeInTheDocument();
   });
+
+  it("shows a fixed success notice", () => {
+    const action = vi.fn(async (): Promise<LoginActionState> => null);
+
+    render(
+      <LoginForm
+        action={action}
+        signupEnabled
+        notice="Convite aceito. Entre com a senha que você criou."
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Convite aceito. Entre com a senha que você criou.",
+    );
+  });
 });

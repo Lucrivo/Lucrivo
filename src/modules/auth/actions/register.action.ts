@@ -79,7 +79,7 @@ async function register(
     return { status: "success", outcome: "confirmation_required" };
   }
 
-  redirect("/dashboard");
+  redirect("/auth/continue");
 }
 
 export { register, type RegisterActionState };

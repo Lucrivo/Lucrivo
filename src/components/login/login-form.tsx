@@ -37,9 +37,10 @@ type LoginFormProps = {
     formData: FormData,
   ) => Promise<LoginActionState>;
   signupEnabled: boolean;
+  notice?: string;
 };
 
-function LoginForm({ action, signupEnabled }: LoginFormProps) {
+function LoginForm({ action, signupEnabled, notice }: LoginFormProps) {
   const [state, formAction] = useActionState(action, null);
   const [email, setEmail] = usePersistedAuthEmail();
   const [password, setPassword] = useState("");
@@ -69,6 +70,7 @@ function LoginForm({ action, signupEnabled }: LoginFormProps) {
           </div>
         </div>
         <TurnstileField siteKey={turnstileSiteKey} resetSignal={state} />
+        {notice && <AuthFeedback variant="success">{notice}</AuthFeedback>}
         {hasError && <AuthFeedback>{errorMessages[state.error]}</AuthFeedback>}
         <AuthSubmitButton idleLabel="Entrar" pendingLabel="Entrando…" />
       </form>
