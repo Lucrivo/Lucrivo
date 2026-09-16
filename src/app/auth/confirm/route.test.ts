@@ -19,7 +19,7 @@ describe("GET /auth/confirm", () => {
     verifyOtp.mockResolvedValue({ error: null });
   });
 
-  it("confirma o e-mail, cria a sessão e redireciona para o dashboard", async () => {
+  it("confirma o e-mail e encaminha a sessão ao resolvedor", async () => {
     const request = new NextRequest(
       "http://localhost:3000/auth/confirm?token_hash=valid-token&type=email",
     );
@@ -32,7 +32,7 @@ describe("GET /auth/confirm", () => {
       type: "email",
     });
     expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/dashboard",
+      "http://localhost:3000/auth/continue",
     );
   });
 

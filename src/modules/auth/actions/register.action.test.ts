@@ -94,4 +94,14 @@ describe("register", () => {
     expect(signup).not.toHaveBeenCalled();
     expect(result).toEqual({ status: "error", error: "weak_password" });
   });
+
+  it("routes an immediately authenticated signup through the resolver", async () => {
+    vi.stubEnv("AUTH_SIGNUP_ENABLED", "true");
+    vi.stubEnv("AUTH_CAPTCHA_ENABLED", "false");
+    signup.mockResolvedValue({ status: "authenticated" });
+
+    await register(null, registerFormData());
+
+    expect(redirect).toHaveBeenCalledWith("/auth/continue");
+  });
 });

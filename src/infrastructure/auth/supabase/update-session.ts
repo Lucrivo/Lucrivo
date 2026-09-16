@@ -42,7 +42,7 @@ export async function updateSession(request: NextRequest) {
 
   if (data?.claims?.sub && guestOnlyPaths.has(request.nextUrl.pathname)) {
     const destination = request.nextUrl.clone();
-    destination.pathname = "/dashboard";
+    destination.pathname = "/auth/continue";
     destination.search = "";
 
     const redirectResponse = NextResponse.redirect(destination);

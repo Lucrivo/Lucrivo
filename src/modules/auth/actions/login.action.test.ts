@@ -59,5 +59,6 @@ describe("login", () => {
     expect(signInWithPassword).toHaveBeenCalledWith(
       expect.objectContaining({ options: { captchaToken: undefined } }),
     );
+    expect(redirect).toHaveBeenCalledWith("/auth/continue");
   });
 });

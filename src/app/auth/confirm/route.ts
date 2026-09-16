@@ -4,7 +4,7 @@ import { createClient } from "@/infrastructure/database/supabase/clients/server.
 
 const otpFlows = {
   email: {
-    successPath: "/dashboard",
+    successPath: "/auth/continue",
     failurePath: "/login",
     failureCode: "confirmation_failed",
   },

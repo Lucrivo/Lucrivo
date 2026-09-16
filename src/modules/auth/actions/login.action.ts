@@ -51,7 +51,7 @@ async function login(
     return { status: "error", error: "login_failed" };
   }
 
-  redirect("/dashboard");
+  redirect("/auth/continue");
 }
 
 export { login, type LoginActionState };

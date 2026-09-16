@@ -40,7 +40,7 @@ describe("updateSession", () => {
   });
 
   it.each(["/login", "/register", "/forgot-password"])(
-    "redireciona uma sessão ativa de %s para o dashboard",
+    "redireciona uma sessão ativa de %s para a continuação autenticada",
     async (pathname) => {
       getClaims.mockResolvedValue({
         data: { claims: { sub: "user-id" } },
@@ -53,7 +53,7 @@ describe("updateSession", () => {
 
       expect(response.status).toBe(307);
       expect(response.headers.get("location")).toBe(
-        "http://localhost:3000/dashboard",
+        "http://localhost:3000/auth/continue",
       );
     },
   );
