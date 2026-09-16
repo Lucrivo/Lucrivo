@@ -23,6 +23,22 @@ vi.mock("@/modules/auth/services/require-admin", async (importOriginal) => {
 vi.mock("@/components/admin/admin-access-unavailable", () => ({
   AdminAccessUnavailable: () => <div>unavailable-content</div>,
 }));
+vi.mock("@/components/layout/app-shell", () => ({
+  AppShell: ({
+    children,
+    email,
+    sidebarVariant,
+  }: {
+    children: React.ReactNode;
+    email: string;
+    sidebarVariant: string;
+  }) => (
+    <div>
+      shell:{sidebarVariant}:{email}
+      {children}
+    </div>
+  ),
+}));
 
 import { AdminMfaRequiredError } from "@/modules/auth/services/require-admin";
 
@@ -62,6 +78,9 @@ describe("AdminLayout", () => {
     getAdminRouteState.mockResolvedValue({ status: "authorized", identity });
     render(await AdminLayout({ children: <div>secret-child</div> }));
     expect(requireAdmin).toHaveBeenCalledOnce();
+    expect(
+      screen.getByText(/shell:admin:admin@example\.com/),
+    ).toBeVisible();
     expect(screen.getByText("secret-child")).toBeVisible();
   });
 

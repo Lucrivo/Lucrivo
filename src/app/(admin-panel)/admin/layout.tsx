@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { AdminAccessUnavailable } from "@/components/admin/admin-access-unavailable";
+import { AppShell } from "@/components/layout/app-shell";
 import { logout } from "@/modules/auth/actions/logout.action";
 import {
   AdminMfaRequiredError,
@@ -30,5 +31,14 @@ export default async function AdminLayout({
     throw error;
   }
 
-  return <>{children}</>;
+  return (
+    <AppShell
+      email={state.identity.email}
+      sidebarVariant="admin"
+      contextTitle="Administração"
+      contextDescription="Acompanhe o funcionamento do Lucrivo."
+    >
+      {children}
+    </AppShell>
+  );
 }

@@ -187,4 +187,41 @@ describe("AppSidebar", () => {
       screen.getByRole("link", { name: /dashboard/i }),
     ).not.toHaveAttribute("data-active", "true");
   });
+
+  it("renders the closed administrative navigation", () => {
+    usePathname.mockReturnValue("/admin");
+
+    render(<AppSidebar variant="admin" />);
+
+    for (const [label, href] of [
+      ["Dashboard", "/admin"],
+      ["Usuários", "/admin/users"],
+      ["Assinaturas", "/admin/subscriptions"],
+      ["Área financeira", "/dashboard"],
+    ]) {
+      expect(screen.getByRole("link", { name: label })).toHaveAttribute(
+        "href",
+        href,
+      );
+    }
+    expect(screen.getByText("Administração")).toBeVisible();
+  });
+
+  it("does not keep the admin dashboard active on nested routes", () => {
+    usePathname.mockReturnValue("/admin/users");
+
+    render(<AppSidebar variant="admin" />);
+
+    expect(screen.getByRole("link", { name: "Usuários" })).toHaveAttribute(
+      "data-active",
+      "true",
+    );
+    expect(screen.getByRole("link", { name: "Dashboard" })).not.toHaveAttribute(
+      "data-active",
+      "true",
+    );
+    expect(
+      screen.getByRole("link", { name: "Assinaturas" }),
+    ).not.toHaveAttribute("data-active", "true");
+  });
 });
