@@ -16,8 +16,41 @@ navegador nem usada para decidir se o solicitante é admin.
 1. A migration `create_admin_authorization_foundation` está aplicada.
 2. O usuário é permanente, possui e-mail confirmado e não é anônimo.
 3. O operador confirmou o UUID em Authentication > Users.
-4. O usuário cadastrou e verificou um fator MFA antes da liberação das telas
-   administrativas.
+4. TOTP está habilitado para enrollment e verification no ambiente.
+
+O primeiro fator não precisa existir antes da atribuição do UUID. Depois da
+atribuição, a própria entrada administrativa encaminha a conta ao setup TOTP e
+só libera o shell após a verificação `aal2`.
+
+## Configurar o ambiente de homologação
+
+1. Em Supabase Dashboard, habilite enrollment e verification de App
+   Authenticator/TOTP nas configurações de MFA. Mantenha Phone MFA desabilitado.
+2. Em Authentication > Email Templates > Invite user, configure um link
+   TokenHash server-side equivalente a:
+
+   ```html
+   <a
+     href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=invite"
+   >
+     Aceitar convite
+   </a>
+   ```
+
+3. Confirme que o Site URL aponta para a homologação. Convites enviados antes
+   da troca do template, especialmente os que usam o fluxo padrão em fragmento,
+   devem ser reenviados.
+4. Convide a conta permanente em Authentication > Users, conclua a criação da
+   senha, confira seu UUID e execute a atribuição do singleton descrita abaixo.
+5. Valide a sequência completa: login → `/auth/continue` → `/admin` → setup ou
+   challenge TOTP → shell protegido.
+
+Mantenha o procedimento de recuperação do autenticador fora da aplicação. Em
+caso de perda, não desabilite `aal2`, não crie uma interface emergencial de
+promoção e siga a seção de perda do fator deste runbook.
+
+Nunca copie QR payloads, chaves TOTP, códigos temporários, JWTs ou cookies para
+logs, tickets, capturas de tela ou documentos operacionais.
 
 Nos comandos abaixo, `:admin_user_id` representa um parâmetro UUID fornecido por
 uma conexão `psql` confiável. No SQL Editor do Supabase, substitua o parâmetro
