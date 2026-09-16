@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 type AdminAccessUnavailableProps = {
   logoutAction?: () => Promise<void>;
@@ -35,14 +35,16 @@ function AdminAccessUnavailable({ logoutAction }: AdminAccessUnavailableProps) {
           >
             Tentar novamente
           </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            className="w-full"
-            render={<Link href="/dashboard" />}
+          <Link
+            href="/dashboard"
+            className={buttonVariants({
+              variant: "outline",
+              size: "lg",
+              className: "w-full",
+            })}
           >
             Ir para a área financeira
-          </Button>
+          </Link>
           {logoutAction && (
             <form action={logoutAction}>
               <Button

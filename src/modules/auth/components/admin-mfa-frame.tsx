@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { logout } from "@/modules/auth/actions/logout.action";
 
@@ -36,13 +36,15 @@ function AdminMfaFrame({ children, title, subtitle }: AdminMfaFrameProps) {
         {children}
 
         <div className="mt-8 flex flex-col gap-2 border-t pt-5 sm:flex-row sm:justify-between">
-          <Button
-            variant="ghost"
-            render={<Link href="/dashboard" />}
-            className="justify-start shadow-none"
+          <Link
+            href="/dashboard"
+            className={buttonVariants({
+              variant: "ghost",
+              className: "justify-start shadow-none",
+            })}
           >
             Ir para a área financeira
-          </Button>
+          </Link>
           <form action={logout}>
             <Button
               type="submit"
