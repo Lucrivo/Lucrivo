@@ -12,10 +12,10 @@ describe("LoginPage", () => {
     vi.unstubAllEnvs();
   });
 
-  it("shows signup navigation when the public flag is enabled", () => {
+  it("shows signup navigation when the public flag is enabled", async () => {
     vi.stubEnv("NEXT_PUBLIC_AUTH_SIGNUP_ENABLED", "true");
 
-    render(<LoginPage />);
+    render(await LoginPage({ searchParams: Promise.resolve({}) }));
 
     expect(screen.getByRole("link", { name: /cadastre-se/i })).toHaveAttribute(
       "href",
@@ -23,13 +23,32 @@ describe("LoginPage", () => {
     );
   });
 
-  it("hides signup navigation when the public flag is disabled", () => {
+  it("hides signup navigation when the public flag is disabled", async () => {
     vi.stubEnv("NEXT_PUBLIC_AUTH_SIGNUP_ENABLED", "false");
 
-    render(<LoginPage />);
+    render(await LoginPage({ searchParams: Promise.resolve({}) }));
 
     expect(
       screen.queryByRole("link", { name: /cadastre-se/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["invite_accepted", "Convite aceito. Entre com a senha que você criou."],
+    ["password_updated", "Senha atualizada. Entre novamente para continuar."],
+  ])("maps the closed status %s to safe feedback", async (status, message) => {
+    render(await LoginPage({ searchParams: Promise.resolve({ status }) }));
+
+    expect(screen.getByRole("status")).toHaveTextContent(message);
+  });
+
+  it("does not echo an unknown status", async () => {
+    render(
+      await LoginPage({
+        searchParams: Promise.resolve({ status: "attacker-content" }),
+      }),
+    );
+
+    expect(screen.queryByText("attacker-content")).not.toBeInTheDocument();
   });
 });

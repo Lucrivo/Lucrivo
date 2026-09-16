@@ -255,6 +255,10 @@ content_path = "./supabase/templates/confirmation.html"
 subject = "Redefina sua senha no Lucrivo"
 content_path = "./supabase/templates/recovery.html"
 
+[auth.email.template.invite]
+subject = "Você foi convidado para o Lucrivo"
+content_path = "./supabase/templates/invite.html"
+
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
 # enabled = true
