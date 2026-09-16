@@ -51,8 +51,7 @@ async function requireAdminIdentity(): Promise<AdminIdentity> {
     throw new AdminRequiredError();
   }
 
-  const email =
-    typeof claims.email === "string" ? claims.email : "Sua conta";
+  const email = typeof claims.email === "string" ? claims.email : "Sua conta";
 
   return {
     userId: subject,

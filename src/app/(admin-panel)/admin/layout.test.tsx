@@ -15,9 +15,10 @@ vi.mock("@/modules/auth/services/map-admin-route-state", () => ({
   getAdminRouteState,
 }));
 vi.mock("@/modules/auth/services/require-admin", async (importOriginal) => {
-  const actual = await importOriginal<
-    typeof import("@/modules/auth/services/require-admin")
-  >();
+  const actual =
+    await importOriginal<
+      typeof import("@/modules/auth/services/require-admin")
+    >();
   return { ...actual, requireAdmin };
 });
 vi.mock("@/components/admin/admin-access-unavailable", () => ({
@@ -78,9 +79,7 @@ describe("AdminLayout", () => {
     getAdminRouteState.mockResolvedValue({ status: "authorized", identity });
     render(await AdminLayout({ children: <div>secret-child</div> }));
     expect(requireAdmin).toHaveBeenCalledOnce();
-    expect(
-      screen.getByText(/shell:admin:admin@example\.com/),
-    ).toBeVisible();
+    expect(screen.getByText(/shell:admin:admin@example\.com/)).toBeVisible();
     expect(screen.getByText("secret-child")).toBeVisible();
   });
 

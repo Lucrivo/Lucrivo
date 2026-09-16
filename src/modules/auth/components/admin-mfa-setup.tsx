@@ -26,7 +26,8 @@ const errorMessages: Record<SetupError, string> = {
     "Não foi possível iniciar a configuração. Aguarde um momento e tente novamente.",
   verify_failed:
     "Não foi possível confirmar o código. Verifique e tente novamente.",
-  copy_failed: "Não foi possível copiar a chave. Selecione e copie manualmente.",
+  copy_failed:
+    "Não foi possível copiar a chave. Selecione e copie manualmente.",
 };
 
 function AdminMfaSetup() {
@@ -110,11 +111,12 @@ function AdminMfaSetup() {
     setError(null);
 
     try {
-      const { error: verifyError } =
-        await supabase.auth.mfa.challengeAndVerify({
+      const { error: verifyError } = await supabase.auth.mfa.challengeAndVerify(
+        {
           factorId: enrollment.factorId,
           code,
-        });
+        },
+      );
 
       if (verifyError) {
         setError("verify_failed");
@@ -179,7 +181,7 @@ function AdminMfaSetup() {
       <div className="space-y-2">
         <p className="text-sm font-medium">Chave para configuração manual</p>
         <div className="bg-muted flex items-center gap-2 rounded-xl p-3">
-          <code className="min-w-0 flex-1 break-all text-sm">
+          <code className="min-w-0 flex-1 text-sm break-all">
             {enrollment.secret}
           </code>
           <Button
@@ -194,7 +196,10 @@ function AdminMfaSetup() {
           </Button>
         </div>
         {copyStatus && (
-          <p role="status" className="text-success flex items-center gap-1 text-sm">
+          <p
+            role="status"
+            className="text-success flex items-center gap-1 text-sm"
+          >
             <CheckIcon aria-hidden="true" /> {copyStatus}
           </p>
         )}

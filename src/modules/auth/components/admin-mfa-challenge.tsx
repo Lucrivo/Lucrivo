@@ -31,8 +31,9 @@ function AdminMfaChallenge({ factorId }: AdminMfaChallengeProps) {
     setError(false);
 
     try {
-      const { error: verifyError } =
-        await supabase.auth.mfa.challengeAndVerify({ factorId, code });
+      const { error: verifyError } = await supabase.auth.mfa.challengeAndVerify(
+        { factorId, code },
+      );
 
       if (verifyError) {
         setError(true);
@@ -51,9 +52,7 @@ function AdminMfaChallenge({ factorId }: AdminMfaChallengeProps) {
   return (
     <form className="space-y-5" onSubmit={verify} noValidate>
       <div className="space-y-2.5">
-        <Label htmlFor="admin-mfa-challenge-code">
-          Código do autenticador
-        </Label>
+        <Label htmlFor="admin-mfa-challenge-code">Código do autenticador</Label>
         <Input
           id="admin-mfa-challenge-code"
           value={code}

@@ -9,9 +9,7 @@ type AdminAccessUnavailableProps = {
   logoutAction?: () => Promise<void>;
 };
 
-function AdminAccessUnavailable({
-  logoutAction,
-}: AdminAccessUnavailableProps) {
+function AdminAccessUnavailable({ logoutAction }: AdminAccessUnavailableProps) {
   const router = useRouter();
 
   return (

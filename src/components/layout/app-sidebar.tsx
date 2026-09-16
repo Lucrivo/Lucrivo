@@ -141,17 +141,17 @@ function AppSidebar({
               {navigationItems.map((item) => {
                 const { label, href, icon: Icon } = item;
                 return (
-                <SidebarMenuItem key={href}>
-                  <SidebarMenuButton
-                    tooltip={label}
-                    isActive={isActive(item)}
-                    render={<Link href={href} />}
-                    className="transition-interactive data-active:bg-primary data-active:text-primary-foreground h-10 rounded-xl px-3 font-medium group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 hover:translate-x-0.5 group-data-[collapsible=icon]:hover:translate-x-0 data-active:shadow-sm"
-                  >
-                    <Icon aria-hidden="true" />
-                    <span>{label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                  <SidebarMenuItem key={href}>
+                    <SidebarMenuButton
+                      tooltip={label}
+                      isActive={isActive(item)}
+                      render={<Link href={href} />}
+                      className="transition-interactive data-active:bg-primary data-active:text-primary-foreground h-10 rounded-xl px-3 font-medium group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 hover:translate-x-0.5 group-data-[collapsible=icon]:hover:translate-x-0 data-active:shadow-sm"
+                    >
+                      <Icon aria-hidden="true" />
+                      <span>{label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 );
               })}
             </SidebarMenu>

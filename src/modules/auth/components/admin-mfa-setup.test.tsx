@@ -169,7 +169,9 @@ describe("AdminMfaSetup", () => {
       screen.getByRole("button", { name: "Configurar aplicativo" }),
     );
 
-    await user.click(await screen.findByRole("button", { name: "Copiar chave" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Copiar chave" }),
+    );
 
     expect(writeText).toHaveBeenCalledWith("SECRET123");
     expect(screen.getByRole("status")).toHaveTextContent("Chave copiada");
@@ -190,6 +192,8 @@ describe("AdminMfaSetup", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Não foi possível iniciar a configuração",
     );
-    expect(screen.queryByText("sensitive provider detail")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("sensitive provider detail"),
+    ).not.toBeInTheDocument();
   });
 });

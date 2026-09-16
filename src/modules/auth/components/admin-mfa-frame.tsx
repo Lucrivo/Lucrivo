@@ -10,11 +10,7 @@ type AdminMfaFrameProps = {
   subtitle: string;
 };
 
-function AdminMfaFrame({
-  children,
-  title,
-  subtitle,
-}: AdminMfaFrameProps) {
+function AdminMfaFrame({ children, title, subtitle }: AdminMfaFrameProps) {
   return (
     <main className="flex min-h-svh items-center justify-center p-4 sm:p-6">
       <section

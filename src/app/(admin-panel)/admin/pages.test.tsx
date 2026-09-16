@@ -24,6 +24,8 @@ describe("minimal admin pages", () => {
     expect(screen.getByRole("heading", { name: title })).toBeVisible();
     expect(screen.getByText(message)).toBeVisible();
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
-    expect(screen.queryByText(/receita|crescimento|total/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/receita|crescimento|total/i),
+    ).not.toBeInTheDocument();
   });
 });
