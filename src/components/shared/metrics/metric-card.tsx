@@ -154,7 +154,7 @@ export function MetricCard({
         </div>
 
         {Icon && (
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg">
+          <div className="bg-primary/10 text-primary ring-primary/10 flex size-9 shrink-0 items-center justify-center rounded-xl ring-1">
             <Icon aria-hidden="true" className="text-primary size-[18px]" />
           </div>
         )}
@@ -163,7 +163,7 @@ export function MetricCard({
       <div className="mt-5 flex min-w-0 items-end gap-2">
         <strong
           className={cn(
-            "truncate text-3xl font-semibold tracking-tight",
+            "min-w-0 text-3xl leading-none font-semibold tracking-tight break-words",
             valueClassName,
           )}
         >
@@ -200,7 +200,7 @@ export function MetricCard({
               {status.label}
             </div>
           ) : (
-            <p className="text-muted-foreground truncate text-xs">
+            <p className="text-muted-foreground text-xs leading-5">
               {trend?.description ?? description}
             </p>
           )}
