@@ -13,6 +13,7 @@ import type {
   ProductionReportSnapshot,
   ProductionReportSnapshotV3,
   ProductionReportSnapshotV4,
+  QuickReportSnapshot,
   ReportDiscountSimulationBase,
   ReportSnapshot,
   ServiceReportSnapshot,
@@ -22,6 +23,7 @@ import {
   getReportLanguageProfile,
   type ReportLanguageProfile,
 } from "./report-language";
+import { isDetailedReportSnapshot } from "../schemas/report-snapshot.schema";
 
 type ReportNumberViewModel = {
   key: "price" | "margin" | "profit" | "minimum" | "target" | "sales";
@@ -40,20 +42,20 @@ type LegacyProductionSnapshot = Exclude<
 >;
 
 type ReportExecutiveSummaryViewModel = Omit<
-  ReportSnapshot["executiveSummary"],
+  QuickReportSnapshot["executiveSummary"],
   "verdict" | "facts"
 > & {
-  verdict: ReportSnapshot["executiveSummary"]["verdict"] & {
+  verdict: QuickReportSnapshot["executiveSummary"]["verdict"] & {
     toneLabel: string;
   };
   facts: Array<
-    ReportSnapshot["executiveSummary"]["facts"][number] & {
+    QuickReportSnapshot["executiveSummary"]["facts"][number] & {
       help?: PlainLanguageHelpContent;
     }
   >;
 };
 
-type ReportSectionViewModel = ReportSnapshot["sections"][number] & {
+type ReportSectionViewModel = QuickReportSnapshot["sections"][number] & {
   toneLabel: string;
 };
 
@@ -72,7 +74,7 @@ type ReportViewModel = {
   sections: ReportSectionViewModel[];
   discountSimulationBase: ReportDiscountSimulationBase;
   discountSimulationContext: {
-    category: ReportSnapshot["category"];
+    category: QuickReportSnapshot["category"];
     mode: "legacy_target" | "service_attention" | "unit_attention";
   };
 };
@@ -556,6 +558,10 @@ function toReportViewModel({
   createdAt: string;
   snapshot: ReportSnapshot;
 }): ReportViewModel {
+  if (isDetailedReportSnapshot(snapshot)) {
+    throw new Error("detailed_report_requires_dedicated_presenter");
+  }
+
   const unitLabel = formatReportUnit(snapshot.unit);
   const language = getReportLanguageProfile(snapshot);
   const normalizedService = isNormalizedServiceSnapshot(snapshot);

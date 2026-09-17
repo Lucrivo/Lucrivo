@@ -7,6 +7,9 @@ const PRODUCT_CONTENT_VERSION = 4;
 const PRODUCTION_REPORT_SCHEMA_VERSION = 3;
 const PRODUCTION_CALCULATION_VERSION = 3;
 const PRODUCTION_CONTENT_VERSION = 4;
+const DETAILED_REPORT_SCHEMA_VERSION = 1;
+const DETAILED_REPORT_CALCULATION_VERSION = 1;
+const DETAILED_REPORT_CONTENT_VERSION = 1;
 
 const reportTones = ["neutral", "positive", "warning", "critical"] as const;
 const serviceReportVerdicts = [
@@ -163,6 +166,9 @@ type ProductionReportCalculation = {
 };
 
 export {
+  DETAILED_REPORT_CALCULATION_VERSION,
+  DETAILED_REPORT_CONTENT_VERSION,
+  DETAILED_REPORT_SCHEMA_VERSION,
   PRODUCT_CALCULATION_VERSION,
   PRODUCT_CONTENT_VERSION,
   PRODUCT_REPORT_SCHEMA_VERSION,
@@ -209,6 +215,10 @@ export {
 };
 
 export type {
+  CurrentDetailedReportSnapshot,
+  DetailedReportSnapshotV1,
+} from "./schemas/detailed-report-snapshot.schema";
+export type {
   ExecutiveSummaryAnswer,
   ExecutiveSummaryFact,
   ReportExecutiveSummary,
@@ -233,6 +243,7 @@ export type {
   ProductionReportSnapshotV4,
 } from "./schemas/production-report-snapshot.schema";
 export type {
+  QuickReportSnapshot,
   ReportDiscountSimulationBase,
   ReportSnapshot,
 } from "./schemas/report-snapshot.schema";

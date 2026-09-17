@@ -9,6 +9,7 @@ import { requireUser } from "@/modules/auth/services/require-user";
 import { LockedReportCard } from "@/modules/billing/components/locked-report-card";
 import { ReportDetail } from "@/modules/reports/components/report-detail";
 import { toReportViewModel } from "@/modules/reports/presenters/to-report-view-model";
+import { isDetailedReportSnapshot } from "@/modules/reports/schemas/report-snapshot.schema";
 import {
   getOwnedReport,
   parseDiagnosisId,
@@ -73,6 +74,8 @@ export default async function ReportPage({
   if (result.status === "read_failed") throw new Error("report_read_failed");
   if (result.status === "locked") return <LockedReportCard />;
   if (result.status === "unavailable") return <UnavailableReport />;
+  if (isDetailedReportSnapshot(result.report.snapshot))
+    return <UnavailableReport />;
 
   const viewModel = toReportViewModel(result.report);
   return <ReportDetail viewModel={viewModel} />;
