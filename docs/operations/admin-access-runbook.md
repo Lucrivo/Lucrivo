@@ -158,3 +158,45 @@ externamente o motivo, o operador, o horário e os UUIDs envolvidos.
 4. Uma sessão `aal1` do administrador não passa a autorização administrativa.
 5. Uma sessão `aal2` do administrador passa a autorização administrativa.
 6. Nenhum segredo, JWT ou fator MFA foi registrado em logs ou tickets.
+
+## Gestão de usuários
+
+A área `/admin/users` exige a mesma sessão MFA `aal2`. A tela não concede
+permissões pelo e-mail: a autorização é repetida em cada RPC no banco. O
+administrador atribuído ao singleton não aparece na lista nem pode ser alvo de
+ações. Busque um usuário pelo e-mail e confira o UUID antes de confirmar uma
+alteração, especialmente quando houver e-mails semelhantes.
+
+Toda alteração exige um motivo com até 500 caracteres e registra um evento
+imutável com operador, horário e estado anterior/posterior. O histórico só começa
+com a implantação desta funcionalidade; cadastro e último login são fatos da
+conta, não um histórico retroativo de sessões. Se a tela informar conflito de
+versão, recarregue o cadastro, revise o estado atual e confirme novamente.
+
+### Semântica e recuperação
+
+- **Cortesia:** libera a elegibilidade de relatórios até a data indicada, sem
+  criar contrato, cobrança ou receita. Uma assinatura paga vigente continua
+  sendo a fonte principal de acesso; encerrar cortesia não a cancela.
+- **Bloqueio:** suspende o uso da aplicação e a leitura de dados mesmo com JWT
+  já emitido. Desbloquear restaura a elegibilidade normal, sem conceder acesso
+  pago. O banco recusa bloquear quem possui um intervalo pago vigente.
+- **Exclusão lógica:** suspende a conta e a retira da lista padrão, mas mantém
+  identidade Auth, diagnósticos, contratos, pagamentos e auditoria. Restaurar
+  preserva o estado de bloqueio que existia antes da exclusão. **Não é
+  apagamento de dados pessoais**, não cancela assinaturas e não substitui um
+  processo jurídico de eliminação. O banco recusa excluir quem ainda tem acesso
+  pago vigente.
+
+Se houver conflito pago, encaminhe o caso ao fluxo financeiro competente antes
+de repetir a ação. Esta interface não cancela cobrança, não emite reembolso e
+não chama o Asaas. Se uma confirmação de pagamento tentar ativar um contrato de
+conta suspensa, a transação é recusada para impedir acesso pago com a conta
+indisponível. Investigue o evento de cobrança e resolva manualmente o estado da
+conta ou a situação financeira; não remova a proteção do trigger como atalho.
+
+A busca por substring de e-mail usa a tabela gerenciada `auth.users`. A role
+normal de migrações não possui essa tabela, portanto não instala índice trigram
+diretamente nela. Monitore latência da busca à medida que a base crescer e
+planeje uma projeção administrada separada antes de volumes altos; não altere
+propriedade ou permissões do esquema Auth apenas para otimizar a tela.

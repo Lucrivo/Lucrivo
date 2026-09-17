@@ -1,10 +1,17 @@
-export default function AdminUsersPage() {
+import { AdminUserList } from "@/modules/admin/users/components/admin-user-list";
+import { getAdminUsers } from "@/modules/admin/users/get-admin-users.service";
+import {
+  parseFilters,
+  type SearchParams,
+} from "@/modules/admin/users/admin-users.urls";
+
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const filters = parseFilters(await searchParams);
   return (
-    <section className="space-y-2">
-      <h1 className="text-2xl font-semibold tracking-tight">Usuários</h1>
-      <p className="text-muted-foreground">
-        A gestão de usuários será construída aqui.
-      </p>
-    </section>
+    <AdminUserList data={await getAdminUsers(filters)} filters={filters} />
   );
 }
