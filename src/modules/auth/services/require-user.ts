@@ -12,6 +12,13 @@ class AuthRequiredError extends Error {
   }
 }
 
+class AccountUnavailableError extends Error {
+  constructor() {
+    super("Account unavailable");
+    this.name = "AccountUnavailableError";
+  }
+}
+
 async function requireUser(): Promise<{
   userId: string;
   supabase: SupabaseClient<Database>;
@@ -24,7 +31,19 @@ async function requireUser(): Promise<{
     throw new AuthRequiredError();
   }
 
+  try {
+    const { data: eligible, error: eligibilityError } = await supabase.rpc(
+      "current_account_is_eligible",
+    );
+
+    if (eligibilityError || eligible !== true) {
+      throw new AccountUnavailableError();
+    }
+  } catch {
+    throw new AccountUnavailableError();
+  }
+
   return { userId: subject, supabase };
 }
 
-export { AuthRequiredError, requireUser };
+export { AccountUnavailableError, AuthRequiredError, requireUser };

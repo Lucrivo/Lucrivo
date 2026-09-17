@@ -16,7 +16,8 @@ describe("getBillingOverview", () => {
   const diagnosisLimit = vi.fn();
   const diagnosisMaybeSingle = vi.fn();
   const from = vi.fn();
-  const supabase = { from };
+  const rpc = vi.fn();
+  const supabase = { from, rpc };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -36,6 +37,7 @@ describe("getBillingOverview", () => {
     diagnosisIsFree.mockReturnValue({ limit: diagnosisLimit });
     diagnosisLimit.mockReturnValue({ maybeSingle: diagnosisMaybeSingle });
     diagnosisMaybeSingle.mockResolvedValue({ data: null, error: null });
+    rpc.mockResolvedValue({ data: null, error: null });
   });
 
   function get() {
@@ -53,6 +55,7 @@ describe("getBillingOverview", () => {
         tier: "free",
         canCreateDiagnosis: true,
         freeReportUsed: false,
+        courtesyExpiresAt: null,
         contract: null,
       },
     });
@@ -68,6 +71,7 @@ describe("getBillingOverview", () => {
     expect(diagnosisByUser).toHaveBeenCalledWith("user_id", "trusted-user");
     expect(diagnosisIsFree).toHaveBeenCalledWith("is_free_report", true);
     expect(diagnosisLimit).toHaveBeenCalledWith(1);
+    expect(rpc).toHaveBeenCalledWith("current_courtesy_access_expires_at");
   });
 
   it("returns free used after the free report is consumed", async () => {
@@ -113,6 +117,7 @@ describe("getBillingOverview", () => {
         tier: "paid",
         canCreateDiagnosis: true,
         freeReportUsed: true,
+        courtesyExpiresAt: null,
         contract: {
           billingMode: "annual",
           paymentMethod: "credit_card",
@@ -150,6 +155,7 @@ describe("getBillingOverview", () => {
         tier: "free",
         canCreateDiagnosis: false,
         freeReportUsed: true,
+        courtesyExpiresAt: null,
         contract: {
           billingMode: "monthly",
           paymentMethod: "pix",
@@ -171,5 +177,33 @@ describe("getBillingOverview", () => {
     contractOrder.mockResolvedValue({ data: [], error: null });
     diagnosisMaybeSingle.mockRejectedValueOnce(new Error("private report"));
     await expect(get()).resolves.toEqual({ status: "read_failed" });
+
+    rpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: "XX001", message: "private courtesy detail" },
+    });
+    await expect(get()).resolves.toEqual({ status: "read_failed" });
+  });
+
+  it("shows active courtesy separately from a paid subscription", async () => {
+    diagnosisMaybeSingle.mockResolvedValue({
+      data: { is_free_report: true },
+      error: null,
+    });
+    rpc.mockResolvedValue({
+      data: "2026-09-20T12:00:00.000Z",
+      error: null,
+    });
+
+    await expect(get()).resolves.toMatchObject({
+      status: "success",
+      overview: {
+        tier: "courtesy",
+        canCreateDiagnosis: true,
+        freeReportUsed: true,
+        courtesyExpiresAt: "2026-09-20T12:00:00.000Z",
+        contract: null,
+      },
+    });
   });
 });

@@ -1,6 +1,7 @@
 import {
   CalendarDaysIcon,
   CreditCardIcon,
+  GiftIcon,
   ShieldCheckIcon,
 } from "lucide-react";
 
@@ -142,12 +143,57 @@ export default async function BillingPage() {
             aria-hidden="true"
             className="text-primary mt-0.5 size-5 shrink-0"
           />
-          O acesso acompanha somente pagamentos confirmados.
+          Assinaturas seguem pagamentos confirmados. Cortesias são mostradas
+          separadamente.
         </div>
       </header>
 
       {overview.tier === "paid" ? (
         currentPlan(overview)
+      ) : overview.tier === "courtesy" ? (
+        <div className="grid gap-8">
+          <Card
+            role="region"
+            aria-label="Acesso cortesia"
+            className="border-primary/20 bg-card overflow-hidden shadow-sm"
+          >
+            <CardHeader className="flex flex-row items-start gap-4">
+              <span className="bg-primary/10 text-primary grid size-11 shrink-0 place-items-center rounded-xl">
+                <GiftIcon aria-hidden="true" className="size-5" />
+              </span>
+              <div className="grid gap-1">
+                <h2 className="text-xl font-semibold tracking-tight">
+                  Acesso cortesia ativo
+                </h2>
+                <p className="text-muted-foreground text-sm leading-6">
+                  Você pode criar diagnósticos até{" "}
+                  <strong className="text-foreground font-semibold">
+                    {formatDate(overview.courtesyExpiresAt)}
+                  </strong>
+                  . Este benefício não é uma assinatura e não gera cobrança.
+                </p>
+              </div>
+            </CardHeader>
+          </Card>
+          <section className="grid gap-5" aria-labelledby="available-plans">
+            <div className="grid gap-1">
+              <h2
+                id="available-plans"
+                className="text-xl font-semibold tracking-tight"
+              >
+                Opções de assinatura
+              </h2>
+              <p className="text-muted-foreground">
+                Se quiser manter o acesso após a cortesia, escolha uma opção.
+              </p>
+            </div>
+            <BillingPlans
+              prices={prices}
+              overview={overview}
+              context="account"
+            />
+          </section>
+        </div>
       ) : (
         <section className="grid gap-5" aria-labelledby="available-plans">
           <div className="grid gap-1">

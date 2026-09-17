@@ -134,26 +134,22 @@ describe("Home", () => {
     }
   });
 
-  it("uses the business contexts as a bridge into the pricing problem", async () => {
+  it("bridges into the current pricing problem copy", async () => {
     await renderHome();
 
     const problem = document.querySelector("#como-funciona");
     const view = within(problem as HTMLElement);
 
     expect(
-      view.getByText("Feito para a realidade de quem empreende"),
+      view.getByRole("heading", { name: "Preço não é só colocar um número." }),
     ).toBeInTheDocument();
     expect(
       view.getByText("Antes de mudar seu preço, descubra se a conta fecha."),
     ).toBeInTheDocument();
 
-    for (const context of [
-      "Revenda",
-      "Produção própria",
-      "Prestação de serviço",
-    ]) {
-      expect(view.getByText(context)).toBeInTheDocument();
-    }
+    expect(
+      view.getByText(/estes são os pontos que costumam mudar tudo/i),
+    ).toBeInTheDocument();
   });
 
   it("closes the problem section with the approved outcome message", async () => {

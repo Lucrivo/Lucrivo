@@ -546,6 +546,16 @@ export type Database = {
         Args: { p_event_id: string; p_event_type: string; p_payload: Json };
         Returns: string;
       };
+      change_admin_user_v1: {
+        Args: {
+          p_action: string;
+          p_courtesy_expires_at: string;
+          p_expected_version: number;
+          p_reason: string;
+          p_user_id: string;
+        };
+        Returns: Json;
+      };
       create_product_diagnosis_report: {
         Args: {
           p_calculation_version: number;
@@ -727,8 +737,32 @@ export type Database = {
         };
         Returns: number;
       };
+      current_account_is_eligible: { Args: never; Returns: boolean };
+      current_courtesy_access_expires_at: { Args: never; Returns: string };
       current_user_is_admin: { Args: never; Returns: boolean };
       get_admin_dashboard_v1: { Args: never; Returns: Json };
+      get_admin_user_v1: { Args: { p_user_id: string }; Returns: Json };
+      list_admin_user_items_v1: {
+        Args: {
+          p_cursor_created_at?: string;
+          p_cursor_id?: string;
+          p_kind: string;
+          p_limit?: number;
+          p_user_id: string;
+        };
+        Returns: Json;
+      };
+      list_admin_users_v1: {
+        Args: {
+          p_access?: string;
+          p_cursor_created_at?: string;
+          p_cursor_id?: string;
+          p_limit?: number;
+          p_query?: string;
+          p_state?: string;
+        };
+        Returns: Json;
+      };
     };
     Enums: {
       business_category: "service" | "product" | "production";

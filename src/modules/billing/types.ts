@@ -23,9 +23,10 @@ type ActiveBillingPrice = {
 };
 
 type BillingOverview = {
-  tier: "free" | "paid";
+  tier: "free" | "paid" | "courtesy";
   canCreateDiagnosis: boolean;
   freeReportUsed: boolean;
+  courtesyExpiresAt: string | null;
   contract: null | {
     billingMode: BillingMode;
     paymentMethod: BillingPaymentMethod;

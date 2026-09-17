@@ -1,14 +1,28 @@
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/layout/app-shell";
-import { createClient } from "@/infrastructure/database/supabase/clients/server.client";
+import {
+  AccountUnavailableError,
+  AuthRequiredError,
+  requireUser,
+} from "@/modules/auth/services/require-user";
 
 export default async function PrivateLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
+  let supabase: Awaited<ReturnType<typeof requireUser>>["supabase"];
+
+  try {
+    ({ supabase } = await requireUser());
+  } catch (error) {
+    if (error instanceof AuthRequiredError) redirect("/login");
+    if (error instanceof AccountUnavailableError) {
+      redirect("/account-unavailable");
+    }
+    throw error;
+  }
 
   const { data } = await supabase.auth.getClaims();
 
