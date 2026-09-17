@@ -127,11 +127,7 @@ type DetailedDiagnosisVerdict =
   | "adequate_margin";
 
 type DetailedDiagnosisPriority =
-  | "cost"
-  | "data"
-  | "price"
-  | "margin"
-  | "volume";
+  "cost" | "data" | "price" | "margin" | "volume";
 
 type DetailedDiagnosisCalculation = {
   effectiveFixedCostCents: number;
@@ -164,7 +160,20 @@ type DetailedGuidance = {
 
 type DetailedDiagnosisFieldErrors = Record<string, string[]>;
 
+type CreateDetailedDiagnosisActionResult =
+  | { status: "success"; diagnosisId: number }
+  | {
+      status: "error";
+      error: "invalid_input";
+      fieldErrors: DetailedDiagnosisFieldErrors;
+    }
+  | {
+      status: "error";
+      error: "unauthorized" | "limit_reached" | "create_failed";
+    };
+
 export {
+  type CreateDetailedDiagnosisActionResult,
   type DetailedDiagnosisCategory,
   type DetailedDiagnosisCalculation,
   type DetailedDiagnosisCommand,
