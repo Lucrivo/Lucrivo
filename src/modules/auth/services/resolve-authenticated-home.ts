@@ -2,7 +2,8 @@ import "server-only";
 
 import { createClient } from "@/infrastructure/database/supabase/clients/server.client";
 
-type AuthenticatedHome = "/login" | "/dashboard" | "/admin";
+type AuthenticatedHome =
+  "/login" | "/dashboard" | "/admin" | "/account-unavailable";
 
 async function resolveAuthenticatedHome(): Promise<AuthenticatedHome> {
   const supabase = await createClient();
@@ -15,10 +16,15 @@ async function resolveAuthenticatedHome(): Promise<AuthenticatedHome> {
   }
 
   try {
+    const { data: eligible, error: eligibilityError } = await supabase.rpc(
+      "current_account_is_eligible",
+    );
+    if (eligibilityError || eligible !== true) return "/account-unavailable";
+
     const { data, error } = await supabase.rpc("current_user_is_admin");
     return !error && data === true ? "/admin" : "/dashboard";
   } catch {
-    return "/dashboard";
+    return "/account-unavailable";
   }
 }
 

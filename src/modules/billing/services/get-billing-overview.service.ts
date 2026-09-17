@@ -83,22 +83,37 @@ async function getBillingOverview({
     const instant = now().getTime();
     if (!Number.isFinite(instant)) return { status: "read_failed" };
 
-    const [contractsResult, freeReportResult] = await Promise.all([
-      supabase
-        .from("billing_contracts")
-        .select(BILLING_OVERVIEW_CONTRACT_COLUMNS)
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("diagnoses")
-        .select("is_free_report")
-        .eq("user_id", userId)
-        .eq("is_free_report", true)
-        .limit(1)
-        .maybeSingle(),
-    ]);
+    const [contractsResult, freeReportResult, courtesyResult] =
+      await Promise.all([
+        supabase
+          .from("billing_contracts")
+          .select(BILLING_OVERVIEW_CONTRACT_COLUMNS)
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("diagnoses")
+          .select("is_free_report")
+          .eq("user_id", userId)
+          .eq("is_free_report", true)
+          .limit(1)
+          .maybeSingle(),
+        supabase.rpc("current_courtesy_access_expires_at"),
+      ]);
 
-    if (contractsResult.error || freeReportResult.error) {
+    if (
+      contractsResult.error ||
+      freeReportResult.error ||
+      courtesyResult.error
+    ) {
+      return { status: "read_failed" };
+    }
+
+    const courtesyExpiresAt = courtesyResult.data;
+    if (
+      courtesyExpiresAt !== null &&
+      (typeof courtesyExpiresAt !== "string" ||
+        validDate(courtesyExpiresAt) === null)
+    ) {
       return { status: "read_failed" };
     }
 
@@ -108,13 +123,18 @@ async function getBillingOverview({
     );
     const freeReportUsed = freeReportResult.data?.is_free_report === true;
     const hasPaidAccess = paidContract !== undefined;
+    const courtesyInstant = validDate(courtesyExpiresAt);
+    const hasCourtesyAccess =
+      courtesyInstant !== null && courtesyInstant > instant;
 
     return {
       status: "success",
       overview: {
-        tier: hasPaidAccess ? "paid" : "free",
-        canCreateDiagnosis: hasPaidAccess || !freeReportUsed,
+        tier: hasPaidAccess ? "paid" : hasCourtesyAccess ? "courtesy" : "free",
+        canCreateDiagnosis:
+          hasPaidAccess || hasCourtesyAccess || !freeReportUsed,
         freeReportUsed,
+        courtesyExpiresAt: hasCourtesyAccess ? courtesyExpiresAt : null,
         contract: toOverviewContract(paidContract ?? contracts[0]),
       },
     };

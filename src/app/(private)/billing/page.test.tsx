@@ -161,4 +161,27 @@ describe("BillingPage", () => {
       screen.queryByRole("button", { name: "Cancelar renovação" }),
     ).not.toBeInTheDocument();
   });
+
+  it("identifies courtesy access without presenting it as a paid plan", async () => {
+    getBillingOverview.mockResolvedValue({
+      status: "success",
+      overview: {
+        tier: "courtesy",
+        canCreateDiagnosis: true,
+        freeReportUsed: true,
+        courtesyExpiresAt: "2026-09-20T12:00:00.000Z",
+        contract: null,
+      },
+    });
+
+    await renderPage();
+
+    const courtesy = screen.getByRole("region", { name: "Acesso cortesia" });
+    expect(within(courtesy).getByText(/20 de setembro de 2026/)).toBeVisible();
+    expect(within(courtesy).getByText(/não é uma assinatura/i)).toBeVisible();
+    expect(screen.queryByText("Você está no plano gratuito")).toBeNull();
+    expect(
+      screen.queryByRole("region", { name: "Seu plano atual" }),
+    ).toBeNull();
+  });
 });

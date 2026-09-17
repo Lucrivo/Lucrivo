@@ -727,6 +727,8 @@ export type Database = {
         };
         Returns: number;
       };
+      current_account_is_eligible: { Args: never; Returns: boolean };
+      current_courtesy_access_expires_at: { Args: never; Returns: string };
       current_user_is_admin: { Args: never; Returns: boolean };
       get_admin_dashboard_v1: { Args: never; Returns: Json };
     };

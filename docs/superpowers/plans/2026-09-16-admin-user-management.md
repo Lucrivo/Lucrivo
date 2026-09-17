@@ -79,11 +79,11 @@ create table private.admin_user_events (
 
 ### Task 2: Enforce eligibility and complimentary report access
 
-**Files:** Create CLI-generated `*_admin_user_enforcement.sql`, `supabase/tests/admin_user_enforcement.test.sql`, `src/app/(public)/account-unavailable/page.tsx` and its test; modify `src/modules/auth/services/require-user.ts`, `require-user.test.ts`, `src/app/(private)/layout.tsx`, and relevant authentication redirect tests.
+**Files:** Create CLI-generated `*_admin_user_enforcement.sql`, `*_admin_user_courtesy_overview.sql`, `supabase/tests/admin_user_enforcement.test.sql`, `src/app/(public)/account-unavailable/page.tsx` and its test; modify `src/modules/auth/services/require-user.ts`, `require-user.test.ts`, `src/modules/auth/services/resolve-authenticated-home.ts` and its test, `src/app/(private)/layout.tsx`, `src/modules/billing/services/get-billing-overview.service.ts` and its test, `src/modules/billing/types.ts`, `src/app/(private)/billing/page.tsx`, and relevant route tests.
 
-**Interfaces:** Consume `private.admin_user_state` and `private.account_is_eligible()`. Produce `private.has_report_entitlement_for_user(uuid,timestamptz)` (billing OR unexpired courtesy, never billing mutation), a caller-scoped `public.current_account_is_eligible()` RPC, and `AccountUnavailableError` in `require-user.ts`.
+**Interfaces:** Consume `private.admin_user_state` and `private.account_is_eligible()`. Produce `private.has_report_entitlement_for_user(uuid,timestamptz)` (billing OR unexpired courtesy, never billing mutation), caller-scoped `public.current_account_is_eligible()` and `public.current_courtesy_access_expires_at()` RPCs, and `AccountUnavailableError` in `require-user.ts`. `BillingOverview.tier` becomes `free | paid | courtesy`, with paid taking precedence and courtesy expiry explicit.
 
-- [ ] **Step 1: Write failing database and unit tests.** Fixture users with free, paid, courtesy, blocked and deleted states. Verify direct reads of `diagnoses`, child diagnosis tables, contracts and payments fail for blocked/deleted users with valid JWTs; all three report creation functions reject them; courtesy grants paid-report access but not an extra free report; billing semantics remain unchanged. For the app guard:
+- [x] **Step 1: Write failing database and unit tests.** Fixture users with free, paid, courtesy, blocked and deleted states. Verify direct reads of `diagnoses`, child diagnosis tables, contracts and payments fail for blocked/deleted users with valid JWTs; all three report creation functions reject them; courtesy grants paid-report access but not an extra free report; billing semantics remain unchanged. For the app guard:
 
 ```ts
 it("rejects a blocked account after authenticating", async () => {
@@ -92,8 +92,8 @@ it("rejects a blocked account after authenticating", async () => {
 });
 ```
 
-- [ ] **Step 2: Run failing tests.** Run targeted pgTAP and `pnpm vitest run src/modules/auth/services/require-user.test.ts`; expect eligibility checks absent.
-- [ ] **Step 3: Implement database enforcement.** CLI-create the migration. Preserve `private.has_paid_access_for_user` as billing-only. Add `private.has_report_entitlement_for_user`; update `private.can_read_diagnosis`, all three report-create implementations, and owner RLS policies for `diagnoses`, the three child diagnosis tables, `billing_contracts`, `billing_payments`, and any additional owner-facing tables identified by `rg -n 'create policy|create function' supabase/migrations`. Revoke public execution of internal helpers and grant only caller-scoped RPCs. Core entitlement rule:
+- [x] **Step 2: Run failing tests.** Run targeted pgTAP and `pnpm vitest run src/modules/auth/services/require-user.test.ts`; expect eligibility checks absent.
+- [x] **Step 3: Implement database enforcement.** CLI-create the migration. Preserve `private.has_paid_access_for_user` as billing-only. Add `private.has_report_entitlement_for_user`; update `private.can_read_diagnosis`, all three report-create implementations, and owner RLS policies for `diagnoses`, the three child diagnosis tables, `billing_contracts`, `billing_payments`, and any additional owner-facing tables identified by `rg -n 'create policy|create function' supabase/migrations`. Revoke public execution of internal helpers and grant only caller-scoped RPCs. Core entitlement rule:
 
 ```sql
 return private.has_paid_access_for_user(p_user_id, p_at)
@@ -106,16 +106,19 @@ return private.has_paid_access_for_user(p_user_id, p_at)
 ```
 
 Use `private.account_is_eligible()` as an AND condition in owner policies and before report-creation writes. Ensure `public.current_account_is_eligible()` only answers for `(select auth.uid())`; it must not accept an arbitrary user ID.
-- [ ] **Step 4: Implement the server guard and rerun tests.** `requireUser()` checks `current_account_is_eligible` after `getClaims()`, and `PrivateLayout` calls `requireUser()` instead of trusting claims alone; redirect unavailable accounts to a dedicated public `/account-unavailable` page with a logout action, without an infinite login loop. The guard's added call is:
+
+- [x] **Step 4: Implement the server guard and rerun tests.** `requireUser()` checks `current_account_is_eligible` after `getClaims()`, and `PrivateLayout` calls `requireUser()` instead of trusting claims alone; redirect unavailable accounts to a dedicated public `/account-unavailable` page with a logout action, without an infinite login loop. The guard's added call is:
 
 ```ts
-const { data: eligible, error: eligibilityError } =
-  await supabase.rpc("current_account_is_eligible");
+const { data: eligible, error: eligibilityError } = await supabase.rpc(
+  "current_account_is_eligible",
+);
 if (eligibilityError || eligible !== true) throw new AccountUnavailableError();
 ```
 
-Run `pnpm exec supabase migration up --local`, targeted pgTAP and Vitest. Confirm the existing data counts are unchanged. Review service-role report reads to confirm all entrypoints still call `requireUser` first.
-- [ ] **Step 5: Commit.** `git commit -m "feat: enforce managed account eligibility"`.
+Run `pnpm exec supabase migration up --local`, targeted pgTAP and Vitest. Confirm the existing data counts are unchanged. Review service-role report reads to confirm all entrypoints still call `requireUser` first. The billing overview must call the courtesy-expiry RPC, display a distinct courtesy state without claiming a paid subscription, and continue to allow diagnoses after the free report is used.
+
+- [x] **Step 5: Commit.** `git commit -m "feat: enforce managed account eligibility"`.
 
 ### Task 3: Admin list and detail read RPCs
 
@@ -134,6 +137,7 @@ end if;
 ```
 
 Validate filter enums and clamp `p_limit` to 1–50. Use `(created_at,id) < (cursor_created_at,cursor_id)` and fetch `limit + 1`; return `{items,nextCursor}` with an opaque cursor payload built from exact sort keys. For child items with heterogeneous IDs, use a per-kind typed cursor rather than unsafe text-to-UUID coercion. The list projection contains only ID, email, dates, state, effective access label, current contract summary, diagnosis count and action eligibility. The detail and child RPCs omit secrets and raw snapshots. Add indexes after checking local `EXPLAIN` on filter/search and child queries; avoid unbounded auth-admin `listUsers` loops.
+
 - [ ] **Step 4: Apply and rerun tests.** `pnpm exec supabase migration up --local` and targeted pgTAP. Check the actual query plan for email search; if substring search requires it, use a reviewed `pg_trgm` GIN expression index instead of full scanning at scale.
 - [ ] **Step 5: Commit.** `git commit -m "feat: expose guarded admin user projections"`.
 
@@ -160,6 +164,7 @@ if p_action in ('blocked','soft_deleted') and exists (
 ```
 
 Add a `before insert or update` trigger on `billing_contracts` when a valid paid interval becomes active. It locks the same `auth.users` row and rejects activation if account state is blocked/deleted, leaving the webhook event retryable and visible for operational resolution. This prevents an activation from racing past the admin check; test both transaction orders. Return typed conflicts rather than arbitrary SQL errors for normal stale-state cases.
+
 - [ ] **Step 4: Apply and rerun tests.** Use `pnpm exec supabase migration up --local`; include advisor/security checks and verify that a failed audit insert rolls back the state change.
 - [ ] **Step 5: Commit.** `git commit -m "feat: add audited admin user actions"`.
 
@@ -173,7 +178,9 @@ Add a `before insert or update` trigger on `billing_contracts` when a valid paid
 
 ```ts
 expect(() => adminUserListSchema.parse({ items: [{ id: "bad" }] })).toThrow();
-expect(requireAdmin.mock.invocationCallOrder[0]).toBeLessThan(rpc.mock.invocationCallOrder[0]);
+expect(requireAdmin.mock.invocationCallOrder[0]).toBeLessThan(
+  rpc.mock.invocationCallOrder[0],
+);
 expect(revalidatePath).toHaveBeenCalledWith("/admin/users");
 ```
 
@@ -188,6 +195,7 @@ return adminUserListSchema.parse(data);
 ```
 
 Run `pnpm exec supabase types gen typescript --local --schema public` through the repository's `pnpm supabase:types` script and inspect the diff; do not hand-edit generated types.
+
 - [ ] **Step 4: Run tests and typecheck.** `pnpm vitest run src/modules/admin/users` and `pnpm typecheck`.
 - [ ] **Step 5: Commit.** `git commit -m "feat: add typed admin user services"`.
 
@@ -202,15 +210,20 @@ Run `pnpm exec supabase types gen typescript --local --schema public` through th
 - [ ] **Step 3: Implement UI.** Reuse `Table`, `Card`, `Badge`, `DropdownMenu`, `Pagination`, `Input` and existing admin tokens; use a responsive card list on narrow screens. Make one semantic anchor stretch the visual row while its action button has its own stacking context; the anchor and menu each need visible focus. Page shape:
 
 ```tsx
-export default async function AdminUsersPage({ searchParams }: {
+export default async function AdminUsersPage({
+  searchParams,
+}: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const filters = parseAdminUserFilters(await searchParams);
-  return <AdminUserList data={await getAdminUsers(filters)} filters={filters} />;
+  return (
+    <AdminUserList data={await getAdminUsers(filters)} filters={filters} />
+  );
 }
 ```
 
 Filter controls submit GET parameters and reset the cursor. Use status/help text to explain paid conflicts rather than hiding actions.
+
 - [ ] **Step 4: Run UI tests and typecheck.** Verify desktop and narrow widths if a browser is available.
 - [ ] **Step 5: Commit.** `git commit -m "feat: build admin user list"`.
 
@@ -223,8 +236,14 @@ Filter controls submit GET parameters and reset the cursor. Use status/help text
 - [ ] **Step 1: Write failing tests.** Assert breadcrumb/back link, URL-addressable tabs, real Auth fields only, paginated diagnosis/contract/history rows, no raw report/provider payloads, blocked/excluded status, paid-conflict message, reason/expiry validation, confirmation, success/error feedback, focus restoration and direct `/admin/users/{id}?tab=history` navigation. Example:
 
 ```tsx
-expect(screen.getByRole("tab", { name: "Histórico" })).toHaveAttribute("aria-selected", "true");
-expect(screen.getByRole("link", { name: /voltar.*usuários/i })).toHaveAttribute("href", "/admin/users");
+expect(screen.getByRole("tab", { name: "Histórico" })).toHaveAttribute(
+  "aria-selected",
+  "true",
+);
+expect(screen.getByRole("link", { name: /voltar.*usuários/i })).toHaveAttribute(
+  "href",
+  "/admin/users",
+);
 ```
 
 - [ ] **Step 2: Run tests; expect failure.** `pnpm vitest run src/modules/admin/users/components/admin-user-detail.test.tsx src/app/'(admin-panel)'/admin/users/'[userId]'/page.test.tsx`.
@@ -233,7 +252,10 @@ expect(screen.getByRole("link", { name: /voltar.*usuários/i })).toHaveAttribute
 ```tsx
 const user = await getAdminUser(userId);
 if (!user) notFound();
-const items = tab === "profile" ? null : await getAdminUserItems(userId, tabToKind(tab), cursor);
+const items =
+  tab === "profile"
+    ? null
+    : await getAdminUserItems(userId, tabToKind(tab), cursor);
 return <AdminUserDetail user={user} tab={tab} items={items} />;
 ```
 

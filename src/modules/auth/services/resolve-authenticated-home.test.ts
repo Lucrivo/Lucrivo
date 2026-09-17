@@ -21,18 +21,30 @@ describe("resolveAuthenticatedHome", () => {
       data: { claims: { sub: "user-123" } },
       error: null,
     });
+    rpc.mockImplementation(async (name: string) => ({
+      data: name === "current_account_is_eligible",
+      error: null,
+    }));
   });
 
   it("resolves the configured administrator to /admin", async () => {
-    rpc.mockResolvedValue({ data: true, error: null });
+    rpc.mockResolvedValueOnce({ data: true, error: null });
+    rpc.mockResolvedValueOnce({ data: true, error: null });
 
     await expect(resolveAuthenticatedHome()).resolves.toBe("/admin");
   });
 
   it("resolves a regular user to /dashboard", async () => {
-    rpc.mockResolvedValue({ data: false, error: null });
-
     await expect(resolveAuthenticatedHome()).resolves.toBe("/dashboard");
+  });
+
+  it("routes a blocked user to the unavailable-account page", async () => {
+    rpc.mockResolvedValueOnce({ data: false, error: null });
+
+    await expect(resolveAuthenticatedHome()).resolves.toBe(
+      "/account-unavailable",
+    );
+    expect(rpc).toHaveBeenCalledOnce();
   });
 
   it.each([
@@ -40,15 +52,26 @@ describe("resolveAuthenticatedHome", () => {
     { data: "true", error: null },
     { data: null, error: null },
   ])("falls back to /dashboard for an unusable role result", async (result) => {
-    rpc.mockResolvedValue(result);
+    rpc.mockImplementation(async (name: string) =>
+      name === "current_account_is_eligible"
+        ? { data: true, error: null }
+        : result,
+    );
 
     await expect(resolveAuthenticatedHome()).resolves.toBe("/dashboard");
   });
 
   it("falls back to /dashboard when the role RPC throws", async () => {
-    rpc.mockRejectedValue(new Error("unavailable"));
+    rpc.mockImplementation(async (name: string) => {
+      if (name === "current_account_is_eligible") {
+        return { data: true, error: null };
+      }
+      throw new Error("unavailable");
+    });
 
-    await expect(resolveAuthenticatedHome()).resolves.toBe("/dashboard");
+    await expect(resolveAuthenticatedHome()).resolves.toBe(
+      "/account-unavailable",
+    );
   });
 
   it.each([
