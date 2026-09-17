@@ -208,6 +208,9 @@ describe("ReportDetail", () => {
     expect(
       screen.getAllByText("Quanto sobra a cada R$ 100").length,
     ).toBeGreaterThan(0);
+    expect(screen.getAllByText("Ainda não calculado").length).toBeGreaterThan(
+      0,
+    );
     expect(
       screen.getAllByText("Esta simulação ainda não inclui os gastos mensais", {
         exact: false,
@@ -226,6 +229,9 @@ describe("ReportDetail", () => {
     expect(
       screen.getAllByText("Quanto sobra a cada R$ 100").length,
     ).toBeGreaterThan(0);
+    expect(screen.getAllByText("Ainda não calculado").length).toBeGreaterThan(
+      0,
+    );
     expect(
       screen.getAllByText("Esta simulação ainda não inclui os gastos mensais", {
         exact: false,

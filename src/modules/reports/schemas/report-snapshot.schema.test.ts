@@ -496,6 +496,70 @@ const validProductionV3Snapshot = {
   },
 };
 
+const validProductV4Snapshot = {
+  ...validProductV3Snapshot,
+  schemaVersion: 3,
+  calculationVersion: 3,
+  contentVersion: 4,
+  inputs: {
+    ...validProductV3Snapshot.inputs,
+    monthlySalesVolume: null,
+  },
+  results: {
+    ...validProductV3Snapshot.results,
+    fixedAllocationCents: null,
+    totalUnitCostCents: null,
+    unitProfitCents: null,
+    monthlySalesVolumeUsed: null,
+    monthlyGrossRevenueCents: null,
+    monthlyNetRevenueCents: null,
+    monthlyResultCents: null,
+    realMarginBasisPoints: null,
+    priceReferencesPartial: true,
+    weeklySalesGoal: null,
+    dailySalesGoal: null,
+    verdict: "incomplete_volume",
+    priority: "data",
+  },
+  discountSimulationBase: {
+    ...validProductV3Snapshot.discountSimulationBase,
+    unitCostCents: 5000,
+    partial: true,
+  },
+};
+
+const validProductionV4Snapshot = {
+  ...validProductionV3Snapshot,
+  schemaVersion: 3,
+  calculationVersion: 3,
+  contentVersion: 4,
+  inputs: {
+    ...validProductionV3Snapshot.inputs,
+    monthlySalesVolume: null,
+  },
+  results: {
+    ...validProductionV3Snapshot.results,
+    fixedAllocationCents: null,
+    totalUnitCostCents: null,
+    unitProfitCents: null,
+    monthlySalesVolumeUsed: null,
+    monthlyGrossRevenueCents: null,
+    monthlyNetRevenueCents: null,
+    monthlyResultCents: null,
+    realMarginBasisPoints: null,
+    priceReferencesPartial: true,
+    weeklySalesGoal: null,
+    dailySalesGoal: null,
+    verdict: "incomplete_volume",
+    priority: "data",
+  },
+  discountSimulationBase: {
+    ...validProductionV3Snapshot.discountSimulationBase,
+    unitCostCents: 5000,
+    partial: true,
+  },
+};
+
 const validServiceV4Snapshot = {
   ...validServiceV3Snapshot,
   contentVersion: 4,
@@ -626,14 +690,17 @@ describe("category-versioned report snapshots", () => {
   });
 
   it("parses the current Product content version without dropping V1/V2", () => {
-    expect(parseCurrentProductReportSnapshot(validProductV3Snapshot)).toEqual(
-      validProductV3Snapshot,
+    expect(parseCurrentProductReportSnapshot(validProductV4Snapshot)).toEqual(
+      validProductV4Snapshot,
     );
     expect(parseProductReportSnapshot(validProductV2Snapshot)).toEqual(
       validProductV2Snapshot,
     );
     expect(parseReportSnapshot(validProductV3Snapshot)).toEqual(
       validProductV3Snapshot,
+    );
+    expect(parseReportSnapshot(validProductV4Snapshot)).toEqual(
+      validProductV4Snapshot,
     );
   });
 
@@ -683,13 +750,16 @@ describe("category-versioned report snapshots", () => {
 
   it("parses the current Production content version without dropping V1/V2", () => {
     expect(
-      parseCurrentProductionReportSnapshot(validProductionV3Snapshot),
-    ).toEqual(validProductionV3Snapshot);
+      parseCurrentProductionReportSnapshot(validProductionV4Snapshot),
+    ).toEqual(validProductionV4Snapshot);
     expect(parseProductionReportSnapshot(validProductionV2Snapshot)).toEqual(
       validProductionV2Snapshot,
     );
     expect(parseReportSnapshot(validProductionV3Snapshot)).toEqual(
       validProductionV3Snapshot,
+    );
+    expect(parseReportSnapshot(validProductionV4Snapshot)).toEqual(
+      validProductionV4Snapshot,
     );
   });
 

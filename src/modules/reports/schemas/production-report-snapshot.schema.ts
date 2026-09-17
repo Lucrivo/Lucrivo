@@ -30,6 +30,15 @@ const currentProductionReportVerdicts = [
   "tight_margin",
   "adequate_margin",
 ] as const;
+const productionV4Verdicts = [
+  "direct_loss",
+  "incomplete_volume",
+  "operational_loss",
+  "no_sales",
+  "break_even",
+  "tight_margin",
+  "adequate_margin",
+] as const;
 
 const productionReportPolicySchema = z.strictObject({
   targetMarginBasisPoints: z.literal(2000),
@@ -53,6 +62,9 @@ const productionReportInputsSchema = z.strictObject({
   proLaboreCents: nonNegativeSafeIntegerSchema,
   taxRateBasisPoints: z.number().int().min(0).max(10_000),
   cardFeeRateBasisPoints: z.number().int().min(0).max(10_000),
+});
+const productionReportInputsV4Schema = productionReportInputsSchema.extend({
+  monthlySalesVolume: z.number().int().min(0).max(2_147_483_647).nullable(),
 });
 
 const productionReportResultsSchema = z.strictObject({
@@ -339,6 +351,14 @@ const currentProductionReportResultsSchema = z.strictObject({
   verdict: z.enum(currentProductionReportVerdicts),
   priority: z.enum(productionReportPriorities),
 });
+const productionReportResultsV4Schema =
+  currentProductionReportResultsSchema.extend({
+    monthlySalesVolumeUsed: nonNegativeSafeIntegerSchema.nullable(),
+    monthlyGrossRevenueCents: nonNegativeSafeIntegerSchema.nullable(),
+    monthlyNetRevenueCents: safeIntegerSchema.nullable(),
+    monthlyResultCents: safeIntegerSchema.nullable(),
+    verdict: z.enum(productionV4Verdicts),
+  });
 const currentProductionReportDiscountSimulationBaseSchema = z.strictObject({
   originalPriceCents: positiveSafeIntegerSchema,
   unitCostCents: positiveSafeIntegerSchema,
@@ -509,10 +529,197 @@ const productionReportSnapshotV3Schema = z
           message: "A ordem das seções deve ser preservada.",
         });
   });
+const productionReportSnapshotV4Schema = z
+  .strictObject({
+    schemaVersion: z.literal(3),
+    calculationVersion: z.literal(3),
+    contentVersion: z.literal(4),
+    category: z.literal("production"),
+    scenario: z.literal("manufacturing"),
+    currency: z.literal("BRL"),
+    unit: z.literal("unit"),
+    policy: currentProductionReportPolicySchema,
+    inputs: productionReportInputsV4Schema,
+    results: productionReportResultsV4Schema,
+    executiveSummary: reportExecutiveSummarySchema,
+    sections: z.array(reportSectionSchema).length(reportSectionKeys.length),
+    discountSimulationBase: currentProductionReportDiscountSimulationBaseSchema,
+  })
+  .superRefine((snapshot, context) => {
+    const { inputs, policy, results, discountSimulationBase } = snapshot;
+    const unknownVolume = inputs.monthlySalesVolume === null;
+    const zeroVolume = inputs.monthlySalesVolume === 0;
+    const components = [
+      ["materialUnitCostCents", inputs.materialUnitCostCents],
+      ["packagingUnitCostCents", inputs.packagingUnitCostCents],
+      ["directLaborUnitCostCents", inputs.directLaborUnitCostCents],
+      ["otherVariableUnitCostCents", inputs.otherVariableUnitCostCents],
+    ] as const;
+    for (const [field, value] of components)
+      if (
+        (inputs.costCompositionEnabled && value === null) ||
+        (!inputs.costCompositionEnabled && value !== null)
+      )
+        context.addIssue({
+          code: "custom",
+          path: ["inputs", field],
+          message: "O componente não corresponde ao modo de custo.",
+        });
+    if (
+      inputs.costCompositionEnabled &&
+      components.every(([, value]) => value !== null) &&
+      components.reduce(
+        (total, [, value]) => total + BigInt(value ?? 0),
+        BigInt(0),
+      ) !== BigInt(inputs.productionUnitCostCents)
+    )
+      context.addIssue({
+        code: "custom",
+        path: ["inputs", "productionUnitCostCents"],
+        message: "O custo de fabricação deve ser a soma dos componentes.",
+      });
+    const nullableMonthlyFields = [
+      results.monthlySalesVolumeUsed,
+      results.monthlyGrossRevenueCents,
+      results.monthlyNetRevenueCents,
+      results.monthlyResultCents,
+      results.realMarginBasisPoints,
+    ];
+    if (unknownVolume && nullableMonthlyFields.some((value) => value !== null))
+      context.addIssue({
+        code: "custom",
+        path: ["results", "monthlyResultCents"],
+        message: "Resultados mensais devem ser nulos sem volume informado.",
+      });
+    if (
+      !unknownVolume &&
+      [
+        results.monthlySalesVolumeUsed,
+        results.monthlyGrossRevenueCents,
+        results.monthlyNetRevenueCents,
+        results.monthlyResultCents,
+      ].some((value) => value === null)
+    )
+      context.addIssue({
+        code: "custom",
+        path: ["results", "monthlyResultCents"],
+        message: "Resultados mensais devem existir com volume informado.",
+      });
+    if (
+      results.monthlySalesVolumeUsed !== inputs.monthlySalesVolume ||
+      (zeroVolume && results.realMarginBasisPoints !== null) ||
+      (!unknownVolume && !zeroVolume && results.realMarginBasisPoints === null)
+    )
+      context.addIssue({
+        code: "custom",
+        path: ["results", "monthlySalesVolumeUsed"],
+        message: "Os resultados mensais devem corresponder ao volume.",
+      });
+    for (const [field, value] of [
+      ["fixedAllocationCents", results.fixedAllocationCents],
+      ["totalUnitCostCents", results.totalUnitCostCents],
+      ["unitProfitCents", results.unitProfitCents],
+    ] as const)
+      if (
+        ((unknownVolume || zeroVolume) && value !== null) ||
+        (!unknownVolume && !zeroVolume && value === null)
+      )
+        context.addIssue({
+          code: "custom",
+          path: ["results", field],
+          message: "O campo deve corresponder à quantidade usada.",
+        });
+    if (
+      (unknownVolume &&
+        (results.weeklySalesGoal !== null ||
+          results.dailySalesGoal !== null)) ||
+      results.priceReferencesPartial !== unknownVolume
+    )
+      context.addIssue({
+        code: "custom",
+        path: ["results", "priceReferencesPartial"],
+        message: "O indicador parcial não corresponde ao volume original.",
+      });
+    if (
+      inputs.proLaboreIncluded !== inputs.proLaboreCents > 0 ||
+      policy.proLaboreIncluded !== inputs.proLaboreIncluded
+    )
+      context.addIssue({
+        code: "custom",
+        path: ["inputs", "proLaboreCents"],
+        message: "O valor mensal deve corresponder à seleção.",
+      });
+    if (
+      results.productionUnitCostCents !== inputs.productionUnitCostCents ||
+      results.currentPriceCents !== inputs.unitSalePriceCents
+    )
+      context.addIssue({
+        code: "custom",
+        path: ["results", "currentPriceCents"],
+        message: "Preço e custo devem corresponder às entradas.",
+      });
+    const checks = [
+      [
+        "originalPriceCents",
+        discountSimulationBase.originalPriceCents,
+        results.currentPriceCents,
+      ],
+      [
+        "unitCostCents",
+        discountSimulationBase.unitCostCents,
+        results.totalUnitCostCents ?? results.productionUnitCostCents,
+      ],
+      [
+        "totalFeeBasisPoints",
+        discountSimulationBase.totalFeeBasisPoints,
+        results.totalFeeBasisPoints,
+      ],
+      [
+        "attentionBandBasisPoints",
+        discountSimulationBase.attentionBandBasisPoints,
+        policy.attentionBandBasisPoints,
+      ],
+      [
+        "minimumPriceCents",
+        discountSimulationBase.minimumPriceCents,
+        results.minimumPriceCents,
+      ],
+      ["partial", discountSimulationBase.partial, unknownVolume],
+    ] as const;
+    for (const [field, actual, expected] of checks)
+      if (actual !== expected)
+        context.addIssue({
+          code: "custom",
+          path: ["discountSimulationBase", field],
+          message: "A base do simulador deve corresponder ao diagnóstico.",
+        });
+    for (const [index, key] of reportExecutiveSummaryFactKeys.entries())
+      if (snapshot.executiveSummary.facts[index]?.key !== key)
+        context.addIssue({
+          code: "custom",
+          path: ["executiveSummary", "facts", index, "key"],
+          message: "A ordem dos fatos deve ser preservada.",
+        });
+    for (const [index, key] of reportExecutiveSummaryAnswerKeys.entries())
+      if (snapshot.executiveSummary.answers[index]?.key !== key)
+        context.addIssue({
+          code: "custom",
+          path: ["executiveSummary", "answers", index, "key"],
+          message: "A ordem das respostas deve ser preservada.",
+        });
+    for (const [index, key] of reportSectionKeys.entries())
+      if (snapshot.sections[index]?.key !== key)
+        context.addIssue({
+          code: "custom",
+          path: ["sections", index, "key"],
+          message: "A ordem das seções deve ser preservada.",
+        });
+  });
 const productionReportSnapshotSchema = z.union([
   productionReportSnapshotV1Schema,
   productionReportSnapshotV2Schema,
   productionReportSnapshotV3Schema,
+  productionReportSnapshotV4Schema,
 ]);
 
 type ProductionReportDiscountSimulationBase = z.infer<
@@ -527,8 +734,11 @@ type ProductionReportSnapshotV2 = z.infer<
 type ProductionReportSnapshotV3 = z.infer<
   typeof productionReportSnapshotV3Schema
 >;
+type ProductionReportSnapshotV4 = z.infer<
+  typeof productionReportSnapshotV4Schema
+>;
 type ProductionReportSnapshot = z.infer<typeof productionReportSnapshotSchema>;
-type CurrentProductionReportSnapshot = ProductionReportSnapshotV3;
+type CurrentProductionReportSnapshot = ProductionReportSnapshotV4;
 
 function parseProductionReportSnapshot(
   value: unknown,
@@ -539,7 +749,7 @@ function parseProductionReportSnapshot(
 function parseCurrentProductionReportSnapshot(
   value: unknown,
 ): CurrentProductionReportSnapshot {
-  return productionReportSnapshotV3Schema.parse(value);
+  return productionReportSnapshotV4Schema.parse(value);
 }
 
 export {
@@ -553,10 +763,12 @@ export {
   productionReportSnapshotV1Schema,
   productionReportSnapshotV2Schema,
   productionReportSnapshotV3Schema,
+  productionReportSnapshotV4Schema,
   type CurrentProductionReportSnapshot,
   type ProductionReportDiscountSimulationBase,
   type ProductionReportSnapshot,
   type ProductionReportSnapshotV1,
   type ProductionReportSnapshotV2,
   type ProductionReportSnapshotV3,
+  type ProductionReportSnapshotV4,
 };

@@ -33,19 +33,23 @@ describe("buildProductExecutiveSummary", () => {
     ).toBe(label);
   });
 
-  it("explains the zero-sales month without calling a future sale profit", () => {
+  it("keeps an unknown-volume month partial and neutral", () => {
     const summary = buildProductExecutiveSummary(
       calculateProductReport({ ...command, monthlySalesVolume: null }),
     );
     expect(summary.facts[0]).toEqual(
       expect.objectContaining({
         currentLabel: "Resultado do mês",
-        currentValue: "-R$ 3.000,00",
-        referenceValue: "Sem vendas para calcular",
+        currentValue: "Ainda não calculado",
+        referenceValue: "Ainda não calculado",
       }),
     );
-    expect(summary.answers[0].answer).toContain("sem vendas");
-    expect(summary.answers[0].answer).toContain("Uma futura venda deixa");
+    expect(summary.verdict).toMatchObject({
+      label: "Falta informar as vendas",
+      tone: "neutral",
+    });
+    expect(summary.priority.body).toContain("Informe");
+    expect(summary.answers[0].answer).toContain("Ainda não é possível");
     expect(summary.answers[1].question).toBe("Meu preço paga tudo?");
   });
 

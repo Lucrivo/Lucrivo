@@ -123,9 +123,12 @@ function getReportLanguageProfile(
 ): ReportLanguageProfile {
   if (
     (snapshot.category === "product" || snapshot.category === "production") &&
-    snapshot.schemaVersion === 2 &&
-    snapshot.calculationVersion === 2 &&
-    snapshot.contentVersion === 3
+    ((snapshot.schemaVersion === 2 &&
+      snapshot.calculationVersion === 2 &&
+      snapshot.contentVersion === 3) ||
+      (snapshot.schemaVersion === 3 &&
+        snapshot.calculationVersion === 3 &&
+        snapshot.contentVersion === 4))
   ) {
     return currentUnitReportLanguage;
   }

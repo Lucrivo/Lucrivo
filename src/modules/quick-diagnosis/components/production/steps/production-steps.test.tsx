@@ -217,7 +217,7 @@ describe("Production diagnosis steps", () => {
     );
     expect(
       screen.getByText(
-        /Se você já vende este item, informe a média mensal.*Digite 0.*deixe em branco.*resultado será parcial/is,
+        /Se você já vende este item, informe a média mensal[\s\S]*Digite 0[\s\S]*deixe em branco[\s\S]*resultado será parcial/i,
       ),
     ).toBeVisible();
     expect(screen.getByText("Opcional")).toBeVisible();

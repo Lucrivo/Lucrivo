@@ -260,7 +260,7 @@ describe("toReportViewModel", () => {
     ).toEqual([
       { label: "Preço atual", value: "R$ 100,00" },
       { label: "Menor preço sem prejuízo", value: "R$ 86,96" },
-      { label: "Quanto sobra a cada R$ 100", value: "R$ 12,00" },
+      { label: "Quanto sobra a cada R$ 100", value: "12%" },
       { label: "Resultado do mês", value: "R$ 1.200,00" },
       { label: "Vendas necessárias no mês", value: "72 vendas" },
     ]);
@@ -282,9 +282,9 @@ describe("toReportViewModel", () => {
       },
       {
         label: "Quanto sobra a cada R$ 100",
-        value: "Sem vendas para calcular",
+        value: "Ainda não calculado",
       },
-      { label: "Resultado do mês", value: "-R$ 3.000,00" },
+      { label: "Resultado do mês", value: "Ainda não calculado" },
       { label: "Vendas necessárias no mês", value: "72 vendas" },
     ]);
   });
@@ -305,7 +305,7 @@ describe("toReportViewModel", () => {
     ).toEqual([
       { label: "Preço atual", value: "R$ 100,00" },
       { label: "Menor preço sem prejuízo", value: "R$ 86,96" },
-      { label: "Quanto sobra a cada R$ 100", value: "R$ 12,00" },
+      { label: "Quanto sobra a cada R$ 100", value: "12%" },
       { label: "Resultado do mês", value: "R$ 1.200,00" },
       { label: "Vendas necessárias no mês", value: "72 unidades" },
     ]);
@@ -331,9 +331,9 @@ describe("toReportViewModel", () => {
       },
       {
         label: "Quanto sobra a cada R$ 100",
-        value: "Sem vendas para calcular",
+        value: "Ainda não calculado",
       },
-      { label: "Resultado do mês", value: "-R$ 3.000,00" },
+      { label: "Resultado do mês", value: "Ainda não calculado" },
       { label: "Vendas necessárias no mês", value: "72 unidades" },
     ]);
   });

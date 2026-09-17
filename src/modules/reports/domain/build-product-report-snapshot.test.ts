@@ -24,13 +24,13 @@ function build(input: ProductDiagnosisCommand) {
 }
 
 describe("buildProductReportSnapshot", () => {
-  it("builds and parses the Product 2/2/3 contract", () => {
+  it("builds and parses the Product 3/3/4 contract", () => {
     const snapshot = build(command);
     expect(snapshot).toEqual(
       expect.objectContaining({
-        schemaVersion: 2,
-        calculationVersion: 2,
-        contentVersion: 3,
+        schemaVersion: 3,
+        calculationVersion: 3,
+        contentVersion: 4,
         scenario: "resale",
       }),
     );
@@ -53,7 +53,7 @@ describe("buildProductReportSnapshot", () => {
 
   it.each([
     [{ unitSalePriceCents: 5000, monthlySalesVolume: null }, "direct_loss"],
-    [{ monthlySalesVolume: null }, "operational_loss"],
+    [{ monthlySalesVolume: null }, "incomplete_volume"],
     [
       {
         monthlySalesVolume: null,
@@ -61,7 +61,7 @@ describe("buildProductReportSnapshot", () => {
         proLaboreIncluded: false,
         proLaboreCents: 0,
       },
-      "no_sales",
+      "incomplete_volume",
     ],
     [{ monthlySalesVolume: 10 }, "operational_loss"],
     [{ fixedMonthlyExpensesCents: 220000 }, "break_even"],
@@ -82,6 +82,7 @@ describe("buildProductReportSnapshot", () => {
       expect(snapshot.executiveSummary.verdict.label).toBe(
         {
           direct_loss: "Prejuízo por venda",
+          incomplete_volume: "Falta informar as vendas",
           operational_loss: "Prejuízo no mês",
           no_sales: "Sem vendas no mês",
           break_even: "No limite",
@@ -119,7 +120,17 @@ describe("buildProductReportSnapshot", () => {
     });
     expect(snapshot.scenario).toBe("digital");
     expect(snapshot.inputs.monthlySalesVolume).toBeNull();
-    expect(snapshot.results.monthlySalesVolumeUsed).toBe(0);
+    expect(snapshot.results.monthlySalesVolumeUsed).toBeNull();
+    expect(
+      snapshot.sections.find(({ key }) => key === "margin_diagnosis"),
+    ).toMatchObject({
+      emphasisLabel: "Resultado mensal",
+      emphasisValue: "Ainda não calculado",
+      tone: "neutral",
+    });
+    const salesGoal = snapshot.sections.find(({ key }) => key === "sales_goal");
+    expect(salesGoal?.body).toContain("esta meta é apenas uma referência");
+    expect(salesGoal?.body).not.toMatch(/por semana|por dia/);
     expect(content).toContain("custo por venda");
     expect(content).not.toMatch(/fornecedor|custo de compra|fabricação/i);
     expect(content).not.toMatch(

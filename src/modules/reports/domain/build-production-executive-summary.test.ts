@@ -53,4 +53,20 @@ describe("buildProductionExecutiveSummary", () => {
       /ponto de equilíbrio|pró-labore|alíquota|rateio|receita líquida|margem de contribuição|preço-alvo|custo operacional|meta de 20%|margem ideal/i,
     );
   });
+
+  it("keeps an unknown-volume month partial and neutral", () => {
+    const summary = buildProductionExecutiveSummary(
+      calculateProductionReport({ ...command, monthlySalesVolume: null }),
+    );
+
+    expect(summary.verdict).toMatchObject({
+      label: "Falta informar as vendas",
+      tone: "neutral",
+    });
+    expect(summary.priority.body).toContain("Informe");
+    expect(summary.facts[0]).toMatchObject({
+      currentValue: "Ainda não calculado",
+      referenceValue: "Ainda não calculado",
+    });
+  });
 });
