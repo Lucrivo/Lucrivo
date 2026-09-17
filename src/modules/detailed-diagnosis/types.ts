@@ -117,14 +117,63 @@ type DetailedItemCalculation = {
   directLoss: boolean;
 };
 
+type DetailedDiagnosisVerdict =
+  | "direct_loss"
+  | "incomplete_volume"
+  | "no_sales"
+  | "operational_loss"
+  | "break_even"
+  | "tight_margin"
+  | "adequate_margin";
+
+type DetailedDiagnosisPriority =
+  | "cost"
+  | "data"
+  | "price"
+  | "margin"
+  | "volume";
+
+type DetailedDiagnosisCalculation = {
+  effectiveFixedCostCents: number;
+  isPartial: boolean;
+  missingVolumeItemIds: string[];
+  items: DetailedItemCalculation[];
+  monthlyGrossRevenueCents: number | null;
+  monthlyContributionCents: number | null;
+  monthlyResultCents: number | null;
+  mixContributionMarginBasisPoints: number | null;
+  finalMarginBasisPoints: number | null;
+  breakEvenRevenueCents: number | null;
+  verdict: DetailedDiagnosisVerdict;
+  priority: DetailedDiagnosisPriority;
+};
+
+type DetailedGuidance = {
+  key:
+    | "missing_volume"
+    | "direct_loss"
+    | "concentration"
+    | "best_unit_contribution"
+    | "high_volume_low_margin"
+    | "business_result";
+  tone: "neutral" | "positive" | "warning" | "critical";
+  title: string;
+  body: string;
+  itemIds: string[];
+};
+
 type DetailedDiagnosisFieldErrors = Record<string, string[]>;
 
 export {
   type DetailedDiagnosisCategory,
+  type DetailedDiagnosisCalculation,
   type DetailedDiagnosisCommand,
   type DetailedDiagnosisFieldErrors,
   type DetailedDiagnosisInput,
   type DetailedDiagnosisItem,
+  type DetailedDiagnosisPriority,
+  type DetailedDiagnosisVerdict,
+  type DetailedGuidance,
   type DetailedIngredient,
   type DetailedIngredientInput,
   type DetailedItemBase,
