@@ -89,6 +89,8 @@ type DetailedTechnicalSheetProductionItem = DetailedItemBase & {
 type DetailedProductionItem =
   DetailedSummarizedProductionItem | DetailedTechnicalSheetProductionItem;
 
+type DetailedDiagnosisItem = DetailedProductItem | DetailedProductionItem;
+
 type DetailedDiagnosisCommand = {
   submissionId: string;
   category: DetailedDiagnosisCategory;
@@ -98,7 +100,21 @@ type DetailedDiagnosisCommand = {
   taxRateBasisPoints: number;
   cardFeeRateBasisPoints: number;
   promotionMarginBasisPoints: number;
-  items: Array<DetailedProductItem | DetailedProductionItem>;
+  items: DetailedDiagnosisItem[];
+};
+
+type DetailedItemCalculation = {
+  itemId: string;
+  variableUnitCostCents: number;
+  feeAmountCents: number;
+  netUnitRevenueCents: number;
+  unitContributionCents: number;
+  contributionMarginBasisPoints: number | null;
+  monthlyGrossRevenueCents: number | null;
+  monthlyContributionCents: number | null;
+  breakEvenUnitPriceCents: number | null;
+  promotionFloorCents: number | null;
+  directLoss: boolean;
 };
 
 type DetailedDiagnosisFieldErrors = Record<string, string[]>;
@@ -108,10 +124,12 @@ export {
   type DetailedDiagnosisCommand,
   type DetailedDiagnosisFieldErrors,
   type DetailedDiagnosisInput,
+  type DetailedDiagnosisItem,
   type DetailedIngredient,
   type DetailedIngredientInput,
   type DetailedItemBase,
   type DetailedItemBaseInput,
+  type DetailedItemCalculation,
   type DetailedProductItem,
   type DetailedProductItemInput,
   type DetailedProductionCostMode,
