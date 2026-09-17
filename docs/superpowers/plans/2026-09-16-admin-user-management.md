@@ -21,7 +21,7 @@
 - User-facing copy is Portuguese; calendar dates display in `America/Sao_Paulo`.
 - Create migration filenames using `pnpm exec supabase migration new <name>`; never hand-invent a timestamp. Run tests against the local database before regenerating `database.types.ts`.
 - Before the first Supabase change, review `https://supabase.com/changelog.md` for relevant breaking changes and the current Auth/RLS/RPC documentation.
-- Discover supported CLI flags with `pnpm exec supabase <group> <command> --help`; confirm a local reset cannot discard valuable data before running it.
+- Discover supported CLI flags with `pnpm exec supabase <group> <command> --help`. The existing local database contains user, diagnosis and contract data: do not run `db reset`. Apply pending migrations with `pnpm exec supabase migration up --local` and require every pgTAP fixture to run inside `begin; ... rollback;`.
 
 ## File map and task boundaries
 
@@ -74,7 +74,7 @@ create table private.admin_user_events (
 );
 ```
 
-- [ ] **Step 4: Apply locally and rerun tests.** After confirming local data is disposable, run `pnpm exec supabase db reset --local`, then the pgTAP file; expect pass. Review grants with `information_schema.table_privileges` and verify RLS is enabled on any exposed table.
+- [ ] **Step 4: Apply locally and rerun tests.** Run `pnpm exec supabase migration up --local`, then the pgTAP file; expect pass. Confirm the existing user/diagnosis/contract counts are unchanged. Review grants with `information_schema.table_privileges` and verify RLS is enabled on any exposed table.
 - [ ] **Step 5: Commit only this checkpoint.** Stage the CLI-generated migration and test, then `git commit -m "feat: add audited admin user state"`.
 
 ### Task 2: Enforce eligibility and complimentary report access
@@ -114,7 +114,7 @@ const { data: eligible, error: eligibilityError } =
 if (eligibilityError || eligible !== true) throw new AccountUnavailableError();
 ```
 
-Run `pnpm exec supabase db reset --local`, targeted pgTAP and Vitest. Review service-role report reads to confirm all entrypoints still call `requireUser` first.
+Run `pnpm exec supabase migration up --local`, targeted pgTAP and Vitest. Confirm the existing data counts are unchanged. Review service-role report reads to confirm all entrypoints still call `requireUser` first.
 - [ ] **Step 5: Commit.** `git commit -m "feat: enforce managed account eligibility"`.
 
 ### Task 3: Admin list and detail read RPCs
@@ -134,7 +134,7 @@ end if;
 ```
 
 Validate filter enums and clamp `p_limit` to 1–50. Use `(created_at,id) < (cursor_created_at,cursor_id)` and fetch `limit + 1`; return `{items,nextCursor}` with an opaque cursor payload built from exact sort keys. For child items with heterogeneous IDs, use a per-kind typed cursor rather than unsafe text-to-UUID coercion. The list projection contains only ID, email, dates, state, effective access label, current contract summary, diagnosis count and action eligibility. The detail and child RPCs omit secrets and raw snapshots. Add indexes after checking local `EXPLAIN` on filter/search and child queries; avoid unbounded auth-admin `listUsers` loops.
-- [ ] **Step 4: Reset and rerun tests.** `pnpm exec supabase db reset --local` and targeted pgTAP. Check the actual query plan for email search; if substring search requires it, use a reviewed `pg_trgm` GIN expression index instead of full scanning at scale.
+- [ ] **Step 4: Apply and rerun tests.** `pnpm exec supabase migration up --local` and targeted pgTAP. Check the actual query plan for email search; if substring search requires it, use a reviewed `pg_trgm` GIN expression index instead of full scanning at scale.
 - [ ] **Step 5: Commit.** `git commit -m "feat: expose guarded admin user projections"`.
 
 ### Task 4: Atomic admin mutations
@@ -160,7 +160,7 @@ if p_action in ('blocked','soft_deleted') and exists (
 ```
 
 Add a `before insert or update` trigger on `billing_contracts` when a valid paid interval becomes active. It locks the same `auth.users` row and rejects activation if account state is blocked/deleted, leaving the webhook event retryable and visible for operational resolution. This prevents an activation from racing past the admin check; test both transaction orders. Return typed conflicts rather than arbitrary SQL errors for normal stale-state cases.
-- [ ] **Step 4: Reset and rerun tests.** Include advisor/security checks and verify that a failed audit insert rolls back the state change.
+- [ ] **Step 4: Apply and rerun tests.** Use `pnpm exec supabase migration up --local`; include advisor/security checks and verify that a failed audit insert rolls back the state change.
 - [ ] **Step 5: Commit.** `git commit -m "feat: add audited admin user actions"`.
 
 ### Task 5: Typed server boundary and URLs
@@ -252,7 +252,7 @@ return <AdminUserDetail user={user} tab={tab} items={items} />;
 select is((select count(*) from public.billing_payments where contract_id = '95000000-0000-4000-8000-000000000001'::uuid), 1::bigint, 'soft delete retains payment history');
 ```
 
-- [ ] **Step 2: Run the full local DB and app checks.** `pnpm exec supabase db reset --local`, `pnpm exec supabase test db --local`, `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm build`. Resolve failures rather than reporting unverified success.
+- [ ] **Step 2: Run the full local DB and app checks.** `pnpm exec supabase migration up --local`, `pnpm exec supabase test db --local`, `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm build`. Recheck existing local data counts and resolve failures rather than reporting unverified success.
 - [ ] **Step 3: Review security and query plans.** Run `pnpm supabase:lint` and `pnpm supabase:advisors`; inspect grants, RLS and `EXPLAIN (ANALYZE, BUFFERS)` for list filters/cursors. Confirm no new `NEXT_PUBLIC_` secret or service-role browser import. Compare every item in the spec with a test or a manual check.
 - [ ] **Step 4: Inspect responsive UI.** Check list/detail at narrow and desktop widths in light/dark themes, including no horizontal overflow, visible focus, menu layering and action confirmations. Record any environment limitation accurately.
 - [ ] **Step 5: Document and commit.** Add the operational rules to the runbook and commit verified fixes/documentation with `git commit -m "test: verify admin user management"`.
