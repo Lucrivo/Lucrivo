@@ -33,10 +33,13 @@ export default async function PrivateLayout({
   const email =
     typeof data.claims.email === "string" ? data.claims.email : "Sua conta";
 
+  const { data: isAdminUser } = await supabase.rpc("current_user_is_admin");
+
   return (
     <AppShell
       email={email}
       sidebarVariant="financial"
+      isAdminUser={isAdminUser === true}
       contextTitle="Área financeira"
       contextDescription="Acompanhe e organize suas decisões em um só lugar."
     >

@@ -224,4 +224,20 @@ describe("AppSidebar", () => {
       screen.getByRole("link", { name: "Assinaturas" }),
     ).not.toHaveAttribute("data-active", "true");
   });
+
+  it("shows the administrative shortcut to admin users in the financial area", () => {
+    render(<AppSidebar isAdminUser />);
+
+    expect(
+      screen.getByRole("link", { name: "Área administrativa" }),
+    ).toHaveAttribute("href", "/admin");
+  });
+
+  it("hides the administrative shortcut from regular users", () => {
+    render(<AppSidebar />);
+
+    expect(
+      screen.queryByRole("link", { name: "Área administrativa" }),
+    ).not.toBeInTheDocument();
+  });
 });

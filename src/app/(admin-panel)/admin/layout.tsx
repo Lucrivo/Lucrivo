@@ -35,6 +35,7 @@ export default async function AdminLayout({
     <AppShell
       email={state.identity.email}
       sidebarVariant="admin"
+      isAdminUser
       contextTitle="Administração"
       contextDescription="Acompanhe o funcionamento do Lucrivo."
     >

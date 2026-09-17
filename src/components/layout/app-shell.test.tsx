@@ -2,8 +2,16 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/layout/app-sidebar", () => ({
-  AppSidebar: ({ variant }: { variant: string }) => (
-    <aside>sidebar:{variant}</aside>
+  AppSidebar: ({
+    variant,
+    isAdminUser,
+  }: {
+    variant: string;
+    isAdminUser: boolean;
+  }) => (
+    <aside>
+      sidebar:{variant}:{String(isAdminUser)}
+    </aside>
   ),
 }));
 
@@ -45,6 +53,7 @@ describe("AppShell", () => {
       <AppShell
         email="admin@example.com"
         sidebarVariant="admin"
+        isAdminUser
         contextTitle="Administração"
         contextDescription="Acompanhe o funcionamento do Lucrivo."
       >
@@ -52,7 +61,7 @@ describe("AppShell", () => {
       </AppShell>,
     );
 
-    expect(screen.getByText("sidebar:admin")).toBeVisible();
+    expect(screen.getByText("sidebar:admin:true")).toBeVisible();
     expect(screen.getByText("Administração")).toBeVisible();
     expect(
       screen.getByText("Acompanhe o funcionamento do Lucrivo."),

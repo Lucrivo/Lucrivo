@@ -29,13 +29,15 @@ vi.mock("@/components/layout/app-shell", () => ({
     children,
     email,
     sidebarVariant,
+    isAdminUser,
   }: {
     children: React.ReactNode;
     email: string;
     sidebarVariant: string;
+    isAdminUser: boolean;
   }) => (
     <div>
-      shell:{sidebarVariant}:{email}
+      shell:{sidebarVariant}:{email}:{String(isAdminUser)}
       {children}
     </div>
   ),
@@ -79,7 +81,9 @@ describe("AdminLayout", () => {
     getAdminRouteState.mockResolvedValue({ status: "authorized", identity });
     render(await AdminLayout({ children: <div>secret-child</div> }));
     expect(requireAdmin).toHaveBeenCalledOnce();
-    expect(screen.getByText(/shell:admin:admin@example\.com/)).toBeVisible();
+    expect(
+      screen.getByText(/shell:admin:admin@example\.com:true/),
+    ).toBeVisible();
     expect(screen.getByText("secret-child")).toBeVisible();
   });
 

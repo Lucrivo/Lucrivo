@@ -117,10 +117,10 @@ Keep the existing `StepField`, change its label to `Quantas unidades você vende
     <span className="text-muted-foreground text-xs font-medium">Opcional</span>
   </div>
   <p className="text-muted-foreground text-sm leading-6">
-    Se você já vende este item, informe a média mensal. Digite 0 se não
-    vendeu nenhuma unidade. Se ainda não sabe ou quer descobrir quanto
-    precisa vender, deixe em branco — o resultado será parcial e a meta
-    aparecerá apenas como referência.
+    Se você já vende este item, informe a média mensal. Digite 0 se não vendeu
+    nenhuma unidade. Se ainda não sabe ou quer descobrir quanto precisa vender,
+    deixe em branco — o resultado será parcial e a meta aparecerá apenas como
+    referência.
   </p>
 </div>
 ```
@@ -396,17 +396,19 @@ expect(summary.verdict).toMatchObject({
   tone: "neutral",
 });
 expect(summary.priority).toContain("informe");
-expect(snapshot.sections.find((section) => section.key === "margin_diagnosis")).toMatchObject({
+expect(
+  snapshot.sections.find((section) => section.key === "margin_diagnosis"),
+).toMatchObject({
   emphasisLabel: "Resultado mensal",
   emphasisValue: "Ainda não calculado",
   tone: "neutral",
 });
-expect(snapshot.sections.find((section) => section.key === "sales_goal")?.body).toContain(
-  "esta meta é apenas uma referência",
-);
-expect(snapshot.sections.find((section) => section.key === "sales_goal")?.body).not.toMatch(
-  /por semana|por dia/,
-);
+expect(
+  snapshot.sections.find((section) => section.key === "sales_goal")?.body,
+).toContain("esta meta é apenas uma referência");
+expect(
+  snapshot.sections.find((section) => section.key === "sales_goal")?.body,
+).not.toMatch(/por semana|por dia/);
 ```
 
 - [ ] **Step 5: Implement explicit partial sections and summaries**
@@ -664,7 +666,12 @@ expect(parse(validProductInput).items[0]).toMatchObject({
   monthlySalesVolume: null,
   purchaseUnitCostCents: 0,
 });
-expect(parse({ ...validProductInput, items: [{ ...product, monthlySalesVolume: "0" }] }).items[0].monthlySalesVolume).toBe(0);
+expect(
+  parse({
+    ...validProductInput,
+    items: [{ ...product, monthlySalesVolume: "0" }],
+  }).items[0].monthlySalesVolume,
+).toBe(0);
 expect(parse(validTechnicalSheetInput).items[0]).toMatchObject({
   kind: "manufacturing",
   costMode: "technical_sheet",
@@ -781,38 +788,41 @@ Use `BigInt` and the existing integer helpers. The technical-sheet core is:
 const ingredientTotalTenThousandths = item.ingredients.reduce(
   (sum, ingredient) =>
     sum +
-    divideRound(
-      BigInt(ingredient.quantityMillionths) *
-        BigInt(ingredient.unitCostTenThousandths),
-      1_000_000n,
+    BigInt(
+      roundDivide(
+        BigInt(ingredient.quantityMillionths) *
+          BigInt(ingredient.unitCostTenThousandths),
+        1_000_000n,
+      ),
     ),
   0n,
 );
 
-const sellableIngredientUnitTenThousandths = divideRound(
-  ingredientTotalTenThousandths * 10_000n,
-  BigInt(item.recipeYield) * BigInt(10_000 - item.lossRateBasisPoints),
+const sellableIngredientUnitTenThousandths = BigInt(
+  roundDivide(
+    ingredientTotalTenThousandths * 10_000n,
+    BigInt(item.recipeYield) * BigInt(10_000 - item.lossRateBasisPoints),
+  ),
 );
-const ingredientUnitCents = divideRound(
+const ingredientUnitCents = roundDivide(
   sellableIngredientUnitTenThousandths,
   100n,
 );
 ```
 
-If the repository helper is named `roundDivide`, use that exact helper rather than adding a duplicate. Add packaging, direct labor, and other variable cents only in `technical_sheet`; summarized mode uses only `productionUnitCostCents`.
+Add packaging, direct labor, and other variable cents only in `technical_sheet`; summarized mode uses only `productionUnitCostCents`.
 
 - [ ] **Step 5: Implement fees, contribution, nullable monthly totals, and floors**
 
 Use:
 
 ```ts
-netUnitRevenue = round(price * (10_000 - tax - card) / 10_000)
-unitContribution = netUnitRevenue - variableUnitCost
-breakEvenPrice = ceil(variableUnitCost * 10_000 / (10_000 - tax - card))
+netUnitRevenue = round((price * (10_000 - tax - card)) / 10_000);
+unitContribution = netUnitRevenue - variableUnitCost;
+breakEvenPrice = ceil((variableUnitCost * 10_000) / (10_000 - tax - card));
 promotionFloor = ceil(
-  variableUnitCost * 10_000 /
-    (10_000 - tax - card - promotionMargin)
-)
+  (variableUnitCost * 10_000) / (10_000 - tax - card - promotionMargin),
+);
 ```
 
 Return `null` for non-positive denominators. Monthly gross/contribution values remain `null` for unknown volume and become zero for explicit zero.
@@ -964,7 +974,7 @@ git commit -m "feat: aggregate detailed diagnosis mix"
 **Interfaces:**
 
 - Consumes: detailed command, calculation, and guidance from Tasks 5–7.
-- Produces: `DetailedReportSnapshotV1`, `CurrentDetailedReportSnapshot`, `parseDetailedReportSnapshot`, and `buildDetailedReportSnapshot` with exact versions `1/1/1` and `analysisMode: "detailed"`.
+- Produces: `DetailedReportSnapshotV1`, `CurrentDetailedReportSnapshot`, `parseDetailedReportSnapshot`, `isDetailedReportSnapshot`, and `buildDetailedReportSnapshot` with exact versions `1/1/1` and `analysisMode: "detailed"`.
 
 - [ ] **Step 1: Add a failing complete and partial snapshot fixture**
 
@@ -1036,6 +1046,16 @@ function parseReportSnapshot(value: unknown): ReportSnapshot {
 ```
 
 Keep the exported `reportSnapshotSchema` as a union for type inference and tests.
+
+Export this type guard for the report route:
+
+```ts
+function isDetailedReportSnapshot(
+  snapshot: ReportSnapshot,
+): snapshot is CurrentDetailedReportSnapshot {
+  return "analysisMode" in snapshot && snapshot.analysisMode === "detailed";
+}
+```
 
 - [ ] **Step 5: Implement the pure snapshot builder**
 
@@ -1121,11 +1141,15 @@ alter column current_price_cents drop not null;
 Add checks for `analysis_mode in ('quick', 'detailed')`, `unit in ('hour', 'appointment', 'unit', 'mix')`, non-negative monthly gross revenue/item count, and row shape:
 
 ```sql
-(analysis_mode = 'quick' and current_price_cents is not null and unit <> 'mix')
+(analysis_mode = 'quick' and current_price_cents is not null and unit <> 'mix'
+ and monthly_gross_revenue_cents is null and monthly_result_cents is null
+ and item_count is null and is_partial is null)
 or
 (analysis_mode = 'detailed' and current_price_cents is null and unit = 'mix'
  and item_count > 0 and is_partial is not null)
 ```
+
+Drop and recreate `diagnoses_current_price_check` so it permits null only in the detailed branch while still requiring non-negative quick prices.
 
 Do not backfill or rewrite report snapshots.
 
@@ -1180,7 +1204,7 @@ Expected: all pgTAP tests and lint pass; generated types include new tables, col
 
 - [ ] **Step 7: Add failing service mapping tests**
 
-Assert `toDetailedRpcArgs(command, snapshot)` passes source-normalized ordered items, nullable aggregate summaries, exact versions, and snapshot JSON. Assert RPC limit error maps to `limit_reached`, malformed IDs map to `create_failed`, and a positive integer ID succeeds.
+Assert `toDetailedRpcArgs(command, snapshot)` passes ordered persistence items that merge normalized source fields from `command.items` with authoritative calculated fields from `snapshot.results.items`, plus nullable aggregate summaries, exact versions, and snapshot JSON. Assert RPC limit error maps to `limit_reached`, malformed IDs map to `create_failed`, and a positive integer ID succeeds.
 
 - [ ] **Step 8: Implement `createDetailedReport`**
 
@@ -1198,7 +1222,7 @@ async function createDetailedReport(input: {
 }): Promise<CreateDetailedReportResult>;
 ```
 
-Serialize only normalized command data in `p_items`; never serialize raw browser strings.
+Implement `toDetailedPersistenceItems(command, snapshot)` by joining on stable item UUID and ingredient UUID. Serialize that normalized source-plus-result structure in `p_items`; never serialize raw browser strings or client-calculated totals.
 
 - [ ] **Step 9: Run service and SQL tests**
 
@@ -1568,7 +1592,9 @@ Extend the root union:
 
 ```ts
 type ActiveDiagnosisBranch =
-  | ExistingBranches
+  | { type: "service"; state: ServiceWizardState }
+  | { type: "product"; state: ProductWizardState }
+  | { type: "production"; state: ProductionWizardState }
   | {
       type: "detailed";
       category: "product" | "production";
@@ -1649,9 +1675,20 @@ Extend selected fields and expected mapping:
 
 ```ts
 type OwnedReportSummary = {
-  // existing identity/version fields
+  id: number;
+  businessCategory: Database["public"]["Enums"]["business_category"];
+  scenario: string;
+  createdAt: string;
   analysisMode: "quick" | "detailed";
   currentPriceCents: number | null;
+  realMarginBasisPoints: number | null;
+  unitProfitCents: number | null;
+  verdict: string;
+  priority: string;
+  unit: string;
+  schemaVersion: ReportSnapshot["schemaVersion"];
+  calculationVersion: ReportSnapshot["calculationVersion"];
+  contentVersion: ReportSnapshot["contentVersion"];
   monthlyGrossRevenueCents: number | null;
   monthlyResultCents: number | null;
   itemCount: number | null;
@@ -1703,16 +1740,16 @@ Use semantic headings and definition lists. The item breakdown orders by monthly
 
 - [ ] **Step 8: Dispatch by snapshot analysis mode in the route**
 
-Use a type guard:
+Use the `isDetailedReportSnapshot` type guard from Task 8:
 
 ```ts
-if (result.report.snapshot.analysisMode === "detailed") {
+if (isDetailedReportSnapshot(result.report.snapshot)) {
   return <DetailedReportDetail {...result.report} />;
 }
 return <ReportDetail viewModel={toReportViewModel(result.report)} />;
 ```
 
-Narrow with an `isDetailedReportSnapshot` helper if TypeScript requires it; do not add detailed conditionals throughout the quick presenter.
+Do not add detailed conditionals throughout the quick presenter.
 
 - [ ] **Step 9: Run report tests**
 
@@ -1820,4 +1857,3 @@ git commit -m "docs: document detailed diagnosis behavior"
 ```
 
 If verification required code corrections, stage those exact correction files with their nearest owning task instead of hiding them in the documentation commit.
-
