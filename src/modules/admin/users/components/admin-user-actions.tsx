@@ -123,7 +123,7 @@ function AdminUserActions({
             render={
               <Button
                 variant="ghost"
-                size="icon-sm"
+                size="icon-lg"
                 aria-label={`Ações para ${user.email}`}
               />
             }

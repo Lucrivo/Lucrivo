@@ -43,6 +43,10 @@ describe("admin user list", () => {
     expect(
       screen.getAllByRole("button", { name: "Ações para cliente@example.com" }),
     ).toHaveLength(2);
+    const mobileLink = screen.getAllByRole("link", {
+      name: "Ver usuário cliente@example.com",
+    })[1];
+    expect(mobileLink.closest("li")).toHaveClass("min-w-0", "overflow-hidden");
     expect(screen.getByRole("link", { name: "Próxima" })).toHaveAttribute(
       "href",
       expect.stringContaining("cursor="),

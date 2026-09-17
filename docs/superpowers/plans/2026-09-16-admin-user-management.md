@@ -126,9 +126,9 @@ Run `pnpm exec supabase migration up --local`, targeted pgTAP and Vitest. Confir
 
 **Interfaces:** Produce `public.list_admin_users_v1(p_query text,p_state text,p_access text,p_cursor_created_at timestamptz,p_cursor_id uuid,p_limit integer) returns jsonb`, `public.get_admin_user_v1(p_user_id uuid) returns jsonb`, and `public.list_admin_user_items_v1(p_user_id uuid,p_kind text,p_cursor_created_at timestamptz,p_cursor_id text,p_limit integer) returns jsonb`. `p_kind` is `diagnoses`, `subscriptions`, or `history`; each item projection is explicit.
 
-- [ ] **Step 1: Write failing pgTAP tests.** Assert anon, ordinary user and admin at `aal1` cannot execute; admin at `aal2` can. Assert admin self-exclusion, case-insensitive email search, account/access filters, stable `(created_at,id)` ordering, cursor continuation without duplicates, capped page size, no raw report snapshots/provider IDs, 404-like null for absent user, and excluded-user detail visibility. Follow the JWT/role fixture pattern in `supabase/tests/admin_dashboard.test.sql`.
-- [ ] **Step 2: Run the test and confirm failure.** `pnpm exec supabase test db supabase/tests/admin_user_reads.test.sql --local`.
-- [ ] **Step 3: Implement bounded projections.** CLI-create migration. Each RPC starts:
+- [x] **Step 1: Write failing pgTAP tests.** Assert anon, ordinary user and admin at `aal1` cannot execute; admin at `aal2` can. Assert admin self-exclusion, case-insensitive email search, account/access filters, stable `(created_at,id)` ordering, cursor continuation without duplicates, capped page size, no raw report snapshots/provider IDs, 404-like null for absent user, and excluded-user detail visibility. Follow the JWT/role fixture pattern in `supabase/tests/admin_dashboard.test.sql`.
+- [x] **Step 2: Run the test and confirm failure.** `pnpm exec supabase test db supabase/tests/admin_user_reads.test.sql --local`.
+- [x] **Step 3: Implement bounded projections.** CLI-create migration. Each RPC starts:
 
 ```sql
 if not coalesce((select private.has_admin_access()), false) then
@@ -138,8 +138,8 @@ end if;
 
 Validate filter enums and clamp `p_limit` to 1–50. Use `(created_at,id) < (cursor_created_at,cursor_id)` and fetch `limit + 1`; return `{items,nextCursor}` with an opaque cursor payload built from exact sort keys. For child items with heterogeneous IDs, use a per-kind typed cursor rather than unsafe text-to-UUID coercion. The list projection contains only ID, email, dates, state, effective access label, current contract summary, diagnosis count and action eligibility. The detail and child RPCs omit secrets and raw snapshots. Add indexes after checking local `EXPLAIN` on filter/search and child queries; avoid unbounded auth-admin `listUsers` loops.
 
-- [ ] **Step 4: Apply and rerun tests.** `pnpm exec supabase migration up --local` and targeted pgTAP. Check the actual query plan for email search; if substring search requires it, use a reviewed `pg_trgm` GIN expression index instead of full scanning at scale.
-- [ ] **Step 5: Commit.** `git commit -m "feat: expose guarded admin user projections"`.
+- [x] **Step 4: Apply and rerun tests.** `pnpm exec supabase migration up --local` and targeted pgTAP. Check the actual query plan for email search; if substring search requires it, use a reviewed `pg_trgm` GIN expression index instead of full scanning at scale.
+- [x] **Step 5: Commit.** `git commit -m "feat: expose guarded admin user projections"`.
 
 ### Task 4: Atomic admin mutations
 
@@ -147,9 +147,9 @@ Validate filter enums and clamp `p_limit` to 1–50. Use `(created_at,id) < (cur
 
 **Interfaces:** Produce `public.change_admin_user_v1(p_user_id uuid,p_action text,p_reason text,p_courtesy_expires_at timestamptz,p_expected_version bigint) returns jsonb`. Result is `{status:'updated'|'conflict'|'paid_conflict'|'not_found', version, state}`. Actions are the six audit event types from Task 1.
 
-- [ ] **Step 1: Write failing pgTAP tests.** Test MFA and privilege denial, malformed reason/action/expiry, admin self-target, stale version, duplicate action, paid-block and paid-delete conflicts, restoration of prior blocked state, existing-session eligibility, and exactly one audit row per successful change. Use two transaction sessions or a deterministic lock test for concurrent paid activation, not timing sleeps.
-- [ ] **Step 2: Run test and confirm failure.** `pnpm exec supabase test db supabase/tests/admin_user_mutations.test.sql --local`.
-- [ ] **Step 3: Implement the RPC.** CLI-create migration with `security definer`, empty `search_path`, explicit `revoke execute ... from public, anon, service_role`, and `grant execute ... to authenticated`. Validate AAL2 first, lock the target Auth row and state row, compare `version`, recheck active paid interval, apply one state update, and append one audit row in the same transaction. Use `statement_timestamp()` consistently. Core flow:
+- [x] **Step 1: Write failing pgTAP tests.** Test MFA and privilege denial, malformed reason/action/expiry, admin self-target, stale version, duplicate action, paid-block and paid-delete conflicts, restoration of prior blocked state, existing-session eligibility, and exactly one audit row per successful change. Use two transaction sessions or a deterministic lock test for concurrent paid activation, not timing sleeps.
+- [x] **Step 2: Run test and confirm failure.** `pnpm exec supabase test db supabase/tests/admin_user_mutations.test.sql --local`.
+- [x] **Step 3: Implement the RPC.** CLI-create migration with `security definer`, empty `search_path`, explicit `revoke execute ... from public, anon, service_role`, and `grant execute ... to authenticated`. Validate AAL2 first, lock the target Auth row and state row, compare `version`, recheck active paid interval, apply one state update, and append one audit row in the same transaction. Use `statement_timestamp()` consistently. Core flow:
 
 ```sql
 perform 1 from auth.users where id = p_user_id for update;
@@ -165,8 +165,8 @@ if p_action in ('blocked','soft_deleted') and exists (
 
 Add a `before insert or update` trigger on `billing_contracts` when a valid paid interval becomes active. It locks the same `auth.users` row and rejects activation if account state is blocked/deleted, leaving the webhook event retryable and visible for operational resolution. This prevents an activation from racing past the admin check; test both transaction orders. Return typed conflicts rather than arbitrary SQL errors for normal stale-state cases.
 
-- [ ] **Step 4: Apply and rerun tests.** Use `pnpm exec supabase migration up --local`; include advisor/security checks and verify that a failed audit insert rolls back the state change.
-- [ ] **Step 5: Commit.** `git commit -m "feat: add audited admin user actions"`.
+- [x] **Step 4: Apply and rerun tests.** Use `pnpm exec supabase migration up --local`; include advisor/security checks and verify that a failed audit insert rolls back the state change.
+- [x] **Step 5: Commit.** `git commit -m "feat: add audited admin user actions"`.
 
 ### Task 5: Typed server boundary and URLs
 
@@ -174,7 +174,7 @@ Add a `before insert or update` trigger on `billing_contracts` when a valid paid
 
 **Interfaces:** `getAdminUsers(filters): Promise<AdminUserListViewModel>`, `getAdminUser(userId): Promise<AdminUserDetailViewModel|null>`, `getAdminUserItems(userId,kind,cursor): Promise<AdminUserItemsViewModel>`, `changeAdminUser(input): Promise<AdminUserActionResult>`. URL helpers validate `q`, `state`, `access`, `cursor`, `tab` and preserve search context without arbitrary redirect URLs.
 
-- [ ] **Step 1: Write failing schema/service/action tests.** Reject malformed RPC JSON, invalid UUID, out-of-range limit, unknown tab/action and overlong reason. Verify `requireAdmin` runs before every RPC; a failed read is never mapped to an empty list. Verify action success revalidates `/admin/users` and `/admin/users/{id}`. Example:
+- [x] **Step 1: Write failing schema/service/action tests.** Reject malformed RPC JSON, invalid UUID, out-of-range limit, unknown tab/action and overlong reason. Verify `requireAdmin` runs before every RPC; a failed read is never mapped to an empty list. Verify action success revalidates `/admin/users` and `/admin/users/{id}`. Example:
 
 ```ts
 expect(() => adminUserListSchema.parse({ items: [{ id: "bad" }] })).toThrow();
@@ -184,8 +184,8 @@ expect(requireAdmin.mock.invocationCallOrder[0]).toBeLessThan(
 expect(revalidatePath).toHaveBeenCalledWith("/admin/users");
 ```
 
-- [ ] **Step 2: Run targeted Vitest; expect failure.** `pnpm vitest run src/modules/admin/users`.
-- [ ] **Step 3: Implement schemas/services/action.** Zod schemas match the exact RPC JSON keys. Services call `requireAdmin()`, use its request-scoped client, throw `AdminUsersUnavailableError` on DB/parse failure, and map timestamp/currency/status copy in `pt-BR`. The server action validates FormData, invokes `change_admin_user_v1`, maps status codes to user-facing errors, and calls `revalidatePath` only on `updated`:
+- [x] **Step 2: Run targeted Vitest; expect failure.** `pnpm vitest run src/modules/admin/users`.
+- [x] **Step 3: Implement schemas/services/action.** Zod schemas match the exact RPC JSON keys. Services call `requireAdmin()`, use its request-scoped client, throw `AdminUsersUnavailableError` on DB/parse failure, and map timestamp/currency/status copy in `pt-BR`. The server action validates FormData, invokes `change_admin_user_v1`, maps status codes to user-facing errors, and calls `revalidatePath` only on `updated`:
 
 ```ts
 const { supabase } = await requireAdmin();
@@ -196,8 +196,8 @@ return adminUserListSchema.parse(data);
 
 Run `pnpm exec supabase types gen typescript --local --schema public` through the repository's `pnpm supabase:types` script and inspect the diff; do not hand-edit generated types.
 
-- [ ] **Step 4: Run tests and typecheck.** `pnpm vitest run src/modules/admin/users` and `pnpm typecheck`.
-- [ ] **Step 5: Commit.** `git commit -m "feat: add typed admin user services"`.
+- [x] **Step 4: Run tests and typecheck.** `pnpm vitest run src/modules/admin/users` and `pnpm typecheck`.
+- [x] **Step 5: Commit.** `git commit -m "feat: add typed admin user services"`.
 
 ### Task 6: Responsive user list and accessible menu
 
@@ -205,9 +205,9 @@ Run `pnpm exec supabase types gen typescript --local --schema public` through th
 
 **Interfaces:** Page consumes parsed search params and `getAdminUsers`. `AdminUserList` receives a serializable view model and filter URLs. Row actions take a user ID, status and list-context URL; they do not own data fetching.
 
-- [ ] **Step 1: Write failing UI tests.** Assert real table columns, mobile card equivalents, search/filter controls, next/previous links, empty and error states, one row detail link, a separate menu button, permanent chevron, keyboard focus and no `Editar` item. Clicking the menu must not invoke row navigation. Replace the old scaffold assertion for `/admin/users` only.
-- [ ] **Step 2: Run tests; expect failure.** `pnpm vitest run src/modules/admin/users/components/admin-user-list.test.tsx src/app/'(admin-panel)'/admin/pages.test.tsx`.
-- [ ] **Step 3: Implement UI.** Reuse `Table`, `Card`, `Badge`, `DropdownMenu`, `Pagination`, `Input` and existing admin tokens; use a responsive card list on narrow screens. Make one semantic anchor stretch the visual row while its action button has its own stacking context; the anchor and menu each need visible focus. Page shape:
+- [x] **Step 1: Write failing UI tests.** Assert real table columns, mobile card equivalents, search/filter controls, next/previous links, empty and error states, one row detail link, a separate menu button, permanent chevron, keyboard focus and no `Editar` item. Clicking the menu must not invoke row navigation. Replace the old scaffold assertion for `/admin/users` only.
+- [x] **Step 2: Run tests; expect failure.** `pnpm vitest run src/modules/admin/users/components/admin-user-list.test.tsx src/app/'(admin-panel)'/admin/pages.test.tsx`.
+- [x] **Step 3: Implement UI.** Reuse `Table`, `Card`, `Badge`, `DropdownMenu`, `Pagination`, `Input` and existing admin tokens; use a responsive card list on narrow screens. Make one semantic anchor stretch the visual row while its action button has its own stacking context; the anchor and menu each need visible focus. Page shape:
 
 ```tsx
 export default async function AdminUsersPage({
@@ -224,8 +224,8 @@ export default async function AdminUsersPage({
 
 Filter controls submit GET parameters and reset the cursor. Use status/help text to explain paid conflicts rather than hiding actions.
 
-- [ ] **Step 4: Run UI tests and typecheck.** Verify desktop and narrow widths if a browser is available.
-- [ ] **Step 5: Commit.** `git commit -m "feat: build admin user list"`.
+- [x] **Step 4: Run UI tests and typecheck.** Verify desktop and narrow widths if a browser is available.
+- [x] **Step 5: Commit.** `git commit -m "feat: build admin user list"`.
 
 ### Task 7: Detail page, tabs, history and action dialogs
 
@@ -233,7 +233,7 @@ Filter controls submit GET parameters and reset the cursor. Use status/help text
 
 **Interfaces:** Detail page validates UUID, tab and cursors, calls read services, returns `notFound()` for missing user. URL tab values are `profile`, `diagnoses`, `subscription`, `history`. Dialog calls `changeAdminUser` with `expectedVersion` and current reason/expiry.
 
-- [ ] **Step 1: Write failing tests.** Assert breadcrumb/back link, URL-addressable tabs, real Auth fields only, paginated diagnosis/contract/history rows, no raw report/provider payloads, blocked/excluded status, paid-conflict message, reason/expiry validation, confirmation, success/error feedback, focus restoration and direct `/admin/users/{id}?tab=history` navigation. Example:
+- [x] **Step 1: Write failing tests.** Assert breadcrumb/back link, URL-addressable tabs, real Auth fields only, paginated diagnosis/contract/history rows, no raw report/provider payloads, blocked/excluded status, paid-conflict message, reason/expiry validation, confirmation, success/error feedback, focus restoration and direct `/admin/users/{id}?tab=history` navigation. Example:
 
 ```tsx
 expect(screen.getByRole("tab", { name: "Histórico" })).toHaveAttribute(
@@ -246,8 +246,8 @@ expect(screen.getByRole("link", { name: /voltar.*usuários/i })).toHaveAttribute
 );
 ```
 
-- [ ] **Step 2: Run tests; expect failure.** `pnpm vitest run src/modules/admin/users/components/admin-user-detail.test.tsx src/app/'(admin-panel)'/admin/users/'[userId]'/page.test.tsx`.
-- [ ] **Step 3: Implement detail and actions.** Use existing Tabs, Breadcrumb, AlertDialog/Dialog and form components. Show diagnoses metadata only; render billing history from projected data; render audit actions with actor/date/reason and explicit registration/last-login facts. Menu shortcuts link to `?tab=history` and `?tab=subscription`. Confirmation dialog always sends `expectedVersion`; on conflict, show a refresh message, never optimistic success. The route loader calls:
+- [x] **Step 2: Run tests; expect failure.** `pnpm vitest run src/modules/admin/users/components/admin-user-detail.test.tsx src/app/'(admin-panel)'/admin/users/'[userId]'/page.test.tsx`.
+- [x] **Step 3: Implement detail and actions.** Use existing Tabs, Breadcrumb, AlertDialog/Dialog and form components. Show diagnoses metadata only; render billing history from projected data; render audit actions with actor/date/reason and explicit registration/last-login facts. Menu shortcuts link to `?tab=history` and `?tab=subscription`. Confirmation dialog always sends `expectedVersion`; on conflict, show a refresh message, never optimistic success. The route loader calls:
 
 ```tsx
 const user = await getAdminUser(userId);
@@ -259,8 +259,8 @@ const items =
 return <AdminUserDetail user={user} tab={tab} items={items} />;
 ```
 
-- [ ] **Step 4: Run tests and accessibility checks.** Confirm tab/menu keyboard traversal and focus recovery; run `pnpm typecheck`.
-- [ ] **Step 5: Commit.** `git commit -m "feat: build admin user detail and actions"`.
+- [x] **Step 4: Run tests and accessibility checks.** Confirm tab/menu keyboard traversal and focus recovery; run `pnpm typecheck`.
+- [x] **Step 5: Commit.** `git commit -m "feat: build admin user detail and actions"`.
 
 ### Task 8: Cross-route verification and release audit
 
@@ -268,13 +268,13 @@ return <AdminUserDetail user={user} tab={tab} items={items} />;
 
 **Interfaces:** No new public API. The deliverable is a verified feature with documented distinction between suspension, soft delete and privacy erasure.
 
-- [ ] **Step 1: Write and run an integration regression.** Exercise admin `aal2` listing/action, ordinary-user denial, admin `aal1` denial, paid conflict, complimentary report entitlement, blocked old-session denial, restoration, and preserved payment data. Add a test fixture that asserts:
+- [x] **Step 1: Write and run an integration regression.** Exercise admin `aal2` listing/action, ordinary-user denial, admin `aal1` denial, paid conflict, complimentary report entitlement, blocked old-session denial, restoration, and preserved payment data. Add a test fixture that asserts:
 
 ```sql
 select is((select count(*) from public.billing_payments where contract_id = '95000000-0000-4000-8000-000000000001'::uuid), 1::bigint, 'soft delete retains payment history');
 ```
 
-- [ ] **Step 2: Run the full local DB and app checks.** `pnpm exec supabase migration up --local`, `pnpm exec supabase test db --local`, `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm build`. Recheck existing local data counts and resolve failures rather than reporting unverified success.
-- [ ] **Step 3: Review security and query plans.** Run `pnpm supabase:lint` and `pnpm supabase:advisors`; inspect grants, RLS and `EXPLAIN (ANALYZE, BUFFERS)` for list filters/cursors. Confirm no new `NEXT_PUBLIC_` secret or service-role browser import. Compare every item in the spec with a test or a manual check.
-- [ ] **Step 4: Inspect responsive UI.** Check list/detail at narrow and desktop widths in light/dark themes, including no horizontal overflow, visible focus, menu layering and action confirmations. Record any environment limitation accurately.
-- [ ] **Step 5: Document and commit.** Add the operational rules to the runbook and commit verified fixes/documentation with `git commit -m "test: verify admin user management"`.
+- [x] **Step 2: Run the full local DB and app checks.** `pnpm exec supabase migration up --local`, `pnpm exec supabase test db --local`, `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm build`. Recheck existing local data counts and resolve failures rather than reporting unverified success.
+- [x] **Step 3: Review security and query plans.** Run `pnpm supabase:lint` and `pnpm supabase:advisors`; inspect grants, RLS and `EXPLAIN (ANALYZE, BUFFERS)` for list filters/cursors. Confirm no new `NEXT_PUBLIC_` secret or service-role browser import. Compare every item in the spec with a test or a manual check.
+- [x] **Step 4: Inspect responsive UI.** Check list/detail at narrow and desktop widths in light/dark themes, including no horizontal overflow, visible focus, menu layering and action confirmations. Record any environment limitation accurately.
+- [x] **Step 5: Document and commit.** Add the operational rules to the runbook and commit verified fixes/documentation with `git commit -m "test: verify admin user management"`.

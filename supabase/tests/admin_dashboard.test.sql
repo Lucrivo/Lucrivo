@@ -50,6 +50,11 @@ select ok(
 );
 
 delete from private.app_administrator;
+alter table private.admin_user_events
+  disable trigger admin_user_events_reject_changes;
+truncate table private.admin_user_events, private.admin_user_state;
+alter table private.admin_user_events
+  enable trigger admin_user_events_reject_changes;
 delete from auth.users;
 
 create temporary table dashboard_test_clock as

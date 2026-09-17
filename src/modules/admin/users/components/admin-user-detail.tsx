@@ -81,7 +81,9 @@ function Field({
   return (
     <div className="grid gap-1 border-b py-3 last:border-0 sm:grid-cols-[12rem_1fr] sm:gap-4">
       <dt className="text-muted-foreground text-sm">{label}</dt>
-      <dd className="min-w-0 text-sm font-medium break-words">{children}</dd>
+      <dd className="min-w-0 text-sm font-medium [overflow-wrap:anywhere]">
+        {children}
+      </dd>
     </div>
   );
 }
@@ -153,7 +155,7 @@ function AdminUserDetail({
       <header className="space-y-4">
         <Link
           href={back}
-          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm underline-offset-4 hover:underline focus-visible:outline-2"
+          className="text-muted-foreground hover:text-foreground inline-flex min-h-11 items-center gap-2 text-sm underline-offset-4 hover:underline focus-visible:outline-2"
         >
           <ArrowLeftIcon className="size-4" /> Voltar para usuários
         </Link>
@@ -164,10 +166,12 @@ function AdminUserDetail({
               <ChevronRightIcon className="inline size-3" aria-hidden="true" />{" "}
               Detalhe
             </p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight break-words sm:text-3xl">
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight [overflow-wrap:anywhere] sm:text-3xl">
               {user.email}
             </h1>
-            <p className="text-muted-foreground mt-2 text-sm">ID: {user.id}</p>
+            <p className="text-muted-foreground mt-2 text-sm [overflow-wrap:anywhere]">
+              ID: {user.id}
+            </p>
           </div>
           <AdminUserActions user={user} listContext={back} />
         </div>
@@ -183,7 +187,7 @@ function AdminUserDetail({
             href={tabUrl(entry.value)}
             role="tab"
             aria-selected={tab === entry.value}
-            className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 ${tab === entry.value ? "bg-primary text-primary-foreground" : "bg-muted/50 hover:bg-muted"}`}
+            className={`inline-flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 ${tab === entry.value ? "bg-primary text-primary-foreground" : "bg-muted/50 hover:bg-muted"}`}
           >
             {entry.label}
           </Link>

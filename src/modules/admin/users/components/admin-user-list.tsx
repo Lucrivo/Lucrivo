@@ -124,7 +124,7 @@ function AdminUserList({
           Encontre contas, acompanhe acesso e gerencie alterações com histórico.
         </p>
       </header>
-      <Card className="border-border/70 rounded-2xl shadow-sm">
+      <Card className="border-border/70 min-w-0 rounded-2xl shadow-sm">
         <CardHeader className="gap-4">
           <div>
             <CardTitle>
@@ -137,9 +137,9 @@ function AdminUserList({
           <form
             action="/admin/users"
             method="get"
-            className="grid gap-3 md:grid-cols-[minmax(12rem,1fr)_12rem_12rem_auto] md:items-end"
+            className="grid gap-3 sm:grid-cols-2 sm:items-end xl:grid-cols-[minmax(12rem,1fr)_minmax(10rem,12rem)_minmax(10rem,12rem)_auto]"
           >
-            <label className="grid gap-1.5 text-sm font-medium">
+            <label className="grid min-w-0 gap-1.5 text-sm font-medium sm:col-span-2 xl:col-span-1">
               Buscar por e-mail
               <Input
                 name="q"
@@ -149,12 +149,12 @@ function AdminUserList({
                 placeholder="nome@exemplo.com"
               />
             </label>
-            <label className="grid gap-1.5 text-sm font-medium">
+            <label className="grid min-w-0 gap-1.5 text-sm font-medium">
               Estado da conta
               <select
                 name="state"
                 defaultValue={filters.state}
-                className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+                className="border-input bg-background h-10 min-w-0 rounded-md border px-3 text-sm"
               >
                 <option value="current">Ativos e bloqueados</option>
                 <option value="active">Ativos</option>
@@ -163,12 +163,12 @@ function AdminUserList({
                 <option value="all">Todos</option>
               </select>
             </label>
-            <label className="grid gap-1.5 text-sm font-medium">
+            <label className="grid min-w-0 gap-1.5 text-sm font-medium">
               Tipo de acesso
               <select
                 name="access"
                 defaultValue={filters.access}
-                className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+                className="border-input bg-background h-10 min-w-0 rounded-md border px-3 text-sm"
               >
                 <option value="all">Todos</option>
                 <option value="free">Gratuito</option>
@@ -176,12 +176,12 @@ function AdminUserList({
                 <option value="courtesy">Cortesia</option>
               </select>
             </label>
-            <Button type="submit">
+            <Button type="submit" className="sm:col-span-2 xl:col-span-1">
               <SearchIcon aria-hidden="true" /> Filtrar
             </Button>
           </form>
         </CardHeader>
-        <CardContent className="space-y-5">
+        <CardContent className="min-w-0 space-y-5">
           {data.items.length === 0 ? (
             <div className="bg-muted/20 grid min-h-48 place-items-center rounded-xl border border-dashed px-5 text-center">
               <div className="space-y-2">
@@ -197,17 +197,21 @@ function AdminUserList({
             </div>
           ) : (
             <>
-              <div className="hidden lg:block">
+              <div className="hidden min-w-0 min-[1400px]:block">
                 <Table aria-label="Usuários">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Usuário</TableHead>
                       <TableHead>Conta</TableHead>
                       <TableHead>Acesso</TableHead>
-                      <TableHead>Assinatura</TableHead>
+                      <TableHead className="hidden min-[1600px]:table-cell">
+                        Assinatura
+                      </TableHead>
                       <TableHead>Diagnósticos</TableHead>
                       <TableHead>Cadastro</TableHead>
-                      <TableHead>Último acesso</TableHead>
+                      <TableHead className="hidden min-[1600px]:table-cell">
+                        Último acesso
+                      </TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -217,10 +221,10 @@ function AdminUserList({
                         key={user.id}
                         className="group focus-within:bg-primary/5 hover:bg-primary/5 relative cursor-pointer"
                       >
-                        <TableCell className="font-medium">
+                        <TableCell className="max-w-72 font-medium">
                           <Link
                             href={detailUrl(user.id, context)}
-                            className="after:absolute after:inset-0 focus-visible:after:rounded-lg focus-visible:after:outline-2"
+                            className="block truncate after:absolute after:inset-0 focus-visible:after:rounded-lg focus-visible:after:outline-2"
                             aria-label={`Ver usuário ${user.email}`}
                           >
                             {user.email}
@@ -232,14 +236,16 @@ function AdminUserList({
                         <TableCell>
                           <AccessBadge user={user} />
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden max-w-56 truncate min-[1600px]:table-cell">
                           {user.subscription
                             ? `${user.subscription.billingMode === "monthly" ? "Mensal" : "Anual"} · ${formatDate(user.subscription.accessEndsAt)}`
                             : "—"}
                         </TableCell>
                         <TableCell>{user.diagnosisCount}</TableCell>
                         <TableCell>{formatDate(user.createdAt)}</TableCell>
-                        <TableCell>{formatDate(user.lastSignInAt)}</TableCell>
+                        <TableCell className="hidden min-[1600px]:table-cell">
+                          {formatDate(user.lastSignInAt)}
+                        </TableCell>
                         <TableCell className="relative z-10 text-right">
                           <div className="flex items-center justify-end gap-1">
                             <ChevronRightIcon
@@ -257,14 +263,14 @@ function AdminUserList({
                   </TableBody>
                 </Table>
               </div>
-              <ul className="grid gap-3 lg:hidden">
+              <ul className="grid min-w-0 gap-3 min-[1400px]:hidden">
                 {data.items.map((user) => (
                   <li
                     key={user.id}
-                    className="bg-muted/15 hover:bg-primary/5 focus-within:bg-primary/5 relative rounded-xl border p-4 transition-colors"
+                    className="bg-muted/15 hover:bg-primary/5 focus-within:bg-primary/5 relative min-w-0 overflow-hidden rounded-xl border p-4 transition-colors"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <Link
                           href={detailUrl(user.id, context)}
                           className="block truncate font-medium after:absolute after:inset-0 focus-visible:after:rounded-xl focus-visible:after:outline-2"
@@ -276,7 +282,7 @@ function AdminUserList({
                           Cadastro: {formatDate(user.createdAt)}
                         </p>
                       </div>
-                      <div className="relative z-10">
+                      <div className="relative z-10 shrink-0">
                         <AdminUserActions user={user} listContext={context} />
                       </div>
                     </div>
@@ -286,14 +292,16 @@ function AdminUserList({
                       <span className="text-muted-foreground text-xs">
                         {user.diagnosisCount} diagnósticos
                       </span>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-3">
+                      <p className="text-muted-foreground min-w-0 truncate text-xs">
+                        Último acesso: {formatDate(user.lastSignInAt)}
+                      </p>
                       <ChevronRightIcon
-                        className="text-muted-foreground ml-auto size-4"
+                        className="text-muted-foreground size-4 shrink-0"
                         aria-hidden="true"
                       />
                     </div>
-                    <p className="text-muted-foreground mt-2 text-xs">
-                      Último acesso: {formatDate(user.lastSignInAt)}
-                    </p>
                   </li>
                 ))}
               </ul>
@@ -301,12 +309,12 @@ function AdminUserList({
           )}
           <nav
             aria-label="Paginação de usuários"
-            className="flex items-center justify-between gap-3 border-t pt-4"
+            className="flex flex-col items-stretch gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between"
           >
             <span className="text-muted-foreground text-sm">
               {data.items.length} usuário(s) nesta página
             </span>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 sm:justify-end">
               {previous && (
                 <Link
                   href={previous}
