@@ -17,7 +17,7 @@ const monthlySalesVolumeSchema: z.ZodType<number | null, string> = z
 
     try {
       const volume = scaledInteger(value, 0);
-      if (volume < 1 || volume > POSTGRES_INTEGER_MAX) {
+      if (volume < 0 || volume > POSTGRES_INTEGER_MAX) {
         throw new Error("out_of_range");
       }
       return volume;

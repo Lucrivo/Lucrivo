@@ -164,9 +164,14 @@ describe("Product diagnosis steps", () => {
     rerender(
       <MonthlyVolumeStep values={values} errors={{}} onChange={onChange} />,
     );
-    expect(screen.getByText(/opcional/i)).toBeVisible();
     expect(
-      screen.getByLabelText("Quantas unidades você vende em um mês comum?"),
+      screen.getByText(
+        /Se você já vende este item, informe a média mensal.*Digite 0.*deixe em branco.*resultado será parcial/is,
+      ),
+    ).toBeVisible();
+    expect(screen.getByText("Opcional")).toBeVisible();
+    expect(
+      screen.getByLabelText("Quantas unidades você vende por mês?"),
     ).toHaveValue("");
   });
 
