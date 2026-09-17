@@ -51,7 +51,7 @@ describe("createProductReport", () => {
 
     expect(result).toEqual({ status: "success", diagnosisId: 42 });
     expect(rpc).toHaveBeenCalledOnce();
-    expect(rpc).toHaveBeenCalledWith("create_product_diagnosis_report_v2", {
+    expect(rpc).toHaveBeenCalledWith("create_product_diagnosis_report_v3", {
       p_submission_id: completeCommand.submissionId,
       p_product_kind: completeCommand.productKind,
       p_purchase_unit_cost_cents: completeCommand.purchaseUnitCostCents,
@@ -62,9 +62,9 @@ describe("createProductReport", () => {
       p_pro_labore_cents: completeCommand.proLaboreCents,
       p_tax_rate_basis_points: completeCommand.taxRateBasisPoints,
       p_card_fee_rate_basis_points: completeCommand.cardFeeRateBasisPoints,
-      p_schema_version: 2,
-      p_calculation_version: 2,
-      p_content_version: 3,
+      p_schema_version: 3,
+      p_calculation_version: 3,
+      p_content_version: 4,
       p_scenario: "resale",
       p_current_price_cents: snapshot.results.currentPriceCents,
       p_real_margin_basis_points: snapshot.results.realMarginBasisPoints,
@@ -85,13 +85,13 @@ describe("createProductReport", () => {
 
     expect(result).toEqual({ status: "success", diagnosisId: 42 });
     expect(rpc).toHaveBeenCalledWith(
-      "create_product_diagnosis_report_v2",
+      "create_product_diagnosis_report_v3",
       expect.objectContaining({
         p_product_kind: "resale",
         p_monthly_sales_volume: null,
         p_real_margin_basis_points: null,
         p_unit_profit_cents: null,
-        p_monthly_result_cents: snapshot.results.monthlyResultCents,
+        p_monthly_result_cents: null,
         p_report_snapshot: snapshot,
       }),
     );

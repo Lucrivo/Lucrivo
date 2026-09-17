@@ -20,16 +20,18 @@ type CreateProductReportResult =
   | { status: "success"; diagnosisId: number }
   | { status: "error"; error: "create_failed" | "limit_reached" };
 
-type GeneratedProductV2RpcArgs =
-  Database["public"]["Functions"]["create_product_diagnosis_report_v2"]["Args"];
+type GeneratedProductV3RpcArgs =
+  Database["public"]["Functions"]["create_product_diagnosis_report_v3"]["Args"];
 
 type ProductRpcArgs = Omit<
-  GeneratedProductV2RpcArgs,
+  GeneratedProductV3RpcArgs,
   | "p_monthly_sales_volume"
+  | "p_monthly_result_cents"
   | "p_real_margin_basis_points"
   | "p_unit_profit_cents"
 > & {
   p_monthly_sales_volume: number | null;
+  p_monthly_result_cents: number | null;
   p_real_margin_basis_points: number | null;
   p_unit_profit_cents: number | null;
 };
@@ -72,8 +74,8 @@ async function createProductReport({
   try {
     const rpcArgs = toProductRpcArgs(command, snapshot);
     const { data, error } = await supabase.rpc(
-      "create_product_diagnosis_report_v2",
-      rpcArgs as GeneratedProductV2RpcArgs,
+      "create_product_diagnosis_report_v3",
+      rpcArgs as GeneratedProductV3RpcArgs,
     );
 
     if (
