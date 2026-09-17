@@ -41,7 +41,7 @@ Each numbered task below ends at an independently testable checkpoint. Do not me
 
 **Interfaces:** Produce `private.admin_user_state(user_id, blocked_at, deleted_at, courtesy_expires_at, version, updated_at)`, `private.admin_user_events(id, user_id, actor_id, action, reason, before_state, after_state, created_at)`, and `private.account_is_eligible()` for the caller's own identity. No direct client access to either table.
 
-- [ ] **Step 1: Write failing pgTAP tests.** Assert private tables exist, `anon/authenticated/service_role` have no table access, and `private.account_is_eligible()` returns true with no state and false when blocked/deleted. Start with:
+- [x] **Step 1: Write failing pgTAP tests.** Assert private tables exist, `anon/authenticated/service_role` have no table access, and `private.account_is_eligible()` returns true with no state and false when blocked/deleted. Start with:
 
 ```sql
 select has_table('private', 'admin_user_state', 'account state exists');
@@ -50,8 +50,8 @@ select ok(not has_table_privilege('authenticated', 'private.admin_user_state', '
 select has_function('private', 'account_is_eligible', array[]::text[], 'eligibility helper exists');
 ```
 
-- [ ] **Step 2: Run the failing test.** `pnpm exec supabase test db supabase/tests/admin_user_state.test.sql --local`; expect missing tables/function.
-- [ ] **Step 3: Create a migration through the CLI and implement.** Run `pnpm exec supabase migration new admin_user_state`; edit the printed path. Use UUID FKs to `auth.users` with `on delete restrict`, `timestamptz`, `bigint generated always as identity` for event ID, reason length 1–500, action check constraint, state version for optimistic concurrency, and indexes on audit `(user_id, created_at desc, id desc)` and actor FK. Make audit append-only via privilege revocation and a trigger rejecting UPDATE/DELETE, including privileged accidental writes. Use explicit empty `search_path` in helper functions. The core schema shape is:
+- [x] **Step 2: Run the failing test.** `pnpm exec supabase test db supabase/tests/admin_user_state.test.sql --local`; expect missing tables/function.
+- [x] **Step 3: Create a migration through the CLI and implement.** Run `pnpm exec supabase migration new admin_user_state`; edit the printed path. Use UUID FKs to `auth.users` with `on delete restrict`, `timestamptz`, `bigint generated always as identity` for event ID, reason length 1–500, action check constraint, state version for optimistic concurrency, and indexes on audit `(user_id, created_at desc, id desc)` and actor FK. Make audit append-only via privilege revocation and a trigger rejecting UPDATE/DELETE, including privileged accidental writes. Use explicit empty `search_path` in helper functions. The core schema shape is:
 
 ```sql
 create table private.admin_user_state (
@@ -74,8 +74,8 @@ create table private.admin_user_events (
 );
 ```
 
-- [ ] **Step 4: Apply locally and rerun tests.** Run `pnpm exec supabase migration up --local`, then the pgTAP file; expect pass. Confirm the existing user/diagnosis/contract counts are unchanged. Review grants with `information_schema.table_privileges` and verify RLS is enabled on any exposed table.
-- [ ] **Step 5: Commit only this checkpoint.** Stage the CLI-generated migration and test, then `git commit -m "feat: add audited admin user state"`.
+- [x] **Step 4: Apply locally and rerun tests.** Run `pnpm exec supabase migration up --local`, then the pgTAP file; expect pass. Confirm the existing user/diagnosis/contract counts are unchanged. Review grants with `information_schema.table_privileges` and verify RLS is enabled on any exposed table.
+- [x] **Step 5: Commit only this checkpoint.** Stage the CLI-generated migration and test, then `git commit -m "feat: add audited admin user state"`.
 
 ### Task 2: Enforce eligibility and complimentary report access
 
