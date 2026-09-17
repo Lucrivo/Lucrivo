@@ -264,15 +264,221 @@ export type Database = {
         };
         Relationships: [];
       };
+      detailed_diagnoses: {
+        Row: {
+          card_fee_rate_basis_points: number;
+          category: Database["public"]["Enums"]["business_category"];
+          diagnosis_id: number;
+          fixed_monthly_expenses_cents: number;
+          item_count: number;
+          pro_labore_cents: number;
+          pro_labore_included: boolean;
+          promotion_margin_basis_points: number;
+          submission_id: string;
+          tax_rate_basis_points: number;
+          user_id: string;
+        };
+        Insert: {
+          card_fee_rate_basis_points: number;
+          category: Database["public"]["Enums"]["business_category"];
+          diagnosis_id: number;
+          fixed_monthly_expenses_cents: number;
+          item_count: number;
+          pro_labore_cents: number;
+          pro_labore_included: boolean;
+          promotion_margin_basis_points: number;
+          submission_id: string;
+          tax_rate_basis_points: number;
+          user_id: string;
+        };
+        Update: {
+          card_fee_rate_basis_points?: number;
+          category?: Database["public"]["Enums"]["business_category"];
+          diagnosis_id?: number;
+          fixed_monthly_expenses_cents?: number;
+          item_count?: number;
+          pro_labore_cents?: number;
+          pro_labore_included?: boolean;
+          promotion_margin_basis_points?: number;
+          submission_id?: string;
+          tax_rate_basis_points?: number;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "detailed_diagnoses_diagnosis_id_fkey";
+            columns: ["diagnosis_id"];
+            isOneToOne: true;
+            referencedRelation: "diagnoses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      detailed_diagnosis_ingredients: {
+        Row: {
+          client_ingredient_id: string;
+          client_item_id: string;
+          diagnosis_id: number;
+          id: number;
+          name: string;
+          position: number;
+          quantity_millionths: number;
+          submission_id: string;
+          unit: string;
+          unit_cost_ten_thousandths: number;
+          user_id: string;
+        };
+        Insert: {
+          client_ingredient_id: string;
+          client_item_id: string;
+          diagnosis_id: number;
+          id?: never;
+          name: string;
+          position: number;
+          quantity_millionths: number;
+          submission_id: string;
+          unit: string;
+          unit_cost_ten_thousandths: number;
+          user_id: string;
+        };
+        Update: {
+          client_ingredient_id?: string;
+          client_item_id?: string;
+          diagnosis_id?: number;
+          id?: never;
+          name?: string;
+          position?: number;
+          quantity_millionths?: number;
+          submission_id?: string;
+          unit?: string;
+          unit_cost_ten_thousandths?: number;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "detailed_diagnosis_ingredients_item_fkey";
+            columns: ["diagnosis_id", "client_item_id"];
+            isOneToOne: false;
+            referencedRelation: "detailed_diagnosis_items";
+            referencedColumns: ["diagnosis_id", "client_item_id"];
+          },
+        ];
+      };
+      detailed_diagnosis_items: {
+        Row: {
+          break_even_unit_price_cents: number | null;
+          client_item_id: string;
+          contribution_margin_basis_points: number | null;
+          cost_mode: string | null;
+          diagnosis_id: number;
+          direct_labor_unit_cost_cents: number | null;
+          direct_loss: boolean;
+          fee_amount_cents: number;
+          id: number;
+          kind: string;
+          loss_rate_basis_points: number | null;
+          monthly_contribution_cents: number | null;
+          monthly_gross_revenue_cents: number | null;
+          monthly_sales_volume: number | null;
+          name: string;
+          net_unit_revenue_cents: number;
+          other_variable_unit_cost_cents: number | null;
+          packaging_unit_cost_cents: number | null;
+          position: number;
+          production_unit_cost_cents: number | null;
+          promotion_floor_cents: number | null;
+          purchase_unit_cost_cents: number | null;
+          recipe_yield: number | null;
+          submission_id: string;
+          unit_contribution_cents: number;
+          unit_sale_price_cents: number;
+          user_id: string;
+          variable_unit_cost_cents: number;
+        };
+        Insert: {
+          break_even_unit_price_cents?: number | null;
+          client_item_id: string;
+          contribution_margin_basis_points?: number | null;
+          cost_mode?: string | null;
+          diagnosis_id: number;
+          direct_labor_unit_cost_cents?: number | null;
+          direct_loss: boolean;
+          fee_amount_cents: number;
+          id?: never;
+          kind: string;
+          loss_rate_basis_points?: number | null;
+          monthly_contribution_cents?: number | null;
+          monthly_gross_revenue_cents?: number | null;
+          monthly_sales_volume?: number | null;
+          name: string;
+          net_unit_revenue_cents: number;
+          other_variable_unit_cost_cents?: number | null;
+          packaging_unit_cost_cents?: number | null;
+          position: number;
+          production_unit_cost_cents?: number | null;
+          promotion_floor_cents?: number | null;
+          purchase_unit_cost_cents?: number | null;
+          recipe_yield?: number | null;
+          submission_id: string;
+          unit_contribution_cents: number;
+          unit_sale_price_cents: number;
+          user_id: string;
+          variable_unit_cost_cents: number;
+        };
+        Update: {
+          break_even_unit_price_cents?: number | null;
+          client_item_id?: string;
+          contribution_margin_basis_points?: number | null;
+          cost_mode?: string | null;
+          diagnosis_id?: number;
+          direct_labor_unit_cost_cents?: number | null;
+          direct_loss?: boolean;
+          fee_amount_cents?: number;
+          id?: never;
+          kind?: string;
+          loss_rate_basis_points?: number | null;
+          monthly_contribution_cents?: number | null;
+          monthly_gross_revenue_cents?: number | null;
+          monthly_sales_volume?: number | null;
+          name?: string;
+          net_unit_revenue_cents?: number;
+          other_variable_unit_cost_cents?: number | null;
+          packaging_unit_cost_cents?: number | null;
+          position?: number;
+          production_unit_cost_cents?: number | null;
+          promotion_floor_cents?: number | null;
+          purchase_unit_cost_cents?: number | null;
+          recipe_yield?: number | null;
+          submission_id?: string;
+          unit_contribution_cents?: number;
+          unit_sale_price_cents?: number;
+          user_id?: string;
+          variable_unit_cost_cents?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "detailed_diagnosis_items_diagnosis_id_fkey";
+            columns: ["diagnosis_id"];
+            isOneToOne: false;
+            referencedRelation: "detailed_diagnoses";
+            referencedColumns: ["diagnosis_id"];
+          },
+        ];
+      };
       diagnoses: {
         Row: {
+          analysis_mode: string;
           business_category: Database["public"]["Enums"]["business_category"];
           calculation_version: number;
           content_version: number;
           created_at: string;
-          current_price_cents: number;
+          current_price_cents: number | null;
           id: number;
           is_free_report: boolean;
+          is_partial: boolean | null;
+          item_count: number | null;
+          monthly_gross_revenue_cents: number | null;
+          monthly_result_cents: number | null;
           priority: string;
           real_margin_basis_points: number | null;
           report_snapshot: Json;
@@ -285,13 +491,18 @@ export type Database = {
           verdict: string;
         };
         Insert: {
+          analysis_mode?: string;
           business_category: Database["public"]["Enums"]["business_category"];
           calculation_version: number;
           content_version: number;
           created_at?: string;
-          current_price_cents: number;
+          current_price_cents?: number | null;
           id?: never;
           is_free_report?: boolean;
+          is_partial?: boolean | null;
+          item_count?: number | null;
+          monthly_gross_revenue_cents?: number | null;
+          monthly_result_cents?: number | null;
           priority: string;
           real_margin_basis_points?: number | null;
           report_snapshot: Json;
@@ -304,13 +515,18 @@ export type Database = {
           verdict: string;
         };
         Update: {
+          analysis_mode?: string;
           business_category?: Database["public"]["Enums"]["business_category"];
           calculation_version?: number;
           content_version?: number;
           created_at?: string;
-          current_price_cents?: number;
+          current_price_cents?: number | null;
           id?: never;
           is_free_report?: boolean;
+          is_partial?: boolean | null;
+          item_count?: number | null;
+          monthly_gross_revenue_cents?: number | null;
+          monthly_result_cents?: number | null;
           priority?: string;
           real_margin_basis_points?: number | null;
           report_snapshot?: Json;
@@ -555,6 +771,31 @@ export type Database = {
           p_user_id: string;
         };
         Returns: Json;
+      };
+      create_detailed_diagnosis_report: {
+        Args: {
+          p_calculation_version: number;
+          p_card_fee_rate_basis_points: number;
+          p_category: Database["public"]["Enums"]["business_category"];
+          p_content_version: number;
+          p_fixed_monthly_expenses_cents: number;
+          p_is_partial: boolean;
+          p_item_count: number;
+          p_items: Json;
+          p_monthly_gross_revenue_cents: number;
+          p_monthly_result_cents: number;
+          p_priority: string;
+          p_pro_labore_cents: number;
+          p_pro_labore_included: boolean;
+          p_promotion_margin_basis_points: number;
+          p_real_margin_basis_points: number;
+          p_report_snapshot: Json;
+          p_schema_version: number;
+          p_submission_id: string;
+          p_tax_rate_basis_points: number;
+          p_verdict: string;
+        };
+        Returns: number;
       };
       create_product_diagnosis_report: {
         Args: {

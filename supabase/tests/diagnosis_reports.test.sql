@@ -25,7 +25,12 @@ select columns_are(
     'unit',
     'report_snapshot',
     'created_at',
-    'is_free_report'
+    'is_free_report',
+    'analysis_mode',
+    'monthly_gross_revenue_cents',
+    'monthly_result_cents',
+    'item_count',
+    'is_partial'
   ],
   'registry exposes only common identity, summary, and snapshot columns'
 );
@@ -68,7 +73,12 @@ select ok(
       ["unit", "pg_catalog", "text"],
       ["report_snapshot", "pg_catalog", "jsonb"],
       ["created_at", "pg_catalog", "timestamptz"],
-      ["is_free_report", "pg_catalog", "bool"]
+      ["is_free_report", "pg_catalog", "bool"],
+      ["analysis_mode", "pg_catalog", "text"],
+      ["monthly_gross_revenue_cents", "pg_catalog", "int8"],
+      ["monthly_result_cents", "pg_catalog", "int8"],
+      ["item_count", "pg_catalog", "int4"],
+      ["is_partial", "pg_catalog", "bool"]
     ]
   $json$::jsonb,
   'registry columns use exact durable database types'
@@ -82,7 +92,7 @@ select results_eq(
       and is_nullable = 'NO'
   $$,
   array[15::bigint],
-  'only margin and profit summaries may be unavailable'
+  'only mode-specific summary columns may be unavailable'
 );
 select fk_ok(
   'public',
@@ -121,7 +131,11 @@ select ok(
       and contype = 'c'
   ) = $json$
     [
+      "diagnoses_analysis_mode_check",
+      "diagnoses_analysis_shape_check",
       "diagnoses_current_price_check",
+      "diagnoses_item_count_check",
+      "diagnoses_monthly_gross_revenue_check",
       "diagnoses_priority_check",
       "diagnoses_scenario_check",
       "diagnoses_snapshot_object_check",
