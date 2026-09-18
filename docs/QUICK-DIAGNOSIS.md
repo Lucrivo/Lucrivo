@@ -34,7 +34,7 @@ Escolha do que será analisado
         |
         +--> Produção
                +--> diagnóstico rápido de uma unidade
-               +--> análise detalhada/ficha técnica (Em breve)
+               +--> sair do rápido e abrir análise detalhada/ficha técnica
         |
         v
 Perguntas sobre custo, preço, capacidade e despesas
@@ -127,7 +127,7 @@ No diagnóstico rápido guiado, o usuário escolhe uma destas formas de informar
 - **custo resumido:** um único valor positivo para o custo da unidade pronta;
 - **custo composto:** soma de materiais, embalagem, mão de obra direta e outros custos variáveis por unidade.
 
-A composição fixa de quatro categorias não é uma ficha técnica: ela não cadastra ingredientes, receita, lote, estoque, rendimento ou desperdício. Esses detalhamentos permanecem reservados para uma análise futura.
+A composição fixa de quatro categorias não é uma ficha técnica: ela não cadastra ingredientes, receita, lote, estoque, rendimento ou desperdício. Esses detalhamentos pertencem ao diagnóstico detalhado de Produção, não ao caminho rápido.
 
 O volume mensal significa **unidades vendidas**, não unidades apenas produzidas. A mão de obra direta representa o trabalho variável necessário para fabricar cada unidade e não deve repetir a remuneração mensal do dono, que é informada separadamente como pró-labore.
 
@@ -278,7 +278,7 @@ ou
 CD = materiais + embalagem + mão de obra direta + outros custos variáveis
 ```
 
-Na composição, a mão de obra direta é variável por unidade e não inclui o pró-labore mensal do dono. Um cálculo por ingredientes, rendimento e desperdício pertence à futura análise detalhada e não é realizado pelo diagnóstico rápido atual:
+Na composição, a mão de obra direta é variável por unidade e não inclui o pró-labore mensal do dono. O cálculo por ingredientes, rendimento e desperdício pertence ao diagnóstico detalhado e não é realizado pelo diagnóstico rápido:
 
 ```text
 Custo dos insumos da receita = soma de (quantidade × custo unitário de cada insumo)
@@ -302,15 +302,15 @@ Se o pró-labore estiver desligado, apenas o custo fixo operacional é considera
 
 ### 6.3 Quantidade usada e resultado mensal
 
-Os relatórios atuais preservam a resposta original. Quando a quantidade mensal é omitida, ela continua `null`, mas o resultado do mês usa zero vendas:
+Os relatórios atuais preservam a resposta original e distinguem três estados:
 
-```text
-quantidade usada = quantidade informada ou 0
-valor deixado por venda = preço após impostos/cartão - custo direto
-resultado do mês = valor deixado por venda × quantidade usada - gastos mensais
-```
+- **volume vazio:** significa que o usuário ainda não sabe ou não informou a quantidade. O diagnóstico é parcial; faturamento, resultado e margem mensal ficam indisponíveis. A meta mensal aparece apenas como referência, enquanto as metas semanal e diária ficam ocultas;
+- **volume igual a zero:** significa um mês conhecido sem vendas. O faturamento é zero e o resultado mensal é o negativo dos gastos mensais efetivos;
+- **volume positivo:** permite calcular a análise mensal completa.
 
-Os gastos mensais permanecem inteiros. O sistema nunca os divide por zero; resultados unitários que dependem dessa divisão ficam indisponíveis.
+Em todos os casos, o valor deixado por venda continua sendo calculado a partir de preço, taxas e custo direto. Os gastos mensais permanecem inteiros e nunca são divididos por zero.
+
+Relatórios salvos mantêm o contrato e os números da versão em que foram criados. A mudança de interpretação do campo vazio não recalcula snapshots antigos.
 
 ### 6.4 Custo total considerado por unidade
 
@@ -549,7 +549,7 @@ Esse teto indica apenas o ponto em que o lucro chega a zero. Um desconto abaixo 
 
 ## 11. Meta mensal, semanal e diária
 
-Quando existe uma meta mensal válida, o sistema a traduz para o cotidiano:
+Quando existe uma meta mensal válida e o volume informado é conhecido, o sistema a traduz para o cotidiano:
 
 ```text
 Meta semanal = meta mensal ÷ 4,33
@@ -557,7 +557,7 @@ Meta semanal = meta mensal ÷ 4,33
 Meta diária = meta semanal ÷ dias trabalhados por semana
 ```
 
-Os volumes apresentados são arredondados para cima. Se o negócio estiver no prejuízo, o sistema evita recomendar aumento de vendas e orienta primeiro a correção de preço ou custo.
+Os volumes apresentados são arredondados para cima. Com volume vazio, a meta mensal permanece apenas como referência e as metas semanal e diária não são exibidas. Se o negócio estiver no prejuízo, o sistema evita recomendar aumento de vendas e orienta primeiro a correção de preço ou custo.
 
 ---
 
@@ -626,13 +626,13 @@ No protótipo fora do ambiente original, o salvamento pode não persistir após 
 ## 15. Premissas, limites e cuidados de interpretação
 
 1. **A qualidade do resultado depende dos dados informados.** Um custo omitido é interpretado como zero.
-2. **Produto ou produção sem volume mensal usa zero vendas no resultado do mês.** Os gastos mensais permanecem inteiros, nunca são divididos por zero e os resultados unitários dependentes da quantidade ficam indisponíveis.
+2. **Volume vazio, zero e positivo têm significados diferentes.** Vazio gera análise parcial e não vira zero; zero representa um mês conhecido sem vendas; positivo produz a análise mensal completa. Snapshots antigos não são recalculados.
 3. **Serviço sem horas faturáveis também fica incompleto.** O custo da hora passa a zero, tornando o resultado irreal.
 4. **Imposto e cartão em branco são considerados zero.** Isso pode superestimar a margem.
 5. **O sistema não avalia demanda ou concorrência.** Um preço financeiramente saudável ainda pode não ser aceito pelo mercado.
 6. **As faixas internas não são recomendações setoriais.** R$ 20 a cada R$ 100 em Produto e Produção e R$ 15 a cada R$ 100 em Serviço não garantem adequação ao ramo, à região ou ao mercado.
 7. **Taxas iguais ou superiores a 100% impedem uma referência de menor preço.** O relatório explica essa limitação sem inventar um valor.
-8. **Rendimento e perda de produção não fazem parte do diagnóstico rápido atual.** Essas informações serão tratadas apenas na futura análise detalhada/ficha técnica.
+8. **Rendimento e perda de produção não fazem parte do diagnóstico rápido atual.** Essas informações são tratadas somente no diagnóstico detalhado/ficha técnica.
 9. **O ponto de equilíbrio não representa necessariamente crescimento.** Ele mostra o mínimo para cobrir a estrutura; lucro adicional exige margem ou volume superior.
 10. **O teto de desconto significa lucro zero, não margem saudável.** A empresa pode continuar no azul e, ainda assim, ficar abaixo da meta.
 
