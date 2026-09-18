@@ -32,7 +32,7 @@ const values: ProductDiagnosisInput = {
 const onChange = vi.fn();
 
 describe("Product diagnosis steps", () => {
-  it("offers keyboard-accessible quick analysis and disables detailed mode", async () => {
+  it("offers both analysis modes by keyboard", async () => {
     const user = userEvent.setup();
     const onModeChange = vi.fn();
 
@@ -44,10 +44,12 @@ describe("Product diagnosis steps", () => {
 
     expect(onModeChange).toHaveBeenCalledWith("quick");
     expect(quick).toBeEnabled();
-    expect(
-      screen.getByRole("radio", { name: "Diagnóstico detalhado" }),
-    ).toHaveAttribute("aria-disabled", "true");
-    expect(screen.getByText("Em breve")).toBeVisible();
+    const detailed = screen.getByRole("radio", {
+      name: "Diagnóstico detalhado",
+    });
+    await user.click(detailed);
+    expect(detailed).toBeEnabled();
+    expect(onModeChange).toHaveBeenLastCalledWith("detailed");
   });
 
   it("links Product value errors and contains no Service fields", () => {
@@ -164,9 +166,14 @@ describe("Product diagnosis steps", () => {
     rerender(
       <MonthlyVolumeStep values={values} errors={{}} onChange={onChange} />,
     );
-    expect(screen.getByText(/opcional/i)).toBeVisible();
     expect(
-      screen.getByLabelText("Quantas unidades você vende em um mês comum?"),
+      screen.getByText(
+        /Se você já vende este item, informe a média mensal[\s\S]*Digite 0[\s\S]*deixe em branco[\s\S]*resultado será parcial/i,
+      ),
+    ).toBeVisible();
+    expect(screen.getByText("Opcional")).toBeVisible();
+    expect(
+      screen.getByLabelText("Quantas unidades você vende por mês?"),
     ).toHaveValue("");
   });
 

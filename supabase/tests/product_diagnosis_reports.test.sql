@@ -554,7 +554,7 @@ select throws_ok(
   null,
   'fixed expenses cannot be negative'
 );
-select throws_ok(
+select lives_ok(
   $$ select pg_temp.create_product_report(
     p_submission_id => '50000000-0000-4000-8000-000000000013',
     p_monthly_sales_volume => 0,
@@ -564,9 +564,7 @@ select throws_ok(
       '0'::jsonb
     )
   ) $$,
-  '23514',
-  null,
-  'present monthly volume must be positive'
+  'explicit zero monthly volume is valid'
 );
 select throws_ok(
   $$ select pg_temp.create_product_report(
@@ -666,8 +664,8 @@ select results_eq(
       '50000000-0000-4000-8000-000000000011' and
       '50000000-0000-4000-8000-000000000019'
   $$,
-  array[0::bigint],
-  'all Product detail constraint failures roll back generic reports'
+  array[1::bigint],
+  'all Product detail constraint failures except explicit zero roll back generic reports'
 );
 
 select throws_ok(
@@ -1426,6 +1424,125 @@ select throws_ok(
   ) $$,
   'P0001', 'free_report_limit_reached',
   'Product V2 preserves the one-free-report rule'
+);
+
+reset role;
+
+create function pg_temp.product_snapshot_v3(
+  p_volume integer,
+  p_monthly_result_cents bigint
+)
+returns jsonb
+language sql
+immutable
+as $$
+  select jsonb_build_object(
+    'schemaVersion', 3,
+    'calculationVersion', 3,
+    'contentVersion', 4,
+    'category', 'product',
+    'scenario', 'resale',
+    'currency', 'BRL',
+    'unit', 'unit',
+    'policy', jsonb_build_object('attentionBandBasisPoints', 2000),
+    'inputs', jsonb_build_object(
+      'productKind', 'resale',
+      'purchaseUnitCostCents', 5000,
+      'unitSalePriceCents', 10000,
+      'fixedMonthlyExpensesCents', 100000,
+      'monthlySalesVolume', p_volume,
+      'proLaboreIncluded', true,
+      'proLaboreCents', 200000,
+      'taxRateBasisPoints', 600,
+      'cardFeeRateBasisPoints', 200
+    ),
+    'results', jsonb_build_object(
+      'purchaseUnitCostCents', 5000,
+      'currentPriceCents', 10000,
+      'fixedAllocationCents', null,
+      'totalUnitCostCents', null,
+      'monthlySalesVolumeUsed', p_volume,
+      'monthlyGrossRevenueCents', case when p_volume is null then null else 0 end,
+      'monthlyNetRevenueCents', case when p_volume is null then null else 0 end,
+      'monthlyResultCents', p_monthly_result_cents,
+      'realMarginBasisPoints', null,
+      'unitProfitCents', null,
+      'verdict', case when p_volume is null then 'incomplete_volume' else 'no_sales' end,
+      'priority', case when p_volume is null then 'data' else 'volume' end
+    ),
+    'executiveSummary', jsonb_build_object('headline', 'Diagnóstico'),
+    'sections', jsonb_build_array(),
+    'discountSimulationBase', jsonb_build_object('partial', p_volume is null)
+  );
+$$;
+
+create function pg_temp.create_product_report_v3(
+  p_submission_id uuid,
+  p_monthly_sales_volume integer,
+  p_monthly_result_cents bigint
+)
+returns bigint
+language sql
+as $$
+  select public.create_product_diagnosis_report_v3(
+    p_submission_id, 'resale'::text, 5000::bigint, 10000::bigint,
+    100000::bigint, p_monthly_sales_volume, true, 200000::bigint,
+    600::integer, 200::integer, 3::smallint, 3::smallint, 4::smallint,
+    'resale'::text, 10000::bigint, null::integer, null::bigint,
+    p_monthly_result_cents,
+    case when p_monthly_sales_volume is null then 'incomplete_volume' else 'no_sales' end,
+    case when p_monthly_sales_volume is null then 'data' else 'volume' end,
+    'unit'::text,
+    pg_temp.product_snapshot_v3(
+      p_monthly_sales_volume,
+      p_monthly_result_cents
+    )
+  );
+$$;
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '55555555-5555-4555-8555-555555555555',
+  true
+);
+select lives_ok(
+  $$ select pg_temp.create_product_report_v3(
+    '50000000-0000-4000-8000-000000000086', null, null
+  ) $$,
+  'Product V3 persists unknown volume'
+);
+select lives_ok(
+  $$ select pg_temp.create_product_report_v3(
+    '50000000-0000-4000-8000-000000000087', 0, -300000
+  ) $$,
+  'Product V3 persists explicit zero volume'
+);
+select is(
+  (
+    select monthly_sales_volume
+    from public.product_diagnoses
+    where submission_id = '50000000-0000-4000-8000-000000000086'
+  ),
+  null::integer,
+  'unknown Product volume stays null'
+);
+select is(
+  (
+    select monthly_sales_volume
+    from public.product_diagnoses
+    where submission_id = '50000000-0000-4000-8000-000000000087'
+  ),
+  0,
+  'explicit Product zero volume is persisted'
+);
+select throws_ok(
+  $$ select pg_temp.create_product_report_v3(
+    '50000000-0000-4000-8000-000000000088', null, -300000
+  ) $$,
+  '22023',
+  'invalid product report snapshot',
+  'Product V3 rejects monthly results without volume'
 );
 
 reset role;

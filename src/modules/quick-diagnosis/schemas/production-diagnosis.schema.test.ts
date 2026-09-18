@@ -85,6 +85,30 @@ describe("productionDiagnosisSchema", () => {
     );
   });
 
+  it.each([
+    ["", null],
+    ["0", 0],
+    ["37", 37],
+  ])("normalizes monthly volume %p to %p", (raw, expected) => {
+    const parsed = productionDiagnosisSchema.parse({
+      ...validProduction,
+      monthlySalesVolume: raw,
+    });
+    expect(parsed.monthlySalesVolume).toBe(expected);
+  });
+
+  it.each(["-1", "1,5", "2147483648"])(
+    "rejects invalid monthly volume %p",
+    (monthlySalesVolume) => {
+      expect(
+        productionDiagnosisSchema.safeParse({
+          ...validProduction,
+          monthlySalesVolume,
+        }).success,
+      ).toBe(false);
+    },
+  );
+
   it("ignores summarized cost text in composed mode", () => {
     expect(productionDiagnosisSchema.parse(validProduction)).toEqual(
       expect.objectContaining({ productionUnitCostCents: null }),
@@ -116,7 +140,6 @@ describe("productionDiagnosisSchema", () => {
     ["unitSalePrice", "90071992547409,92"],
     ["fixedMonthlyExpenses", ""],
     ["fixedMonthlyExpenses", "-1"],
-    ["monthlySalesVolume", "0"],
     ["monthlySalesVolume", "1,5"],
     ["monthlySalesVolume", "2147483648"],
     ["taxRate", ""],

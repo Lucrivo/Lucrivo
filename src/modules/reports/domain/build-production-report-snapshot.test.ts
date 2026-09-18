@@ -28,13 +28,13 @@ function build(input: ProductionDiagnosisCommand) {
 }
 
 describe("buildProductionReportSnapshot", () => {
-  it("builds and parses the Production 2/2/3 contract", () => {
+  it("builds and parses the Production 3/3/4 contract", () => {
     const snapshot = build(command);
     expect(snapshot).toEqual(
       expect.objectContaining({
-        schemaVersion: 2,
-        calculationVersion: 2,
-        contentVersion: 3,
+        schemaVersion: 3,
+        calculationVersion: 3,
+        contentVersion: 4,
         scenario: "manufacturing",
       }),
     );
@@ -51,7 +51,7 @@ describe("buildProductionReportSnapshot", () => {
 
   it.each([
     [{ unitSalePriceCents: 5000, monthlySalesVolume: null }, "direct_loss"],
-    [{ monthlySalesVolume: null }, "operational_loss"],
+    [{ monthlySalesVolume: null }, "incomplete_volume"],
     [
       {
         monthlySalesVolume: null,
@@ -59,7 +59,7 @@ describe("buildProductionReportSnapshot", () => {
         proLaboreIncluded: false,
         proLaboreCents: 0,
       },
-      "no_sales",
+      "incomplete_volume",
     ],
     [{ monthlySalesVolume: 10 }, "operational_loss"],
     [{ fixedMonthlyExpensesCents: 220000 }, "break_even"],
@@ -91,6 +91,24 @@ describe("buildProductionReportSnapshot", () => {
     expect(content).not.toMatch(
       /custo de compra|fornecedor|produto digital|unidades produzidas por mês/i,
     );
+    if (
+      "monthlySalesVolume" in overrides &&
+      overrides.monthlySalesVolume === null &&
+      verdict !== "direct_loss"
+    ) {
+      expect(
+        snapshot.sections.find(({ key }) => key === "margin_diagnosis"),
+      ).toMatchObject({
+        emphasisLabel: "Resultado mensal",
+        emphasisValue: "Ainda não calculado",
+        tone: "neutral",
+      });
+      const salesGoal = snapshot.sections.find(
+        ({ key }) => key === "sales_goal",
+      );
+      expect(salesGoal?.body).toContain("esta meta é apenas uma referência");
+      expect(salesGoal?.body).not.toMatch(/por semana|por dia/);
+    }
     expect(content).not.toMatch(
       /ponto de equilíbrio|pró-labore|alíquota|rateio|receita líquida|margem de contribuição|preço-alvo|custo operacional|meta de 20%|margem ideal/i,
     );

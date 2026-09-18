@@ -14,20 +14,21 @@ const PRODUCT_OPERATING_DAYS_PER_WEEK = 6;
 
 function classifyProductMargin(input: {
   unitContributionCents: number;
-  monthlySalesVolumeUsed: number;
+  monthlySalesVolumeUsed: number | null;
   effectiveFixedCostCents: number;
-  monthlyResultCents: number;
+  monthlyResultCents: number | null;
   realMarginBasisPoints: number | null;
 }): { verdict: ProductReportVerdict; priority: ProductReportPriority } {
   if (input.unitContributionCents <= 0) {
     return { verdict: "direct_loss", priority: "cost" };
   }
-  if (input.monthlySalesVolumeUsed === 0) {
-    return input.effectiveFixedCostCents > 0
-      ? { verdict: "operational_loss", priority: "volume" }
-      : { verdict: "no_sales", priority: "volume" };
+  if (input.monthlySalesVolumeUsed === null) {
+    return { verdict: "incomplete_volume", priority: "data" };
   }
-  if (input.monthlyResultCents < 0) {
+  if (input.monthlySalesVolumeUsed === 0) {
+    return { verdict: "no_sales", priority: "volume" };
+  }
+  if (input.monthlyResultCents !== null && input.monthlyResultCents < 0) {
     return { verdict: "operational_loss", priority: "price" };
   }
   if (input.monthlyResultCents === 0) {
@@ -54,7 +55,8 @@ function calculateProductReport(
     BigInt(1),
   );
   const netRateBasisPoints = RATE_SCALE - totalFeeBasisPoints;
-  const monthlySalesVolumeUsed = command.monthlySalesVolume ?? 0;
+  const monthlySalesVolumeUsed = command.monthlySalesVolume;
+  const hasKnownVolume = monthlySalesVolumeUsed !== null;
   const feeAmountCents = multiplyDivideRound(
     command.unitSalePriceCents,
     totalFeeBasisPoints,
@@ -69,7 +71,7 @@ function calculateProductReport(
     BigInt(1),
   );
   const fixedAllocationCents =
-    monthlySalesVolumeUsed === 0
+    monthlySalesVolumeUsed === null || monthlySalesVolumeUsed === 0
       ? null
       : ceilDivide(
           BigInt(effectiveFixedCostCents),
@@ -89,26 +91,34 @@ function calculateProductReport(
           BigInt(netRevenueCents) - BigInt(totalUnitCostCents),
           BigInt(1),
         );
-  const monthlyGrossRevenueCents = roundDivide(
-    BigInt(command.unitSalePriceCents) * BigInt(monthlySalesVolumeUsed),
-    BigInt(1),
-  );
-  const monthlyNetRevenueCents = roundDivide(
-    BigInt(netRevenueCents) * BigInt(monthlySalesVolumeUsed),
-    BigInt(1),
-  );
-  const monthlyResultCents = roundDivide(
-    BigInt(unitContributionCents) * BigInt(monthlySalesVolumeUsed) -
-      BigInt(effectiveFixedCostCents),
-    BigInt(1),
-  );
+  const monthlyGrossRevenueCents = hasKnownVolume
+    ? roundDivide(
+        BigInt(command.unitSalePriceCents) * BigInt(monthlySalesVolumeUsed),
+        BigInt(1),
+      )
+    : null;
+  const monthlyNetRevenueCents = hasKnownVolume
+    ? roundDivide(
+        BigInt(netRevenueCents) * BigInt(monthlySalesVolumeUsed),
+        BigInt(1),
+      )
+    : null;
+  const monthlyResultCents = hasKnownVolume
+    ? roundDivide(
+        BigInt(unitContributionCents) * BigInt(monthlySalesVolumeUsed) -
+          BigInt(effectiveFixedCostCents),
+        BigInt(1),
+      )
+    : null;
   const realMarginBasisPoints =
-    monthlyGrossRevenueCents === 0
-      ? null
-      : roundDivide(
+    monthlyResultCents !== null &&
+    monthlyGrossRevenueCents !== null &&
+    monthlyGrossRevenueCents > 0
+      ? roundDivide(
           BigInt(monthlyResultCents) * BigInt(RATE_SCALE),
           BigInt(monthlyGrossRevenueCents),
-        );
+        )
+      : null;
   const referenceCostCents =
     totalUnitCostCents ?? command.purchaseUnitCostCents;
   const minimumPriceCents =
@@ -126,7 +136,7 @@ function calculateProductReport(
         )
       : null;
   const weeklySalesGoal =
-    monthlySalesGoal === null
+    !hasKnownVolume || monthlySalesGoal === null
       ? null
       : ceilDivide(
           BigInt(monthlySalesGoal) * BigInt(100),

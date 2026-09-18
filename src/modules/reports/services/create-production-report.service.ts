@@ -20,14 +20,15 @@ type CreateProductionReportResult =
   | { status: "success"; diagnosisId: number }
   | { status: "error"; error: "create_failed" | "limit_reached" };
 
-type GeneratedProductionV2RpcArgs =
-  Database["public"]["Functions"]["create_production_diagnosis_report_v2"]["Args"];
+type GeneratedProductionV3RpcArgs =
+  Database["public"]["Functions"]["create_production_diagnosis_report_v3"]["Args"];
 
 type ProductionRpcArgs = Omit<
-  GeneratedProductionV2RpcArgs,
+  GeneratedProductionV3RpcArgs,
   | "p_direct_labor_unit_cost_cents"
   | "p_material_unit_cost_cents"
   | "p_monthly_sales_volume"
+  | "p_monthly_result_cents"
   | "p_other_variable_unit_cost_cents"
   | "p_packaging_unit_cost_cents"
   | "p_real_margin_basis_points"
@@ -36,6 +37,7 @@ type ProductionRpcArgs = Omit<
   p_direct_labor_unit_cost_cents: number | null;
   p_material_unit_cost_cents: number | null;
   p_monthly_sales_volume: number | null;
+  p_monthly_result_cents: number | null;
   p_other_variable_unit_cost_cents: number | null;
   p_packaging_unit_cost_cents: number | null;
   p_real_margin_basis_points: number | null;
@@ -84,8 +86,8 @@ async function createProductionReport({
   try {
     const rpcArgs = toProductionRpcArgs(command, snapshot);
     const { data, error } = await supabase.rpc(
-      "create_production_diagnosis_report_v2",
-      rpcArgs as GeneratedProductionV2RpcArgs,
+      "create_production_diagnosis_report_v3",
+      rpcArgs as GeneratedProductionV3RpcArgs,
     );
 
     if (

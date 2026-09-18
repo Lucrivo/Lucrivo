@@ -5,6 +5,9 @@ import type {
   ProductDiagnosisCommand,
   NormalizedServiceDiagnosisCommand,
 } from "@/modules/quick-diagnosis/types";
+import { calculateDetailedDiagnosis } from "@/modules/detailed-diagnosis/domain/calculate-detailed-diagnosis";
+import type { DetailedDiagnosisCommand } from "@/modules/detailed-diagnosis/types";
+import { buildDetailedReportSnapshot } from "@/modules/reports/domain/build-detailed-report-snapshot";
 import { buildProductReportSnapshot } from "@/modules/reports/domain/build-product-report-snapshot";
 import { buildServiceReportSnapshot } from "@/modules/reports/domain/build-service-report-snapshot";
 import { calculateProductReport } from "@/modules/reports/domain/calculate-product-report";
@@ -85,6 +88,32 @@ const currentProductSnapshot = buildProductReportSnapshot(
   productCommand,
   calculateProductReport(productCommand),
 );
+const detailedCommand: DetailedDiagnosisCommand = {
+  submissionId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+  category: "product",
+  fixedMonthlyExpensesCents: 100_000,
+  proLaboreIncluded: false,
+  proLaboreCents: 0,
+  taxRateBasisPoints: 600,
+  cardFeeRateBasisPoints: 200,
+  promotionMarginBasisPoints: 1_500,
+  items: [
+    {
+      id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+      position: 0,
+      name: "Caneca",
+      kind: "resale",
+      unitSalePriceCents: 10_000,
+      monthlySalesVolume: 100,
+      purchaseUnitCostCents: 5_000,
+      packagingUnitCostCents: 0,
+    },
+  ],
+};
+const detailedSnapshot = buildDetailedReportSnapshot(
+  detailedCommand,
+  calculateDetailedDiagnosis(detailedCommand),
+);
 
 describe("ReportPage", () => {
   const supabase = { from: vi.fn() };
@@ -137,6 +166,26 @@ describe("ReportPage", () => {
     expect(
       screen.getByText("Resultado do seu diagnóstico"),
     ).toBeInTheDocument();
+  });
+
+  it("dispatches an owned Detailed snapshot to its dedicated presenter", async () => {
+    getOwnedReport.mockResolvedValue({
+      status: "found",
+      report: {
+        id: 168,
+        createdAt: "2026-09-17T15:00:00.000Z",
+        snapshot: detailedSnapshot,
+      },
+    });
+
+    await renderPage("168");
+
+    expect(
+      screen.getByRole("heading", { name: "Resultado detalhado do seu mix" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByText("Resultado do seu diagnóstico"),
+    ).not.toBeInTheDocument();
   });
 
   it.each(["abc", "0"])("calls notFound for malformed id %s", async (id) => {

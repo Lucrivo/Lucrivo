@@ -30,6 +30,15 @@ const currentProductVerdicts = [
   "tight_margin",
   "adequate_margin",
 ] as const;
+const productV4Verdicts = [
+  "direct_loss",
+  "incomplete_volume",
+  "operational_loss",
+  "no_sales",
+  "break_even",
+  "tight_margin",
+  "adequate_margin",
+] as const;
 
 const legacyProductReportPolicySchema = z.strictObject({
   targetMarginBasisPoints: z.literal(2000),
@@ -57,6 +66,9 @@ const legacyProductReportInputsSchema = z.strictObject({
 });
 const productReportInputsSchema = legacyProductReportInputsSchema.extend({
   productKind: z.enum(["resale", "digital"]),
+});
+const productReportInputsV4Schema = productReportInputsSchema.extend({
+  monthlySalesVolume: z.number().int().min(0).max(2_147_483_647).nullable(),
 });
 
 const legacyProductReportResultsSchema = z.strictObject({
@@ -103,6 +115,13 @@ const productReportResultsSchema = z.strictObject({
   totalFeeBasisPoints: z.number().int().min(0).max(20_000),
   verdict: z.enum(currentProductVerdicts),
   priority: z.enum(productReportPriorities),
+});
+const productReportResultsV4Schema = productReportResultsSchema.extend({
+  monthlySalesVolumeUsed: nonNegativeSafeIntegerSchema.nullable(),
+  monthlyGrossRevenueCents: nonNegativeSafeIntegerSchema.nullable(),
+  monthlyNetRevenueCents: safeIntegerSchema.nullable(),
+  monthlyResultCents: safeIntegerSchema.nullable(),
+  verdict: z.enum(productV4Verdicts),
 });
 
 const legacyProductReportDiscountSimulationBaseSchema = z.strictObject({
@@ -371,10 +390,156 @@ const productReportSnapshotV3Schema = z
     validateOrderedContent(snapshot, context);
   });
 
+const productReportSnapshotV4Schema = z
+  .strictObject({
+    schemaVersion: z.literal(3),
+    calculationVersion: z.literal(3),
+    contentVersion: z.literal(4),
+    category: z.literal("product"),
+    scenario: z.enum(["resale", "digital"]),
+    currency: z.literal("BRL"),
+    unit: z.literal("unit"),
+    policy: productReportPolicySchema,
+    inputs: productReportInputsV4Schema,
+    results: productReportResultsV4Schema,
+    executiveSummary: reportExecutiveSummarySchema,
+    sections: z.array(reportSectionSchema).length(reportSectionKeys.length),
+    discountSimulationBase: productReportDiscountSimulationBaseSchema,
+  })
+  .superRefine((snapshot, context) => {
+    const { inputs, policy, results, discountSimulationBase } = snapshot;
+    const unknownVolume = inputs.monthlySalesVolume === null;
+    const zeroVolume = inputs.monthlySalesVolume === 0;
+    const nullableMonthlyFields = [
+      results.monthlySalesVolumeUsed,
+      results.monthlyGrossRevenueCents,
+      results.monthlyNetRevenueCents,
+      results.monthlyResultCents,
+      results.realMarginBasisPoints,
+    ];
+
+    if (unknownVolume && nullableMonthlyFields.some((value) => value !== null))
+      context.addIssue({
+        code: "custom",
+        path: ["results", "monthlyResultCents"],
+        message: "Resultados mensais devem ser nulos sem volume informado.",
+      });
+    if (
+      !unknownVolume &&
+      [
+        results.monthlySalesVolumeUsed,
+        results.monthlyGrossRevenueCents,
+        results.monthlyNetRevenueCents,
+        results.monthlyResultCents,
+      ].some((value) => value === null)
+    )
+      context.addIssue({
+        code: "custom",
+        path: ["results", "monthlyResultCents"],
+        message: "Resultados mensais devem existir com volume informado.",
+      });
+    if (
+      results.monthlySalesVolumeUsed !== inputs.monthlySalesVolume ||
+      (zeroVolume && results.realMarginBasisPoints !== null) ||
+      (!unknownVolume && !zeroVolume && results.realMarginBasisPoints === null)
+    )
+      context.addIssue({
+        code: "custom",
+        path: ["results", "monthlySalesVolumeUsed"],
+        message: "Os resultados mensais devem corresponder ao volume.",
+      });
+    for (const [field, value] of [
+      ["fixedAllocationCents", results.fixedAllocationCents],
+      ["totalUnitCostCents", results.totalUnitCostCents],
+      ["unitProfitCents", results.unitProfitCents],
+    ] as const)
+      if (
+        ((unknownVolume || zeroVolume) && value !== null) ||
+        (!unknownVolume && !zeroVolume && value === null)
+      )
+        context.addIssue({
+          code: "custom",
+          path: ["results", field],
+          message: "O campo deve corresponder à quantidade usada.",
+        });
+    if (
+      (unknownVolume &&
+        (results.weeklySalesGoal !== null ||
+          results.dailySalesGoal !== null)) ||
+      results.priceReferencesPartial !== unknownVolume
+    )
+      context.addIssue({
+        code: "custom",
+        path: ["results", "priceReferencesPartial"],
+        message: "O indicador parcial não corresponde ao volume original.",
+      });
+    if (snapshot.scenario !== inputs.productKind)
+      context.addIssue({
+        code: "custom",
+        path: ["scenario"],
+        message: "O cenário deve corresponder ao tipo de produto.",
+      });
+    if (
+      inputs.proLaboreIncluded !== inputs.proLaboreCents > 0 ||
+      policy.proLaboreIncluded !== inputs.proLaboreIncluded
+    )
+      context.addIssue({
+        code: "custom",
+        path: ["inputs", "proLaboreCents"],
+        message: "O valor mensal deve corresponder à seleção.",
+      });
+    if (
+      results.purchaseUnitCostCents !== inputs.purchaseUnitCostCents ||
+      results.currentPriceCents !== inputs.unitSalePriceCents
+    )
+      context.addIssue({
+        code: "custom",
+        path: ["results", "currentPriceCents"],
+        message: "Preço e custo devem corresponder às entradas.",
+      });
+    const checks = [
+      [
+        "originalPriceCents",
+        discountSimulationBase.originalPriceCents,
+        results.currentPriceCents,
+      ],
+      [
+        "unitCostCents",
+        discountSimulationBase.unitCostCents,
+        results.totalUnitCostCents ?? results.purchaseUnitCostCents,
+      ],
+      [
+        "totalFeeBasisPoints",
+        discountSimulationBase.totalFeeBasisPoints,
+        results.totalFeeBasisPoints,
+      ],
+      [
+        "attentionBandBasisPoints",
+        discountSimulationBase.attentionBandBasisPoints,
+        policy.attentionBandBasisPoints,
+      ],
+      [
+        "minimumPriceCents",
+        discountSimulationBase.minimumPriceCents,
+        results.minimumPriceCents,
+      ],
+      ["partial", discountSimulationBase.partial, unknownVolume],
+    ] as const;
+    for (const [field, actual, expected] of checks)
+      if (actual !== expected)
+        context.addIssue({
+          code: "custom",
+          path: ["discountSimulationBase", field],
+          message: "A base do simulador deve corresponder ao diagnóstico.",
+        });
+    validateOrderedContent(snapshot, context);
+  });
+
 const productReportSnapshotSchema = z.union([
   productReportSnapshotV1Schema,
   productReportSnapshotV2Schema,
   productReportSnapshotV3Schema,
+  productReportSnapshotV4Schema,
 ]);
 type ProductReportDiscountSimulationBase = z.infer<
   typeof productReportDiscountSimulationBaseSchema
@@ -382,8 +547,9 @@ type ProductReportDiscountSimulationBase = z.infer<
 type ProductReportSnapshotV1 = z.infer<typeof productReportSnapshotV1Schema>;
 type ProductReportSnapshotV2 = z.infer<typeof productReportSnapshotV2Schema>;
 type ProductReportSnapshotV3 = z.infer<typeof productReportSnapshotV3Schema>;
+type ProductReportSnapshotV4 = z.infer<typeof productReportSnapshotV4Schema>;
 type ProductReportSnapshot = z.infer<typeof productReportSnapshotSchema>;
-type CurrentProductReportSnapshot = ProductReportSnapshotV3;
+type CurrentProductReportSnapshot = ProductReportSnapshotV4;
 
 function parseProductReportSnapshot(value: unknown): ProductReportSnapshot {
   return productReportSnapshotSchema.parse(value);
@@ -391,7 +557,7 @@ function parseProductReportSnapshot(value: unknown): ProductReportSnapshot {
 function parseCurrentProductReportSnapshot(
   value: unknown,
 ): CurrentProductReportSnapshot {
-  return productReportSnapshotV3Schema.parse(value);
+  return productReportSnapshotV4Schema.parse(value);
 }
 
 export {
@@ -405,10 +571,12 @@ export {
   productReportSnapshotV1Schema,
   productReportSnapshotV2Schema,
   productReportSnapshotV3Schema,
+  productReportSnapshotV4Schema,
   type CurrentProductReportSnapshot,
   type ProductReportDiscountSimulationBase,
   type ProductReportSnapshot,
   type ProductReportSnapshotV1,
   type ProductReportSnapshotV2,
   type ProductReportSnapshotV3,
+  type ProductReportSnapshotV4,
 };

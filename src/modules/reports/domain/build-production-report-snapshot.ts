@@ -61,7 +61,10 @@ function saleSection(
   calculation: ProductionReportCalculation,
 ): ReportSection {
   const composition = compositionText(command);
-  if (calculation.monthlySalesVolumeUsed === 0)
+  if (
+    calculation.monthlySalesVolumeUsed === null ||
+    calculation.monthlySalesVolumeUsed === 0
+  )
     return {
       key: "hidden_cost",
       title: "O que sai de cada venda",
@@ -83,6 +86,17 @@ function saleSection(
 function monthlySection(
   calculation: ProductionReportCalculation,
 ): ReportSection {
+  const monthlyResultCents = calculation.monthlyResultCents;
+  const monthlyNetRevenueCents = calculation.monthlyNetRevenueCents;
+  if (monthlyResultCents === null || monthlyNetRevenueCents === null)
+    return {
+      key: "margin_diagnosis",
+      title: "Quanto sobra no mês",
+      body: "O resultado mensal ainda não foi calculado porque a quantidade vendida não foi informada.",
+      emphasisLabel: "Resultado mensal",
+      emphasisValue: "Ainda não calculado",
+      tone: calculation.unitContributionCents <= 0 ? "critical" : "neutral",
+    };
   const label = {
     direct_loss: "Prejuízo por venda",
     operational_loss: "Prejuízo no mês",
@@ -100,15 +114,15 @@ function monthlySection(
   return {
     key: "margin_diagnosis",
     title: "Quanto sobra no mês",
-    body: `O resultado considera ${formatCurrency(calculation.monthlyNetRevenueCents)} recebidos pelas unidades vendidas depois de impostos e cartão, menos a fabricação e os gastos mensais. Quanto sobra a cada R$ 100: ${margin}.`,
+    body: `O resultado considera ${formatCurrency(monthlyNetRevenueCents)} recebidos pelas unidades vendidas depois de impostos e cartão, menos a fabricação e os gastos mensais. Quanto sobra a cada R$ 100: ${margin}.`,
     emphasisLabel: label,
-    emphasisValue: formatCurrency(calculation.monthlyResultCents),
+    emphasisValue: formatCurrency(monthlyResultCents),
     tone:
-      calculation.monthlyResultCents > 0
+      monthlyResultCents > 0
         ? calculation.verdict === "tight_margin"
           ? "warning"
           : "positive"
-        : calculation.monthlyResultCents < 0
+        : monthlyResultCents < 0
           ? "critical"
           : "neutral",
   };
@@ -123,6 +137,15 @@ function salesSection(calculation: ProductionReportCalculation): ReportSection {
       emphasisLabel: null,
       emphasisValue: null,
       tone: "critical",
+    };
+  if (calculation.monthlySalesVolumeUsed === null)
+    return {
+      key: "sales_goal",
+      title: "Quanto você precisa vender",
+      body: `Como você ainda não informou quanto vende, esta meta é apenas uma referência. Se ela parecer fora da realidade, revise preço, custos e gastos mensais antes de tomar uma decisão. A referência mensal é ${formatIntegerVolume(calculation.monthlySalesGoal)} unidades.`,
+      emphasisLabel: "Unidades vendidas necessárias no mês",
+      emphasisValue: `${formatIntegerVolume(calculation.monthlySalesGoal)} unidades`,
+      tone: "neutral",
     };
   return {
     key: "sales_goal",

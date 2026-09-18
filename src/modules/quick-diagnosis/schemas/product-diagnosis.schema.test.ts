@@ -91,6 +91,30 @@ describe("productDiagnosisSchema", () => {
     );
   });
 
+  it.each([
+    ["", null],
+    ["0", 0],
+    ["37", 37],
+  ])("normalizes monthly volume %p to %p", (raw, expected) => {
+    const parsed = productDiagnosisSchema.parse({
+      ...validProduct,
+      monthlySalesVolume: raw,
+    });
+    expect(parsed.monthlySalesVolume).toBe(expected);
+  });
+
+  it.each(["-1", "1,5", "2147483648"])(
+    "rejects invalid monthly volume %p",
+    (monthlySalesVolume) => {
+      expect(
+        productDiagnosisSchema.safeParse({
+          ...validProduct,
+          monthlySalesVolume,
+        }).success,
+      ).toBe(false);
+    },
+  );
+
   it.each(["", "0"])(
     "normalizes optional purchase cost %j to zero",
     (purchaseUnitCost) => {
@@ -122,7 +146,6 @@ describe("productDiagnosisSchema", () => {
     ["purchaseUnitCost", "1,001"],
     ["unitSalePrice", "10.999"],
     ["purchaseUnitCost", "90071992547409,92"],
-    ["monthlySalesVolume", "0"],
     ["monthlySalesVolume", "1,5"],
     ["monthlySalesVolume", "2147483648"],
     ["taxRate", "-1"],

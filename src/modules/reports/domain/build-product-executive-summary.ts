@@ -19,7 +19,7 @@ const verdictContent = {
   },
   no_sales: {
     label: "Sem vendas no mês",
-    body: "O mês foi calculado sem vendas e sem gastos mensais.",
+    body: "O mês foi calculado sem vendas; os gastos mensais continuam considerados.",
     tone: "neutral",
   },
   break_even: {
@@ -38,8 +38,8 @@ const verdictContent = {
     tone: "positive",
   },
   incomplete_volume: {
-    label: "Sem vendas no mês",
-    body: "O mês foi calculado sem vendas.",
+    label: "Falta informar as vendas",
+    body: "O resultado mensal ainda não foi calculado porque o volume não foi informado.",
     tone: "neutral",
   },
   above_target: {
@@ -57,20 +57,26 @@ function buildProductExecutiveSummary(
   calculation: ProductReportCalculation,
   productKind: ProductKind = "resale",
 ): ReportExecutiveSummary {
+  const unknownVolume = calculation.monthlySalesVolumeUsed === null;
   const noVolume = calculation.monthlySalesVolumeUsed === 0;
-  const profitability = noVolume
-    ? calculation.monthlyResultCents < 0
-      ? `Não neste mês — sem vendas, o resultado foi ${formatCurrency(calculation.monthlyResultCents)}. Uma futura venda deixa ${formatCurrency(calculation.unitContributionCents)} para pagar os gastos mensais.`
-      : `Ainda não houve vendas no mês. Uma futura venda deixa ${formatCurrency(calculation.unitContributionCents)} para pagar os gastos mensais.`
-    : calculation.monthlyResultCents > 0
-      ? `Sim — o resultado do mês foi ${formatCurrency(calculation.monthlyResultCents)}.`
-      : calculation.monthlyResultCents === 0
-        ? "Ainda não — as vendas pagaram exatamente os gastos do mês."
-        : `Não — o resultado do mês foi ${formatCurrency(calculation.monthlyResultCents)}.`;
+  const noAllocatedVolume = unknownVolume || noVolume;
+  const monthlyResultCents = calculation.monthlyResultCents;
+  const profitability =
+    monthlyResultCents === null
+      ? `Ainda não é possível calcular o resultado do mês. Informe quantas unidades foram vendidas; cada venda deixa ${formatCurrency(calculation.unitContributionCents)} para pagar os gastos mensais.`
+      : noVolume
+        ? monthlyResultCents < 0
+          ? `Não neste mês — sem vendas, o resultado foi ${formatCurrency(monthlyResultCents)}. Uma futura venda deixa ${formatCurrency(calculation.unitContributionCents)} para pagar os gastos mensais.`
+          : `Ainda não houve vendas no mês. Uma futura venda deixa ${formatCurrency(calculation.unitContributionCents)} para pagar os gastos mensais.`
+        : monthlyResultCents > 0
+          ? `Sim — o resultado do mês foi ${formatCurrency(monthlyResultCents)}.`
+          : monthlyResultCents === 0
+            ? "Ainda não — as vendas pagaram exatamente os gastos do mês."
+            : `Não — o resultado do mês foi ${formatCurrency(monthlyResultCents)}.`;
   const priceAnswer =
     calculation.minimumPriceCents === null
       ? "Ainda não é possível calcular um menor preço com as porcentagens informadas."
-      : noVolume
+      : noAllocatedVolume
         ? `O menor preço de ${formatCurrency(calculation.minimumPriceCents)} evita prejuízo direto e considera o ${costName(productKind)}. Os gastos mensais dependem da quantidade mostrada abaixo.`
         : calculation.currentPriceCents >= calculation.minimumPriceCents
           ? `Sim — o preço atual está acima do menor preço de ${formatCurrency(calculation.minimumPriceCents)} que paga os gastos informados.`
@@ -85,7 +91,8 @@ function buildProductExecutiveSummary(
     break_even: "Busque uma pequena folga no preço, nos gastos ou nas vendas.",
     tight_margin: "Proteja a pouca folga revendo preço e gastos.",
     adequate_margin: "Acompanhe o resultado e preserve as condições atuais.",
-    incomplete_volume: "Informe a quantidade vendida.",
+    incomplete_volume:
+      "Informe a quantidade vendida para completar o resultado mensal.",
     above_target: "Acompanhe o resultado.",
   }[calculation.verdict];
   const priority =
@@ -95,11 +102,13 @@ function buildProductExecutiveSummary(
             productKind === "digital" ? "Custo por venda" : "Custo de compra",
           body: action,
         }
-      : calculation.priority === "price"
-        ? { label: "Preço e gastos", body: action }
-        : calculation.priority === "margin"
-          ? { label: "Folga do resultado", body: action }
-          : { label: "Quantidade de vendas", body: action };
+      : calculation.priority === "data"
+        ? { label: "Dados de vendas", body: action }
+        : calculation.priority === "price"
+          ? { label: "Preço e gastos", body: action }
+          : calculation.priority === "margin"
+            ? { label: "Folga do resultado", body: action }
+            : { label: "Quantidade de vendas", body: action };
 
   return {
     headline:
@@ -112,18 +121,23 @@ function buildProductExecutiveSummary(
       {
         key: "margin",
         currentLabel: "Resultado do mês",
-        currentValue: formatCurrency(calculation.monthlyResultCents),
+        currentValue:
+          monthlyResultCents === null
+            ? "Ainda não calculado"
+            : formatCurrency(monthlyResultCents),
         referenceLabel: "Quanto sobra a cada R$ 100",
         referenceValue:
           calculation.realMarginBasisPoints === null
-            ? "Sem vendas para calcular"
+            ? unknownVolume
+              ? "Ainda não calculado"
+              : "Sem vendas para calcular"
             : formatBasisPoints(calculation.realMarginBasisPoints),
       },
       {
         key: "price",
         currentLabel: "Preço atual",
         currentValue: formatCurrency(calculation.currentPriceCents),
-        referenceLabel: noVolume
+        referenceLabel: noAllocatedVolume
           ? "Menor preço antes dos gastos mensais"
           : "Menor preço sem prejuízo",
         referenceValue:

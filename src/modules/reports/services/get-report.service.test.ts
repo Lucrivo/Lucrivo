@@ -7,7 +7,10 @@ import type {
   ProductionDiagnosisCommand,
   NormalizedServiceDiagnosisCommand,
 } from "@/modules/quick-diagnosis/types";
+import { calculateDetailedDiagnosis } from "@/modules/detailed-diagnosis/domain/calculate-detailed-diagnosis";
+import type { DetailedDiagnosisCommand } from "@/modules/detailed-diagnosis/types";
 
+import { buildDetailedReportSnapshot } from "../domain/build-detailed-report-snapshot";
 import { buildProductReportSnapshot } from "../domain/build-product-report-snapshot";
 import { buildProductionReportSnapshot } from "../domain/build-production-report-snapshot";
 import { buildServiceReportSnapshot } from "../domain/build-service-report-snapshot";
@@ -80,6 +83,32 @@ const productionCommand: ProductionDiagnosisCommand = {
 const productionSnapshot = buildProductionReportSnapshot(
   productionCommand,
   calculateProductionReport(productionCommand),
+);
+const detailedCommand: DetailedDiagnosisCommand = {
+  submissionId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+  category: "product",
+  fixedMonthlyExpensesCents: 10_000,
+  proLaboreIncluded: false,
+  proLaboreCents: 0,
+  taxRateBasisPoints: 0,
+  cardFeeRateBasisPoints: 0,
+  promotionMarginBasisPoints: 1_500,
+  items: [
+    {
+      id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+      position: 0,
+      name: "Caneca",
+      kind: "resale",
+      unitSalePriceCents: 10_000,
+      monthlySalesVolume: 10,
+      purchaseUnitCostCents: 5_000,
+      packagingUnitCostCents: 0,
+    },
+  ],
+};
+const detailedSnapshot = buildDetailedReportSnapshot(
+  detailedCommand,
+  calculateDetailedDiagnosis(detailedCommand),
 );
 
 describe("getOwnedReport", () => {
@@ -250,6 +279,28 @@ describe("getOwnedReport", () => {
         id: 84,
         createdAt: "2026-08-31T15:00:00.000Z",
         snapshot: productSnapshot,
+      },
+    });
+  });
+
+  it("accepts a matching Detailed snapshot without rewriting it", async () => {
+    maybeSingle.mockResolvedValue({
+      data: {
+        id: 168,
+        business_category: "product",
+        scenario: "resale",
+        created_at: "2026-09-17T15:00:00.000Z",
+        report_snapshot: detailedSnapshot,
+      },
+      error: null,
+    });
+
+    await expect(get("168")).resolves.toEqual({
+      status: "found",
+      report: {
+        id: 168,
+        createdAt: "2026-09-17T15:00:00.000Z",
+        snapshot: detailedSnapshot,
       },
     });
   });

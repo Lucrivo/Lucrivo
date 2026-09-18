@@ -40,19 +40,25 @@ diagnóstico.
 
 ## Operating Context
 
-O usuário autenticado inicia um diagnóstico rápido e escolhe entre três
-contextos de negócio:
+O usuário autenticado inicia um diagnóstico e escolhe entre três contextos de
+negócio:
 
 - produto adquirido para revenda;
 - produto digital, com custo direto por venda opcional;
 - produção própria de uma unidade;
 - prestação de serviço cobrada por hora, minuto ou atendimento.
 
-O fluxo coleta preço, custos e demais dados pertinentes à categoria, apresenta
-uma revisão antes da confirmação e gera um relatório privado. O relatório
-responde se há lucro, compara o preço atual com referências financeiras,
-identifica a principal correção, apresenta metas aplicáveis e permite simular
-descontos.
+Produto e Produção oferecem as modalidades rápida e detalhada. A modalidade
+detalhada compara vários itens; em Produção, aceita custo resumido ou ficha
+técnica com ingredientes, rendimento, perda, embalagem, mão de obra direta e
+outros custos variáveis. Serviço permanece no fluxo rápido.
+
+Os fluxos coletam preço, custos e demais dados pertinentes à categoria,
+apresentam uma revisão antes da confirmação e geram um relatório privado. O
+relatório rápido responde se há lucro, compara o preço atual com referências
+financeiras, identifica a principal correção, apresenta metas aplicáveis e
+permite simular descontos. O detalhado consolida o mix e também mostra a
+contribuição e as referências de cada item.
 
 Os diagnósticos confirmados são salvos como registros históricos imutáveis e
 podem ser reabertos na biblioteca privada de relatórios.
@@ -61,6 +67,8 @@ podem ser reabertos na biblioteca privada de relatórios.
 
 - Cadastro, autenticação, recuperação e atualização de senha.
 - Diagnóstico rápido para revenda, produto digital, produção própria e serviços.
+- Diagnóstico detalhado para revenda e produção própria, com múltiplos itens e
+  ficha técnica completa para itens fabricados.
 - Cálculos financeiros determinísticos separados por categoria de negócio.
 - Relatórios privados com resumo executivo, números principais, explicações e
   simulação de desconto.
@@ -70,10 +78,12 @@ podem ser reabertos na biblioteca privada de relatórios.
 - Faixa interna de atenção abaixo de R$ 20 a cada R$ 100 para produto e
   produção; ela não é uma meta universal nem gera preço recomendado. Serviço
   mantém suas próprias regras versionadas.
-- Os resultados dependem dos dados fornecidos pelo usuário; dados ausentes
-  podem produzir um diagnóstico parcial ou referências indisponíveis.
-- Análise detalhada, ficha técnica completa, múltiplos produtos, estoque,
-  compartilhamento público e comparação histórica não fazem parte da
+- Os resultados dependem dos dados fornecidos pelo usuário. Volume mensal vazio
+  significa dado desconhecido: o relatório fica parcial, sem resultado mensal,
+  e a meta mensal aparece apenas como referência. Zero significa um mês
+  conhecido sem vendas; volume positivo permite a análise mensal completa.
+- O diagnóstico detalhado analisa financeiramente um mix; não controla estoque
+  físico. Compartilhamento público e comparação histórica não fazem parte da
   experiência atual.
 - Interpretação por IA não é uma capacidade confirmada da versão atual e não
   realiza os cálculos financeiros centrais.

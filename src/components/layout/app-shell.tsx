@@ -14,6 +14,7 @@ type AppShellProps = {
   children: React.ReactNode;
   email: string;
   sidebarVariant: AppSidebarVariant;
+  isAdminUser: boolean;
   contextTitle: string;
   contextDescription: string;
 };
@@ -22,6 +23,7 @@ function AppShell({
   children,
   email,
   sidebarVariant,
+  isAdminUser,
   contextTitle,
   contextDescription,
 }: AppShellProps) {
@@ -34,7 +36,7 @@ function AppShell({
         } as React.CSSProperties
       }
     >
-      <AppSidebar variant={sidebarVariant} />
+      <AppSidebar variant={sidebarVariant} isAdminUser={isAdminUser} />
       <SidebarInset className="min-w-0">
         <header className="bg-background/80 sticky top-0 z-20 flex h-16 shrink-0 items-center gap-3 border-b px-4 backdrop-blur-xl md:px-6">
           <SidebarTrigger

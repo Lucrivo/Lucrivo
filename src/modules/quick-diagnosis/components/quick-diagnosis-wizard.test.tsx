@@ -14,6 +14,7 @@ import {
   type CreateProductionDiagnosisAction,
   type CreateServiceDiagnosisAction,
 } from "./quick-diagnosis-wizard";
+import type { CreateDetailedDiagnosisAction } from "@/modules/detailed-diagnosis/components/detailed-diagnosis-wizard";
 
 const submissionIds = [
   "550e8400-e29b-41d4-a716-446655440001",
@@ -32,6 +33,7 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     createProductDiagnosis?: CreateProductDiagnosisAction;
     createProductionDiagnosis?: CreateProductionDiagnosisAction;
     createServiceDiagnosis?: CreateServiceDiagnosisAction;
+    createDetailedDiagnosis?: CreateDetailedDiagnosisAction;
   }) {
     const createProductDiagnosis =
       options?.createProductDiagnosis ?? vi.fn<CreateProductDiagnosisAction>();
@@ -40,6 +42,9 @@ describe("QuickDiagnosisWizard category orchestration", () => {
       vi.fn<CreateProductionDiagnosisAction>();
     const createServiceDiagnosis =
       options?.createServiceDiagnosis ?? vi.fn<CreateServiceDiagnosisAction>();
+    const createDetailedDiagnosis =
+      options?.createDetailedDiagnosis ??
+      vi.fn<CreateDetailedDiagnosisAction>();
     const createSubmissionId = vi
       .fn()
       .mockReturnValueOnce(submissionIds[0])
@@ -53,6 +58,7 @@ describe("QuickDiagnosisWizard category orchestration", () => {
         createProductDiagnosis={createProductDiagnosis}
         createProductionDiagnosis={createProductionDiagnosis}
         createServiceDiagnosis={createServiceDiagnosis}
+        createDetailedDiagnosis={createDetailedDiagnosis}
         createSubmissionId={createSubmissionId}
       />,
     );
@@ -62,6 +68,7 @@ describe("QuickDiagnosisWizard category orchestration", () => {
       createProductionDiagnosis,
       createSubmissionId,
       createServiceDiagnosis,
+      createDetailedDiagnosis,
     };
   }
 
@@ -95,7 +102,9 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(
-      screen.getByLabelText("Quantas unidades você vende em um mês comum?"),
+      screen.getByRole("textbox", {
+        name: "Quantas unidades você vende por mês?",
+      }),
       "100",
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
@@ -200,7 +209,9 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(
-      screen.getByLabelText("Quantas unidades você vende em um mês comum?"),
+      screen.getByRole("textbox", {
+        name: "Quantas unidades você vende por mês?",
+      }),
       "100",
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
@@ -284,6 +295,31 @@ describe("QuickDiagnosisWizard category orchestration", () => {
       expect(screen.getByRole("heading", { name: firstTitle })).toHaveFocus();
     },
   );
+
+  it("branches Product into Detailed and returns to the selected modality", async () => {
+    const user = userEvent.setup();
+    const { createSubmissionId } = renderWizard();
+
+    await user.click(screen.getByRole("radio", { name: "Produto" }));
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(
+      screen.getByRole("radio", { name: "Diagnóstico detalhado" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Quais gastos você tem todo mês?",
+      }),
+    ).toHaveFocus();
+    expect(screen.getByText("3 de 7")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Voltar" }));
+    expect(
+      screen.getByRole("radio", { name: "Diagnóstico detalhado" }),
+    ).toBeChecked();
+    expect(createSubmissionId).toHaveBeenCalledTimes(4);
+  });
 
   it("preserves one Production branch and submits only to its Action", async () => {
     const user = userEvent.setup();

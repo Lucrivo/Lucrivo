@@ -1,0 +1,485 @@
+import type {
+  DetailedDiagnosisCategory,
+  DetailedDiagnosisFieldErrors,
+  DetailedDiagnosisInput,
+  DetailedIngredientInput,
+  DetailedProductItemInput,
+  DetailedProductionCostMode,
+  DetailedProductionItemInput,
+} from "../types";
+
+type DetailedWizardPhase =
+  | "fixedExpenses"
+  | "ownerCompensation"
+  | "fees"
+  | "itemBasics"
+  | "itemCosts"
+  | "itemComplete"
+  | "review";
+
+type DetailedItemSubstep = "basics" | "costs" | "complete";
+type DetailedSubmitError = "unauthorized" | "limit_reached" | "create_failed";
+
+type DetailedWizardState = {
+  phase: DetailedWizardPhase;
+  itemSubstep: DetailedItemSubstep;
+  activeItemId: string;
+  values: DetailedDiagnosisInput;
+  fieldErrors: DetailedDiagnosisFieldErrors;
+  pendingRemovalItemId: string | null;
+  status: "editing" | "submitting";
+  submitError: DetailedSubmitError | null;
+};
+
+type DetailedGeneralField =
+  | "fixedMonthlyExpenses"
+  | "proLaboreIncluded"
+  | "proLabore"
+  | "taxRate"
+  | "cardFeeRate"
+  | "promotionMarginRate";
+
+type DetailedItemTextField =
+  | "name"
+  | "unitSalePrice"
+  | "monthlySalesVolume"
+  | "purchaseUnitCost"
+  | "packagingUnitCost"
+  | "productionUnitCost"
+  | "recipeYield"
+  | "lossRate"
+  | "directLaborUnitCost"
+  | "otherVariableUnitCost";
+
+type DetailedIngredientTextField = "name" | "quantity" | "unit" | "unitCost";
+
+type DetailedWizardAction =
+  | {
+      type: "changeGeneralField";
+      field: DetailedGeneralField;
+      value: string | boolean;
+    }
+  | {
+      type: "changeItemField";
+      itemId: string;
+      field: DetailedItemTextField;
+      value: string;
+    }
+  | {
+      type: "setCostMode";
+      itemId: string;
+      costMode: DetailedProductionCostMode;
+    }
+  | {
+      type: "changeIngredientField";
+      itemId: string;
+      ingredientId: string;
+      field: DetailedIngredientTextField;
+      value: string;
+    }
+  | { type: "addIngredient"; itemId: string; createId: () => string }
+  | { type: "removeIngredient"; itemId: string; ingredientId: string }
+  | { type: "addItem"; createId: () => string }
+  | { type: "editItem"; itemId: string }
+  | { type: "requestRemoveItem"; itemId: string }
+  | { type: "cancelRemoveItem" }
+  | { type: "confirmRemoveItem" }
+  | { type: "next" }
+  | { type: "back" }
+  | { type: "applyServerErrors"; fieldErrors: DetailedDiagnosisFieldErrors }
+  | { type: "submit" }
+  | { type: "submitFailed"; error: DetailedSubmitError }
+  | { type: "reset"; createId: () => string };
+
+const nextPhase: Record<DetailedWizardPhase, DetailedWizardPhase> = {
+  fixedExpenses: "ownerCompensation",
+  ownerCompensation: "fees",
+  fees: "itemBasics",
+  itemBasics: "itemCosts",
+  itemCosts: "itemComplete",
+  itemComplete: "review",
+  review: "review",
+};
+
+const previousPhase: Record<DetailedWizardPhase, DetailedWizardPhase> = {
+  fixedExpenses: "fixedExpenses",
+  ownerCompensation: "fixedExpenses",
+  fees: "ownerCompensation",
+  itemBasics: "fees",
+  itemCosts: "itemBasics",
+  itemComplete: "itemCosts",
+  review: "itemComplete",
+};
+
+function substepForPhase(phase: DetailedWizardPhase): DetailedItemSubstep {
+  if (phase === "itemCosts") return "costs";
+  if (phase === "itemComplete" || phase === "review") return "complete";
+  return "basics";
+}
+
+function blankIngredient(id: string): DetailedIngredientInput {
+  return { id, name: "", quantity: "", unit: "", unitCost: "" };
+}
+
+function blankProductItem(id: string): DetailedProductItemInput {
+  return {
+    id,
+    name: "",
+    kind: "resale",
+    unitSalePrice: "",
+    monthlySalesVolume: "",
+    purchaseUnitCost: "",
+    packagingUnitCost: "",
+  };
+}
+
+function blankProductionItem(
+  id: string,
+  ingredientId: string,
+): DetailedProductionItemInput {
+  return {
+    id,
+    name: "",
+    kind: "manufacturing",
+    costMode: "technical_sheet",
+    unitSalePrice: "",
+    monthlySalesVolume: "",
+    productionUnitCost: "",
+    recipeYield: "1",
+    lossRate: "0",
+    packagingUnitCost: "",
+    directLaborUnitCost: "",
+    otherVariableUnitCost: "",
+    ingredients: [blankIngredient(ingredientId)],
+  };
+}
+
+function createBlankItem(
+  category: DetailedDiagnosisCategory,
+  createId: () => string,
+) {
+  const itemId = createId();
+  return category === "product"
+    ? blankProductItem(itemId)
+    : blankProductionItem(itemId, createId());
+}
+
+function createInitialDetailedWizardState(
+  category: DetailedDiagnosisCategory,
+  createId: () => string,
+): DetailedWizardState {
+  const submissionId = createId();
+  const item = createBlankItem(category, createId);
+
+  return {
+    phase: "fixedExpenses",
+    itemSubstep: "basics",
+    activeItemId: item.id,
+    values: {
+      submissionId,
+      category,
+      fixedMonthlyExpenses: "",
+      proLaboreIncluded: false,
+      proLabore: "",
+      taxRate: "",
+      cardFeeRate: "",
+      promotionMarginRate: "15",
+      items: [item],
+    },
+    fieldErrors: {},
+    pendingRemovalItemId: null,
+    status: "editing",
+    submitError: null,
+  };
+}
+
+function withoutError(
+  errors: DetailedDiagnosisFieldErrors,
+  path: string,
+): DetailedDiagnosisFieldErrors {
+  if (!(path in errors)) return errors;
+  const next = { ...errors };
+  delete next[path];
+  return next;
+}
+
+function itemIndex(state: DetailedWizardState, itemId: string): number {
+  return state.values.items.findIndex((item) => item.id === itemId);
+}
+
+function updateItem(
+  state: DetailedWizardState,
+  itemId: string,
+  update: (
+    item: DetailedDiagnosisInput["items"][number],
+  ) => DetailedDiagnosisInput["items"][number],
+): DetailedWizardState {
+  if (itemIndex(state, itemId) < 0) return state;
+  return {
+    ...state,
+    values: {
+      ...state.values,
+      items: state.values.items.map((item) =>
+        item.id === itemId ? update(item) : item,
+      ),
+    },
+    submitError: null,
+  };
+}
+
+function resolveErrorPhase(path: string): {
+  phase: DetailedWizardPhase;
+  itemIndex: number | null;
+} {
+  if (path === "fixedMonthlyExpenses")
+    return { phase: "fixedExpenses", itemIndex: null };
+  if (path === "proLaboreIncluded" || path === "proLabore")
+    return { phase: "ownerCompensation", itemIndex: null };
+  if (
+    path === "taxRate" ||
+    path === "cardFeeRate" ||
+    path === "promotionMarginRate"
+  )
+    return { phase: "fees", itemIndex: null };
+
+  const match = /^items\.(\d+)(?:\.(.+))?/.exec(path);
+  if (!match) return { phase: "fixedExpenses", itemIndex: null };
+  const nestedPath = match[2] ?? "";
+  const baseFields = new Set([
+    "id",
+    "kind",
+    "name",
+    "unitSalePrice",
+    "monthlySalesVolume",
+  ]);
+
+  return {
+    phase: baseFields.has(nestedPath) ? "itemBasics" : "itemCosts",
+    itemIndex: Number(match[1]),
+  };
+}
+
+function detailedWizardReducer(
+  state: DetailedWizardState,
+  action: DetailedWizardAction,
+): DetailedWizardState {
+  switch (action.type) {
+    case "changeGeneralField":
+      return {
+        ...state,
+        values: { ...state.values, [action.field]: action.value },
+        fieldErrors: withoutError(state.fieldErrors, action.field),
+        submitError: null,
+      } as DetailedWizardState;
+
+    case "changeItemField": {
+      const index = itemIndex(state, action.itemId);
+      if (index < 0) return state;
+      const updated = updateItem(state, action.itemId, (item) => ({
+        ...item,
+        [action.field]: action.value,
+      }));
+      return {
+        ...updated,
+        fieldErrors: withoutError(
+          updated.fieldErrors,
+          `items.${index}.${action.field}`,
+        ),
+      };
+    }
+
+    case "setCostMode": {
+      const index = itemIndex(state, action.itemId);
+      if (index < 0) return state;
+      const updated = updateItem(state, action.itemId, (item) =>
+        item.kind === "manufacturing"
+          ? { ...item, costMode: action.costMode }
+          : item,
+      );
+      return {
+        ...updated,
+        fieldErrors: withoutError(
+          updated.fieldErrors,
+          `items.${index}.costMode`,
+        ),
+      };
+    }
+
+    case "changeIngredientField": {
+      const index = itemIndex(state, action.itemId);
+      if (index < 0) return state;
+      const item = state.values.items[index];
+      if (item.kind !== "manufacturing") return state;
+      const ingredientIndex = item.ingredients.findIndex(
+        (ingredient) => ingredient.id === action.ingredientId,
+      );
+      if (ingredientIndex < 0) return state;
+      const updated = updateItem(state, action.itemId, (candidate) =>
+        candidate.kind === "manufacturing"
+          ? {
+              ...candidate,
+              ingredients: candidate.ingredients.map((ingredient) =>
+                ingredient.id === action.ingredientId
+                  ? { ...ingredient, [action.field]: action.value }
+                  : ingredient,
+              ),
+            }
+          : candidate,
+      );
+      return {
+        ...updated,
+        fieldErrors: withoutError(
+          updated.fieldErrors,
+          `items.${index}.ingredients.${ingredientIndex}.${action.field}`,
+        ),
+      };
+    }
+
+    case "addIngredient":
+      return updateItem(state, action.itemId, (item) =>
+        item.kind === "manufacturing"
+          ? {
+              ...item,
+              ingredients: [
+                ...item.ingredients,
+                blankIngredient(action.createId()),
+              ],
+            }
+          : item,
+      );
+
+    case "removeIngredient":
+      return updateItem(state, action.itemId, (item) => {
+        if (item.kind !== "manufacturing" || item.ingredients.length <= 1)
+          return item;
+        return {
+          ...item,
+          ingredients: item.ingredients.filter(
+            (ingredient) => ingredient.id !== action.ingredientId,
+          ),
+        };
+      });
+
+    case "addItem": {
+      const item = createBlankItem(state.values.category, action.createId);
+      return {
+        ...state,
+        phase: "itemBasics",
+        itemSubstep: "basics",
+        activeItemId: item.id,
+        values: { ...state.values, items: [...state.values.items, item] },
+        pendingRemovalItemId: null,
+        submitError: null,
+      };
+    }
+
+    case "editItem":
+      return itemIndex(state, action.itemId) < 0
+        ? state
+        : {
+            ...state,
+            phase: "itemBasics",
+            itemSubstep: "basics",
+            activeItemId: action.itemId,
+            pendingRemovalItemId: null,
+          };
+
+    case "requestRemoveItem":
+      return state.values.items.length <= 1 ||
+        itemIndex(state, action.itemId) < 0
+        ? { ...state, pendingRemovalItemId: null }
+        : { ...state, pendingRemovalItemId: action.itemId };
+
+    case "cancelRemoveItem":
+      return { ...state, pendingRemovalItemId: null };
+
+    case "confirmRemoveItem": {
+      if (!state.pendingRemovalItemId || state.values.items.length <= 1)
+        return { ...state, pendingRemovalItemId: null };
+      const items = state.values.items.filter(
+        (item) => item.id !== state.pendingRemovalItemId,
+      );
+      if (items.length === state.values.items.length) {
+        return { ...state, pendingRemovalItemId: null };
+      }
+      const activeItemId =
+        state.activeItemId === state.pendingRemovalItemId
+          ? items[0].id
+          : state.activeItemId;
+      return {
+        ...state,
+        activeItemId,
+        values: { ...state.values, items },
+        fieldErrors: Object.fromEntries(
+          Object.entries(state.fieldErrors).filter(
+            ([path]) => !path.startsWith("items."),
+          ),
+        ),
+        pendingRemovalItemId: null,
+        submitError: null,
+      };
+    }
+
+    case "next": {
+      const phase = nextPhase[state.phase];
+      return { ...state, phase, itemSubstep: substepForPhase(phase) };
+    }
+
+    case "back": {
+      const phase = previousPhase[state.phase];
+      return { ...state, phase, itemSubstep: substepForPhase(phase) };
+    }
+
+    case "applyServerErrors": {
+      const firstPath = Object.keys(action.fieldErrors)[0];
+      if (!firstPath)
+        return {
+          ...state,
+          fieldErrors: {},
+          status: "editing",
+          submitError: null,
+        };
+      const resolved = resolveErrorPhase(firstPath);
+      const activeItem =
+        resolved.itemIndex === null
+          ? null
+          : state.values.items[resolved.itemIndex];
+      return {
+        ...state,
+        phase: resolved.phase,
+        itemSubstep: substepForPhase(resolved.phase),
+        activeItemId: activeItem?.id ?? state.activeItemId,
+        fieldErrors: action.fieldErrors,
+        status: "editing",
+        submitError: null,
+      };
+    }
+
+    case "submit":
+      return state.status === "submitting"
+        ? state
+        : { ...state, status: "submitting", submitError: null };
+
+    case "submitFailed":
+      return { ...state, status: "editing", submitError: action.error };
+
+    case "reset":
+      return createInitialDetailedWizardState(
+        state.values.category,
+        action.createId,
+      );
+  }
+}
+
+export {
+  createInitialDetailedWizardState,
+  detailedWizardReducer,
+  type DetailedGeneralField,
+  type DetailedIngredientTextField,
+  type DetailedItemSubstep,
+  type DetailedItemTextField,
+  type DetailedSubmitError,
+  type DetailedWizardAction,
+  type DetailedWizardPhase,
+  type DetailedWizardState,
+};

@@ -10,6 +10,7 @@ const report = {
   businessCategory: "service",
   scenario: "hour",
   createdAt: "2026-08-28T22:30:00.000Z",
+  analysisMode: "quick",
   currentPriceCents: 8_000,
   realMarginBasisPoints: 1_700,
   unitProfitCents: 1_360,
@@ -19,6 +20,10 @@ const report = {
   schemaVersion: 3,
   calculationVersion: 2,
   contentVersion: 3,
+  monthlyGrossRevenueCents: null,
+  monthlyResultCents: null,
+  itemCount: null,
+  isPartial: null,
 } satisfies OwnedReportSummary;
 
 const productReport = {
@@ -26,6 +31,7 @@ const productReport = {
   businessCategory: "product",
   scenario: "resale",
   createdAt: "2026-08-31T15:00:00.000Z",
+  analysisMode: "quick",
   currentPriceCents: 10_000,
   realMarginBasisPoints: null,
   unitProfitCents: null,
@@ -35,6 +41,10 @@ const productReport = {
   schemaVersion: 1,
   calculationVersion: 1,
   contentVersion: 2,
+  monthlyGrossRevenueCents: null,
+  monthlyResultCents: null,
+  itemCount: null,
+  isPartial: null,
 } satisfies OwnedReportSummary;
 
 const productionReport = {
@@ -42,6 +52,7 @@ const productionReport = {
   businessCategory: "production",
   scenario: "manufacturing",
   createdAt: "2026-09-01T15:00:00.000Z",
+  analysisMode: "quick",
   currentPriceCents: 10_000,
   realMarginBasisPoints: 1_200,
   unitProfitCents: 1_200,
@@ -51,6 +62,27 @@ const productionReport = {
   schemaVersion: 1,
   calculationVersion: 1,
   contentVersion: 2,
+  monthlyGrossRevenueCents: null,
+  monthlyResultCents: null,
+  itemCount: null,
+  isPartial: null,
+} satisfies OwnedReportSummary;
+
+const detailedReport = {
+  ...productReport,
+  id: 168,
+  analysisMode: "detailed",
+  currentPriceCents: null,
+  realMarginBasisPoints: 1_850,
+  unitProfitCents: null,
+  unit: "mix",
+  schemaVersion: 1,
+  calculationVersion: 1,
+  contentVersion: 1,
+  monthlyGrossRevenueCents: 500_000,
+  monthlyResultCents: 92_500,
+  itemCount: 3,
+  isPartial: false,
 } satisfies OwnedReportSummary;
 
 describe("ReportListCard", () => {
@@ -159,6 +191,42 @@ describe("ReportListCard", () => {
       screen.getByText("Quanto sobra por atendimento"),
     ).toBeInTheDocument();
     expect(screen.getByText("Diagnóstico salvo")).toBeInTheDocument();
+  });
+
+  it("presents a complete Detailed mix without formatting a current price", () => {
+    render(<ReportListCard report={detailedReport} />);
+
+    const card = screen.getByRole("article", {
+      name: "Diagnóstico detalhado de Produto",
+    });
+    expect(within(card).getByText("Diagnóstico detalhado")).toBeVisible();
+    expect(within(card).getByText("Produto")).toBeVisible();
+    expect(within(card).getByText(/3 produtos/)).toBeVisible();
+    expect(within(card).getByText("Completo")).toBeVisible();
+    expect(within(card).getByText("R$ 925,00")).toBeVisible();
+    expect(within(card).getByText("18,5%")).toBeVisible();
+    expect(within(card).queryByText("Preço atual")).not.toBeInTheDocument();
+    expect(
+      within(card).getByRole("link", { name: "Abrir relatório" }),
+    ).toHaveAttribute("href", "/reports/168");
+  });
+
+  it("presents a partial Detailed mix without invented totals", () => {
+    render(
+      <ReportListCard
+        report={{
+          ...detailedReport,
+          monthlyGrossRevenueCents: null,
+          monthlyResultCents: null,
+          realMarginBasisPoints: null,
+          isPartial: true,
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Parcial")).toBeVisible();
+    expect(screen.getByText(/complete os volumes pendentes/i)).toBeVisible();
+    expect(screen.queryByText("Resultado mensal")).not.toBeInTheDocument();
   });
 });
 

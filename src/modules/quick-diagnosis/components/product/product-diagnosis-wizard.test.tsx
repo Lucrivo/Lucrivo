@@ -25,6 +25,7 @@ describe("ProductDiagnosisWizard", () => {
     createSubmissionId = vi.fn(() => "550e8400-e29b-41d4-a716-446655440000"),
   ) {
     const onBackToType = vi.fn();
+    const onStartDetailed = vi.fn();
 
     function ControlledProductWizard() {
       const [submissionId] = useState(createSubmissionId);
@@ -41,6 +42,7 @@ describe("ProductDiagnosisWizard", () => {
           createDiagnosis={createDiagnosis}
           createSubmissionId={createSubmissionId}
           onBackToType={onBackToType}
+          onStartDetailed={onStartDetailed}
         />
       );
     }
@@ -51,6 +53,7 @@ describe("ProductDiagnosisWizard", () => {
       createDiagnosis,
       createSubmissionId,
       onBackToType,
+      onStartDetailed,
     };
   }
 
@@ -90,7 +93,9 @@ describe("ProductDiagnosisWizard", () => {
     expect(screen.getByText("5 de 8")).toBeInTheDocument();
     if (volume) {
       await user.type(
-        screen.getByLabelText("Quantas unidades você vende em um mês comum?"),
+        screen.getByRole("textbox", {
+          name: "Quantas unidades você vende por mês?",
+        }),
         "100",
       );
     }
@@ -127,15 +132,21 @@ describe("ProductDiagnosisWizard", () => {
     return user;
   }
 
-  it("requires quick mode and returns to the diagnosis type from the first step", async () => {
-    const { onBackToType } = renderWizard();
+  it("requires a mode, starts Detailed, and returns to the diagnosis type", async () => {
+    const { onBackToType, onStartDetailed } = renderWizard();
     const user = userEvent.setup();
 
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Selecione o diagnóstico rápido para continuar.",
+      "Selecione uma modalidade para continuar.",
     );
     expect(screen.getByText("2 de 8")).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("radio", { name: "Diagnóstico detalhado" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    expect(onStartDetailed).toHaveBeenCalledOnce();
 
     await user.click(screen.getByRole("button", { name: "Voltar" }));
     expect(onBackToType).toHaveBeenCalledOnce();

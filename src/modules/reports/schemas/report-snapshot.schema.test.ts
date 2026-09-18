@@ -8,7 +8,10 @@ import {
   parseCurrentProductionReportSnapshot,
   parseProductionReportSnapshot,
 } from "./production-report-snapshot.schema";
-import { parseReportSnapshot } from "./report-snapshot.schema";
+import {
+  isDetailedReportSnapshot,
+  parseReportSnapshot,
+} from "./report-snapshot.schema";
 import {
   parseCurrentServiceReportSnapshot,
   parseServiceReportSnapshot,
@@ -496,6 +499,70 @@ const validProductionV3Snapshot = {
   },
 };
 
+const validProductV4Snapshot = {
+  ...validProductV3Snapshot,
+  schemaVersion: 3,
+  calculationVersion: 3,
+  contentVersion: 4,
+  inputs: {
+    ...validProductV3Snapshot.inputs,
+    monthlySalesVolume: null,
+  },
+  results: {
+    ...validProductV3Snapshot.results,
+    fixedAllocationCents: null,
+    totalUnitCostCents: null,
+    unitProfitCents: null,
+    monthlySalesVolumeUsed: null,
+    monthlyGrossRevenueCents: null,
+    monthlyNetRevenueCents: null,
+    monthlyResultCents: null,
+    realMarginBasisPoints: null,
+    priceReferencesPartial: true,
+    weeklySalesGoal: null,
+    dailySalesGoal: null,
+    verdict: "incomplete_volume",
+    priority: "data",
+  },
+  discountSimulationBase: {
+    ...validProductV3Snapshot.discountSimulationBase,
+    unitCostCents: 5000,
+    partial: true,
+  },
+};
+
+const validProductionV4Snapshot = {
+  ...validProductionV3Snapshot,
+  schemaVersion: 3,
+  calculationVersion: 3,
+  contentVersion: 4,
+  inputs: {
+    ...validProductionV3Snapshot.inputs,
+    monthlySalesVolume: null,
+  },
+  results: {
+    ...validProductionV3Snapshot.results,
+    fixedAllocationCents: null,
+    totalUnitCostCents: null,
+    unitProfitCents: null,
+    monthlySalesVolumeUsed: null,
+    monthlyGrossRevenueCents: null,
+    monthlyNetRevenueCents: null,
+    monthlyResultCents: null,
+    realMarginBasisPoints: null,
+    priceReferencesPartial: true,
+    weeklySalesGoal: null,
+    dailySalesGoal: null,
+    verdict: "incomplete_volume",
+    priority: "data",
+  },
+  discountSimulationBase: {
+    ...validProductionV3Snapshot.discountSimulationBase,
+    unitCostCents: 5000,
+    partial: true,
+  },
+};
+
 const validServiceV4Snapshot = {
   ...validServiceV3Snapshot,
   contentVersion: 4,
@@ -529,7 +596,121 @@ const validServiceV5Snapshot = {
   ),
 };
 
+const validDetailedProductSnapshot = {
+  schemaVersion: 1,
+  calculationVersion: 1,
+  contentVersion: 1,
+  analysisMode: "detailed",
+  category: "product",
+  scenario: "resale",
+  currency: "BRL",
+  unit: "mix",
+  policy: {
+    promotionMarginBasisPoints: 1500,
+    concentrationThresholdBasisPoints: 4500,
+    weeklyDivisorHundredths: 433,
+    operatingDaysPerWeek: 6,
+    proLaboreIncluded: false,
+  },
+  inputs: {
+    submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    category: "product",
+    fixedMonthlyExpensesCents: 200,
+    proLaboreIncluded: false,
+    proLaboreCents: 0,
+    taxRateBasisPoints: 0,
+    cardFeeRateBasisPoints: 0,
+    promotionMarginBasisPoints: 1500,
+    items: [
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        position: 0,
+        name: "Caneca",
+        kind: "resale",
+        unitSalePriceCents: 1000,
+        monthlySalesVolume: 1,
+        purchaseUnitCostCents: 500,
+        packagingUnitCostCents: 0,
+      },
+    ],
+  },
+  results: {
+    effectiveFixedCostCents: 200,
+    isPartial: false,
+    missingVolumeItemIds: [],
+    items: [
+      {
+        itemId: "11111111-1111-4111-8111-111111111111",
+        variableUnitCostCents: 500,
+        feeAmountCents: 0,
+        netUnitRevenueCents: 1000,
+        unitContributionCents: 500,
+        contributionMarginBasisPoints: 5000,
+        monthlyGrossRevenueCents: 1000,
+        monthlyContributionCents: 500,
+        breakEvenUnitPriceCents: 500,
+        promotionFloorCents: 589,
+        directLoss: false,
+      },
+    ],
+    monthlyGrossRevenueCents: 1000,
+    monthlyContributionCents: 500,
+    monthlyResultCents: 300,
+    mixContributionMarginBasisPoints: 5000,
+    finalMarginBasisPoints: 3000,
+    breakEvenRevenueCents: 400,
+    verdict: "adequate_margin",
+    priority: "volume",
+  },
+  guidance: [],
+};
+
 describe("category-versioned report snapshots", () => {
+  it("parses the detailed V1 contract without shadowing quick snapshots", () => {
+    const parsed = parseReportSnapshot(validDetailedProductSnapshot);
+
+    expect(parsed).toEqual(validDetailedProductSnapshot);
+    expect(isDetailedReportSnapshot(parsed)).toBe(true);
+    expect(
+      isDetailedReportSnapshot(parseReportSnapshot(validProductSnapshot)),
+    ).toBe(false);
+  });
+
+  it.each([
+    {
+      ...validDetailedProductSnapshot,
+      category: "production",
+    },
+    {
+      ...validDetailedProductSnapshot,
+      inputs: {
+        ...validDetailedProductSnapshot.inputs,
+        items: [
+          {
+            ...validDetailedProductSnapshot.inputs.items[0],
+            position: 1,
+          },
+        ],
+      },
+    },
+    {
+      ...validDetailedProductSnapshot,
+      results: {
+        ...validDetailedProductSnapshot.results,
+        isPartial: true,
+      },
+    },
+    {
+      ...validDetailedProductSnapshot,
+      results: {
+        ...validDetailedProductSnapshot.results,
+        monthlyGrossRevenueCents: 999,
+      },
+    },
+  ])("rejects an incoherent detailed V1 contract %#", (snapshot) => {
+    expect(() => parseReportSnapshot(snapshot)).toThrow();
+  });
+
   it("preserves the complete Service V2 shape", () => {
     expect(parseServiceReportSnapshot(validServiceSnapshot)).toEqual(
       validServiceSnapshot,
@@ -626,14 +807,17 @@ describe("category-versioned report snapshots", () => {
   });
 
   it("parses the current Product content version without dropping V1/V2", () => {
-    expect(parseCurrentProductReportSnapshot(validProductV3Snapshot)).toEqual(
-      validProductV3Snapshot,
+    expect(parseCurrentProductReportSnapshot(validProductV4Snapshot)).toEqual(
+      validProductV4Snapshot,
     );
     expect(parseProductReportSnapshot(validProductV2Snapshot)).toEqual(
       validProductV2Snapshot,
     );
     expect(parseReportSnapshot(validProductV3Snapshot)).toEqual(
       validProductV3Snapshot,
+    );
+    expect(parseReportSnapshot(validProductV4Snapshot)).toEqual(
+      validProductV4Snapshot,
     );
   });
 
@@ -683,13 +867,16 @@ describe("category-versioned report snapshots", () => {
 
   it("parses the current Production content version without dropping V1/V2", () => {
     expect(
-      parseCurrentProductionReportSnapshot(validProductionV3Snapshot),
-    ).toEqual(validProductionV3Snapshot);
+      parseCurrentProductionReportSnapshot(validProductionV4Snapshot),
+    ).toEqual(validProductionV4Snapshot);
     expect(parseProductionReportSnapshot(validProductionV2Snapshot)).toEqual(
       validProductionV2Snapshot,
     );
     expect(parseReportSnapshot(validProductionV3Snapshot)).toEqual(
       validProductionV3Snapshot,
+    );
+    expect(parseReportSnapshot(validProductionV4Snapshot)).toEqual(
+      validProductionV4Snapshot,
     );
   });
 

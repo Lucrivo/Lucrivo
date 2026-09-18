@@ -53,32 +53,38 @@ describe("calculateProductionReport", () => {
     });
   });
 
-  it("keeps allocation-dependent results unavailable without volume", () => {
-    expect(
-      calculateProductionReport({
-        ...completeCommand,
-        monthlySalesVolume: null,
-      }),
-    ).toEqual(
-      expect.objectContaining({
-        fixedAllocationCents: null,
-        totalUnitCostCents: null,
-        unitProfitCents: null,
-        monthlySalesVolumeUsed: 0,
-        monthlyGrossRevenueCents: 0,
-        monthlyNetRevenueCents: 0,
-        monthlyResultCents: -300000,
-        realMarginBasisPoints: null,
-        minimumPriceCents: 5435,
-        priceReferencesPartial: true,
-        monthlySalesGoal: 72,
-        weeklySalesGoal: 17,
-        dailySalesGoal: 3,
-        breakEvenDiscountPercent: 46,
-        verdict: "operational_loss",
-        priority: "volume",
-      }),
-    );
+  it("keeps unknown volume partial and neutral", () => {
+    const result = calculateProductionReport({
+      ...completeCommand,
+      monthlySalesVolume: null,
+    });
+
+    expect(result).toMatchObject({
+      monthlySalesVolumeUsed: null,
+      monthlyGrossRevenueCents: null,
+      monthlyNetRevenueCents: null,
+      monthlyResultCents: null,
+      realMarginBasisPoints: null,
+      fixedAllocationCents: null,
+      totalUnitCostCents: null,
+      unitProfitCents: null,
+      verdict: "incomplete_volume",
+      priority: "data",
+      weeklySalesGoal: null,
+      dailySalesGoal: null,
+    });
+    expect(result.monthlySalesGoal).toBeGreaterThan(0);
+  });
+
+  it("treats explicit zero as a known no-sales month", () => {
+    const result = calculateProductionReport({
+      ...completeCommand,
+      monthlySalesVolume: 0,
+    });
+
+    expect(result.monthlySalesVolumeUsed).toBe(0);
+    expect(result.monthlyResultCents).toBe(-result.effectiveFixedCostCents);
+    expect(result.verdict).toBe("no_sales");
   });
 
   it("gives direct loss precedence and suppresses sales goals", () => {
@@ -119,9 +125,9 @@ describe("calculateProductionReport", () => {
       expect.objectContaining({
         minimumPriceCents: 0,
         breakEvenDiscountPercent: 100,
-        monthlySalesVolumeUsed: 0,
-        monthlyResultCents: 0,
-        verdict: "no_sales",
+        monthlySalesVolumeUsed: null,
+        monthlyResultCents: null,
+        verdict: "incomplete_volume",
       }),
     );
   });

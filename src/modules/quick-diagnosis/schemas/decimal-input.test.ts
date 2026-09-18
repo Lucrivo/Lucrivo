@@ -20,4 +20,10 @@ describe("scaledInteger", () => {
       scaledInteger(String(Number.MAX_SAFE_INTEGER) + "0", 0),
     ).toThrow("unsafe_integer");
   });
+
+  it("supports detailed-diagnosis quantity and unit-cost scales exactly", () => {
+    expect(scaledInteger("0,125", 6)).toBe(125_000);
+    expect(scaledInteger("0,0050", 4)).toBe(50);
+    expect(() => scaledInteger("0,0000001", 6)).toThrow("invalid_decimal");
+  });
 });

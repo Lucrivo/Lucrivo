@@ -3,6 +3,18 @@
 import { useState, type Dispatch } from "react";
 
 import {
+  DetailedDiagnosisWizard,
+  type CreateDetailedDiagnosisAction,
+} from "@/modules/detailed-diagnosis/components/detailed-diagnosis-wizard";
+import {
+  createInitialDetailedWizardState,
+  detailedWizardReducer,
+  type DetailedWizardAction,
+  type DetailedWizardState,
+} from "@/modules/detailed-diagnosis/components/detailed-wizard-state";
+import type { DetailedDiagnosisCategory } from "@/modules/detailed-diagnosis/types";
+
+import {
   ProductDiagnosisWizard,
   type CreateProductDiagnosisAction,
 } from "./product/product-diagnosis-wizard";
@@ -39,12 +51,14 @@ import {
 type ActiveDiagnosisBranch =
   | { type: "service"; state: ServiceWizardState }
   | { type: "product"; state: ProductWizardState }
-  | { type: "production"; state: ProductionWizardState };
+  | { type: "production"; state: ProductionWizardState }
+  | { type: "detailed"; state: DetailedWizardState };
 
 type QuickDiagnosisWizardProps = {
   createServiceDiagnosis: CreateServiceDiagnosisAction;
   createProductDiagnosis: CreateProductDiagnosisAction;
   createProductionDiagnosis: CreateProductionDiagnosisAction;
+  createDetailedDiagnosis: CreateDetailedDiagnosisAction;
   createSubmissionId?: () => string;
 };
 
@@ -52,6 +66,7 @@ function QuickDiagnosisWizard({
   createServiceDiagnosis,
   createProductDiagnosis,
   createProductionDiagnosis,
+  createDetailedDiagnosis,
   createSubmissionId = () => crypto.randomUUID(),
 }: QuickDiagnosisWizardProps) {
   const [diagnosisType, setDiagnosisType] = useState<DiagnosisType | "">("");
@@ -94,6 +109,49 @@ function QuickDiagnosisWizard({
         : branch,
     );
   };
+
+  const detailedDispatch: Dispatch<DetailedWizardAction> = (action) => {
+    setActiveBranch((branch) =>
+      branch?.type === "detailed"
+        ? {
+            type: "detailed",
+            state: detailedWizardReducer(branch.state, action),
+          }
+        : branch,
+    );
+  };
+
+  function startDetailed(category: DetailedDiagnosisCategory) {
+    setActiveBranch({
+      type: "detailed",
+      state: createInitialDetailedWizardState(category, createSubmissionId),
+    });
+  }
+
+  function returnToMode(category: DetailedDiagnosisCategory) {
+    if (category === "product") {
+      const initialState =
+        createInitialProductWizardState(createSubmissionId());
+      setActiveBranch({
+        type: "product",
+        state: productWizardReducer(initialState, {
+          type: "setAnalysisMode",
+          value: "detailed",
+        }),
+      });
+      return;
+    }
+
+    const initialState =
+      createInitialProductionWizardState(createSubmissionId());
+    setActiveBranch({
+      type: "production",
+      state: productionWizardReducer(initialState, {
+        type: "setAnalysisMode",
+        value: "detailed",
+      }),
+    });
+  }
 
   function selectDiagnosisType(value: DiagnosisType) {
     setDiagnosisType(value);
@@ -158,6 +216,19 @@ function QuickDiagnosisWizard({
         createDiagnosis={createProductDiagnosis}
         createSubmissionId={createSubmissionId}
         onBackToType={() => setShowCategory(true)}
+        onStartDetailed={() => startDetailed("product")}
+      />
+    );
+  }
+
+  if (!showCategory && activeBranch?.type === "detailed") {
+    return (
+      <DetailedDiagnosisWizard
+        state={activeBranch.state}
+        dispatch={detailedDispatch}
+        createDiagnosis={createDetailedDiagnosis}
+        createId={createSubmissionId}
+        onBackToMode={() => returnToMode(activeBranch.state.values.category)}
       />
     );
   }
@@ -170,6 +241,7 @@ function QuickDiagnosisWizard({
         createDiagnosis={createProductionDiagnosis}
         createSubmissionId={createSubmissionId}
         onBackToType={() => setShowCategory(true)}
+        onStartDetailed={() => startDetailed("production")}
       />
     );
   }

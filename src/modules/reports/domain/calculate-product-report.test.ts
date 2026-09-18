@@ -49,29 +49,38 @@ describe("calculateProductReport", () => {
     });
   });
 
-  it("keeps allocation-dependent results unavailable without volume", () => {
-    expect(
-      calculateProductReport({ ...completeCommand, monthlySalesVolume: null }),
-    ).toEqual(
-      expect.objectContaining({
-        fixedAllocationCents: null,
-        totalUnitCostCents: null,
-        unitProfitCents: null,
-        monthlySalesVolumeUsed: 0,
-        monthlyGrossRevenueCents: 0,
-        monthlyNetRevenueCents: 0,
-        monthlyResultCents: -300000,
-        realMarginBasisPoints: null,
-        minimumPriceCents: 5435,
-        priceReferencesPartial: true,
-        monthlySalesGoal: 72,
-        weeklySalesGoal: 17,
-        dailySalesGoal: 3,
-        breakEvenDiscountPercent: 46,
-        verdict: "operational_loss",
-        priority: "volume",
-      }),
-    );
+  it("keeps unknown volume partial and neutral", () => {
+    const result = calculateProductReport({
+      ...completeCommand,
+      monthlySalesVolume: null,
+    });
+
+    expect(result).toMatchObject({
+      monthlySalesVolumeUsed: null,
+      monthlyGrossRevenueCents: null,
+      monthlyNetRevenueCents: null,
+      monthlyResultCents: null,
+      realMarginBasisPoints: null,
+      fixedAllocationCents: null,
+      totalUnitCostCents: null,
+      unitProfitCents: null,
+      verdict: "incomplete_volume",
+      priority: "data",
+      weeklySalesGoal: null,
+      dailySalesGoal: null,
+    });
+    expect(result.monthlySalesGoal).toBeGreaterThan(0);
+  });
+
+  it("treats explicit zero as a known no-sales month", () => {
+    const result = calculateProductReport({
+      ...completeCommand,
+      monthlySalesVolume: 0,
+    });
+
+    expect(result.monthlySalesVolumeUsed).toBe(0);
+    expect(result.monthlyResultCents).toBe(-result.effectiveFixedCostCents);
+    expect(result.verdict).toBe("no_sales");
   });
 
   it("calculates a digital product without purchase or fixed costs", () => {
@@ -91,12 +100,12 @@ describe("calculateProductReport", () => {
         totalUnitCostCents: null,
         unitContributionCents: 9200,
         unitProfitCents: null,
-        monthlySalesVolumeUsed: 0,
-        monthlyResultCents: 0,
+        monthlySalesVolumeUsed: null,
+        monthlyResultCents: null,
         realMarginBasisPoints: null,
         minimumPriceCents: 0,
         breakEvenDiscountPercent: 100,
-        verdict: "no_sales",
+        verdict: "incomplete_volume",
       }),
     );
   });

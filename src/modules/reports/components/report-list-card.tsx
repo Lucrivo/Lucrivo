@@ -93,7 +93,100 @@ function optionalMargin(value: number | null): string {
   return value === null ? "Indisponível" : formatBasisPoints(value);
 }
 
+function DetailedReportListCard({ report }: { report: OwnedReportSummary }) {
+  const category = categoryLabels[report.businessCategory];
+  const itemLabel =
+    report.businessCategory === "product" ? "produto" : "produção";
+  const itemCount = report.itemCount ?? 0;
+  const resultAvailable = report.monthlyResultCents !== null;
+  const marginAvailable = report.realMarginBasisPoints !== null;
+
+  return (
+    <Card
+      role="article"
+      aria-label={`Diagnóstico detalhado de ${category}`}
+      className="group border-border/70 hover:border-primary/30 relative h-full overflow-hidden py-0 shadow-sm transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none"
+    >
+      <div
+        aria-hidden="true"
+        className="from-primary/11 via-info/50 absolute inset-x-0 top-0 h-1 bg-linear-to-r to-transparent"
+      />
+      <CardHeader className="gap-4 px-5 pt-6 sm:px-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="grid gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="info">{category}</Badge>
+              <Badge variant="outline">Diagnóstico detalhado</Badge>
+            </div>
+            <h2 className="text-xl font-semibold tracking-tight">
+              Resultado do mix
+            </h2>
+          </div>
+          <Badge variant={report.isPartial ? "warning" : "success"}>
+            {report.isPartial ? (
+              <CircleAlertIcon aria-hidden="true" />
+            ) : (
+              <CircleCheckIcon aria-hidden="true" />
+            )}
+            {report.isPartial ? "Parcial" : "Completo"}
+          </Badge>
+        </div>
+        <p className="text-muted-foreground flex items-center gap-2 text-xs">
+          <CalendarDaysIcon aria-hidden="true" className="size-3.5" />
+          {formatReportDate(report.createdAt)} · {itemCount} {itemLabel}
+          {itemCount === 1 ? "" : "s"}
+        </p>
+      </CardHeader>
+
+      <CardContent className="grid flex-1 gap-5 px-5 pb-5 sm:px-6 sm:pb-6">
+        {resultAvailable || marginAvailable ? (
+          <dl className="border-border/70 bg-muted/25 grid grid-cols-2 overflow-hidden rounded-xl border">
+            {resultAvailable ? (
+              <div className="grid gap-1 border-r p-3.5">
+                <dt className="text-muted-foreground text-xs">
+                  Resultado mensal
+                </dt>
+                <dd className="font-semibold tabular-nums">
+                  {formatCurrency(report.monthlyResultCents!)}
+                </dd>
+              </div>
+            ) : null}
+            {marginAvailable ? (
+              <div className="grid gap-1 p-3.5">
+                <dt className="text-muted-foreground text-xs">Margem final</dt>
+                <dd className="font-semibold tabular-nums">
+                  {formatBasisPoints(report.realMarginBasisPoints!)}
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        ) : (
+          <p className="text-muted-foreground text-sm">
+            Complete os volumes pendentes para ver o resultado mensal do mix.
+          </p>
+        )}
+
+        <div className="flex items-center justify-end">
+          <Link
+            href={`/reports/${report.id}`}
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "group-hover:border-primary/40",
+            )}
+          >
+            Abrir relatório
+            <ArrowUpRightIcon aria-hidden="true" />
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function ReportListCard({ report }: { report: OwnedReportSummary }) {
+  if (report.analysisMode === "detailed")
+    return <DetailedReportListCard report={report} />;
+
   const language = getReportLanguageProfile({
     category: report.businessCategory,
     schemaVersion: report.schemaVersion,
@@ -162,7 +255,7 @@ function ReportListCard({ report }: { report: OwnedReportSummary }) {
           <div className="col-span-2 grid gap-1 border-b p-3.5 sm:col-span-1 sm:border-r sm:border-b-0">
             <dt className="text-muted-foreground text-xs">Preço atual</dt>
             <dd className="text-lg font-semibold tracking-tight tabular-nums">
-              {formatCurrency(report.currentPriceCents)}
+              {formatCurrency(report.currentPriceCents!)}
             </dd>
           </div>
           <div className="grid gap-1 border-r p-3.5">

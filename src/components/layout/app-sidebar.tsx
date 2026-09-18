@@ -8,6 +8,7 @@ import {
   FileChartColumnIcon,
   LayoutDashboardIcon,
   LandmarkIcon,
+  ShieldCheckIcon,
   UsersIcon,
   WalletCardsIcon,
   type LucideIcon,
@@ -38,6 +39,11 @@ type NavigationItem = {
 };
 
 type AppSidebarVariant = "financial" | "admin";
+
+type AppSidebarProps = {
+  variant?: AppSidebarVariant;
+  isAdminUser?: boolean;
+};
 
 const financialNavigationItems: NavigationItem[] = [
   {
@@ -83,16 +89,19 @@ const adminNavigationItems: NavigationItem[] = [
 
 function AppSidebar({
   variant = "financial",
-}: {
-  variant?: AppSidebarVariant;
-}) {
+  isAdminUser = false,
+}: AppSidebarProps) {
   const pathname = usePathname();
-  const isAdmin = variant === "admin";
-  const navigationItems = isAdmin
+
+  const isAdminArea = variant === "admin";
+
+  const navigationItems = isAdminArea
     ? adminNavigationItems
     : financialNavigationItems;
-  const homeHref = isAdmin ? "/admin" : "/dashboard";
-  const subtitle = isAdmin ? "Administração" : "Finanças inteligentes";
+
+  const homeHref = isAdminArea ? "/admin" : "/dashboard";
+
+  const subtitle = isAdminArea ? "Administração" : "Finanças inteligentes";
 
   const isActive = ({ href, exact }: NavigationItem) =>
     pathname === href || (!exact && pathname.startsWith(`${href}/`));
@@ -140,6 +149,7 @@ function AppSidebar({
             <SidebarMenu className="gap-1 group-data-[collapsible=icon]:items-center">
               {navigationItems.map((item) => {
                 const { label, href, icon: Icon } = item;
+
                 return (
                   <SidebarMenuItem key={href}>
                     <SidebarMenuButton
@@ -158,15 +168,17 @@ function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {isAdmin && (
+        {isAdminArea && (
           <>
             <SidebarSeparator className="mx-3 my-2 w-auto" />
+
             <SidebarGroup className="gap-1">
               <SidebarGroupLabel className="px-3 text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
                 Produto
               </SidebarGroupLabel>
+
               <SidebarGroupContent>
-                <SidebarMenu>
+                <SidebarMenu className="group-data-[collapsible=icon]:items-center">
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       tooltip="Área financeira"
@@ -176,6 +188,34 @@ function AppSidebar({
                     >
                       <LandmarkIcon aria-hidden="true" />
                       <span>Área financeira</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
+
+        {isAdminUser && !isAdminArea && (
+          <>
+            <SidebarSeparator className="mx-3 my-2 w-auto" />
+
+            <SidebarGroup className="gap-1">
+              <SidebarGroupLabel className="px-3 text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
+                Administração
+              </SidebarGroupLabel>
+
+              <SidebarGroupContent>
+                <SidebarMenu className="group-data-[collapsible=icon]:items-center">
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      tooltip="Área administrativa"
+                      isActive={pathname.startsWith("/admin")}
+                      render={<Link href="/admin" />}
+                      className="transition-interactive h-10 rounded-xl px-3 font-medium group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
+                    >
+                      <ShieldCheckIcon aria-hidden="true" />
+                      <span>Área administrativa</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>

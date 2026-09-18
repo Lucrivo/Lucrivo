@@ -9,8 +9,11 @@ import type { PlainLanguageHelpContent } from "@/components/shared/plain-languag
 import type {
   ProductReportSnapshot,
   ProductReportSnapshotV3,
+  ProductReportSnapshotV4,
   ProductionReportSnapshot,
   ProductionReportSnapshotV3,
+  ProductionReportSnapshotV4,
+  QuickReportSnapshot,
   ReportDiscountSimulationBase,
   ReportSnapshot,
   ServiceReportSnapshot,
@@ -20,6 +23,7 @@ import {
   getReportLanguageProfile,
   type ReportLanguageProfile,
 } from "./report-language";
+import { isDetailedReportSnapshot } from "../schemas/report-snapshot.schema";
 
 type ReportNumberViewModel = {
   key: "price" | "margin" | "profit" | "minimum" | "target" | "sales";
@@ -30,28 +34,28 @@ type ReportNumberViewModel = {
 };
 type LegacyProductSnapshot = Exclude<
   ProductReportSnapshot,
-  ProductReportSnapshotV3
+  ProductReportSnapshotV3 | ProductReportSnapshotV4
 >;
 type LegacyProductionSnapshot = Exclude<
   ProductionReportSnapshot,
-  ProductionReportSnapshotV3
+  ProductionReportSnapshotV3 | ProductionReportSnapshotV4
 >;
 
 type ReportExecutiveSummaryViewModel = Omit<
-  ReportSnapshot["executiveSummary"],
+  QuickReportSnapshot["executiveSummary"],
   "verdict" | "facts"
 > & {
-  verdict: ReportSnapshot["executiveSummary"]["verdict"] & {
+  verdict: QuickReportSnapshot["executiveSummary"]["verdict"] & {
     toneLabel: string;
   };
   facts: Array<
-    ReportSnapshot["executiveSummary"]["facts"][number] & {
+    QuickReportSnapshot["executiveSummary"]["facts"][number] & {
       help?: PlainLanguageHelpContent;
     }
   >;
 };
 
-type ReportSectionViewModel = ReportSnapshot["sections"][number] & {
+type ReportSectionViewModel = QuickReportSnapshot["sections"][number] & {
   toneLabel: string;
 };
 
@@ -70,7 +74,7 @@ type ReportViewModel = {
   sections: ReportSectionViewModel[];
   discountSimulationBase: ReportDiscountSimulationBase;
   discountSimulationContext: {
-    category: ReportSnapshot["category"];
+    category: QuickReportSnapshot["category"];
     mode: "legacy_target" | "service_attention" | "unit_attention";
   };
 };
@@ -104,11 +108,11 @@ const attentionBandHelp = {
     "Abaixo de R$ 20 a cada R$ 100 é uma faixa de atenção do Lucrivo. Ela não é uma recomendação igual para todos os negócios.",
 } as const satisfies PlainLanguageHelpContent;
 
-const zeroSalesHelp = {
-  triggerLabel: "Como tratamos este mês?",
-  title: "Resultado com zero vendas",
+const unknownVolumeHelp = {
+  triggerLabel: "Por que está indisponível?",
+  title: "Resultado mensal ainda não calculado",
   description:
-    "Como nenhuma quantidade foi informada, calculamos o mês com zero vendas. Os gastos mensais continuam inteiros e não são divididos por unidade.",
+    "A quantidade vendida não foi informada. Por isso, o resultado mensal permanece indisponível e a meta mensal aparece apenas como referência.",
 } as const satisfies PlainLanguageHelpContent;
 
 const digitalCostHelp = {
@@ -154,12 +158,18 @@ const partialTargetPriceHelp = {
     "É o preço calculado com seus gastos, taxas e a meta definida neste diagnóstico. Como você não informou as vendas do mês, os gastos mensais ainda não entram neste valor.",
 } as const satisfies PlainLanguageHelpContent;
 
-function optionalCurrency(value: number | null): string {
-  return value === null ? "Indisponível" : formatCurrency(value);
+function optionalCurrency(
+  value: number | null,
+  unavailable = "Indisponível",
+): string {
+  return value === null ? unavailable : formatCurrency(value);
 }
 
-function optionalPercentage(value: number | null): string {
-  return value === null ? "Indisponível" : formatBasisPoints(value);
+function optionalPercentage(
+  value: number | null,
+  unavailable = "Indisponível",
+): string {
+  return value === null ? unavailable : formatBasisPoints(value);
 }
 
 function toServiceNumbers(
@@ -287,26 +297,32 @@ function toNormalizedServiceNumbers(
 
 function isCurrentProductSnapshot(
   snapshot: ProductReportSnapshot,
-): snapshot is ProductReportSnapshotV3 {
+): snapshot is ProductReportSnapshotV3 | ProductReportSnapshotV4 {
   return (
-    snapshot.schemaVersion === 2 &&
-    snapshot.calculationVersion === 2 &&
-    snapshot.contentVersion === 3
+    (snapshot.schemaVersion === 2 &&
+      snapshot.calculationVersion === 2 &&
+      snapshot.contentVersion === 3) ||
+    (snapshot.schemaVersion === 3 &&
+      snapshot.calculationVersion === 3 &&
+      snapshot.contentVersion === 4)
   );
 }
 
 function isCurrentProductionSnapshot(
   snapshot: ProductionReportSnapshot,
-): snapshot is ProductionReportSnapshotV3 {
+): snapshot is ProductionReportSnapshotV3 | ProductionReportSnapshotV4 {
   return (
-    snapshot.schemaVersion === 2 &&
-    snapshot.calculationVersion === 2 &&
-    snapshot.contentVersion === 3
+    (snapshot.schemaVersion === 2 &&
+      snapshot.calculationVersion === 2 &&
+      snapshot.contentVersion === 3) ||
+    (snapshot.schemaVersion === 3 &&
+      snapshot.calculationVersion === 3 &&
+      snapshot.contentVersion === 4)
   );
 }
 
 function toCurrentProductNumbers(
-  snapshot: ProductReportSnapshotV3,
+  snapshot: ProductReportSnapshotV3 | ProductReportSnapshotV4,
 ): ReportNumberViewModel[] {
   const partial = snapshot.results.priceReferencesPartial;
   const monthly = snapshot.results.monthlySalesGoal;
@@ -331,32 +347,37 @@ function toCurrentProductNumbers(
     {
       key: "margin",
       label: "Quanto sobra a cada R$ 100",
-      value:
-        snapshot.results.realMarginBasisPoints === null
-          ? "Sem vendas para calcular"
-          : formatCurrency(snapshot.results.realMarginBasisPoints),
+      value: optionalPercentage(
+        snapshot.results.realMarginBasisPoints,
+        snapshot.results.monthlySalesVolumeUsed === null
+          ? "Ainda não calculado"
+          : "Sem vendas para calcular",
+      ),
       help: attentionBandHelp,
     },
     {
       key: "profit",
       label: "Resultado do mês",
-      value: formatCurrency(snapshot.results.monthlyResultCents),
-      ...(partial ? { help: zeroSalesHelp } : {}),
+      value: optionalCurrency(
+        snapshot.results.monthlyResultCents,
+        "Ainda não calculado",
+      ),
+      ...(partial ? { help: unknownVolumeHelp } : {}),
     },
     {
       key: "sales",
       label: "Vendas necessárias no mês",
       value: monthly === null ? "Indisponível" : `${monthly} vendas`,
       supportingText:
-        monthly === null
+        monthly === null || snapshot.results.weeklySalesGoal === null
           ? undefined
-          : `${snapshot.results.weeklySalesGoal ?? 0} por semana e ${snapshot.results.dailySalesGoal ?? 0} por dia.`,
+          : `${snapshot.results.weeklySalesGoal} por semana e ${snapshot.results.dailySalesGoal ?? 0} por dia.`,
     },
   ];
 }
 
 function toCurrentProductionNumbers(
-  snapshot: ProductionReportSnapshotV3,
+  snapshot: ProductionReportSnapshotV3 | ProductionReportSnapshotV4,
 ): ReportNumberViewModel[] {
   const partial = snapshot.results.priceReferencesPartial;
   const monthly = snapshot.results.monthlySalesGoal;
@@ -377,26 +398,31 @@ function toCurrentProductionNumbers(
     {
       key: "margin",
       label: "Quanto sobra a cada R$ 100",
-      value:
-        snapshot.results.realMarginBasisPoints === null
-          ? "Sem vendas para calcular"
-          : formatCurrency(snapshot.results.realMarginBasisPoints),
+      value: optionalPercentage(
+        snapshot.results.realMarginBasisPoints,
+        snapshot.results.monthlySalesVolumeUsed === null
+          ? "Ainda não calculado"
+          : "Sem vendas para calcular",
+      ),
       help: attentionBandHelp,
     },
     {
       key: "profit",
       label: "Resultado do mês",
-      value: formatCurrency(snapshot.results.monthlyResultCents),
-      ...(partial ? { help: zeroSalesHelp } : {}),
+      value: optionalCurrency(
+        snapshot.results.monthlyResultCents,
+        "Ainda não calculado",
+      ),
+      ...(partial ? { help: unknownVolumeHelp } : {}),
     },
     {
       key: "sales",
       label: "Vendas necessárias no mês",
       value: monthly === null ? "Indisponível" : `${monthly} unidades`,
       supportingText:
-        monthly === null
+        monthly === null || snapshot.results.weeklySalesGoal === null
           ? undefined
-          : `${snapshot.results.weeklySalesGoal ?? 0} por semana e ${snapshot.results.dailySalesGoal ?? 0} por dia.`,
+          : `${snapshot.results.weeklySalesGoal} por semana e ${snapshot.results.dailySalesGoal ?? 0} por dia.`,
     },
   ];
 }
@@ -532,6 +558,10 @@ function toReportViewModel({
   createdAt: string;
   snapshot: ReportSnapshot;
 }): ReportViewModel {
+  if (isDetailedReportSnapshot(snapshot)) {
+    throw new Error("detailed_report_requires_dedicated_presenter");
+  }
+
   const unitLabel = formatReportUnit(snapshot.unit);
   const language = getReportLanguageProfile(snapshot);
   const normalizedService = isNormalizedServiceSnapshot(snapshot);

@@ -29,6 +29,7 @@ describe("ProductionDiagnosisWizard", () => {
     createSubmissionId = vi.fn(() => "550e8400-e29b-41d4-a716-446655440000"),
   ) {
     const onBackToType = vi.fn();
+    const onStartDetailed = vi.fn();
 
     function ControlledProductionWizard() {
       const [submissionId] = useState(createSubmissionId);
@@ -45,6 +46,7 @@ describe("ProductionDiagnosisWizard", () => {
           createDiagnosis={createDiagnosis}
           createSubmissionId={createSubmissionId}
           onBackToType={onBackToType}
+          onStartDetailed={onStartDetailed}
         />
       );
     }
@@ -55,6 +57,7 @@ describe("ProductionDiagnosisWizard", () => {
       createDiagnosis,
       createSubmissionId,
       onBackToType,
+      onStartDetailed,
     };
   }
 
@@ -127,7 +130,9 @@ describe("ProductionDiagnosisWizard", () => {
     ).toHaveFocus();
     if (volume) {
       await user.type(
-        screen.getByLabelText("Quantas unidades você vende em um mês comum?"),
+        screen.getByRole("textbox", {
+          name: "Quantas unidades você vende por mês?",
+        }),
         "100",
       );
     }
@@ -182,15 +187,21 @@ describe("ProductionDiagnosisWizard", () => {
     return user;
   }
 
-  it("validates the current step and returns to diagnosis type from modality", async () => {
-    const { onBackToType } = renderWizard();
+  it("validates the current step, starts Detailed, and returns to diagnosis type", async () => {
+    const { onBackToType, onStartDetailed } = renderWizard();
     const user = userEvent.setup();
 
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Selecione o diagnóstico rápido para continuar.",
+      "Selecione uma modalidade para continuar.",
     );
     expect(screen.getByText("2 de 8")).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("radio", { name: "Diagnóstico detalhado" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    expect(onStartDetailed).toHaveBeenCalledOnce();
 
     await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));

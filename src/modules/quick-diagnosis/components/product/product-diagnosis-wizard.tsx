@@ -36,6 +36,7 @@ type ProductDiagnosisWizardProps = {
   createDiagnosis: CreateProductDiagnosisAction;
   createSubmissionId: () => string;
   onBackToType: () => void;
+  onStartDetailed: () => void;
 };
 
 const stepTitles: Record<ProductWizardStep, string> = {
@@ -96,6 +97,7 @@ function ProductDiagnosisWizard({
   createDiagnosis,
   createSubmissionId,
   onBackToType,
+  onStartDetailed,
 }: ProductDiagnosisWizardProps) {
   const router = useRouter();
   const submittingRef = useRef(false);
@@ -169,15 +171,19 @@ function ProductDiagnosisWizard({
     if (state.step === "review") return;
 
     if (state.step === "analysisMode") {
-      if (state.analysisMode !== "quick") {
+      if (!state.analysisMode) {
         dispatch({
           type: "setAnalysisModeError",
-          error: "Selecione o diagnóstico rápido para continuar.",
+          error: "Selecione uma modalidade para continuar.",
         });
         return;
       }
 
       dispatch({ type: "setAnalysisModeError", error: null });
+      if (state.analysisMode === "detailed") {
+        onStartDetailed();
+        return;
+      }
       dispatch({ type: "next" });
       return;
     }

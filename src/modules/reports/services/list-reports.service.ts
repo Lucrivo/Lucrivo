@@ -8,7 +8,7 @@ import type { ReportSnapshot } from "../types";
 
 const REPORTS_PAGE_SIZE = 12;
 const REPORT_SUMMARY_COLUMNS =
-  "id, business_category, scenario, created_at, current_price_cents, real_margin_basis_points, unit_profit_cents, verdict, priority, unit, schema_version, calculation_version, content_version" as const;
+  "id, business_category, scenario, created_at, analysis_mode, current_price_cents, real_margin_basis_points, unit_profit_cents, verdict, priority, unit, schema_version, calculation_version, content_version, monthly_gross_revenue_cents, monthly_result_cents, item_count, is_partial" as const;
 
 const reportsCursorSchema = z.strictObject({
   createdAt: z.iso.datetime({ offset: true }),
@@ -23,7 +23,8 @@ type OwnedReportSummary = {
   businessCategory: DiagnosisRow["business_category"];
   scenario: string;
   createdAt: string;
-  currentPriceCents: number;
+  analysisMode: "quick" | "detailed";
+  currentPriceCents: number | null;
   realMarginBasisPoints: number | null;
   unitProfitCents: number | null;
   verdict: string;
@@ -32,6 +33,10 @@ type OwnedReportSummary = {
   schemaVersion: ReportSnapshot["schemaVersion"];
   calculationVersion: ReportSnapshot["calculationVersion"];
   contentVersion: ReportSnapshot["contentVersion"];
+  monthlyGrossRevenueCents: number | null;
+  monthlyResultCents: number | null;
+  itemCount: number | null;
+  isPartial: boolean | null;
 };
 
 type ListOwnedReportsInput = {
@@ -84,6 +89,7 @@ function toOwnedReportSummary(
     | "business_category"
     | "scenario"
     | "created_at"
+    | "analysis_mode"
     | "current_price_cents"
     | "real_margin_basis_points"
     | "unit_profit_cents"
@@ -93,6 +99,10 @@ function toOwnedReportSummary(
     | "schema_version"
     | "calculation_version"
     | "content_version"
+    | "monthly_gross_revenue_cents"
+    | "monthly_result_cents"
+    | "item_count"
+    | "is_partial"
   >,
 ): OwnedReportSummary {
   return {
@@ -100,6 +110,7 @@ function toOwnedReportSummary(
     businessCategory: row.business_category,
     scenario: row.scenario,
     createdAt: row.created_at,
+    analysisMode: row.analysis_mode as "quick" | "detailed",
     currentPriceCents: row.current_price_cents,
     realMarginBasisPoints: row.real_margin_basis_points,
     unitProfitCents: row.unit_profit_cents,
@@ -110,6 +121,10 @@ function toOwnedReportSummary(
     calculationVersion:
       row.calculation_version as ReportSnapshot["calculationVersion"],
     contentVersion: row.content_version as ReportSnapshot["contentVersion"],
+    monthlyGrossRevenueCents: row.monthly_gross_revenue_cents,
+    monthlyResultCents: row.monthly_result_cents,
+    itemCount: row.item_count,
+    isPartial: row.is_partial,
   };
 }
 
