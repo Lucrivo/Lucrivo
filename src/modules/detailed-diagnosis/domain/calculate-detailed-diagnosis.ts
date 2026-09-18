@@ -1,7 +1,4 @@
-import {
-  ceilDivide,
-  roundDivide,
-} from "@/modules/reports/domain/integer-math";
+import { ceilDivide, roundDivide } from "@/modules/reports/domain/integer-math";
 
 import type {
   DetailedDiagnosisCalculation,
@@ -67,9 +64,7 @@ function calculateDetailedDiagnosis(
     cardFeeRateBasisPoints: command.cardFeeRateBasisPoints,
     promotionMarginBasisPoints: command.promotionMarginBasisPoints,
   };
-  const items = command.items.map((item) =>
-    calculateDetailedItem(item, rates),
-  );
+  const items = command.items.map((item) => calculateDetailedItem(item, rates));
   const missingVolumeItemIds = command.items
     .filter((item) => item.monthlySalesVolume === null)
     .map((item) => item.id);
@@ -128,8 +123,7 @@ function calculateDetailedDiagnosis(
   const breakEvenRevenueCents =
     monthlyContributionCents > 0 && monthlyGrossRevenueCents > 0
       ? ceilDivide(
-          BigInt(effectiveFixedCostCents) *
-            BigInt(monthlyGrossRevenueCents),
+          BigInt(effectiveFixedCostCents) * BigInt(monthlyGrossRevenueCents),
           BigInt(monthlyContributionCents),
         )
       : null;

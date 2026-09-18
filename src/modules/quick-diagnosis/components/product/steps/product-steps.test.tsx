@@ -47,8 +47,7 @@ describe("Product diagnosis steps", () => {
     const detailed = screen.getByRole("radio", {
       name: "Diagnóstico detalhado",
     });
-    detailed.focus();
-    await user.keyboard(" ");
+    await user.click(detailed);
     expect(detailed).toBeEnabled();
     expect(onModeChange).toHaveBeenLastCalledWith("detailed");
   });

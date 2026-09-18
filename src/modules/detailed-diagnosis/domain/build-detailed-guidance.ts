@@ -172,8 +172,7 @@ function buildHighVolumeLowMarginGuidance(
     command.items.map((item) => [item.id, item.monthlySalesVolume ?? 0]),
   );
   const highestVolumeItem = positiveMarginItems.reduce((highest, item) =>
-    (volumeById.get(item.itemId) ?? 0) >
-    (volumeById.get(highest.itemId) ?? 0)
+    (volumeById.get(item.itemId) ?? 0) > (volumeById.get(highest.itemId) ?? 0)
       ? item
       : highest,
   );
@@ -182,9 +181,7 @@ function buildHighVolumeLowMarginGuidance(
       (item) => item.contributionMarginBasisPoints ?? Number.MAX_SAFE_INTEGER,
     ),
   );
-  if (
-    highestVolumeItem.contributionMarginBasisPoints !== worstPositiveMargin
-  ) {
+  if (highestVolumeItem.contributionMarginBasisPoints !== worstPositiveMargin) {
     return null;
   }
 
@@ -233,7 +230,4 @@ function buildDetailedGuidance(
   ].filter((guidance): guidance is DetailedGuidance => guidance !== null);
 }
 
-export {
-  CONCENTRATION_THRESHOLD_BASIS_POINTS,
-  buildDetailedGuidance,
-};
+export { CONCENTRATION_THRESHOLD_BASIS_POINTS, buildDetailedGuidance };

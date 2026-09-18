@@ -61,7 +61,8 @@ function toDetailedPersistenceItems(
         throw new Error("Detailed report item result is missing.");
       }
 
-      const { itemId: _itemId, ...calculatedFields } = calculation;
+      const { itemId, ...calculatedFields } = calculation;
+      void itemId;
       const sourceItem =
         item.kind === "manufacturing" && item.costMode === "technical_sheet"
           ? {

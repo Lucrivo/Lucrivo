@@ -20,7 +20,8 @@ const reportSnapshotSchema = z.union([
 
 type ReportSnapshot = z.infer<typeof reportSnapshotSchema>;
 type QuickReportSnapshot = z.infer<typeof quickReportSnapshotSchema>;
-type ReportDiscountSimulationBase = QuickReportSnapshot["discountSimulationBase"];
+type ReportDiscountSimulationBase =
+  QuickReportSnapshot["discountSimulationBase"];
 
 function parseReportSnapshot(value: unknown): ReportSnapshot {
   if (

@@ -169,8 +169,7 @@ const detailedReportSnapshotSchema = z
     }
 
     if (
-      snapshot.policy.proLaboreIncluded !==
-        snapshot.inputs.proLaboreIncluded ||
+      snapshot.policy.proLaboreIncluded !== snapshot.inputs.proLaboreIncluded ||
       snapshot.policy.promotionMarginBasisPoints !==
         snapshot.inputs.promotionMarginBasisPoints
     ) {
@@ -196,7 +195,10 @@ const detailedReportSnapshotSchema = z
       }
       itemIds.add(item.id);
 
-      if (item.kind === "manufacturing" && item.costMode === "technical_sheet") {
+      if (
+        item.kind === "manufacturing" &&
+        item.costMode === "technical_sheet"
+      ) {
         const ingredientIds = new Set<string>();
         item.ingredients.forEach((ingredient, ingredientIndex) => {
           if (
@@ -205,13 +207,7 @@ const detailedReportSnapshotSchema = z
           ) {
             context.addIssue({
               code: "custom",
-              path: [
-                "inputs",
-                "items",
-                index,
-                "ingredients",
-                ingredientIndex,
-              ],
+              path: ["inputs", "items", index, "ingredients", ingredientIndex],
               message: "Ingrediente fora de ordem ou duplicado.",
             });
           }
@@ -231,9 +227,7 @@ const detailedReportSnapshotSchema = z
     }
   });
 
-type DetailedReportSnapshotV1 = z.infer<
-  typeof detailedReportSnapshotSchema
->;
+type DetailedReportSnapshotV1 = z.infer<typeof detailedReportSnapshotSchema>;
 type CurrentDetailedReportSnapshot = DetailedReportSnapshotV1;
 
 function parseDetailedReportSnapshot(

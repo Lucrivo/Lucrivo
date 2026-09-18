@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type {
-  DetailedDiagnosisCommand,
-  DetailedProductItem,
-} from "../types";
+import type { DetailedDiagnosisCommand, DetailedProductItem } from "../types";
 import { buildDetailedGuidance } from "./build-detailed-guidance";
 import { calculateDetailedDiagnosis } from "./calculate-detailed-diagnosis";
 
@@ -142,14 +139,14 @@ describe("buildDetailedGuidance", () => {
         },
       ]),
     );
-    expect(
-      aboveThreshold.filter(({ key }) => key === "concentration"),
-    ).toEqual([
-      expect.objectContaining({
-        tone: "warning",
-        itemIds: [highVolumeItem.id],
-      }),
-    ]);
+    expect(aboveThreshold.filter(({ key }) => key === "concentration")).toEqual(
+      [
+        expect.objectContaining({
+          tone: "warning",
+          itemIds: [highVolumeItem.id],
+        }),
+      ],
+    );
   });
 
   it("highlights the best unit contribution", () => {
@@ -179,9 +176,9 @@ describe("buildDetailedGuidance", () => {
       command([highVolumeItem, highMarginItem], 10_000),
     );
 
-    expect(
-      guidance.find(({ key }) => key === "business_result"),
-    ).toMatchObject({ tone: "positive", itemIds: [] });
+    expect(guidance.find(({ key }) => key === "business_result")).toMatchObject(
+      { tone: "positive", itemIds: [] },
+    );
   });
 
   it("returns compatible rules in their specified order", () => {

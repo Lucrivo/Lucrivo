@@ -671,9 +671,9 @@ describe("category-versioned report snapshots", () => {
 
     expect(parsed).toEqual(validDetailedProductSnapshot);
     expect(isDetailedReportSnapshot(parsed)).toBe(true);
-    expect(isDetailedReportSnapshot(parseReportSnapshot(validProductSnapshot))).toBe(
-      false,
-    );
+    expect(
+      isDetailedReportSnapshot(parseReportSnapshot(validProductSnapshot)),
+    ).toBe(false);
   });
 
   it.each([

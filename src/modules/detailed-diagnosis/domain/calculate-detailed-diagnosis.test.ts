@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type {
-  DetailedDiagnosisCommand,
-  DetailedProductItem,
-} from "../types";
+import type { DetailedDiagnosisCommand, DetailedProductItem } from "../types";
 import { calculateDetailedDiagnosis } from "./calculate-detailed-diagnosis";
 
 const firstItem: DetailedProductItem = {
@@ -45,10 +42,7 @@ describe("calculateDetailedDiagnosis", () => {
   it("keeps item economics but hides every mix-dependent result when partial", () => {
     const result = calculateDetailedDiagnosis(
       command({
-        items: [
-          firstItem,
-          { ...secondItem, monthlySalesVolume: null },
-        ],
+        items: [firstItem, { ...secondItem, monthlySalesVolume: null }],
       }),
     );
 

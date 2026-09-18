@@ -1,7 +1,4 @@
-import {
-  ceilDivide,
-  roundDivide,
-} from "@/modules/reports/domain/integer-math";
+import { ceilDivide, roundDivide } from "@/modules/reports/domain/integer-math";
 
 import type {
   DetailedDiagnosisItem,
@@ -86,8 +83,7 @@ function calculateDetailedItem(
     BigInt(10_000),
   );
   const feeAmountCents = item.unitSalePriceCents - netUnitRevenueCents;
-  const unitContributionCents =
-    netUnitRevenueCents - variableUnitCostCents;
+  const unitContributionCents = netUnitRevenueCents - variableUnitCostCents;
   const contributionMarginBasisPoints =
     item.unitSalePriceCents > 0
       ? roundDivide(
@@ -99,8 +95,7 @@ function calculateDetailedItem(
     item.monthlySalesVolume === null
       ? null
       : roundDivide(
-          BigInt(item.unitSalePriceCents) *
-            BigInt(item.monthlySalesVolume),
+          BigInt(item.unitSalePriceCents) * BigInt(item.monthlySalesVolume),
           BigInt(1),
         );
   const monthlyContributionCents =
@@ -126,9 +121,7 @@ function calculateDetailedItem(
     ),
     promotionFloorCents: calculatePriceFloor(
       variableUnitCostCents,
-      10_000 -
-        feeRateBasisPoints -
-        rates.promotionMarginBasisPoints,
+      10_000 - feeRateBasisPoints - rates.promotionMarginBasisPoints,
     ),
     directLoss: unitContributionCents <= 0,
   };

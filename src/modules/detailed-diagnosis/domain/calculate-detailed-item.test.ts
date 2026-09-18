@@ -212,10 +212,7 @@ describe("calculateDetailedItem", () => {
 
   it("keeps unknown monthly totals null and explicit zero totals at zero", () => {
     expect(
-      calculateDetailedItem(
-        { ...resaleItem, monthlySalesVolume: null },
-        rates,
-      ),
+      calculateDetailedItem({ ...resaleItem, monthlySalesVolume: null }, rates),
     ).toMatchObject({
       monthlyGrossRevenueCents: null,
       monthlyContributionCents: null,

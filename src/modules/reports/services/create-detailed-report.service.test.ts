@@ -126,7 +126,10 @@ describe("createDetailedReport", () => {
           ),
           itemId: undefined,
         },
-      ].map(({ itemId: _itemId, ...item }) => item),
+      ].map(({ itemId, ...item }) => {
+        void itemId;
+        return item;
+      }),
       p_schema_version: 1,
       p_calculation_version: 1,
       p_content_version: 1,
@@ -154,7 +157,10 @@ describe("createDetailedReport", () => {
           ...calculation.items[0],
           itemId: undefined,
         },
-      ].map(({ itemId: _itemId, ...item }) => item),
+      ].map(({ itemId, ...item }) => {
+        void itemId;
+        return item;
+      }),
     );
     expect(args.p_items[0].ingredients).toEqual(
       sourceItem.kind === "manufacturing" &&
