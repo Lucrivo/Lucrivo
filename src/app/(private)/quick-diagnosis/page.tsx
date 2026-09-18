@@ -1,6 +1,7 @@
 import { DiagnosisLimitCard } from "@/modules/billing/components/diagnosis-limit-card";
 import { getBillingOverview } from "@/modules/billing/services/get-billing-overview.service";
 import { requireUser } from "@/modules/auth/services/require-user";
+import { createDetailedDiagnosis } from "@/modules/detailed-diagnosis/actions/create-detailed-diagnosis.action";
 import { createProductDiagnosis } from "@/modules/quick-diagnosis/actions/create-product-diagnosis.action";
 import { createProductionDiagnosis } from "@/modules/quick-diagnosis/actions/create-production-diagnosis.action";
 import { createServiceDiagnosis } from "@/modules/quick-diagnosis/actions/create-service-diagnosis.action";
@@ -22,6 +23,7 @@ export default async function QuickDiagnosisPage() {
           createServiceDiagnosis={createServiceDiagnosis}
           createProductDiagnosis={createProductDiagnosis}
           createProductionDiagnosis={createProductionDiagnosis}
+          createDetailedDiagnosis={createDetailedDiagnosis}
         />
       ) : (
         <DiagnosisLimitCard />

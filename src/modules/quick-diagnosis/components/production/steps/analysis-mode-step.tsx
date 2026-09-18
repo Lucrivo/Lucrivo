@@ -1,4 +1,4 @@
-import { FactoryIcon, GaugeIcon, LockIcon } from "lucide-react";
+import { FactoryIcon, GaugeIcon } from "lucide-react";
 
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
@@ -17,16 +17,20 @@ const analysisModes = [
     detail:
       "Descubra custo, preço, margem e prioridade com os dados essenciais.",
     icon: GaugeIcon,
-    disabled: false,
   },
   {
     value: "detailed",
     label: "Diagnóstico detalhado",
-    detail: "Uma análise ampliada do processo e da capacidade de fabricação.",
+    detail:
+      "Analise uma ou mais produções com ficha técnica e o resultado do mix.",
     icon: FactoryIcon,
-    disabled: true,
   },
-] as const;
+] satisfies ReadonlyArray<{
+  value: ProductionAnalysisMode;
+  label: string;
+  detail: string;
+  icon: typeof GaugeIcon;
+}>;
 
 function AnalysisModeStep({ value, error, onChange }: AnalysisModeStepProps) {
   return (
@@ -37,7 +41,8 @@ function AnalysisModeStep({ value, error, onChange }: AnalysisModeStepProps) {
         aria-invalid={Boolean(error)}
         aria-describedby={error ? "analysisMode-error" : undefined}
         onValueChange={(nextValue) => {
-          if (nextValue === "quick") onChange(nextValue);
+          if (nextValue === "quick" || nextValue === "detailed")
+            onChange(nextValue);
         }}
         className="grid gap-3 sm:grid-cols-2"
       >
@@ -47,23 +52,13 @@ function AnalysisModeStep({ value, error, onChange }: AnalysisModeStepProps) {
           return (
             <label
               key={mode.value}
-              className="border-border bg-background hover:border-primary/40 has-[[data-checked]]:border-primary has-[[data-checked]]:bg-primary/5 has-[[data-disabled]]:bg-muted/35 has-[[data-disabled]]:text-muted-foreground relative flex min-h-32 cursor-pointer flex-col gap-4 rounded-xl border p-4 transition-colors has-[[data-disabled]]:cursor-not-allowed has-[[data-disabled]]:opacity-70 motion-reduce:transition-none"
+              className="border-border bg-background hover:border-primary/40 has-[[data-checked]]:border-primary has-[[data-checked]]:bg-primary/5 relative flex min-h-32 cursor-pointer flex-col gap-4 rounded-xl border p-4 transition-colors motion-reduce:transition-none"
             >
               <span className="flex items-center justify-between gap-3">
                 <span className="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
                   <Icon aria-hidden="true" className="size-4" />
                 </span>
-                {mode.disabled ? (
-                  <span
-                    aria-hidden="true"
-                    className="bg-muted flex items-center gap-1 rounded-full px-2 py-1 text-[0.65rem] font-semibold tracking-wide uppercase"
-                  >
-                    <LockIcon aria-hidden="true" className="size-3" />
-                    Em breve
-                  </span>
-                ) : (
-                  <RadioGroupItem value={mode.value} />
-                )}
+                <RadioGroupItem value={mode.value} />
               </span>
               <span className="grid gap-1">
                 <span className="font-semibold">{mode.label}</span>
@@ -74,13 +69,6 @@ function AnalysisModeStep({ value, error, onChange }: AnalysisModeStepProps) {
                   {mode.detail}
                 </span>
               </span>
-              {mode.disabled ? (
-                <RadioGroupItem
-                  value={mode.value}
-                  disabled
-                  className="sr-only"
-                />
-              ) : null}
             </label>
           );
         })}

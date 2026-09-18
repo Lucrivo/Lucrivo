@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
+  createDetailedDiagnosis,
   createProductDiagnosis,
   createProductionDiagnosis,
   createServiceDiagnosis,
@@ -10,6 +11,7 @@ const {
   QuickDiagnosisWizard,
   requireUser,
 } = vi.hoisted(() => ({
+  createDetailedDiagnosis: vi.fn(),
   createProductDiagnosis: vi.fn(),
   createProductionDiagnosis: vi.fn(),
   createServiceDiagnosis: vi.fn(),
@@ -18,6 +20,11 @@ const {
   QuickDiagnosisWizard: vi.fn(() => <div>Wizard do diagnóstico</div>),
   requireUser: vi.fn(),
 }));
+
+vi.mock(
+  "@/modules/detailed-diagnosis/actions/create-detailed-diagnosis.action",
+  () => ({ createDetailedDiagnosis }),
+);
 
 vi.mock(
   "@/modules/quick-diagnosis/actions/create-service-diagnosis.action",
@@ -78,6 +85,7 @@ describe("QuickDiagnosisPage", () => {
         createProductDiagnosis,
         createProductionDiagnosis,
         createServiceDiagnosis,
+        createDetailedDiagnosis,
       },
       undefined,
     );

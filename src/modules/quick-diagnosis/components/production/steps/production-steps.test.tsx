@@ -54,7 +54,7 @@ describe("Production diagnosis steps", () => {
     });
   });
 
-  it("offers Quick by keyboard and disables Detailed with Em breve", async () => {
+  it("offers Quick and Detailed by keyboard", async () => {
     const user = userEvent.setup();
     const onModeChange = vi.fn();
 
@@ -66,10 +66,13 @@ describe("Production diagnosis steps", () => {
 
     expect(onModeChange).toHaveBeenCalledWith("quick");
     expect(quick).toBeEnabled();
-    expect(
-      screen.getByRole("radio", { name: "Diagnóstico detalhado" }),
-    ).toHaveAttribute("aria-disabled", "true");
-    expect(screen.getByText("Em breve")).toBeVisible();
+    const detailed = screen.getByRole("radio", {
+      name: "Diagnóstico detalhado",
+    });
+    detailed.focus();
+    await user.keyboard(" ");
+    expect(detailed).toBeEnabled();
+    expect(onModeChange).toHaveBeenLastCalledWith("detailed");
   });
 
   it("links summarized Production value errors and excludes other categories", () => {
