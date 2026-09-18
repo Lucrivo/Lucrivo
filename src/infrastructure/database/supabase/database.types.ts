@@ -473,6 +473,7 @@ export type Database = {
           content_version: number;
           created_at: string;
           current_price_cents: number | null;
+          deleted_at: string | null;
           id: number;
           is_free_report: boolean;
           is_partial: boolean | null;
@@ -487,8 +488,10 @@ export type Database = {
           submission_id: string;
           unit: string;
           unit_profit_cents: number | null;
+          updated_at: string;
           user_id: string;
           verdict: string;
+          version: number;
         };
         Insert: {
           analysis_mode?: string;
@@ -497,6 +500,7 @@ export type Database = {
           content_version: number;
           created_at?: string;
           current_price_cents?: number | null;
+          deleted_at?: string | null;
           id?: never;
           is_free_report?: boolean;
           is_partial?: boolean | null;
@@ -511,8 +515,10 @@ export type Database = {
           submission_id: string;
           unit: string;
           unit_profit_cents?: number | null;
+          updated_at?: string;
           user_id: string;
           verdict: string;
+          version?: number;
         };
         Update: {
           analysis_mode?: string;
@@ -521,6 +527,7 @@ export type Database = {
           content_version?: number;
           created_at?: string;
           current_price_cents?: number | null;
+          deleted_at?: string | null;
           id?: never;
           is_free_report?: boolean;
           is_partial?: boolean | null;
@@ -535,8 +542,10 @@ export type Database = {
           submission_id?: string;
           unit?: string;
           unit_profit_cents?: number | null;
+          updated_at?: string;
           user_id?: string;
           verdict?: string;
+          version?: number;
         };
         Relationships: [];
       };
@@ -1061,6 +1070,10 @@ export type Database = {
           p_state?: string;
         };
         Returns: Json;
+      };
+      soft_delete_owned_diagnosis_v1: {
+        Args: { p_diagnosis_id: number; p_expected_version: number };
+        Returns: string;
       };
     };
     Enums: {
