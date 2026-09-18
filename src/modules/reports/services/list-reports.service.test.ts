@@ -26,6 +26,7 @@ function row(
     business_category: identity.category,
     scenario: identity.scenario,
     created_at: timestamp,
+    analysis_mode: "quick",
     current_price_cents: 8_000,
     real_margin_basis_points: 1_700,
     unit_profit_cents: 1_360,
@@ -35,6 +36,10 @@ function row(
     schema_version: 3,
     calculation_version: 2,
     content_version: 4,
+    monthly_gross_revenue_cents: null,
+    monthly_result_cents: null,
+    item_count: null,
+    is_partial: null,
   };
 }
 
@@ -94,6 +99,7 @@ describe("listOwnedReports", () => {
           businessCategory: "service",
           scenario: "hour",
           createdAt,
+          analysisMode: "quick",
           currentPriceCents: 8_000,
           realMarginBasisPoints: 1_700,
           unitProfitCents: 1_360,
@@ -103,6 +109,10 @@ describe("listOwnedReports", () => {
           schemaVersion: 3,
           calculationVersion: 2,
           contentVersion: 4,
+          monthlyGrossRevenueCents: null,
+          monthlyResultCents: null,
+          itemCount: null,
+          isPartial: null,
         },
       ],
       nextCursor: null,
@@ -110,7 +120,7 @@ describe("listOwnedReports", () => {
 
     expect(from).toHaveBeenCalledWith("diagnoses");
     expect(select).toHaveBeenCalledWith(
-      "id, business_category, scenario, created_at, current_price_cents, real_margin_basis_points, unit_profit_cents, verdict, priority, unit, schema_version, calculation_version, content_version",
+      "id, business_category, scenario, created_at, analysis_mode, current_price_cents, real_margin_basis_points, unit_profit_cents, verdict, priority, unit, schema_version, calculation_version, content_version, monthly_gross_revenue_cents, monthly_result_cents, item_count, is_partial",
     );
     expect(select.mock.calls[0]?.[0]).not.toContain("report_snapshot");
     expect(byUser).toHaveBeenCalledWith("user_id", "trusted-user");
@@ -168,6 +178,46 @@ describe("listOwnedReports", () => {
       ],
     });
     expect(select.mock.calls[0]?.[0]).not.toContain("report_snapshot");
+  });
+
+  it("maps nullable Detailed mix summaries", async () => {
+    limit.mockResolvedValue({
+      data: [
+        {
+          ...row(168, createdAt, {
+            category: "product",
+            scenario: "resale",
+          }),
+          analysis_mode: "detailed",
+          current_price_cents: null,
+          unit_profit_cents: null,
+          unit: "mix",
+          schema_version: 1,
+          calculation_version: 1,
+          content_version: 1,
+          monthly_gross_revenue_cents: null,
+          monthly_result_cents: null,
+          item_count: 3,
+          is_partial: true,
+        },
+      ],
+      error: null,
+    });
+
+    await expect(list()).resolves.toMatchObject({
+      status: "success",
+      reports: [
+        {
+          id: 168,
+          analysisMode: "detailed",
+          currentPriceCents: null,
+          monthlyGrossRevenueCents: null,
+          monthlyResultCents: null,
+          itemCount: 3,
+          isPartial: true,
+        },
+      ],
+    });
   });
 
   it("applies a validated tuple-equivalent keyset cursor", async () => {
