@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { ArrowRightIcon, FileChartColumnIcon, PlusIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ChevronsLeftIcon,
+  FileChartColumnIcon,
+  PlusIcon,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -8,30 +14,30 @@ import { requireUser } from "@/modules/auth/services/require-user";
 import { ReportListCard } from "@/modules/reports/components/report-list-card";
 import { ReportsEmptyState } from "@/modules/reports/components/reports-empty-state";
 import {
-  decodeReportsCursor,
-  listOwnedReports,
-} from "@/modules/reports/services/list-reports.service";
-
-function normalizeCursor(
-  value: string | string[] | undefined,
-): string | undefined {
-  if (typeof value !== "string") return undefined;
-  return decodeReportsCursor(value) ? value : undefined;
-}
+  buildReportPageLinks,
+  parseReportNavigation,
+  type ReportSearchParams,
+} from "@/modules/reports/report-pagination";
+import { listOwnedReports } from "@/modules/reports/services/list-reports.service";
 
 export default async function ReportsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ cursor?: string | string[] }>;
+  searchParams: Promise<ReportSearchParams>;
 }) {
-  const { cursor: rawCursor } = await searchParams;
-  const cursor = normalizeCursor(rawCursor);
+  const navigation = parseReportNavigation(await searchParams);
   const { userId, supabase } = await requireUser();
-  const result = await listOwnedReports({ supabase, userId, cursor });
+  const result = await listOwnedReports({
+    supabase,
+    userId,
+    cursor: navigation.cursor,
+  });
 
   if (result.status === "read_failed") {
     throw new Error("reports_read_failed");
   }
+
+  const pageLinks = buildReportPageLinks(navigation, result.nextCursor);
 
   return (
     <main className="mx-auto grid w-full max-w-7xl gap-7 pb-10">
@@ -98,18 +104,38 @@ export default async function ReportsPage({
         </section>
       )}
 
-      {result.nextCursor ? (
+      {pageLinks.first || pageLinks.previous || pageLinks.next ? (
         <nav
           aria-label="Paginação dos diagnósticos"
-          className="flex justify-center pt-2"
+          className="flex flex-wrap justify-center gap-2 pt-2"
         >
-          <Link
-            href={`/reports?cursor=${encodeURIComponent(result.nextCursor)}`}
-            className={buttonVariants({ variant: "outline" })}
-          >
-            Ver diagnósticos anteriores
-            <ArrowRightIcon aria-hidden="true" />
-          </Link>
+          {pageLinks.first ? (
+            <Link
+              href={pageLinks.first}
+              className={buttonVariants({ variant: "ghost" })}
+            >
+              <ChevronsLeftIcon aria-hidden="true" />
+              Primeira página
+            </Link>
+          ) : null}
+          {pageLinks.previous ? (
+            <Link
+              href={pageLinks.previous}
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <ArrowLeftIcon aria-hidden="true" />
+              Anterior
+            </Link>
+          ) : null}
+          {pageLinks.next ? (
+            <Link
+              href={pageLinks.next}
+              className={buttonVariants({ variant: "outline" })}
+            >
+              Próxima
+              <ArrowRightIcon aria-hidden="true" />
+            </Link>
+          ) : null}
         </nav>
       ) : null}
     </main>
