@@ -1,22 +1,26 @@
 "use client";
 
-import { PlusIcon, Trash2Icon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { PlusIcon } from "lucide-react";
 
+import { Accordion } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import type {
-  DetailedDiagnosisInput,
-  DetailedProductionItemInput,
-} from "@/modules/detailed-diagnosis/types";
+import type { DetailedDiagnosisInput } from "@/modules/detailed-diagnosis/types";
 
+import { buildDetailedEditorItemSummary } from "../editor/detailed-editor-summary";
 import type { EditableReportDraft } from "../editor/report-editor.types";
+import type { CurrentDetailedReportSnapshot } from "../types";
+import { DetailedEditorItem } from "./detailed-editor-item";
 import { EditorField } from "./quick-report-editor-fields";
 
 type DetailedDraft = Extract<EditableReportDraft, { kind: "detailed" }>;
 
-function newItem(category: DetailedDiagnosisInput["category"]) {
+function newItem(
+  category: DetailedDiagnosisInput["category"],
+  id: string,
+): DetailedDiagnosisInput["items"][number] {
   const common = {
-    id: crypto.randomUUID(),
+    id,
     name: "",
     unitSalePrice: "",
     monthlySalesVolume: "",
@@ -24,14 +28,14 @@ function newItem(category: DetailedDiagnosisInput["category"]) {
   return category === "product"
     ? {
         ...common,
-        kind: "resale" as const,
+        kind: "resale",
         purchaseUnitCost: "",
         packagingUnitCost: "",
       }
     : {
         ...common,
-        kind: "manufacturing" as const,
-        costMode: "summarized" as const,
+        kind: "manufacturing",
+        costMode: "summarized",
         productionUnitCost: "",
         recipeYield: "",
         lossRate: "0",
@@ -45,12 +49,17 @@ function newItem(category: DetailedDiagnosisInput["category"]) {
 function DetailedReportEditorFields({
   draft,
   errors,
+  previewSnapshot,
+  revealErrorsSignal,
   onChange,
 }: {
   draft: DetailedDraft;
   errors: Record<string, string[]>;
+  previewSnapshot: CurrentDetailedReportSnapshot;
+  revealErrorsSignal: number;
   onChange: (draft: DetailedDraft) => void;
 }) {
+  const [expandedItemIds, setExpandedItemIds] = useState<string[]>([]);
   const values = draft.values;
   const changeValues = (next: DetailedDiagnosisInput) =>
     onChange({ ...draft, values: next });
@@ -62,357 +71,139 @@ function DetailedReportEditorFields({
     ) as DetailedDiagnosisInput["items"];
     updateRoot("items", items);
   };
-  const removeItem = (index: number) =>
+
+  useEffect(() => {
+    if (revealErrorsSignal === 0) return;
+    const firstItemErrorPath = Object.keys(errors).find((path) =>
+      /^items\.\d+(?:\.|$)/.test(path),
+    );
+    if (!firstItemErrorPath) return;
+    const index = Number(/^items\.(\d+)/.exec(firstItemErrorPath)?.[1]);
+    const item = values.items[index];
+    if (!item) return;
+    const frame = requestAnimationFrame(() => {
+      setExpandedItemIds((current) =>
+        current.includes(item.id) ? current : [...current, item.id],
+      );
+      requestAnimationFrame(() =>
+        document.getElementById(firstItemErrorPath)?.focus(),
+      );
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [errors, revealErrorsSignal, values.items]);
+
+  function removeItem(index: number) {
+    const item = values.items[index];
+    if (!item) return;
+    setExpandedItemIds((current) =>
+      current.filter((itemId) => itemId !== item.id),
+    );
     updateRoot(
       "items",
       values.items.filter((_, itemIndex) => itemIndex !== index),
     );
+  }
+
+  function addItem() {
+    const id = crypto.randomUUID();
+    updateRoot("items", [...values.items, newItem(values.category, id)]);
+    setExpandedItemIds((current) => [...current, id]);
+  }
 
   return (
     <div className="grid gap-6">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <EditorField
-          id="fixedMonthlyExpenses"
-          label="Gastos fixos mensais (R$)"
-          value={values.fixedMonthlyExpenses}
-          error={errors.fixedMonthlyExpenses}
-          onChange={(value) => updateRoot("fixedMonthlyExpenses", value)}
-        />
-        <EditorField
-          id="proLabore"
-          label="Pró-labore mensal (R$)"
-          value={values.proLabore}
-          error={errors.proLabore}
-          onChange={(value) =>
-            changeValues({
-              ...values,
-              proLabore: value,
-              proLaboreIncluded: value.trim() !== "",
-            })
-          }
-        />
-        <EditorField
-          id="taxRate"
-          label="Impostos (%)"
-          value={values.taxRate}
-          error={errors.taxRate}
-          onChange={(value) => updateRoot("taxRate", value)}
-        />
-        <EditorField
-          id="cardFeeRate"
-          label="Cartão ou plataforma (%)"
-          value={values.cardFeeRate}
-          error={errors.cardFeeRate}
-          onChange={(value) => updateRoot("cardFeeRate", value)}
-        />
-        <EditorField
-          id="promotionMarginRate"
-          label="Margem mínima para promoção (%)"
-          value={values.promotionMarginRate}
-          error={errors.promotionMarginRate}
-          onChange={(value) => updateRoot("promotionMarginRate", value)}
-        />
-      </div>
+      <section className="border-border/70 bg-muted/20 grid gap-4 rounded-xl border p-4 sm:p-5">
+        <div>
+          <h3 className="font-semibold">Dados do negócio</h3>
+          <p className="text-muted-foreground text-sm">
+            Estes valores afetam todos os itens desta simulação.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <EditorField
+            id="fixedMonthlyExpenses"
+            label="Gastos fixos mensais (R$)"
+            value={values.fixedMonthlyExpenses}
+            error={errors.fixedMonthlyExpenses}
+            onChange={(value) => updateRoot("fixedMonthlyExpenses", value)}
+          />
+          <EditorField
+            id="proLabore"
+            label="Pró-labore mensal (R$)"
+            value={values.proLabore}
+            error={errors.proLabore}
+            onChange={(value) =>
+              changeValues({
+                ...values,
+                proLabore: value,
+                proLaboreIncluded: value.trim() !== "",
+              })
+            }
+          />
+          <EditorField
+            id="taxRate"
+            label="Impostos (%)"
+            value={values.taxRate}
+            error={errors.taxRate}
+            onChange={(value) => updateRoot("taxRate", value)}
+          />
+          <EditorField
+            id="cardFeeRate"
+            label="Cartão ou plataforma (%)"
+            value={values.cardFeeRate}
+            error={errors.cardFeeRate}
+            onChange={(value) => updateRoot("cardFeeRate", value)}
+          />
+          <EditorField
+            id="promotionMarginRate"
+            label="Margem mínima para promoção (%)"
+            value={values.promotionMarginRate}
+            error={errors.promotionMarginRate}
+            onChange={(value) => updateRoot("promotionMarginRate", value)}
+          />
+        </div>
+      </section>
 
-      <div className="grid gap-4">
+      <section className="grid gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="text-lg font-semibold">Itens do diagnóstico</h3>
             <p className="text-muted-foreground text-sm">
-              Edite preços, custos e volumes de cada item.
+              Abra um item para ajustar seus preços, custos e vendas.
             </p>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              updateRoot("items", [...values.items, newItem(values.category)])
-            }
-          >
+          <Button type="button" variant="outline" onClick={addItem}>
             <PlusIcon aria-hidden="true" />
             Adicionar item
           </Button>
         </div>
 
-        {values.items.map((item, index) => {
-          const base = `items.${index}`;
-          return (
-            <section
-              key={item.id}
-              aria-labelledby={`item-${item.id}-title`}
-              className="border-border grid gap-4 rounded-xl border p-4"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <h4 id={`item-${item.id}-title`} className="font-semibold">
-                  Item {index + 1}
-                </h4>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={values.items.length === 1}
-                  onClick={() => removeItem(index)}
-                >
-                  <Trash2Icon aria-hidden="true" />
-                  Remover
-                </Button>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <EditorField
-                  id={`${base}.name`}
-                  label="Nome"
-                  inputMode="text"
-                  value={item.name}
-                  error={errors[`${base}.name`]}
-                  onChange={(value) => updateItem(index, "name", value)}
-                />
-                <EditorField
-                  id={`${base}.unitSalePrice`}
-                  label="Preço de venda (R$)"
-                  value={item.unitSalePrice}
-                  error={errors[`${base}.unitSalePrice`]}
-                  onChange={(value) =>
-                    updateItem(index, "unitSalePrice", value)
-                  }
-                />
-                <EditorField
-                  id={`${base}.monthlySalesVolume`}
-                  label="Vendas por mês"
-                  inputMode="numeric"
-                  value={item.monthlySalesVolume}
-                  error={errors[`${base}.monthlySalesVolume`]}
-                  onChange={(value) =>
-                    updateItem(index, "monthlySalesVolume", value)
-                  }
-                />
-                {item.kind === "resale" ? (
-                  <>
-                    <EditorField
-                      id={`${base}.purchaseUnitCost`}
-                      label="Custo de compra (R$)"
-                      value={item.purchaseUnitCost}
-                      error={errors[`${base}.purchaseUnitCost`]}
-                      onChange={(value) =>
-                        updateItem(index, "purchaseUnitCost", value)
-                      }
-                    />
-                    <EditorField
-                      id={`${base}.packagingUnitCost`}
-                      label="Embalagem por unidade (R$)"
-                      value={item.packagingUnitCost}
-                      error={errors[`${base}.packagingUnitCost`]}
-                      onChange={(value) =>
-                        updateItem(index, "packagingUnitCost", value)
-                      }
-                    />
-                  </>
-                ) : (
-                  <ProductionItemFields
-                    item={item}
-                    index={index}
-                    errors={errors}
-                    updateItem={updateItem}
-                  />
-                )}
-              </div>
-            </section>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function ProductionItemFields({
-  item,
-  index,
-  errors,
-  updateItem,
-}: {
-  item: DetailedProductionItemInput;
-  index: number;
-  errors: Record<string, string[]>;
-  updateItem: (index: number, field: string, value: unknown) => void;
-}) {
-  const base = `items.${index}`;
-  const updateIngredient = (
-    ingredientIndex: number,
-    field: string,
-    value: string,
-  ) =>
-    updateItem(
-      index,
-      "ingredients",
-      item.ingredients.map((ingredient, currentIndex) =>
-        currentIndex === ingredientIndex
-          ? { ...ingredient, [field]: value }
-          : ingredient,
-      ),
-    );
-
-  return (
-    <>
-      <div className="grid gap-2">
-        <Label htmlFor={`${base}.costMode`}>Forma de informar o custo</Label>
-        <select
-          id={`${base}.costMode`}
-          value={item.costMode}
-          onChange={(event) => {
-            const mode = event.target.value as "summarized" | "technical_sheet";
-            updateItem(index, "costMode", mode);
-            if (mode === "technical_sheet" && item.ingredients.length === 0)
-              updateItem(index, "ingredients", [
-                {
-                  id: crypto.randomUUID(),
-                  name: "",
-                  quantity: "",
-                  unit: "",
-                  unitCost: "",
-                },
-              ]);
-          }}
-          className="border-input bg-card focus-visible:border-ring focus-visible:ring-ring/20 h-10 rounded-lg border px-3 text-base outline-none focus-visible:ring-3 md:text-sm"
+        <Accordion
+          multiple
+          value={expandedItemIds}
+          onValueChange={setExpandedItemIds}
+          className="grid gap-3"
         >
-          <option value="summarized">Custo total por unidade</option>
-          <option value="technical_sheet">Ficha técnica</option>
-        </select>
-      </div>
-      {item.costMode === "summarized" ? (
-        <EditorField
-          id={`${base}.productionUnitCost`}
-          label="Custo de fabricação (R$)"
-          value={item.productionUnitCost}
-          error={errors[`${base}.productionUnitCost`]}
-          onChange={(value) => updateItem(index, "productionUnitCost", value)}
-        />
-      ) : (
-        <div className="grid gap-4 sm:col-span-2">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <EditorField
-              id={`${base}.recipeYield`}
-              label="Rendimento da receita"
-              value={item.recipeYield}
-              error={errors[`${base}.recipeYield`]}
-              onChange={(value) => updateItem(index, "recipeYield", value)}
+          {values.items.map((item, index) => (
+            <DetailedEditorItem
+              key={item.id}
+              item={item}
+              index={index}
+              errors={errors}
+              summary={buildDetailedEditorItemSummary(
+                item,
+                index,
+                previewSnapshot,
+                errors,
+              )}
+              canRemove={values.items.length > 1}
+              onChange={(field, value) => updateItem(index, field, value)}
+              onRemove={() => removeItem(index)}
             />
-            <EditorField
-              id={`${base}.lossRate`}
-              label="Perda de produção (%)"
-              value={item.lossRate}
-              error={errors[`${base}.lossRate`]}
-              onChange={(value) => updateItem(index, "lossRate", value)}
-            />
-            {[
-              ["packagingUnitCost", "Embalagem por unidade (R$)"],
-              ["directLaborUnitCost", "Mão de obra por unidade (R$)"],
-              ["otherVariableUnitCost", "Outros custos por unidade (R$)"],
-            ].map(([field, label]) => (
-              <EditorField
-                key={field}
-                id={`${base}.${field}`}
-                label={label!}
-                value={
-                  item[field as keyof DetailedProductionItemInput] as string
-                }
-                error={errors[`${base}.${field}`]}
-                onChange={(value) => updateItem(index, field!, value)}
-              />
-            ))}
-          </div>
-          <div className="grid gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <h5 className="font-medium">Ingredientes</h5>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  updateItem(index, "ingredients", [
-                    ...item.ingredients,
-                    {
-                      id: crypto.randomUUID(),
-                      name: "",
-                      quantity: "",
-                      unit: "",
-                      unitCost: "",
-                    },
-                  ])
-                }
-              >
-                <PlusIcon aria-hidden="true" />
-                Ingrediente
-              </Button>
-            </div>
-            {item.ingredients.map((ingredient, ingredientIndex) => {
-              const ingredientBase = `${base}.ingredients.${ingredientIndex}`;
-              return (
-                <div
-                  key={ingredient.id}
-                  className="bg-muted/40 grid gap-3 rounded-lg p-3 sm:grid-cols-2"
-                >
-                  <EditorField
-                    id={`${ingredientBase}.name`}
-                    label="Ingrediente"
-                    inputMode="text"
-                    value={ingredient.name}
-                    error={errors[`${ingredientBase}.name`]}
-                    onChange={(value) =>
-                      updateIngredient(ingredientIndex, "name", value)
-                    }
-                  />
-                  <EditorField
-                    id={`${ingredientBase}.quantity`}
-                    label="Quantidade"
-                    value={ingredient.quantity}
-                    error={errors[`${ingredientBase}.quantity`]}
-                    onChange={(value) =>
-                      updateIngredient(ingredientIndex, "quantity", value)
-                    }
-                  />
-                  <EditorField
-                    id={`${ingredientBase}.unit`}
-                    label="Unidade"
-                    inputMode="text"
-                    value={ingredient.unit}
-                    error={errors[`${ingredientBase}.unit`]}
-                    onChange={(value) =>
-                      updateIngredient(ingredientIndex, "unit", value)
-                    }
-                  />
-                  <EditorField
-                    id={`${ingredientBase}.unitCost`}
-                    label="Custo por unidade (R$)"
-                    value={ingredient.unitCost}
-                    error={errors[`${ingredientBase}.unitCost`]}
-                    onChange={(value) =>
-                      updateIngredient(ingredientIndex, "unitCost", value)
-                    }
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    disabled={item.ingredients.length === 1}
-                    onClick={() =>
-                      updateItem(
-                        index,
-                        "ingredients",
-                        item.ingredients.filter(
-                          (_, currentIndex) => currentIndex !== ingredientIndex,
-                        ),
-                      )
-                    }
-                  >
-                    <Trash2Icon aria-hidden="true" />
-                    Remover ingrediente
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </>
+          ))}
+        </Accordion>
+      </section>
+    </div>
   );
 }
 

@@ -137,6 +137,14 @@ describe("ReportEditor", () => {
         />,
       );
 
+      if (kind === "detailed") {
+        expect(screen.queryByLabelText(fieldLabel)).not.toBeInTheDocument();
+        const trigger = screen.getByRole("button", {
+          name: /Abrir Produto A/i,
+        });
+        expect(trigger).toHaveAttribute("aria-expanded", "false");
+        await user.click(trigger);
+      }
       const field = screen.getByLabelText(fieldLabel);
       await user.clear(field);
       await user.type(field, value);

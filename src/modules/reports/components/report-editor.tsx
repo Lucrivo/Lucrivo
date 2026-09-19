@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { saveReportEdit } from "../actions/save-report-edit.action";
 import { useReportPreview } from "../editor/use-report-preview";
 import type { EditableReportDraft } from "../editor/report-editor.types";
+import { isDetailedReportSnapshot } from "../schemas/report-snapshot.schema";
 import type { ReportSnapshot } from "../types";
 import { DetailedReportEditorFields } from "./detailed-report-editor-fields";
 import { QuickReportEditorFields } from "./quick-report-editor-fields";
@@ -33,6 +34,7 @@ function ReportEditor({
   const router = useRouter();
   const [draft, setDraft] = useState(initialDraft);
   const [message, setMessage] = useState<string | null>(null);
+  const [revealErrorsSignal, setRevealErrorsSignal] = useState(0);
   const [pending, startTransition] = useTransition();
   const errorSummaryRef = useRef<HTMLDivElement>(null);
   const preview = useReportPreview(draft, initialSnapshot);
@@ -41,6 +43,9 @@ function ReportEditor({
     setMessage(null);
     if (preview.status === "invalid") {
       setMessage("Revise os campos destacados antes de salvar.");
+      if (draft.kind === "detailed") {
+        setRevealErrorsSignal((signal) => signal + 1);
+      }
       requestAnimationFrame(() => errorSummaryRef.current?.focus());
       return;
     }
@@ -107,11 +112,15 @@ function ReportEditor({
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
           <div className="min-w-0">
             {draft.kind === "detailed" ? (
-              <DetailedReportEditorFields
-                draft={draft}
-                errors={preview.fieldErrors}
-                onChange={setDraft}
-              />
+              isDetailedReportSnapshot(preview.snapshot) ? (
+                <DetailedReportEditorFields
+                  draft={draft}
+                  errors={preview.fieldErrors}
+                  previewSnapshot={preview.snapshot}
+                  revealErrorsSignal={revealErrorsSignal}
+                  onChange={setDraft}
+                />
+              ) : null
             ) : (
               <QuickReportEditorFields
                 draft={draft}
