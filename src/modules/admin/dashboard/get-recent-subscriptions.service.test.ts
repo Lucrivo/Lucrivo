@@ -45,27 +45,27 @@ describe("getRecentSubscriptions", () => {
         status: { label: "Ativa", tone: "success" },
       }),
     ]);
-    expect(rpc).toHaveBeenCalledWith(
-      "list_admin_recent_subscriptions_v1",
-      {
-        p_period: "30d",
-        p_billing_mode: "annual",
-        p_state: "active",
-      },
-    );
+    expect(rpc).toHaveBeenCalledWith("list_admin_recent_subscriptions_v1", {
+      p_period: "30d",
+      p_billing_mode: "annual",
+      p_state: "active",
+    });
   });
 
   it.each([
     { data: null, error: { message: "private" } },
     { data: [{ malformed: true }], error: null },
-  ])("returns a stable unavailable error for invalid provider data", async (value) => {
-    rpc.mockResolvedValue(value);
-    await expect(
-      getRecentSubscriptions({
-        period: "all",
-        billingMode: "all",
-        state: "all",
-      }),
-    ).rejects.toBeInstanceOf(AdminRecentSubscriptionsUnavailableError);
-  });
+  ])(
+    "returns a stable unavailable error for invalid provider data",
+    async (value) => {
+      rpc.mockResolvedValue(value);
+      await expect(
+        getRecentSubscriptions({
+          period: "all",
+          billingMode: "all",
+          state: "all",
+        }),
+      ).rejects.toBeInstanceOf(AdminRecentSubscriptionsUnavailableError);
+    },
+  );
 });

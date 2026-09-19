@@ -22,8 +22,4 @@ type SaveReportEditResult =
   | { status: "invalid"; fieldErrors: Record<string, string[]> }
   | { status: "plan_required" | "conflict" | "not_found" | "error" };
 
-export type {
-  EditableReportDraft,
-  ReportPreviewResult,
-  SaveReportEditResult,
-};
+export type { EditableReportDraft, ReportPreviewResult, SaveReportEditResult };

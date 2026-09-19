@@ -15,8 +15,20 @@ describe("useReportPreview", () => {
     );
 
     expect(result.current.status).toBe("valid");
-    const lastValid = result.current.snapshot;
     if (draft.kind !== "product") throw new Error("unexpected draft");
+
+    act(() => {
+      rerender({
+        currentDraft: {
+          ...draft,
+          values: { ...draft.values, unitSalePrice: "35" },
+        },
+      });
+    });
+
+    expect(result.current.status).toBe("valid");
+    const lastValid = result.current.snapshot;
+    expect(lastValid).not.toEqual(snapshot);
 
     act(() => {
       rerender({

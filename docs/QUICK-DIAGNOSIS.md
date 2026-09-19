@@ -619,6 +619,10 @@ A IA não realiza os cálculos principais. O motor de regras calcula os números
 
 Novos relatórios de Serviço usam o contrato `4/3/5` (schema/cálculo/conteúdo). Eles preservam preço e unidade originais, custo de material original, minutos trabalhados por dia e duração do atendimento, ao lado dos valores normalizados usados no cálculo. Os contratos legados `2/1/2`, `3/2/3` e `3/2/4` continuam sendo lidos sem reinterpretar nem recalcular seus números.
 
+Relatórios compatíveis podem ser editados por clientes com plano pago diretamente na página de detalhe, com uma prévia calculada em tempo real pelo mesmo motor determinístico usado no salvamento. Ao confirmar, o cliente escolhe entre substituir o registro atual ou salvar um novo relatório. A substituição atualiza o mesmo registro, preserva seu identificador e sua data de criação e incrementa a versão de concorrência; ela não cria uma cópia histórica oculta. A exclusão solicitada pelo cliente é lógica. Relatórios gerados durante um período de assinatura permanecem visíveis após o encerramento desse período.
+
+Contratos legados permanecem somente para leitura. Seus snapshots continuam imutáveis e não são recalculados com regras futuras.
+
 No protótipo fora do ambiente original, o salvamento pode não persistir após recarregar a página e o relatório de IA pode exibir uma mensagem de indisponibilidade. Essas limitações não alteram os cálculos exibidos na tela.
 
 ---

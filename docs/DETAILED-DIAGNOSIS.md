@@ -239,7 +239,9 @@ Ao confirmar, o servidor executa na ordem:
 
 O registro principal, os itens, os ingredientes e o snapshot são gravados na mesma transação. Se uma parte falhar, nada é salvo. Repetir o mesmo identificador de submissão retorna o mesmo relatório, evitando duplicação.
 
-O snapshot detalhado atual usa as versões `1/1/1` de schema, cálculo e conteúdo. Relatórios salvos são imutáveis e reabertos sem recalcular os números com regras futuras.
+O snapshot detalhado atual usa as versões `1/1/1` de schema, cálculo e conteúdo. Clientes com plano pago podem editar relatórios compatíveis diretamente no detalhe e acompanhar uma prévia determinística em tempo real. Ao salvar, podem substituir o mesmo registro ou criar um novo relatório. A substituição preserva o identificador e a data de criação, grava o novo snapshot e incrementa a versão de concorrência; ela não mantém uma versão anterior oculta. A exclusão explícita é lógica.
+
+Relatórios legados permanecem somente para leitura e seus snapshots não são recalculados com regras futuras. Um relatório gerado durante um período de assinatura continua acessível ao proprietário depois que esse período termina.
 
 ## 13. Biblioteca e detalhe do relatório
 

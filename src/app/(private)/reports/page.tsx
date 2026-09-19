@@ -83,9 +83,6 @@ export default async function ReportsPage({
         <section aria-labelledby="saved-reports-title" className="grid gap-5">
           <div className="flex items-end justify-between gap-4 px-1">
             <div className="grid gap-1">
-              <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
-                Mais recentes primeiro
-              </p>
               <h2 id="saved-reports-title" className="text-2xl">
                 Diagnósticos salvos
               </h2>

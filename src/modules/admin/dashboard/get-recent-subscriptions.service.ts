@@ -39,8 +39,7 @@ async function getRecentSubscriptions(
     return parsed.data.map((contract) => ({
       id: contract.id,
       email: contract.email ?? "E-mail indisponível",
-      billingModeLabel:
-        contract.billingMode === "monthly" ? "Mensal" : "Anual",
+      billingModeLabel: contract.billingMode === "monthly" ? "Mensal" : "Anual",
       createdAtLabel: formatSubscriptionDate(contract.createdAt),
       status: presentContractStatus(contract.status),
     }));
@@ -50,7 +49,4 @@ async function getRecentSubscriptions(
   }
 }
 
-export {
-  AdminRecentSubscriptionsUnavailableError,
-  getRecentSubscriptions,
-};
+export { AdminRecentSubscriptionsUnavailableError, getRecentSubscriptions };

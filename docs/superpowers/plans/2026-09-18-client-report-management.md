@@ -27,38 +27,40 @@
 
 ## File Structure
 
-| Path | Responsibility |
-| --- | --- |
-| Supabase CLI generated migration named `report_lifecycle` | Add lifecycle columns, historical read authorization, soft delete, and transactional replacement RPCs. |
-| `supabase/tests/report_lifecycle.test.sql` | Prove historical access, ownership, paid edit enforcement, atomic replacement, soft delete, and free-report retention. |
-| `src/infrastructure/database/supabase/database.types.ts` | Regenerated database types after the migration. |
-| `src/modules/reports/services/list-reports.service.ts` | Bidirectional cursor navigation inputs and active-row listing. |
-| `src/modules/reports/report-pagination.ts` | Validate, encode, and build previous/first/next report URLs. |
-| `src/modules/reports/services/get-report.service.ts` | Return lifecycle metadata with an owned report. |
-| `src/modules/reports/editor/report-editor.adapters.ts` | Convert supported current snapshots into editable input values. |
-| `src/modules/reports/editor/report-editor.types.ts` | Shared editor discriminated unions and action results. |
-| `src/modules/reports/editor/use-report-preview.ts` | Validate draft input and calculate a local preview without persistence. |
-| `src/modules/reports/actions/save-report-edit.action.ts` | Revalidate an edit, calculate its canonical snapshot, and replace or copy it. |
-| `src/modules/reports/actions/delete-report.action.ts` | Soft delete an owned report with optimistic concurrency. |
-| `src/modules/reports/components/report-editor.tsx` | Responsive edit workspace and save controls. |
-| `src/modules/reports/components/report-actions.tsx` | Edit gating, upgrade modal, and delete confirmation. |
-| `src/modules/reports/components/report-detail.tsx` | Host actions and the quick report editor. |
-| `src/modules/reports/components/detailed-report-detail.tsx` | Host actions and the detailed report editor. |
-| `src/app/(private)/reports/page.tsx` | Render first, previous, and next navigation. |
-| `src/app/(private)/reports/[id]/page.tsx` | Load billing state and lifecycle metadata and compose actions/editor. |
-| `PRODUCT.md` | Replace the blanket immutable-report statement with the approved replace/copy/delete behavior. |
+| Path                                                        | Responsibility                                                                                                         |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Supabase CLI generated migration named `report_lifecycle`   | Add lifecycle columns, historical read authorization, soft delete, and transactional replacement RPCs.                 |
+| `supabase/tests/report_lifecycle.test.sql`                  | Prove historical access, ownership, paid edit enforcement, atomic replacement, soft delete, and free-report retention. |
+| `src/infrastructure/database/supabase/database.types.ts`    | Regenerated database types after the migration.                                                                        |
+| `src/modules/reports/services/list-reports.service.ts`      | Bidirectional cursor navigation inputs and active-row listing.                                                         |
+| `src/modules/reports/report-pagination.ts`                  | Validate, encode, and build previous/first/next report URLs.                                                           |
+| `src/modules/reports/services/get-report.service.ts`        | Return lifecycle metadata with an owned report.                                                                        |
+| `src/modules/reports/editor/report-editor.adapters.ts`      | Convert supported current snapshots into editable input values.                                                        |
+| `src/modules/reports/editor/report-editor.types.ts`         | Shared editor discriminated unions and action results.                                                                 |
+| `src/modules/reports/editor/use-report-preview.ts`          | Validate draft input and calculate a local preview without persistence.                                                |
+| `src/modules/reports/actions/save-report-edit.action.ts`    | Revalidate an edit, calculate its canonical snapshot, and replace or copy it.                                          |
+| `src/modules/reports/actions/delete-report.action.ts`       | Soft delete an owned report with optimistic concurrency.                                                               |
+| `src/modules/reports/components/report-editor.tsx`          | Responsive edit workspace and save controls.                                                                           |
+| `src/modules/reports/components/report-actions.tsx`         | Edit gating, upgrade modal, and delete confirmation.                                                                   |
+| `src/modules/reports/components/report-detail.tsx`          | Host actions and the quick report editor.                                                                              |
+| `src/modules/reports/components/detailed-report-detail.tsx` | Host actions and the detailed report editor.                                                                           |
+| `src/app/(private)/reports/page.tsx`                        | Render first, previous, and next navigation.                                                                           |
+| `src/app/(private)/reports/[id]/page.tsx`                   | Load billing state and lifecycle metadata and compose actions/editor.                                                  |
+| `PRODUCT.md`                                                | Replace the blanket immutable-report statement with the approved replace/copy/delete behavior.                         |
 
 ---
 
 ### Task 1: Historical read authorization and report lifecycle metadata
 
 **Files:**
+
 - Create: Supabase CLI generated migration named `report_lifecycle`
 - Create: `supabase/tests/report_lifecycle.test.sql`
 - Modify: `supabase/tests/billing_access.test.sql`
 - Modify: `src/infrastructure/database/supabase/database.types.ts`
 
 **Interfaces:**
+
 - Consumes: `private.account_is_eligible()`, `private.has_paid_access_for_user(uuid,timestamptz)`, `private.can_read_diagnosis(bigint)`.
 - Produces: `diagnoses.updated_at`, `diagnoses.deleted_at`, `diagnoses.version`, historical read semantics, `public.soft_delete_owned_diagnosis_v1(bigint,integer)`.
 
@@ -209,6 +211,7 @@ git commit -m "feat: preserve and soft delete owned reports"
 ### Task 2: Complete report-library pagination
 
 **Files:**
+
 - Create: `src/modules/reports/report-pagination.ts`
 - Create: `src/modules/reports/report-pagination.test.ts`
 - Modify: `src/modules/reports/services/list-reports.service.ts`
@@ -217,6 +220,7 @@ git commit -m "feat: preserve and soft delete owned reports"
 - Modify: `src/app/(private)/reports/page.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `encodeReportsCursor`, `decodeReportsCursor`, `ReportsCursor`.
 - Produces: `parseReportNavigation({cursor,back})`, `buildReportPageLinks(navigation,nextCursor)` returning `{first,previous,next}`.
 
@@ -226,9 +230,13 @@ Test a three-page journey, invalid base64, more than 100 history entries, and fi
 
 ```ts
 const page2 = buildReportPageLinks({ cursor: undefined, stack: [] }, cursor2);
-const nav2 = parseReportNavigation(new URL(page2.next!, "https://app.test").searchParams);
+const nav2 = parseReportNavigation(
+  new URL(page2.next!, "https://app.test").searchParams,
+);
 const page3 = buildReportPageLinks(nav2, cursor3);
-const nav3 = parseReportNavigation(new URL(page3.next!, "https://app.test").searchParams);
+const nav3 = parseReportNavigation(
+  new URL(page3.next!, "https://app.test").searchParams,
+);
 
 expect(buildReportPageLinks(nav3, null)).toMatchObject({
   first: "/reports",
@@ -270,12 +278,14 @@ git commit -m "feat: add complete report pagination"
 ### Task 3: Snapshot-to-editor adapters
 
 **Files:**
+
 - Create: `src/modules/reports/editor/report-editor.types.ts`
 - Create: `src/modules/reports/editor/report-editor.adapters.ts`
 - Create: `src/modules/reports/editor/report-editor.adapters.test.ts`
 - Modify: `src/modules/reports/types.ts`
 
 **Interfaces:**
+
 - Consumes: current Service V5, Product V4, Production V4, and Detailed V1 snapshots plus existing diagnosis input types.
 - Produces: `EditableReportDraft`, `toEditableReportDraft(snapshot, createId): EditableReportDraft | null`, `createDraftSubmissionId(draft)`.
 
@@ -339,12 +349,14 @@ git commit -m "feat: adapt reports for safe editing"
 ### Task 4: Canonical live preview pipeline
 
 **Files:**
+
 - Create: `src/modules/reports/editor/calculate-report-preview.ts`
 - Create: `src/modules/reports/editor/calculate-report-preview.test.ts`
 - Create: `src/modules/reports/editor/use-report-preview.ts`
 - Test: `src/modules/reports/editor/use-report-preview.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `EditableReportDraft`, existing Zod schemas, command composers, calculators, and snapshot builders.
 - Produces: `calculateReportPreview(draft): ReportPreviewResult` where the result is `{status:"valid",snapshot}` or `{status:"invalid",fieldErrors}`.
 
@@ -353,7 +365,9 @@ git commit -m "feat: adapt reports for safe editing"
 For all four draft kinds, adapt a current snapshot, calculate it again, and assert identity of inputs and results:
 
 ```ts
-const draft = toEditableReportDraft(productSnapshot, () => crypto.randomUUID())!;
+const draft = toEditableReportDraft(productSnapshot, () =>
+  crypto.randomUUID(),
+)!;
 const preview = calculateReportPreview(draft);
 expect(preview).toEqual({ status: "valid", snapshot: productSnapshot });
 ```
@@ -397,6 +411,7 @@ git commit -m "feat: calculate live report previews"
 ### Task 5: Transactional report replacement and copy actions
 
 **Files:**
+
 - Modify: Supabase CLI generated migration named `report_lifecycle`
 - Modify: `supabase/tests/report_lifecycle.test.sql`
 - Create: `src/modules/reports/actions/save-report-edit.action.ts`
@@ -406,6 +421,7 @@ git commit -m "feat: calculate live report previews"
 - Modify: `src/infrastructure/database/supabase/database.types.ts`
 
 **Interfaces:**
+
 - Consumes: `EditableReportDraft`, `calculateReportPreview`, existing create-report services.
 - Produces: `saveReportEdit({diagnosisId,expectedVersion,mode,draft})` and category-specific `replace_*_diagnosis_report_v1` RPCs returning the original diagnosis ID.
 
@@ -491,19 +507,23 @@ Use the actual current RPC names and generated argument order discovered from `d
 Cover all modes and closed failure mappings:
 
 ```ts
-expect(await saveReportEdit({
-  diagnosisId: 41,
-  expectedVersion: 2,
-  mode: "replace",
-  draft,
-})).toEqual({ status: "success", diagnosisId: 41 });
+expect(
+  await saveReportEdit({
+    diagnosisId: 41,
+    expectedVersion: 2,
+    mode: "replace",
+    draft,
+  }),
+).toEqual({ status: "success", diagnosisId: 41 });
 
-expect(await saveReportEdit({
-  diagnosisId: 41,
-  expectedVersion: 2,
-  mode: "copy",
-  draft,
-})).toEqual({ status: "success", diagnosisId: 99 });
+expect(
+  await saveReportEdit({
+    diagnosisId: 41,
+    expectedVersion: 2,
+    mode: "copy",
+    draft,
+  }),
+).toEqual({ status: "success", diagnosisId: 99 });
 ```
 
 Assert invalid input, plan required, conflict, missing report, and unexpected failure. Verify the action ignores client-supplied calculation output and rebuilds the snapshot.
@@ -537,6 +557,7 @@ git commit -m "feat: replace or copy edited reports"
 ### Task 6: Soft-delete application action and report metadata
 
 **Files:**
+
 - Create: `src/modules/reports/actions/delete-report.action.ts`
 - Create: `src/modules/reports/actions/delete-report.action.test.ts`
 - Modify: `src/modules/reports/services/get-report.service.ts`
@@ -545,6 +566,7 @@ git commit -m "feat: replace or copy edited reports"
 - Modify: `src/app/(private)/reports/[id]/page.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `soft_delete_owned_diagnosis_v1`, lifecycle columns, `getBillingOverview`.
 - Produces: `deleteReport({diagnosisId,expectedVersion})`, detail-page props `version`, `canEdit`, `editableDraft`.
 
@@ -558,8 +580,7 @@ Validate positive safe integer ID and nonnegative version, call `requireUser`, t
 
 ```ts
 type DeleteReportResult =
-  | { status: "deleted" }
-  | { status: "conflict" | "not_found" | "error" };
+  { status: "deleted" } | { status: "conflict" | "not_found" | "error" };
 ```
 
 Never use the admin client for deletion. In the detail page, load billing overview alongside the report and set `canEdit` only when `overview.tier === "paid"` and an adapter returns a draft.
@@ -581,6 +602,7 @@ git commit -m "feat: expose report lifecycle actions"
 ### Task 7: Report actions, upgrade modal, and deletion confirmation
 
 **Files:**
+
 - Create: `src/modules/reports/components/report-actions.tsx`
 - Create: `src/modules/reports/components/report-actions.test.tsx`
 - Modify: `src/modules/reports/components/report-detail.tsx`
@@ -589,6 +611,7 @@ git commit -m "feat: expose report lifecycle actions"
 - Modify: `src/modules/reports/components/detailed-report-detail.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `deleteReport`, `canEdit`, `editableDraft`, report ID/version.
 - Produces: accessible edit entry, upgrade dialog, delete confirmation, and `onEdit` callback.
 
@@ -598,8 +621,13 @@ Cover paid edit, unpaid upgrade, unsupported snapshot explanation, delete cancel
 
 ```tsx
 await user.click(screen.getByRole("button", { name: "Editar diagnóstico" }));
-expect(screen.getByRole("dialog", { name: "Plano necessário para editar" })).toBeVisible();
-expect(screen.getByRole("link", { name: "Ver planos" })).toHaveAttribute("href", "/billing");
+expect(
+  screen.getByRole("dialog", { name: "Plano necessário para editar" }),
+).toBeVisible();
+expect(screen.getByRole("link", { name: "Ver planos" })).toHaveAttribute(
+  "href",
+  "/billing",
+);
 ```
 
 - [ ] **Step 2: Implement `ReportActions`**
@@ -623,6 +651,7 @@ git commit -m "feat: add report edit and delete actions"
 ### Task 8: Inline quick and detailed editors
 
 **Files:**
+
 - Create: `src/modules/reports/components/report-editor.tsx`
 - Create: `src/modules/reports/components/report-editor.test.tsx`
 - Create: `src/modules/reports/components/quick-report-editor-fields.tsx`
@@ -632,6 +661,7 @@ git commit -m "feat: add report edit and delete actions"
 - Modify: `src/modules/reports/components/detailed-report-detail.tsx`
 
 **Interfaces:**
+
 - Consumes: `EditableReportDraft`, `useReportPreview`, `saveReportEdit`, report ID/version.
 - Produces: responsive on-page editor with cancel, replace, and copy actions.
 
@@ -645,11 +675,13 @@ await user.type(screen.getByLabelText("Preço de venda"), "45,00");
 expect(screen.getByText("R$ 45,00")).toBeVisible();
 
 await user.click(screen.getByRole("button", { name: "Salvar alterações" }));
-expect(saveReportEdit).toHaveBeenCalledWith(expect.objectContaining({
-  mode: "replace",
-  diagnosisId: 41,
-  expectedVersion: 2,
-}));
+expect(saveReportEdit).toHaveBeenCalledWith(
+  expect.objectContaining({
+    mode: "replace",
+    diagnosisId: 41,
+    expectedVersion: 2,
+  }),
+);
 ```
 
 - [ ] **Step 2: Implement focused field groups**
@@ -701,11 +733,13 @@ git commit -m "feat: edit reports with live previews"
 ### Task 9: Product documentation and integrated verification
 
 **Files:**
+
 - Modify: `PRODUCT.md`
 - Modify: `docs/QUICK-DIAGNOSIS.md`
 - Modify: `docs/DETAILED-DIAGNOSIS.md`
 
 **Interfaces:**
+
 - Consumes: completed report lifecycle behavior.
 - Produces: documentation consistent with replace, copy, historical read, and soft delete.
 

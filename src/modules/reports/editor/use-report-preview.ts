@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useState } from "react";
 
 import type { ReportSnapshot } from "../types";
 import { calculateReportPreview } from "./calculate-report-preview";
@@ -16,15 +16,22 @@ function useReportPreview(
   draft: EditableReportDraft,
   initialSnapshot: ReportSnapshot,
 ): LiveReportPreview {
-  const lastValid = useRef(initialSnapshot);
   const preview = useMemo(() => calculateReportPreview(draft), [draft]);
+  const [cache, setCache] = useState({
+    draft,
+    snapshot: initialSnapshot,
+  });
 
-  if (preview.status === "valid") lastValid.current = preview.snapshot;
+  if (cache.draft !== draft) {
+    setCache({
+      draft,
+      snapshot: preview.status === "valid" ? preview.snapshot : cache.snapshot,
+    });
+  }
 
   return {
     status: preview.status,
-    snapshot:
-      preview.status === "valid" ? preview.snapshot : lastValid.current,
+    snapshot: preview.status === "valid" ? preview.snapshot : cache.snapshot,
     fieldErrors: preview.status === "invalid" ? preview.fieldErrors : {},
   };
 }

@@ -58,11 +58,11 @@ function parseReportNavigation(
 ): ReportNavigation {
   const rawCursor =
     searchParams instanceof URLSearchParams
-      ? searchParams.get("cursor") ?? undefined
+      ? (searchParams.get("cursor") ?? undefined)
       : scalar(searchParams.cursor);
   const rawBack =
     searchParams instanceof URLSearchParams
-      ? searchParams.get("back") ?? undefined
+      ? (searchParams.get("back") ?? undefined)
       : scalar(searchParams.back);
 
   if (rawCursor && !decodeReportsCursor(rawCursor)) {

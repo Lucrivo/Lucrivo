@@ -25,25 +25,26 @@
 
 ## File Structure
 
-| Path | Responsibility |
-| --- | --- |
-| Supabase CLI generated migration named `admin_recent_subscription_filters` | Protected filtered subscription-list RPC and supporting index. |
-| `supabase/tests/admin_dashboard.test.sql` | Prove checkout attempts are excluded and filters are applied before the limit. |
-| `src/modules/admin/dashboard/admin-dashboard-filters.ts` | Parse and serialize period, billing mode, and operational state. |
-| `src/modules/admin/dashboard/get-recent-subscriptions.service.ts` | Call and validate the filtered subscription RPC. |
-| `src/modules/admin/dashboard/components/recent-subscription-filters.tsx` | Accessible GET filter controls scoped to the list. |
-| `src/modules/admin/dashboard/components/recent-subscriptions.tsx` | Render filter controls and truthful empty states. |
-| `src/app/(admin-panel)/admin/page.tsx` | Read filters and load dashboard snapshot plus subscription list. |
-| `src/modules/admin/users/admin-user-filter-cookie.ts` | Cookie schema, parsing, serialization, and canonical merge rules. |
-| `src/modules/admin/users/admin-user-filters.action.ts` | Set or clear the filter cookie and redirect to the first page. |
-| `src/modules/admin/users/components/admin-user-filter-form.tsx` | Server-action form and clear control. |
-| `src/app/(admin-panel)/admin/users/page.tsx` | Resolve URL filters before cookie fallback. |
+| Path                                                                       | Responsibility                                                                 |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Supabase CLI generated migration named `admin_recent_subscription_filters` | Protected filtered subscription-list RPC and supporting index.                 |
+| `supabase/tests/admin_dashboard.test.sql`                                  | Prove checkout attempts are excluded and filters are applied before the limit. |
+| `src/modules/admin/dashboard/admin-dashboard-filters.ts`                   | Parse and serialize period, billing mode, and operational state.               |
+| `src/modules/admin/dashboard/get-recent-subscriptions.service.ts`          | Call and validate the filtered subscription RPC.                               |
+| `src/modules/admin/dashboard/components/recent-subscription-filters.tsx`   | Accessible GET filter controls scoped to the list.                             |
+| `src/modules/admin/dashboard/components/recent-subscriptions.tsx`          | Render filter controls and truthful empty states.                              |
+| `src/app/(admin-panel)/admin/page.tsx`                                     | Read filters and load dashboard snapshot plus subscription list.               |
+| `src/modules/admin/users/admin-user-filter-cookie.ts`                      | Cookie schema, parsing, serialization, and canonical merge rules.              |
+| `src/modules/admin/users/admin-user-filters.action.ts`                     | Set or clear the filter cookie and redirect to the first page.                 |
+| `src/modules/admin/users/components/admin-user-filter-form.tsx`            | Server-action form and clear control.                                          |
+| `src/app/(admin-panel)/admin/users/page.tsx`                               | Resolve URL filters before cookie fallback.                                    |
 
 ---
 
 ### Task 1: Genuine and filterable recent subscriptions
 
 **Files:**
+
 - Create: Supabase CLI generated migration named `admin_recent_subscription_filters`
 - Modify: `supabase/tests/admin_dashboard.test.sql`
 - Create: `src/modules/admin/dashboard/admin-dashboard-filters.ts`
@@ -55,6 +56,7 @@
 - Modify: `src/infrastructure/database/supabase/database.types.ts`
 
 **Interfaces:**
+
 - Consumes: `private.has_admin_access()`, contract status and billing-mode enums.
 - Produces: `AdminSubscriptionFilters`, `parseAdminSubscriptionFilters`, `list_admin_recent_subscriptions_v1`, `getRecentSubscriptions(filters)`.
 
@@ -122,11 +124,13 @@ Apply period and mode predicates before ordering by `created_at desc, id desc` a
 - [ ] **Step 4: Write filter and service tests**
 
 ```ts
-expect(parseAdminSubscriptionFilters({
-  period: "30d",
-  billing: "annual",
-  subscriptionState: "active",
-})).toEqual({ period: "30d", billingMode: "annual", state: "active" });
+expect(
+  parseAdminSubscriptionFilters({
+    period: "30d",
+    billing: "annual",
+    subscriptionState: "active",
+  }),
+).toEqual({ period: "30d", billingMode: "annual", state: "active" });
 
 expect(parseAdminSubscriptionFilters({ period: "invalid" })).toEqual({
   period: "all",
@@ -159,6 +163,7 @@ git commit -m "fix: list genuine admin subscriptions"
 ### Task 2: Dashboard subscription filter interface
 
 **Files:**
+
 - Create: `src/modules/admin/dashboard/components/recent-subscription-filters.tsx`
 - Create: `src/modules/admin/dashboard/components/recent-subscription-filters.test.tsx`
 - Modify: `src/modules/admin/dashboard/components/recent-subscriptions.tsx`
@@ -168,6 +173,7 @@ git commit -m "fix: list genuine admin subscriptions"
 - Modify: `src/app/(admin-panel)/admin/page.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `AdminSubscriptionFilters`, `getAdminDashboard`, `getRecentSubscriptions`.
 - Produces: URL-scoped filter form and filtered recent-subscription section.
 
@@ -176,9 +182,15 @@ git commit -m "fix: list genuine admin subscriptions"
 Assert the page parses search params and calls both services. Assert three labeled comboboxes, selected values, reset link, and scoped explanatory copy:
 
 ```tsx
-expect(screen.getByRole("combobox", { name: "Período das assinaturas" })).toHaveValue("30d");
-expect(screen.getByRole("combobox", { name: "Modalidade" })).toHaveValue("annual");
-expect(screen.getByText("Os filtros abaixo afetam somente esta lista.")).toBeVisible();
+expect(
+  screen.getByRole("combobox", { name: "Período das assinaturas" }),
+).toHaveValue("30d");
+expect(screen.getByRole("combobox", { name: "Modalidade" })).toHaveValue(
+  "annual",
+);
+expect(
+  screen.getByText("Os filtros abaixo afetam somente esta lista."),
+).toBeVisible();
 ```
 
 Add a filtered empty state: `Nenhuma assinatura corresponde aos filtros.` The unfiltered empty state remains `Nenhuma assinatura registrada até agora.`
@@ -207,6 +219,7 @@ git commit -m "feat: filter recent admin subscriptions"
 ### Task 3: Persist admin user filters in a cookie
 
 **Files:**
+
 - Create: `src/modules/admin/users/admin-user-filter-cookie.ts`
 - Create: `src/modules/admin/users/admin-user-filter-cookie.test.ts`
 - Create: `src/modules/admin/users/admin-user-filters.action.ts`
@@ -220,6 +233,7 @@ git commit -m "feat: filter recent admin subscriptions"
 - Modify: `src/modules/admin/users/admin-users.urls.ts`
 
 **Interfaces:**
+
 - Consumes: `listFilterSchema`, `listUrl`, `requireAdmin`, Next `cookies` and `redirect`.
 - Produces: `ADMIN_USER_FILTER_COOKIE`, `resolveAdminUserFilters(url,cookie)`, `persistAdminUserFilters(formData)`, `clearAdminUserFilters()`.
 
@@ -228,15 +242,19 @@ git commit -m "feat: filter recent admin subscriptions"
 Cover no URL values, explicit defaults, malformed JSON, oversized values, and cursor exclusion:
 
 ```ts
-expect(resolveAdminUserFilters(
-  {},
-  JSON.stringify({ q: "cliente@", state: "blocked", access: "paid" }),
-)).toMatchObject({ q: "cliente@", state: "blocked", access: "paid" });
+expect(
+  resolveAdminUserFilters(
+    {},
+    JSON.stringify({ q: "cliente@", state: "blocked", access: "paid" }),
+  ),
+).toMatchObject({ q: "cliente@", state: "blocked", access: "paid" });
 
-expect(resolveAdminUserFilters(
-  { state: "active" },
-  JSON.stringify({ q: "cliente@", state: "blocked", access: "paid" }),
-)).toMatchObject({ q: "", state: "active", access: "all" });
+expect(
+  resolveAdminUserFilters(
+    { state: "active" },
+    JSON.stringify({ q: "cliente@", state: "blocked", access: "paid" }),
+  ),
+).toMatchObject({ q: "", state: "active", access: "all" });
 ```
 
 The second case establishes that the presence of any explicit filter query starts a new complete filter set; omitted values use defaults instead of stale cookie values.
@@ -295,9 +313,11 @@ git commit -m "feat: persist admin user filters"
 ### Task 4: Admin regression and quality gates
 
 **Files:**
+
 - Modify only files that fail because of Tasks 1–3.
 
 **Interfaces:**
+
 - Consumes: completed admin filter behavior.
 - Produces: verified admin dashboard and user management.
 

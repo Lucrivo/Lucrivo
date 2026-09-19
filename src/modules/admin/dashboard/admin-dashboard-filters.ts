@@ -6,13 +6,8 @@ const adminSubscriptionFiltersSchema = z.strictObject({
   state: z.enum(["active", "ended", "all"]),
 });
 
-type AdminSubscriptionFilters = z.infer<
-  typeof adminSubscriptionFiltersSchema
->;
-type AdminDashboardSearchParams = Record<
-  string,
-  string | string[] | undefined
->;
+type AdminSubscriptionFilters = z.infer<typeof adminSubscriptionFiltersSchema>;
+type AdminDashboardSearchParams = Record<string, string | string[] | undefined>;
 
 const defaultAdminSubscriptionFilters: AdminSubscriptionFilters = {
   period: "all",

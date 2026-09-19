@@ -32,8 +32,7 @@ function scaledIntegerToInput(value: number, scale: number): string {
 const centsToInput = (value: number) => scaledIntegerToInput(value, 2);
 const basisPointsToInput = (value: number) => scaledIntegerToInput(value, 2);
 const millionthsToInput = (value: number) => scaledIntegerToInput(value, 6);
-const tenThousandthsToInput = (value: number) =>
-  scaledIntegerToInput(value, 4);
+const tenThousandthsToInput = (value: number) => scaledIntegerToInput(value, 4);
 
 function serviceHoursInput(minutes: number): string {
   return scaledIntegerToInput(Math.round((minutes * 100) / 60), 2);
@@ -92,9 +91,7 @@ function toEditableReportDraft(
       values: {
         submissionId: createId(),
         productKind: snapshot.inputs.productKind,
-        purchaseUnitCost: centsToInput(
-          snapshot.inputs.purchaseUnitCostCents,
-        ),
+        purchaseUnitCost: centsToInput(snapshot.inputs.purchaseUnitCostCents),
         unitSalePrice: centsToInput(snapshot.inputs.unitSalePriceCents),
         fixedMonthlyExpenses: centsToInput(
           snapshot.inputs.fixedMonthlyExpensesCents,
@@ -106,9 +103,7 @@ function toEditableReportDraft(
         proLaboreIncluded: snapshot.inputs.proLaboreIncluded,
         proLabore: centsToInput(snapshot.inputs.proLaboreCents),
         taxRate: basisPointsToInput(snapshot.inputs.taxRateBasisPoints),
-        cardFeeRate: basisPointsToInput(
-          snapshot.inputs.cardFeeRateBasisPoints,
-        ),
+        cardFeeRate: basisPointsToInput(snapshot.inputs.cardFeeRateBasisPoints),
       },
     };
   }
@@ -129,9 +124,7 @@ function toEditableReportDraft(
         productionUnitCost: centsToInput(inputs.productionUnitCostCents),
         materialUnitCost: centsToInput(inputs.materialUnitCostCents ?? 0),
         packagingUnitCost: centsToInput(inputs.packagingUnitCostCents ?? 0),
-        directLaborUnitCost: centsToInput(
-          inputs.directLaborUnitCostCents ?? 0,
-        ),
+        directLaborUnitCost: centsToInput(inputs.directLaborUnitCostCents ?? 0),
         otherVariableUnitCost: centsToInput(
           inputs.otherVariableUnitCostCents ?? 0,
         ),
@@ -165,9 +158,7 @@ function toEditableReportDraft(
       proLaboreIncluded: snapshot.inputs.proLaboreIncluded,
       proLabore: centsToInput(snapshot.inputs.proLaboreCents),
       taxRate: basisPointsToInput(snapshot.inputs.taxRateBasisPoints),
-      cardFeeRate: basisPointsToInput(
-        snapshot.inputs.cardFeeRateBasisPoints,
-      ),
+      cardFeeRate: basisPointsToInput(snapshot.inputs.cardFeeRateBasisPoints),
       promotionMarginRate: basisPointsToInput(
         snapshot.inputs.promotionMarginBasisPoints,
       ),
@@ -213,17 +204,13 @@ function toEditableReportDraft(
           lossRate: basisPointsToInput(item.lossRateBasisPoints),
           packagingUnitCost: centsToInput(item.packagingUnitCostCents),
           directLaborUnitCost: centsToInput(item.directLaborUnitCostCents),
-          otherVariableUnitCost: centsToInput(
-            item.otherVariableUnitCostCents,
-          ),
+          otherVariableUnitCost: centsToInput(item.otherVariableUnitCostCents),
           ingredients: item.ingredients.map((ingredient) => ({
             id: ingredient.id,
             name: ingredient.name,
             quantity: millionthsToInput(ingredient.quantityMillionths),
             unit: ingredient.unit,
-            unitCost: tenThousandthsToInput(
-              ingredient.unitCostTenThousandths,
-            ),
+            unitCost: tenThousandthsToInput(ingredient.unitCostTenThousandths),
           })),
         } satisfies DetailedProductionItemInput;
       }),
@@ -234,7 +221,9 @@ function toEditableReportDraft(
   return null;
 }
 
-function createDraftSubmissionId(draft: EditableReportDraft): EditableReportDraft {
+function createDraftSubmissionId(
+  draft: EditableReportDraft,
+): EditableReportDraft {
   return {
     ...draft,
     values: { ...draft.values, submissionId: crypto.randomUUID() },
