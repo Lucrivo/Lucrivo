@@ -194,4 +194,62 @@ describe("DetailedDiagnosisWizard", () => {
       "Revise o custo de compra.",
     );
   });
+
+  it("focuses the ingredient collection when the recipe total is invalid", async () => {
+    let index = 0;
+    const initial = createInitialDetailedWizardState(
+      "production",
+      () => ids[index++] ?? ids[2],
+    );
+    const item = initial.values.items[0];
+    if (item.kind !== "manufacturing") throw new Error("unexpected item");
+    const state: DetailedWizardState = {
+      ...initial,
+      phase: "review",
+      itemSubstep: "complete",
+      values: {
+        ...initial.values,
+        fixedMonthlyExpenses: "1000",
+        taxRate: "6",
+        cardFeeRate: "3",
+        items: [
+          {
+            ...item,
+            name: "Bolo",
+            unitSalePrice: "100",
+            ingredients: [
+              {
+                ...item.ingredients[0],
+                name: "Farinha",
+                quantity: "1",
+                unit: "kg",
+                unitCost: "0",
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const createDiagnosis = vi
+      .fn<CreateDetailedDiagnosisAction>()
+      .mockResolvedValue({
+        status: "error",
+        error: "invalid_input",
+        fieldErrors: {
+          "items.0.ingredients": [
+            "A receita precisa ter pelo menos um ingrediente com custo maior que zero.",
+          ],
+        },
+      });
+    renderWizard({ state, createDiagnosis });
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByRole("button", { name: "Gerar diagnóstico detalhado" }),
+    );
+
+    expect(
+      await screen.findByRole("alert", { name: "Erro nos ingredientes" }),
+    ).toHaveFocus();
+  });
 });

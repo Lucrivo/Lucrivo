@@ -54,6 +54,26 @@ const requiredMoneyStringSchema = scaledString(
   "Informe um valor monetário válido com até duas casas decimais.",
   { min: 0 },
 );
+const ingredientUnitCostSchema = z.string().superRefine((value, context) => {
+  if (value.trim() === "") {
+    context.addIssue({
+      code: "custom",
+      message:
+        "Informe o custo unitário. Se este ingrediente não tiver custo, digite 0.",
+    });
+    return;
+  }
+
+  try {
+    scaledInteger(value, 4);
+  } catch {
+    context.addIssue({
+      code: "custom",
+      message:
+        "Informe um custo unitário válido com até quatro casas decimais.",
+    });
+  }
+});
 const percentageStringSchema = scaledString(
   2,
   "Informe um percentual entre 0 e 100 com até duas casas decimais.",
@@ -77,11 +97,7 @@ const detailedIngredientInputSchema = z.strictObject({
     min: 1,
   }),
   unit: requiredUnitSchema,
-  unitCost: scaledString(
-    4,
-    "Informe um custo unitário válido com até quatro casas decimais.",
-    { min: 0 },
-  ),
+  unitCost: ingredientUnitCostSchema,
 });
 
 const detailedItemBaseShape = {
@@ -220,7 +236,8 @@ const rawDetailedDiagnosisSchema = z
         context.addIssue({
           code: "custom",
           path: ["items", itemIndex, "ingredients"],
-          message: "O custo total dos ingredientes precisa ser maior que zero.",
+          message:
+            "A receita precisa ter pelo menos um ingrediente com custo maior que zero.",
         });
     });
   });

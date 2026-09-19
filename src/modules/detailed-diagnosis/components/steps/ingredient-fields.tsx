@@ -17,6 +17,9 @@ function IngredientFields({
   item,
   itemIndex,
 }: IngredientFieldsProps) {
+  const collectionPath = `items.${itemIndex}.ingredients`;
+  const collectionError = state.fieldErrors[collectionPath]?.[0];
+
   return (
     <fieldset className="border-border/70 grid gap-5 rounded-xl border p-4">
       <legend className="px-1 font-semibold">Ingredientes da receita</legend>
@@ -24,6 +27,17 @@ function IngredientFields({
         Liste cada ingrediente na unidade em que você compra e informe o custo
         dessa mesma unidade. O Lucrivo não converte medidas automaticamente.
       </p>
+      {collectionError ? (
+        <p
+          id={collectionPath}
+          role="alert"
+          aria-label="Erro nos ingredientes"
+          tabIndex={-1}
+          className="border-destructive/25 bg-destructive/5 text-destructive rounded-lg border p-3 text-sm outline-none"
+        >
+          {collectionError}
+        </p>
+      ) : null}
       {item.ingredients.map((ingredient, ingredientIndex) => (
         <div
           key={ingredient.id}
