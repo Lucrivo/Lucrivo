@@ -3,45 +3,131 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/infrastructure/database/supabase/database.types";
+import type { DetailedDiagnosisCommand } from "@/modules/detailed-diagnosis/types";
+import type {
+  NormalizedServiceDiagnosisCommand,
+  ProductDiagnosisCommand,
+  ProductionDiagnosisCommand,
+} from "@/modules/quick-diagnosis/types";
 
-type ReplaceReportInput = {
+import type {
+  CurrentDetailedReportSnapshot,
+  CurrentProductReportSnapshot,
+  CurrentProductionReportSnapshot,
+  CurrentServiceReportSnapshot,
+} from "../types";
+import { toDetailedRpcArgs } from "./create-detailed-report.service";
+import { toProductRpcArgs } from "./create-product-report.service";
+import { toProductionRpcArgs } from "./create-production-report.service";
+import { toServiceRpcArgs } from "./create-service-report.service";
+
+type ReplaceReportBase = {
   supabase: SupabaseClient<Database>;
-  targetId: number;
-  stagedId: number;
+  diagnosisId: number;
   expectedVersion: number;
 };
+
+type ReplaceReportInput = ReplaceReportBase &
+  (
+    | {
+        kind: "service";
+        command: NormalizedServiceDiagnosisCommand;
+        snapshot: CurrentServiceReportSnapshot;
+      }
+    | {
+        kind: "product";
+        command: ProductDiagnosisCommand;
+        snapshot: CurrentProductReportSnapshot;
+      }
+    | {
+        kind: "production";
+        command: ProductionDiagnosisCommand;
+        snapshot: CurrentProductionReportSnapshot;
+      }
+    | {
+        kind: "detailed";
+        command: DetailedDiagnosisCommand;
+        snapshot: CurrentDetailedReportSnapshot;
+      }
+  );
 
 type ReplaceReportResult =
   | { status: "success"; diagnosisId: number; version: number }
   | { status: "plan_required" | "conflict" | "not_found" | "error" };
 
-async function replaceReport({
-  supabase,
-  targetId,
-  stagedId,
-  expectedVersion,
-}: ReplaceReportInput): Promise<ReplaceReportResult> {
-  try {
-    const { data, error } = await supabase.rpc(
-      "replace_owned_diagnosis_from_staged_v1",
-      {
-        p_target_id: targetId,
-        p_staged_id: stagedId,
-        p_expected_version: expectedVersion,
-      },
-    );
+function mapReplacementError(
+  error: { code?: string; message?: string } | null,
+): Exclude<ReplaceReportResult, { status: "success" }> | null {
+  if (!error) return null;
+  if (error.code === "42501" && error.message === "paid access required")
+    return { status: "plan_required" };
+  if (error.code === "40001") return { status: "conflict" };
+  if (error.code === "22023" && error.message === "report not found")
+    return { status: "not_found" };
+  return { status: "error" };
+}
 
-    if (error?.code === "42501" && error.message === "paid access required")
-      return { status: "plan_required" };
-    if (error?.code === "40001") return { status: "conflict" };
-    if (error?.code === "22023" && error.message === "report not found")
-      return { status: "not_found" };
-    if (error || data !== targetId) return { status: "error" };
+async function replaceReport(
+  input: ReplaceReportInput,
+): Promise<ReplaceReportResult> {
+  const commonArgs = {
+    p_diagnosis_id: input.diagnosisId,
+    p_expected_version: input.expectedVersion,
+  };
+
+  try {
+    let response: {
+      data: number | null;
+      error: { code?: string; message?: string } | null;
+    };
+
+    switch (input.kind) {
+      case "service":
+        response = await input.supabase.rpc(
+          "replace_service_diagnosis_report_v1",
+          {
+            ...toServiceRpcArgs(input.command, input.snapshot),
+            ...commonArgs,
+          } as Database["public"]["Functions"]["replace_service_diagnosis_report_v1"]["Args"],
+        );
+        break;
+      case "product":
+        response = await input.supabase.rpc(
+          "replace_product_diagnosis_report_v1",
+          {
+            ...toProductRpcArgs(input.command, input.snapshot),
+            ...commonArgs,
+          } as Database["public"]["Functions"]["replace_product_diagnosis_report_v1"]["Args"],
+        );
+        break;
+      case "production":
+        response = await input.supabase.rpc(
+          "replace_production_diagnosis_report_v1",
+          {
+            ...toProductionRpcArgs(input.command, input.snapshot),
+            ...commonArgs,
+          } as Database["public"]["Functions"]["replace_production_diagnosis_report_v1"]["Args"],
+        );
+        break;
+      case "detailed":
+        response = await input.supabase.rpc(
+          "replace_detailed_diagnosis_report_v1",
+          {
+            ...toDetailedRpcArgs(input.command, input.snapshot),
+            ...commonArgs,
+          } as Database["public"]["Functions"]["replace_detailed_diagnosis_report_v1"]["Args"],
+        );
+        break;
+    }
+
+    const mappedError = mapReplacementError(response.error);
+    if (mappedError) return mappedError;
+    if (response.data !== input.diagnosisId) return { status: "error" };
 
     return {
       status: "success",
-      diagnosisId: targetId,
-      version: expectedVersion + 1,
+      diagnosisId: input.diagnosisId,
+      version: input.expectedVersion + 1,
     };
   } catch {
     return { status: "error" };

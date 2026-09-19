@@ -171,6 +171,23 @@ describe("AdminDashboard", () => {
     ).toBeVisible();
   });
 
+  it("distinguishes a filtered subscription empty state", () => {
+    render(
+      <AdminDashboard
+        dashboard={{ ...dashboardFixture, recentSubscriptions: [] }}
+        subscriptionFilters={{
+          period: "30d",
+          billingMode: "annual",
+          state: "active",
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByText("Nenhuma assinatura corresponde aos filtros."),
+    ).toBeVisible();
+  });
+
   it("presents real subscription fields in Portuguese", () => {
     render(<AdminDashboard dashboard={dashboardFixture} />);
 

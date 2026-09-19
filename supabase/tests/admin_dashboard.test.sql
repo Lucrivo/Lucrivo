@@ -56,13 +56,11 @@ select ok(
   'service role cannot bypass caller-scoped dashboard authorization'
 );
 
-delete from private.app_administrator;
 alter table private.admin_user_events
   disable trigger admin_user_events_reject_changes;
-truncate table private.admin_user_events, private.admin_user_state;
+truncate table auth.users cascade;
 alter table private.admin_user_events
   enable trigger admin_user_events_reject_changes;
-delete from auth.users;
 
 create temporary table dashboard_test_clock as
 select

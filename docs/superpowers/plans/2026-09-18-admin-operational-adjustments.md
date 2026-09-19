@@ -1,6 +1,6 @@
 # Admin Operational Adjustments Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Show only genuine subscriptions in the admin dashboard, filter that operational list, and persist user-table filters without changing the dashboard KPIs.
 
@@ -60,7 +60,7 @@
 - Consumes: `private.has_admin_access()`, contract status and billing-mode enums.
 - Produces: `AdminSubscriptionFilters`, `parseAdminSubscriptionFilters`, `list_admin_recent_subscriptions_v1`, `getRecentSubscriptions(filters)`.
 
-- [ ] **Step 1: Add failing SQL cases to the dashboard test**
+- [x] **Step 1: Add failing SQL cases to the dashboard test**
 
 Insert one expired checkout with null access timestamps and one real ended subscription with populated timestamps. Assert only the latter appears. Add more than five rows and prove filtering occurs before `limit 5`:
 
@@ -83,13 +83,13 @@ select is_empty(
 
 Assert regular users, admin at AAL1, and anonymous callers are denied.
 
-- [ ] **Step 2: Run SQL test and confirm failure**
+- [x] **Step 2: Run SQL test and confirm failure**
 
 ```bash
 pnpm exec supabase test db supabase/tests/admin_dashboard.test.sql
 ```
 
-- [ ] **Step 3: Create the migration and protected RPC**
+- [x] **Step 3: Create the migration and protected RPC**
 
 Run `pnpm exec supabase migration new admin_recent_subscription_filters`. Implement:
 
@@ -121,7 +121,7 @@ and (
 
 Apply period and mode predicates before ordering by `created_at desc, id desc` and limiting to five. Return the same fields as the existing snapshot list. Revoke default execution and grant only `authenticated`.
 
-- [ ] **Step 4: Write filter and service tests**
+- [x] **Step 4: Write filter and service tests**
 
 ```ts
 expect(
@@ -141,11 +141,11 @@ expect(parseAdminSubscriptionFilters({ period: "invalid" })).toEqual({
 
 Service tests assert exact RPC args, schema validation, Portuguese presentation mapping, and stable unavailable error behavior.
 
-- [ ] **Step 5: Implement parsing and service**
+- [x] **Step 5: Implement parsing and service**
 
 Use a strict Zod schema and scalar URL extraction. `getRecentSubscriptions` calls `requireAdmin`, then the RPC with `p_period`, `p_billing_mode`, and `p_state`; validate the returned JSON using the existing recent-subscription item schema extracted from `admin-dashboard.schema.ts`.
 
-- [ ] **Step 6: Verify, regenerate types, and commit**
+- [x] **Step 6: Verify, regenerate types, and commit**
 
 ```bash
 pnpm supabase:reset
@@ -177,7 +177,7 @@ git commit -m "fix: list genuine admin subscriptions"
 - Consumes: `AdminSubscriptionFilters`, `getAdminDashboard`, `getRecentSubscriptions`.
 - Produces: URL-scoped filter form and filtered recent-subscription section.
 
-- [ ] **Step 1: Write failing page and component tests**
+- [x] **Step 1: Write failing page and component tests**
 
 Assert the page parses search params and calls both services. Assert three labeled comboboxes, selected values, reset link, and scoped explanatory copy:
 
@@ -195,15 +195,15 @@ expect(
 
 Add a filtered empty state: `Nenhuma assinatura corresponde aos filtros.` The unfiltered empty state remains `Nenhuma assinatura registrada até agora.`
 
-- [ ] **Step 2: Implement the GET filter form**
+- [x] **Step 2: Implement the GET filter form**
 
 Use native labeled selects named `period`, `billing`, and `subscriptionState`. The form submits to `/admin` with method `get`; the reset link points to `/admin`. Keep the filter bar compact, wrap controls below tablet width, and use the existing button styles.
 
-- [ ] **Step 3: Compose filtered data without changing KPIs**
+- [x] **Step 3: Compose filtered data without changing KPIs**
 
 The page awaits search params, parses filters, then loads the existing dashboard snapshot and filtered subscriptions with `Promise.all`. Replace only `dashboard.recentSubscriptions` in the view model passed to `AdminDashboard`. Pass filters separately to `RecentSubscriptions`; do not change metric or chart RPC inputs.
 
-- [ ] **Step 4: Test, run detector, and commit**
+- [x] **Step 4: Test, run detector, and commit**
 
 ```bash
 pnpm test -- src/modules/admin/dashboard/components/recent-subscription-filters.test.tsx src/modules/admin/dashboard/components/admin-dashboard.test.tsx src/app/'(admin-panel)'/admin/page.test.tsx
@@ -237,7 +237,7 @@ git commit -m "feat: filter recent admin subscriptions"
 - Consumes: `listFilterSchema`, `listUrl`, `requireAdmin`, Next `cookies` and `redirect`.
 - Produces: `ADMIN_USER_FILTER_COOKIE`, `resolveAdminUserFilters(url,cookie)`, `persistAdminUserFilters(formData)`, `clearAdminUserFilters()`.
 
-- [ ] **Step 1: Write cookie precedence tests**
+- [x] **Step 1: Write cookie precedence tests**
 
 Cover no URL values, explicit defaults, malformed JSON, oversized values, and cursor exclusion:
 
@@ -259,7 +259,7 @@ expect(
 
 The second case establishes that the presence of any explicit filter query starts a new complete filter set; omitted values use defaults instead of stale cookie values.
 
-- [ ] **Step 2: Write server-action tests**
+- [x] **Step 2: Write server-action tests**
 
 Mock `requireAdmin`, cookies, and redirect. Assert persisted value contains only `q`, `state`, and `access`, and options are:
 
@@ -275,15 +275,15 @@ Mock `requireAdmin`, cookies, and redirect. Assert persisted value contains only
 
 Assert both actions redirect to the first page and `clearAdminUserFilters` deletes the cookie.
 
-- [ ] **Step 3: Implement cookie parsing and canonical resolution**
+- [x] **Step 3: Implement cookie parsing and canonical resolution**
 
 Set `ADMIN_USER_FILTER_COOKIE = "lucrivo_admin_user_filters"`. Reject raw values over 1,024 characters. Parse JSON with a strict schema containing only `q`, `state`, and `access`. Reuse `listFilterSchema` defaults. Add `hasExplicitUserFilters(searchParams)` based on own-property presence of any of those three names.
 
-- [ ] **Step 4: Implement protected server actions**
+- [x] **Step 4: Implement protected server actions**
 
 Both actions start with `await requireAdmin()`. `persistAdminUserFilters` parses `FormData`, writes the validated cookie, and redirects to `listUrl(filters)` without cursor/back. Clear deletes the cookie and redirects to `/admin/users`.
 
-- [ ] **Step 5: Extract and integrate the filter form**
+- [x] **Step 5: Extract and integrate the filter form**
 
 Move the existing search and selects to `AdminUserFilterForm`. Set `action={persistAdminUserFilters}` and add a separate form/button for `clearAdminUserFilters` when filters differ from defaults. Keep the current method-independent labels and responsive grid.
 
@@ -300,7 +300,7 @@ const filters = resolveAdminUserFilters(
 
 Pagination links continue to use URL filters and never trigger the action.
 
-- [ ] **Step 6: Run focused tests and commit**
+- [x] **Step 6: Run focused tests and commit**
 
 ```bash
 pnpm test -- src/modules/admin/users/admin-user-filter-cookie.test.ts src/modules/admin/users/admin-user-filters.action.test.ts src/modules/admin/users/components/admin-user-filter-form.test.tsx src/modules/admin/users/components/admin-user-list.test.tsx src/app/'(admin-panel)'/admin/users/page.test.tsx
@@ -321,14 +321,14 @@ git commit -m "feat: persist admin user filters"
 - Consumes: completed admin filter behavior.
 - Produces: verified admin dashboard and user management.
 
-- [ ] **Step 1: Run all admin and authorization tests**
+- [x] **Step 1: Run all admin and authorization tests**
 
 ```bash
 pnpm test -- src/modules/admin src/app/'(admin-panel)'/admin
 pnpm exec supabase test db supabase/tests/admin_authorization.test.sql supabase/tests/admin_dashboard.test.sql supabase/tests/admin_user_reads.test.sql supabase/tests/admin_user_mutations.test.sql
 ```
 
-- [ ] **Step 2: Run repository gates**
+- [x] **Step 2: Run repository gates**
 
 ```bash
 pnpm typecheck
@@ -337,7 +337,7 @@ pnpm format:check
 pnpm build
 ```
 
-- [ ] **Step 3: Commit any gate fixes**
+- [x] **Step 3: Commit any gate fixes**
 
 ```bash
 git add src supabase

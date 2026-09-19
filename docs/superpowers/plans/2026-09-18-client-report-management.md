@@ -1,6 +1,6 @@
 # Client Report Management Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Keep entitled reports readable after subscription expiry and let paid clients navigate, edit, replace, copy, and soft delete their reports from the report page.
 
@@ -64,7 +64,7 @@
 - Consumes: `private.account_is_eligible()`, `private.has_paid_access_for_user(uuid,timestamptz)`, `private.can_read_diagnosis(bigint)`.
 - Produces: `diagnoses.updated_at`, `diagnoses.deleted_at`, `diagnoses.version`, historical read semantics, `public.soft_delete_owned_diagnosis_v1(bigint,integer)`.
 
-- [ ] **Step 1: Verify current Supabase guidance and CLI syntax**
+- [x] **Step 1: Verify current Supabase guidance and CLI syntax**
 
 Read `https://supabase.com/changelog.md`, the current RLS guide, and the database-functions guide. Run:
 
@@ -76,7 +76,7 @@ pnpm exec supabase db --help
 
 Record only breaking changes relevant to RLS, security-definer functions, or local migrations in the implementation notes for the commit.
 
-- [ ] **Step 2: Create the failing lifecycle SQL tests**
+- [x] **Step 2: Create the failing lifecycle SQL tests**
 
 Create `supabase/tests/report_lifecycle.test.sql` with transactions and fixed UUID fixtures. Cover these assertions:
 
@@ -106,7 +106,7 @@ select is(
 
 Also assert wrong-owner denial, anonymous denial, version conflict, a deleted row hidden through RLS, service child rows hidden, and deletion of a free report not allowing a second free report.
 
-- [ ] **Step 3: Run SQL tests to verify failure**
+- [x] **Step 3: Run SQL tests to verify failure**
 
 Run:
 
@@ -116,7 +116,7 @@ pnpm exec supabase test db supabase/tests/report_lifecycle.test.sql
 
 Expected: FAIL because lifecycle columns and `soft_delete_owned_diagnosis_v1` do not exist and expired paid reports are hidden.
 
-- [ ] **Step 4: Create the migration through the Supabase CLI**
+- [x] **Step 4: Create the migration through the Supabase CLI**
 
 Run:
 
@@ -167,7 +167,7 @@ Do not require the contract to retain a particular current status. Historical
 entitlement comes only from an access interval that contains the creation
 instant; both timestamps must be non-null by that comparison.
 
-- [ ] **Step 5: Add the soft-delete RPC**
+- [x] **Step 5: Add the soft-delete RPC**
 
 Implement `public.soft_delete_owned_diagnosis_v1(p_diagnosis_id bigint, p_expected_version integer) returns text`. Lock the row, verify `auth.uid()`, call `private.account_is_eligible()`, reject already deleted or stale versions, and update exactly once:
 
@@ -184,7 +184,7 @@ where id = p_diagnosis_id
 
 Return `deleted`, `not_found`, or `conflict`; revoke execution from `public`, `anon`, and `service_role`, then grant only to `authenticated`.
 
-- [ ] **Step 6: Verify migration security and tests**
+- [x] **Step 6: Verify migration security and tests**
 
 Run:
 
@@ -197,7 +197,7 @@ pnpm supabase:advisors
 
 Expected: all tests pass and advisors report no new security or performance finding.
 
-- [ ] **Step 7: Regenerate types and commit**
+- [x] **Step 7: Regenerate types and commit**
 
 Run `pnpm supabase:types`, then:
 
@@ -224,7 +224,7 @@ git commit -m "feat: preserve and soft delete owned reports"
 - Consumes: `encodeReportsCursor`, `decodeReportsCursor`, `ReportsCursor`.
 - Produces: `parseReportNavigation({cursor,back})`, `buildReportPageLinks(navigation,nextCursor)` returning `{first,previous,next}`.
 
-- [ ] **Step 1: Write failing navigation tests**
+- [x] **Step 1: Write failing navigation tests**
 
 Test a three-page journey, invalid base64, more than 100 history entries, and first-page reset:
 
@@ -247,7 +247,7 @@ expect(buildReportPageLinks(nav3, null)).toMatchObject({
 
 In the page test, assert links named `Primeira página`, `Anterior`, and `Próxima` appear on later pages.
 
-- [ ] **Step 2: Run the focused tests and confirm failure**
+- [x] **Step 2: Run the focused tests and confirm failure**
 
 ```bash
 pnpm test -- src/modules/reports/report-pagination.test.ts src/app/'(private)'/reports/page.test.tsx
@@ -255,17 +255,17 @@ pnpm test -- src/modules/reports/report-pagination.test.ts src/app/'(private)'/r
 
 Expected: FAIL because previous and first links do not exist.
 
-- [ ] **Step 3: Implement bounded cursor history**
+- [x] **Step 3: Implement bounded cursor history**
 
 Use a Zod schema for `{ cursor?: string; back: string[] }`; each cursor is at most 500 characters, the stack has at most 100 entries, and encoded history is at most 8,000 characters. Invalid navigation becomes `{cursor: undefined, stack: []}`. Build links with `URLSearchParams`, never concatenate unvalidated query strings.
 
 Update the page search params type to accept `cursor` and `back`, pass only the active cursor to `listOwnedReports`, and render the three links from `buildReportPageLinks`.
 
-- [ ] **Step 4: Make active-row filtering explicit**
+- [x] **Step 4: Make active-row filtering explicit**
 
 Add `.is("deleted_at", null)` before cursor filters in `listOwnedReports`. Update `REPORT_SUMMARY_COLUMNS` only if generated types require lifecycle metadata; do not expose deleted rows through a service-role fallback.
 
-- [ ] **Step 5: Run report-library tests and commit**
+- [x] **Step 5: Run report-library tests and commit**
 
 ```bash
 pnpm test -- src/modules/reports/report-pagination.test.ts src/modules/reports/services/list-reports.service.test.ts src/app/'(private)'/reports/page.test.tsx src/modules/reports/components/report-library.test.tsx
@@ -289,7 +289,7 @@ git commit -m "feat: add complete report pagination"
 - Consumes: current Service V5, Product V4, Production V4, and Detailed V1 snapshots plus existing diagnosis input types.
 - Produces: `EditableReportDraft`, `toEditableReportDraft(snapshot, createId): EditableReportDraft | null`, `createDraftSubmissionId(draft)`.
 
-- [ ] **Step 1: Define the discriminated editor contract in tests**
+- [x] **Step 1: Define the discriminated editor contract in tests**
 
 Use the existing snapshot fixtures and assert exact input strings:
 
@@ -313,13 +313,13 @@ expect(toEditableReportDraft(productSnapshot, createId)).toEqual({
 
 Assert legacy snapshots missing required source inputs return `null`, zero remains `"0"`, unknown volume remains `""`, and detailed item and ingredient UUIDs are retained.
 
-- [ ] **Step 2: Run adapter tests and confirm failure**
+- [x] **Step 2: Run adapter tests and confirm failure**
 
 ```bash
 pnpm test -- src/modules/reports/editor/report-editor.adapters.test.ts
 ```
 
-- [ ] **Step 3: Implement lossless formatting helpers**
+- [x] **Step 3: Implement lossless formatting helpers**
 
 Create `centsToInput`, `basisPointsToInput`, `millionthsToInput`, and `tenThousandthsToInput` using integer quotient/remainder operations. Do not use floating-point division followed by rounding. Example:
 
@@ -332,11 +332,11 @@ function scaledIntegerToInput(value: number, scale: number): string {
 }
 ```
 
-- [ ] **Step 4: Implement exhaustive current-version adapters**
+- [x] **Step 4: Implement exhaustive current-version adapters**
 
 Switch on `snapshot.analysisMode` and `snapshot.category`. Check exact current schema versions before adapting. Generate a fresh submission ID for the draft while preserving detailed client item and ingredient IDs. Return `null` for every unrecognized combination.
 
-- [ ] **Step 5: Run tests and commit**
+- [x] **Step 5: Run tests and commit**
 
 ```bash
 pnpm test -- src/modules/reports/editor/report-editor.adapters.test.ts src/modules/reports/schemas/report-snapshot.schema.test.ts
@@ -360,7 +360,7 @@ git commit -m "feat: adapt reports for safe editing"
 - Consumes: `EditableReportDraft`, existing Zod schemas, command composers, calculators, and snapshot builders.
 - Produces: `calculateReportPreview(draft): ReportPreviewResult` where the result is `{status:"valid",snapshot}` or `{status:"invalid",fieldErrors}`.
 
-- [ ] **Step 1: Write failing parity tests**
+- [x] **Step 1: Write failing parity tests**
 
 For all four draft kinds, adapt a current snapshot, calculate it again, and assert identity of inputs and results:
 
@@ -374,17 +374,17 @@ expect(preview).toEqual({ status: "valid", snapshot: productSnapshot });
 
 Add one invalid-field test per kind and a hook test proving the last valid snapshot remains available while `status` becomes `invalid`.
 
-- [ ] **Step 2: Run focused tests and confirm failure**
+- [x] **Step 2: Run focused tests and confirm failure**
 
 ```bash
 pnpm test -- src/modules/reports/editor/calculate-report-preview.test.ts src/modules/reports/editor/use-report-preview.test.tsx
 ```
 
-- [ ] **Step 3: Implement the pure preview dispatcher**
+- [x] **Step 3: Implement the pure preview dispatcher**
 
 Parse drafts with the existing schemas. Compose normalized commands with existing command composers, run the existing calculators, then call the matching snapshot builder. Map Zod issues to the established quick or detailed field-error shape. Do not copy formulas into the editor module.
 
-- [ ] **Step 4: Implement the preview hook**
+- [x] **Step 4: Implement the preview hook**
 
 Use `useMemo` for the calculation and `useRef` for the last valid snapshot. Return:
 
@@ -398,7 +398,7 @@ type LiveReportPreview = {
 
 Do not debounce pure local calculation until profiling demonstrates a problem; detailed calculations are deterministic and bounded by existing input limits.
 
-- [ ] **Step 5: Run parity tests and commit**
+- [x] **Step 5: Run parity tests and commit**
 
 ```bash
 pnpm test -- src/modules/reports/editor
@@ -425,13 +425,13 @@ git commit -m "feat: calculate live report previews"
 - Consumes: `EditableReportDraft`, `calculateReportPreview`, existing create-report services.
 - Produces: `saveReportEdit({diagnosisId,expectedVersion,mode,draft})` and category-specific `replace_*_diagnosis_report_v1` RPCs returning the original diagnosis ID.
 
-- [ ] **Step 1: Extend SQL tests for atomic replacement**
+- [x] **Step 1: Extend SQL tests for atomic replacement**
 
 Test service, product, production, and detailed replacements. For each, assert ID and `created_at` stay unchanged, `version` increments, summary and normalized child rows match the new snapshot, and the transient validated row does not remain. Force a child-table constraint failure and assert the original snapshot and children remain untouched.
 
 Also assert current paid access is required and courtesy-only access receives SQLSTATE `42501` with message `paid access required`.
 
-- [ ] **Step 2: Add a private validated-row swap helper**
+- [x] **Step 2: Add a private validated-row swap helper**
 
 Implement `private.replace_owned_diagnosis_from_staged_v1(target_id, staged_id, expected_version)`. It must lock both diagnosis rows in ID order, verify both belong to `auth.uid()`, verify current paid access with `private.has_paid_access_for_user(caller_id, statement_timestamp())`, require equal category and analysis mode, and reject deleted or stale targets.
 
@@ -466,7 +466,7 @@ where target.id = target_id;
 
 Delete the staged diagnosis before assigning its unique submission ID to the target. The entire wrapper call runs in one transaction, so any exception rolls back creation and replacement.
 
-- [ ] **Step 3: Add four public replacement wrappers**
+- [x] **Step 3: Add four public replacement wrappers**
 
 Create `replace_service_diagnosis_report_v1`, `replace_product_diagnosis_report_v1`, `replace_production_diagnosis_report_v1`, and `replace_detailed_diagnosis_report_v1`. Each accepts `p_diagnosis_id`, `p_expected_version`, followed by the exact arguments of the current creation RPC. Each wrapper:
 
@@ -502,7 +502,7 @@ return private.replace_owned_diagnosis_from_staged_v1(
 
 Use the actual current RPC names and generated argument order discovered from `database.types.ts`; do not call superseded versions. Revoke default execution and grant only to `authenticated`.
 
-- [ ] **Step 4: Write failing action and service tests**
+- [x] **Step 4: Write failing action and service tests**
 
 Cover all modes and closed failure mappings:
 
@@ -528,7 +528,7 @@ expect(
 
 Assert invalid input, plan required, conflict, missing report, and unexpected failure. Verify the action ignores client-supplied calculation output and rebuilds the snapshot.
 
-- [ ] **Step 5: Implement the server action and replacement service**
+- [x] **Step 5: Implement the server action and replacement service**
 
 The action schema is a discriminated union over `{mode:"replace"|"copy", diagnosisId, expectedVersion, draft}`. Call `requireUser`, calculate the canonical preview, and dispatch by draft kind. `copy` invokes existing create services; `replace` invokes the new wrapper matching the existing service argument mappers. Map database codes/messages to:
 
@@ -539,7 +539,7 @@ type SaveReportEditResult =
   | { status: "plan_required" | "conflict" | "not_found" | "error" };
 ```
 
-- [ ] **Step 6: Verify SQL and application tests, regenerate types, and commit**
+- [x] **Step 6: Verify SQL and application tests, regenerate types, and commit**
 
 ```bash
 pnpm supabase:reset
@@ -570,11 +570,11 @@ git commit -m "feat: replace or copy edited reports"
 - Consumes: `soft_delete_owned_diagnosis_v1`, lifecycle columns, `getBillingOverview`.
 - Produces: `deleteReport({diagnosisId,expectedVersion})`, detail-page props `version`, `canEdit`, `editableDraft`.
 
-- [ ] **Step 1: Write failing service and action tests**
+- [x] **Step 1: Write failing service and action tests**
 
 Assert `getOwnedReport` selects `version` and `updated_at`, returns no deleted row, and no longer classifies an expired but historically entitled report as locked. Assert delete maps RPC results and calls `revalidatePath("/reports")` only on success.
 
-- [ ] **Step 2: Implement the delete action**
+- [x] **Step 2: Implement the delete action**
 
 Validate positive safe integer ID and nonnegative version, call `requireUser`, then the RPC. Return:
 
@@ -585,11 +585,11 @@ type DeleteReportResult =
 
 Never use the admin client for deletion. In the detail page, load billing overview alongside the report and set `canEdit` only when `overview.tier === "paid"` and an adapter returns a draft.
 
-- [ ] **Step 3: Remove obsolete locked-report branching**
+- [x] **Step 3: Remove obsolete locked-report branching**
 
 Keep `not_found`, `unavailable`, and read failure states. A historically entitled row now comes through the user-scoped Supabase client. If an owned row is not readable under the new rules, expose no ownership detail and use `notFound()`.
 
-- [ ] **Step 4: Run tests and commit**
+- [x] **Step 4: Run tests and commit**
 
 ```bash
 pnpm test -- src/modules/reports/actions/delete-report.action.test.ts src/modules/reports/services/get-report.service.test.ts src/app/'(private)'/reports/'[id]'/page.test.tsx
@@ -615,7 +615,7 @@ git commit -m "feat: expose report lifecycle actions"
 - Consumes: `deleteReport`, `canEdit`, `editableDraft`, report ID/version.
 - Produces: accessible edit entry, upgrade dialog, delete confirmation, and `onEdit` callback.
 
-- [ ] **Step 1: Write interaction tests**
+- [x] **Step 1: Write interaction tests**
 
 Cover paid edit, unpaid upgrade, unsupported snapshot explanation, delete cancel, delete success, delete conflict, focus return, and pending button state:
 
@@ -630,15 +630,15 @@ expect(screen.getByRole("link", { name: "Ver planos" })).toHaveAttribute(
 );
 ```
 
-- [ ] **Step 2: Implement `ReportActions`**
+- [x] **Step 2: Implement `ReportActions`**
 
 Use existing `Dialog`/`AlertDialog` primitives and `Button`. Keep Edit visible for compatible reports; when `canEdit` is false, open the upgrade dialog. Put Delete in a secondary actions menu or visually secondary group. After successful delete, call `router.replace("/reports?deleted=1")` and `router.refresh()`.
 
-- [ ] **Step 3: Integrate both detail variants**
+- [x] **Step 3: Integrate both detail variants**
 
 Add actions to the existing header without changing report content. Pass a callback to enter editor mode for quick and detailed components. Ensure controls have 44px touch targets and wrap on narrow screens.
 
-- [ ] **Step 4: Run component tests and commit**
+- [x] **Step 4: Run component tests and commit**
 
 ```bash
 pnpm test -- src/modules/reports/components/report-actions.test.tsx src/modules/reports/components/report-detail.test.tsx src/modules/reports/components/detailed-report-detail.test.tsx
@@ -665,7 +665,7 @@ git commit -m "feat: add report edit and delete actions"
 - Consumes: `EditableReportDraft`, `useReportPreview`, `saveReportEdit`, report ID/version.
 - Produces: responsive on-page editor with cancel, replace, and copy actions.
 
-- [ ] **Step 1: Write failing editor behavior tests**
+- [x] **Step 1: Write failing editor behavior tests**
 
 For each of service, product, production, and detailed drafts, test at least one field change and preview result. Test invalid field feedback, last-valid preview, cancel, submission lock, replace navigation, copy navigation, plan loss, and conflict:
 
@@ -684,11 +684,11 @@ expect(saveReportEdit).toHaveBeenCalledWith(
 );
 ```
 
-- [ ] **Step 2: Implement focused field groups**
+- [x] **Step 2: Implement focused field groups**
 
 Build quick fields from existing labels and input semantics. Build detailed fields with stable keys from client item/ingredient IDs and explicit add/remove buttons. Reuse schema error paths such as `items.0.unitSalePrice`; associate each error with its field using `aria-describedby`.
 
-- [ ] **Step 3: Implement the responsive workspace**
+- [x] **Step 3: Implement the responsive workspace**
 
 `ReportEditor` owns draft state and calls `useReportPreview`. Use a two-column layout at `lg`, with a sticky preview column that stops being sticky on smaller screens. Render the last valid preview plus `Revise os campos destacados para atualizar esta simulação` when invalid.
 
@@ -702,13 +702,13 @@ The footer actions are exactly:
 
 On replace success, exit edit mode and call `router.refresh()`. On copy success, call `router.push(`/reports/${result.diagnosisId}`)`. Keep the draft for plan-required, conflict, invalid, and error results.
 
-- [ ] **Step 4: Run editor and report suites**
+- [x] **Step 4: Run editor and report suites**
 
 ```bash
 pnpm test -- src/modules/reports/components/report-editor.test.tsx src/modules/reports/components/report-actions.test.tsx src/modules/reports/components/report-detail.test.tsx src/modules/reports/components/detailed-report-detail.test.tsx src/app/'(private)'/reports/'[id]'/page.test.tsx
 ```
 
-- [ ] **Step 5: Run Impeccable mechanical detection once and fix findings**
+- [x] **Step 5: Run Impeccable mechanical detection once and fix findings**
 
 ```bash
 node .agents/skills/impeccable/scripts/detect.mjs --json \
@@ -721,7 +721,7 @@ node .agents/skills/impeccable/scripts/detect.mjs --json \
 
 Fix all applicable accessibility, responsive, token, and interaction findings in one pass, then rerun the focused editor tests.
 
-- [ ] **Step 6: Commit the editor**
+- [x] **Step 6: Commit the editor**
 
 ```bash
 git add src/modules/reports/components
@@ -743,11 +743,11 @@ git commit -m "feat: edit reports with live previews"
 - Consumes: completed report lifecycle behavior.
 - Produces: documentation consistent with replace, copy, historical read, and soft delete.
 
-- [ ] **Step 1: Update product truth**
+- [x] **Step 1: Update product truth**
 
 Replace statements that all saved reports are immutable. State that calculations remain deterministic and versioned; clients with paid access may replace the current report or save a copy; original creation time and ID survive replacement; deletion is recoverable at the data layer.
 
-- [ ] **Step 2: Run all report, diagnosis, and billing tests**
+- [x] **Step 2: Run all report, diagnosis, and billing tests**
 
 ```bash
 pnpm test -- src/modules/reports src/modules/quick-diagnosis src/modules/detailed-diagnosis src/modules/billing src/app/'(private)'/reports src/app/'(private)'/quick-diagnosis
@@ -756,7 +756,7 @@ pnpm exec supabase test db
 
 Expected: all suites pass.
 
-- [ ] **Step 3: Run repository quality gates**
+- [x] **Step 3: Run repository quality gates**
 
 ```bash
 pnpm typecheck
@@ -767,7 +767,7 @@ pnpm build
 
 Expected: all commands exit zero. Fix only failures caused by this work; document unrelated pre-existing failures with command output.
 
-- [ ] **Step 4: Commit documentation and final fixes**
+- [x] **Step 4: Commit documentation and final fixes**
 
 ```bash
 git add PRODUCT.md docs/QUICK-DIAGNOSIS.md docs/DETAILED-DIAGNOSIS.md src supabase

@@ -427,3 +427,251 @@ grant execute on function public.replace_owned_diagnosis_from_staged_v1(
   integer
 )
 to authenticated;
+
+create function private.require_paid_report_edit_v1()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  caller_id uuid := (select auth.uid());
+begin
+  if caller_id is null or not private.account_is_eligible() then
+    raise exception using errcode = '42501', message = 'account unavailable';
+  end if;
+
+  if not private.has_paid_access_for_user(
+    caller_id,
+    pg_catalog.statement_timestamp()
+  ) then
+    raise exception using errcode = '42501', message = 'paid access required';
+  end if;
+end;
+$function$;
+
+revoke execute on function private.require_paid_report_edit_v1()
+from public, anon, authenticated, service_role;
+grant execute on function private.require_paid_report_edit_v1()
+to authenticated;
+
+create function public.replace_service_diagnosis_report_v1(
+  p_diagnosis_id bigint, p_expected_version integer,
+  p_submission_id uuid, p_pricing_method public.service_pricing_method,
+  p_desired_monthly_income_cents bigint, p_fixed_monthly_expenses_cents bigint,
+  p_work_hours_period public.service_work_hours_period,
+  p_work_period_minutes integer, p_monthly_work_minutes integer,
+  p_weekly_work_days smallint, p_hourly_rate_cents bigint,
+  p_minute_rate_cents bigint, p_appointment_rate_cents bigint,
+  p_appointment_duration_minutes integer, p_material_unit_cost_cents bigint,
+  p_tax_rate_basis_points integer, p_card_fee_rate_basis_points integer,
+  p_source_pricing_method text, p_source_current_price_cents bigint,
+  p_source_material_cost_unit text, p_source_material_cost_cents bigint,
+  p_daily_work_minutes integer, p_source_appointment_duration_minutes integer,
+  p_schema_version smallint, p_calculation_version smallint,
+  p_content_version smallint, p_scenario text, p_current_price_cents bigint,
+  p_real_margin_basis_points integer, p_unit_profit_cents bigint,
+  p_verdict text, p_priority text, p_unit text, p_report_snapshot jsonb
+)
+returns bigint
+language plpgsql
+security invoker
+set search_path = ''
+as $function$
+declare
+  staged_id bigint;
+begin
+  perform private.require_paid_report_edit_v1();
+  staged_id := public.create_service_diagnosis_report_v4(
+    p_submission_id, p_pricing_method, p_desired_monthly_income_cents,
+    p_fixed_monthly_expenses_cents, p_work_hours_period,
+    p_work_period_minutes, p_monthly_work_minutes, p_weekly_work_days,
+    p_hourly_rate_cents, p_minute_rate_cents, p_appointment_rate_cents,
+    p_appointment_duration_minutes, p_material_unit_cost_cents,
+    p_tax_rate_basis_points, p_card_fee_rate_basis_points,
+    p_source_pricing_method, p_source_current_price_cents,
+    p_source_material_cost_unit, p_source_material_cost_cents,
+    p_daily_work_minutes, p_source_appointment_duration_minutes,
+    p_schema_version, p_calculation_version, p_content_version, p_scenario,
+    p_current_price_cents, p_real_margin_basis_points,
+    p_unit_profit_cents, p_verdict, p_priority, p_unit, p_report_snapshot
+  );
+
+  return private.replace_owned_diagnosis_from_staged_v1_impl(
+    p_diagnosis_id, staged_id, p_expected_version
+  );
+end;
+$function$;
+
+create function public.replace_product_diagnosis_report_v1(
+  p_diagnosis_id bigint, p_expected_version integer,
+  p_submission_id uuid, p_product_kind text,
+  p_purchase_unit_cost_cents bigint, p_unit_sale_price_cents bigint,
+  p_fixed_monthly_expenses_cents bigint, p_monthly_sales_volume integer,
+  p_pro_labore_included boolean, p_pro_labore_cents bigint,
+  p_tax_rate_basis_points integer, p_card_fee_rate_basis_points integer,
+  p_schema_version smallint, p_calculation_version smallint,
+  p_content_version smallint, p_scenario text, p_current_price_cents bigint,
+  p_real_margin_basis_points integer, p_unit_profit_cents bigint,
+  p_monthly_result_cents bigint, p_verdict text, p_priority text,
+  p_unit text, p_report_snapshot jsonb
+)
+returns bigint
+language plpgsql
+security invoker
+set search_path = ''
+as $function$
+declare
+  staged_id bigint;
+begin
+  perform private.require_paid_report_edit_v1();
+  staged_id := public.create_product_diagnosis_report_v3(
+    p_submission_id, p_product_kind, p_purchase_unit_cost_cents,
+    p_unit_sale_price_cents, p_fixed_monthly_expenses_cents,
+    p_monthly_sales_volume, p_pro_labore_included, p_pro_labore_cents,
+    p_tax_rate_basis_points, p_card_fee_rate_basis_points, p_schema_version,
+    p_calculation_version, p_content_version, p_scenario,
+    p_current_price_cents, p_real_margin_basis_points, p_unit_profit_cents,
+    p_monthly_result_cents, p_verdict, p_priority, p_unit, p_report_snapshot
+  );
+
+  return private.replace_owned_diagnosis_from_staged_v1_impl(
+    p_diagnosis_id, staged_id, p_expected_version
+  );
+end;
+$function$;
+
+create function public.replace_production_diagnosis_report_v1(
+  p_diagnosis_id bigint, p_expected_version integer,
+  p_submission_id uuid, p_cost_composition_enabled boolean,
+  p_production_unit_cost_cents bigint, p_material_unit_cost_cents bigint,
+  p_packaging_unit_cost_cents bigint, p_direct_labor_unit_cost_cents bigint,
+  p_other_variable_unit_cost_cents bigint, p_unit_sale_price_cents bigint,
+  p_fixed_monthly_expenses_cents bigint, p_monthly_sales_volume integer,
+  p_pro_labore_included boolean, p_pro_labore_cents bigint,
+  p_tax_rate_basis_points integer, p_card_fee_rate_basis_points integer,
+  p_schema_version smallint, p_calculation_version smallint,
+  p_content_version smallint, p_scenario text, p_current_price_cents bigint,
+  p_real_margin_basis_points integer, p_unit_profit_cents bigint,
+  p_monthly_result_cents bigint, p_verdict text, p_priority text,
+  p_unit text, p_report_snapshot jsonb
+)
+returns bigint
+language plpgsql
+security invoker
+set search_path = ''
+as $function$
+declare
+  staged_id bigint;
+begin
+  perform private.require_paid_report_edit_v1();
+  staged_id := public.create_production_diagnosis_report_v3(
+    p_submission_id, p_cost_composition_enabled,
+    p_production_unit_cost_cents, p_material_unit_cost_cents,
+    p_packaging_unit_cost_cents, p_direct_labor_unit_cost_cents,
+    p_other_variable_unit_cost_cents, p_unit_sale_price_cents,
+    p_fixed_monthly_expenses_cents, p_monthly_sales_volume,
+    p_pro_labore_included, p_pro_labore_cents, p_tax_rate_basis_points,
+    p_card_fee_rate_basis_points, p_schema_version, p_calculation_version,
+    p_content_version, p_scenario, p_current_price_cents,
+    p_real_margin_basis_points, p_unit_profit_cents,
+    p_monthly_result_cents, p_verdict, p_priority, p_unit, p_report_snapshot
+  );
+
+  return private.replace_owned_diagnosis_from_staged_v1_impl(
+    p_diagnosis_id, staged_id, p_expected_version
+  );
+end;
+$function$;
+
+create function public.replace_detailed_diagnosis_report_v1(
+  p_diagnosis_id bigint, p_expected_version integer,
+  p_submission_id uuid, p_category public.business_category,
+  p_fixed_monthly_expenses_cents bigint, p_pro_labore_included boolean,
+  p_pro_labore_cents bigint, p_tax_rate_basis_points integer,
+  p_card_fee_rate_basis_points integer,
+  p_promotion_margin_basis_points integer, p_items jsonb,
+  p_schema_version smallint, p_calculation_version smallint,
+  p_content_version smallint, p_monthly_gross_revenue_cents bigint,
+  p_monthly_result_cents bigint, p_real_margin_basis_points integer,
+  p_verdict text, p_priority text, p_item_count integer,
+  p_is_partial boolean, p_report_snapshot jsonb
+)
+returns bigint
+language plpgsql
+security invoker
+set search_path = ''
+as $function$
+declare
+  staged_id bigint;
+begin
+  perform private.require_paid_report_edit_v1();
+  staged_id := public.create_detailed_diagnosis_report(
+    p_submission_id, p_category, p_fixed_monthly_expenses_cents,
+    p_pro_labore_included, p_pro_labore_cents, p_tax_rate_basis_points,
+    p_card_fee_rate_basis_points, p_promotion_margin_basis_points, p_items,
+    p_schema_version, p_calculation_version, p_content_version,
+    p_monthly_gross_revenue_cents, p_monthly_result_cents,
+    p_real_margin_basis_points, p_verdict, p_priority, p_item_count,
+    p_is_partial, p_report_snapshot
+  );
+
+  return private.replace_owned_diagnosis_from_staged_v1_impl(
+    p_diagnosis_id, staged_id, p_expected_version
+  );
+end;
+$function$;
+
+revoke execute on function public.replace_service_diagnosis_report_v1(
+  bigint, integer, uuid, public.service_pricing_method, bigint, bigint,
+  public.service_work_hours_period, integer, integer, smallint, bigint, bigint,
+  bigint, integer, bigint, integer, integer, text, bigint, text, bigint,
+  integer, integer, smallint, smallint, smallint, text, bigint, integer,
+  bigint, text, text, text, jsonb
+) from public, anon, service_role;
+grant execute on function public.replace_service_diagnosis_report_v1(
+  bigint, integer, uuid, public.service_pricing_method, bigint, bigint,
+  public.service_work_hours_period, integer, integer, smallint, bigint, bigint,
+  bigint, integer, bigint, integer, integer, text, bigint, text, bigint,
+  integer, integer, smallint, smallint, smallint, text, bigint, integer,
+  bigint, text, text, text, jsonb
+) to authenticated;
+
+revoke execute on function public.replace_product_diagnosis_report_v1(
+  bigint, integer, uuid, text, bigint, bigint, bigint, integer, boolean, bigint,
+  integer, integer, smallint, smallint, smallint, text, bigint, integer,
+  bigint, bigint, text, text, text, jsonb
+) from public, anon, service_role;
+grant execute on function public.replace_product_diagnosis_report_v1(
+  bigint, integer, uuid, text, bigint, bigint, bigint, integer, boolean, bigint,
+  integer, integer, smallint, smallint, smallint, text, bigint, integer,
+  bigint, bigint, text, text, text, jsonb
+) to authenticated;
+
+revoke execute on function public.replace_production_diagnosis_report_v1(
+  bigint, integer, uuid, boolean, bigint, bigint, bigint, bigint, bigint,
+  bigint, bigint, integer, boolean, bigint, integer, integer, smallint,
+  smallint, smallint, text, bigint, integer, bigint, bigint, text, text, text,
+  jsonb
+) from public, anon, service_role;
+grant execute on function public.replace_production_diagnosis_report_v1(
+  bigint, integer, uuid, boolean, bigint, bigint, bigint, bigint, bigint,
+  bigint, bigint, integer, boolean, bigint, integer, integer, smallint,
+  smallint, smallint, text, bigint, integer, bigint, bigint, text, text, text,
+  jsonb
+) to authenticated;
+
+revoke execute on function public.replace_detailed_diagnosis_report_v1(
+  bigint, integer, uuid, public.business_category, bigint, boolean, bigint,
+  integer, integer, integer, jsonb, smallint, smallint, smallint, bigint,
+  bigint, integer, text, text, integer, boolean, jsonb
+) from public, anon, service_role;
+grant execute on function public.replace_detailed_diagnosis_report_v1(
+  bigint, integer, uuid, public.business_category, bigint, boolean, bigint,
+  integer, integer, integer, jsonb, smallint, smallint, smallint, bigint,
+  bigint, integer, text, text, integer, boolean, jsonb
+) to authenticated;
+
+drop function public.replace_owned_diagnosis_from_staged_v1(
+  bigint, bigint, integer
+);

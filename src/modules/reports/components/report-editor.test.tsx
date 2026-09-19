@@ -7,6 +7,10 @@ import type { ProductDiagnosisCommand } from "@/modules/quick-diagnosis/types";
 import { buildProductReportSnapshot } from "../domain/build-product-report-snapshot";
 import { calculateProductReport } from "../domain/calculate-product-report";
 import { toEditableReportDraft } from "../editor/report-editor.adapters";
+import {
+  snapshots as allEditableSnapshots,
+  submissionId,
+} from "../editor/report-editor.adapters.test";
 
 const { push, refresh, saveReportEdit } = vi.hoisted(() => ({
   push: vi.fn(),
@@ -106,6 +110,122 @@ describe("ReportEditor", () => {
       screen.getByRole("button", { name: "Salvar como novo relatório" }),
     );
     await waitFor(() => expect(onPlanRequired).toHaveBeenCalledOnce());
+    expect(screen.getByLabelText("Preço de venda (R$)")).toHaveValue("30");
+  });
+
+  it.each([
+    ["service", 0, "Preço cobrado hoje (R$)", "120.00"],
+    ["production", 2, "Preço de venda (R$)", "45.00"],
+    ["detailed", 3, "Preço de venda (R$)", "45.00"],
+  ] as const)(
+    "edits and submits a valid %s draft",
+    async (kind, snapshotIndex, fieldLabel, value) => {
+      const user = userEvent.setup();
+      const editableSnapshot = allEditableSnapshots()[snapshotIndex]!;
+      const editableDraft = toEditableReportDraft(
+        editableSnapshot,
+        () => submissionId,
+      )!;
+      render(
+        <ReportEditor
+          diagnosisId={41}
+          version={2}
+          initialDraft={editableDraft}
+          initialSnapshot={editableSnapshot}
+          onCancel={vi.fn()}
+          onPlanRequired={vi.fn()}
+        />,
+      );
+
+      const field = screen.getByLabelText(fieldLabel);
+      await user.clear(field);
+      await user.type(field, value);
+      await user.click(
+        screen.getByRole("button", { name: "Salvar alterações" }),
+      );
+
+      await waitFor(() =>
+        expect(saveReportEdit).toHaveBeenCalledWith(
+          expect.objectContaining({
+            mode: "replace",
+            draft: expect.objectContaining({ kind }),
+          }),
+        ),
+      );
+    },
+  );
+
+  it("keeps the last preview and blocks an invalid submission", async () => {
+    const user = userEvent.setup();
+    render(
+      <ReportEditor
+        diagnosisId={41}
+        version={2}
+        initialDraft={draft}
+        initialSnapshot={snapshot}
+        onCancel={vi.fn()}
+        onPlanRequired={vi.fn()}
+      />,
+    );
+
+    await user.clear(screen.getByLabelText("Preço de venda (R$)"));
+    expect(
+      screen.getByText(
+        "Revise os campos destacados para atualizar esta simulação.",
+      ),
+    ).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+    expect(
+      screen.getByText("Revise os campos destacados antes de salvar."),
+    ).toBeVisible();
+    expect(saveReportEdit).not.toHaveBeenCalled();
+  });
+
+  it("navigates to the new report after saving a copy", async () => {
+    const user = userEvent.setup();
+    saveReportEdit.mockResolvedValue({
+      status: "success",
+      diagnosisId: 99,
+      version: 0,
+    });
+    render(
+      <ReportEditor
+        diagnosisId={41}
+        version={2}
+        initialDraft={draft}
+        initialSnapshot={snapshot}
+        onCancel={vi.fn()}
+        onPlanRequired={vi.fn()}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Salvar como novo relatório" }),
+    );
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/reports/99"));
+  });
+
+  it("keeps the draft and explains an optimistic concurrency conflict", async () => {
+    const user = userEvent.setup();
+    saveReportEdit.mockResolvedValue({ status: "conflict" });
+    render(
+      <ReportEditor
+        diagnosisId={41}
+        version={2}
+        initialDraft={draft}
+        initialSnapshot={snapshot}
+        onCancel={vi.fn()}
+        onPlanRequired={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Salvar alterações" }));
+    expect(
+      await screen.findByText(
+        "Este relatório foi alterado em outra sessão. Atualize a página e tente novamente.",
+      ),
+    ).toBeVisible();
     expect(screen.getByLabelText("Preço de venda (R$)")).toHaveValue("30");
   });
 });

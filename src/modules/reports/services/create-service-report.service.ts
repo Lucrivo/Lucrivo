@@ -111,6 +111,8 @@ async function createServiceReport({
 
 export {
   createServiceReport,
+  toRpcArgs as toServiceRpcArgs,
   type CreateServiceReportInput,
   type CreateServiceReportResult,
+  type ServiceReportRpcArgs,
 };

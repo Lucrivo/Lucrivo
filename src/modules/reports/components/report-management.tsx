@@ -62,9 +62,12 @@ function ReportManagement({
   function confirmDelete() {
     setDeleteMessage(null);
     startTransition(async () => {
-      const result = await deleteReport(diagnosisId, version);
+      const result = await deleteReport({
+        diagnosisId,
+        expectedVersion: version,
+      });
       if (result.status === "success") {
-        router.push("/reports");
+        router.replace("/reports?deleted=1");
         router.refresh();
         return;
       }

@@ -114,6 +114,8 @@ async function createProductionReport({
 
 export {
   createProductionReport,
+  toProductionRpcArgs,
   type CreateProductionReportInput,
   type CreateProductionReportResult,
+  type ProductionRpcArgs,
 };

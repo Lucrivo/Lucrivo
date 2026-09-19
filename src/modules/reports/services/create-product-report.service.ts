@@ -102,6 +102,8 @@ async function createProductReport({
 
 export {
   createProductReport,
+  toProductRpcArgs,
   type CreateProductReportInput,
   type CreateProductReportResult,
+  type ProductRpcArgs,
 };

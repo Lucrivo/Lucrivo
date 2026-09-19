@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(23);
+select plan(27);
 
 insert into auth.users (id, aud, role, email)
 values
@@ -139,6 +139,49 @@ select
 from public.diagnoses as diagnosis
 where diagnosis.id between 81001 and 81005;
 
+create function pg_temp.lifecycle_product_snapshot_v3()
+returns jsonb
+language sql
+immutable
+as $$
+  select jsonb_build_object(
+    'schemaVersion', 3,
+    'calculationVersion', 3,
+    'contentVersion', 4,
+    'category', 'product',
+    'scenario', 'resale',
+    'currency', 'BRL',
+    'unit', 'unit',
+    'policy', jsonb_build_object('attentionBandBasisPoints', 2000),
+    'inputs', jsonb_build_object(
+      'productKind', 'resale',
+      'purchaseUnitCostCents', 5000,
+      'unitSalePriceCents', 12000,
+      'fixedMonthlyExpensesCents', 100000,
+      'monthlySalesVolume', null,
+      'proLaboreIncluded', true,
+      'proLaboreCents', 200000,
+      'taxRateBasisPoints', 600,
+      'cardFeeRateBasisPoints', 200
+    ),
+    'results', jsonb_build_object(
+      'purchaseUnitCostCents', 5000,
+      'currentPriceCents', 12000,
+      'monthlySalesVolumeUsed', null,
+      'monthlyGrossRevenueCents', null,
+      'monthlyNetRevenueCents', null,
+      'monthlyResultCents', null,
+      'realMarginBasisPoints', null,
+      'unitProfitCents', null,
+      'verdict', 'incomplete_volume',
+      'priority', 'data'
+    ),
+    'executiveSummary', jsonb_build_object('headline', 'Diagnóstico'),
+    'sections', jsonb_build_array(),
+    'discountSimulationBase', jsonb_build_object('partial', true)
+  );
+$$;
+
 select has_column(
   'public',
   'diagnoses',
@@ -158,6 +201,30 @@ select has_function(
   'soft_delete_owned_diagnosis_v1',
   array['bigint', 'integer'],
   'soft-delete RPC exists'
+);
+
+select has_function(
+  'public',
+  'replace_service_diagnosis_report_v1',
+  'atomic Service replacement RPC exists'
+);
+
+select has_function(
+  'public',
+  'replace_product_diagnosis_report_v1',
+  'atomic Product replacement RPC exists'
+);
+
+select has_function(
+  'public',
+  'replace_production_diagnosis_report_v1',
+  'atomic Production replacement RPC exists'
+);
+
+select has_function(
+  'public',
+  'replace_detailed_diagnosis_report_v1',
+  'atomic Detailed replacement RPC exists'
 );
 
 set local role authenticated;
@@ -219,7 +286,18 @@ select is(
 );
 
 select throws_ok(
-  $$ select public.replace_owned_diagnosis_from_staged_v1(81002, 81005, 0) $$,
+  $$
+    select public.replace_product_diagnosis_report_v1(
+      81002::bigint, 0::integer,
+      '81000000-0000-4000-8000-000000000106'::uuid,
+      'resale'::text, 5000::bigint, 12000::bigint, 100000::bigint,
+      null::integer, true, 200000::bigint, 600::integer, 200::integer,
+      3::smallint, 3::smallint, 4::smallint, 'resale'::text,
+      12000::bigint, null::integer, null::bigint, null::bigint,
+      'incomplete_volume'::text, 'data'::text, 'unit'::text,
+      pg_temp.lifecycle_product_snapshot_v3()
+    )
+  $$,
   '42501',
   'paid access required',
   'report replacement requires current paid access'
@@ -255,7 +333,18 @@ select set_config(
 );
 
 select is(
-  public.replace_owned_diagnosis_from_staged_v1(81002, 81005, 0),
+  (
+    select public.replace_product_diagnosis_report_v1(
+      81002::bigint, 0::integer,
+      '81000000-0000-4000-8000-000000000106'::uuid,
+      'resale'::text, 5000::bigint, 12000::bigint, 100000::bigint,
+      null::integer, true, 200000::bigint, 600::integer, 200::integer,
+      3::smallint, 3::smallint, 4::smallint, 'resale'::text,
+      12000::bigint, null::integer, null::bigint, null::bigint,
+      'incomplete_volume'::text, 'data'::text, 'unit'::text,
+      pg_temp.lifecycle_product_snapshot_v3()
+    )
+  ),
   81002::bigint,
   'validated staged data replaces the target report'
 );
@@ -276,18 +365,22 @@ select is(
 
 select is(
   (select report_snapshot from public.diagnoses where id = 81002),
-  '{"report":81005,"staged":true}'::jsonb,
+  pg_temp.lifecycle_product_snapshot_v3(),
   'replacement stores the validated staged snapshot on the target'
 );
 
 select is(
   (select unit_sale_price_cents from public.product_diagnoses where diagnosis_id = 81002),
-  20000::bigint,
+  12000::bigint,
   'replacement copies normalized child values'
 );
 
 select is_empty(
-  $$ select id from public.diagnoses where id = 81005 $$,
+  $$
+    select id from public.diagnoses
+    where submission_id = '81000000-0000-4000-8000-000000000106'
+      and id <> 81002
+  $$,
   'the transient staged diagnosis is removed'
 );
 
