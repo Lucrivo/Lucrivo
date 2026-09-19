@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { ArrowLeftIcon, CalendarDaysIcon, PlusIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -16,10 +17,12 @@ function DetailedReportDetail({
   id,
   createdAt,
   snapshot,
+  management,
 }: {
   id: number;
   createdAt: string;
   snapshot: CurrentDetailedReportSnapshot;
+  management?: ReactNode;
 }) {
   const category = snapshot.category === "product" ? "Produtos" : "Produções";
   const resultsById = new Map(
@@ -71,6 +74,8 @@ function DetailedReportDetail({
           </div>
         </div>
       </header>
+
+      {management}
 
       <DetailedBusinessSummary snapshot={snapshot} />
       <DetailedItemBreakdown snapshot={snapshot} />

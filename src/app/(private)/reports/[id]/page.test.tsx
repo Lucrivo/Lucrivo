@@ -13,19 +13,27 @@ import { buildServiceReportSnapshot } from "@/modules/reports/domain/build-servi
 import { calculateProductReport } from "@/modules/reports/domain/calculate-product-report";
 import { calculateServiceReport } from "@/modules/reports/domain/calculate-service-report";
 
-const { createAdminClient, getOwnedReport, notFound, requireUser } = vi.hoisted(
-  () => ({
-    createAdminClient: vi.fn(),
-    getOwnedReport: vi.fn(),
-    notFound: vi.fn(() => {
-      throw new Error("NEXT_NOT_FOUND");
-    }),
-    requireUser: vi.fn(),
+const {
+  createAdminClient,
+  getBillingOverview,
+  getOwnedReport,
+  notFound,
+  requireUser,
+} = vi.hoisted(() => ({
+  createAdminClient: vi.fn(),
+  getBillingOverview: vi.fn(),
+  getOwnedReport: vi.fn(),
+  notFound: vi.fn(() => {
+    throw new Error("NEXT_NOT_FOUND");
   }),
-);
+  requireUser: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({ notFound }));
 vi.mock("@/modules/auth/services/require-user", () => ({ requireUser }));
+vi.mock("@/modules/billing/services/get-billing-overview.service", () => ({
+  getBillingOverview,
+}));
 vi.mock("@/infrastructure/database/supabase/clients/admin.client", () => ({
   createAdminClient,
 }));
@@ -36,6 +44,9 @@ vi.mock("@/modules/reports/services/get-report.service", () => ({
     const parsed = Number(value);
     return Number.isSafeInteger(parsed) ? parsed : null;
   },
+}));
+vi.mock("@/modules/reports/components/report-management", () => ({
+  ReportManagement: () => <div>Gerenciar relatório</div>,
 }));
 import ReportPage from "./page";
 
@@ -124,11 +135,17 @@ describe("ReportPage", () => {
     vi.clearAllMocks();
     requireUser.mockResolvedValue({ userId: "trusted-user", supabase });
     createAdminClient.mockReturnValue(admin);
+    getBillingOverview.mockResolvedValue({
+      status: "success",
+      overview: { tier: "paid" },
+    });
     getOwnedReport.mockResolvedValue({
       status: "found",
       report: {
         id: 42,
         createdAt: "2026-08-28T22:30:00.000Z",
+        updatedAt: "2026-08-28T22:30:00.000Z",
+        version: 0,
         snapshot,
       },
     });
@@ -157,6 +174,8 @@ describe("ReportPage", () => {
       report: {
         id: 84,
         createdAt: "2026-08-31T15:00:00.000Z",
+        updatedAt: "2026-08-31T15:00:00.000Z",
+        version: 0,
         snapshot: currentProductSnapshot,
       },
     });
@@ -174,6 +193,8 @@ describe("ReportPage", () => {
       report: {
         id: 168,
         createdAt: "2026-09-17T15:00:00.000Z",
+        updatedAt: "2026-09-17T15:00:00.000Z",
+        version: 0,
         snapshot: detailedSnapshot,
       },
     });

@@ -121,6 +121,7 @@ describe("getOwnedReport", () => {
   const adminSelect = vi.fn();
   const adminById = vi.fn();
   const adminByUser = vi.fn();
+  const adminActiveOnly = vi.fn();
   const adminMaybeSingle = vi.fn();
   const adminFrom = vi.fn();
   const admin = { from: adminFrom };
@@ -134,7 +135,8 @@ describe("getOwnedReport", () => {
     adminFrom.mockReturnValue({ select: adminSelect });
     adminSelect.mockReturnValue({ eq: adminById });
     adminById.mockReturnValue({ eq: adminByUser });
-    adminByUser.mockReturnValue({ maybeSingle: adminMaybeSingle });
+    adminByUser.mockReturnValue({ is: adminActiveOnly });
+    adminActiveOnly.mockReturnValue({ maybeSingle: adminMaybeSingle });
     adminMaybeSingle.mockResolvedValue({ data: null, error: null });
     maybeSingle.mockResolvedValue({
       data: {
@@ -142,6 +144,8 @@ describe("getOwnedReport", () => {
         business_category: "service",
         scenario: "hour",
         created_at: "2026-08-28T22:30:00.000Z",
+        updated_at: "2026-08-28T22:30:00.000Z",
+        version: 0,
         report_snapshot: snapshot,
       },
       error: null,
@@ -163,12 +167,14 @@ describe("getOwnedReport", () => {
       report: {
         id: 42,
         createdAt: "2026-08-28T22:30:00.000Z",
+        updatedAt: "2026-08-28T22:30:00.000Z",
+        version: 0,
         snapshot,
       },
     });
     expect(from).toHaveBeenCalledWith("diagnoses");
     expect(select).toHaveBeenCalledWith(
-      "id, business_category, scenario, created_at, report_snapshot",
+      "id, business_category, scenario, created_at, updated_at, version, report_snapshot",
     );
     expect(byId).toHaveBeenCalledWith("id", 42);
     expect(byUser).toHaveBeenCalledWith("user_id", "trusted-user");
@@ -192,6 +198,7 @@ describe("getOwnedReport", () => {
     expect(adminSelect).toHaveBeenCalledWith("id");
     expect(adminById).toHaveBeenCalledWith("id", 42);
     expect(adminByUser).toHaveBeenCalledWith("user_id", "trusted-user");
+    expect(adminActiveOnly).toHaveBeenCalledWith("deleted_at", null);
   });
 
   it("returns locked only for an owned row hidden by RLS", async () => {
@@ -232,6 +239,8 @@ describe("getOwnedReport", () => {
         business_category: "service",
         scenario: "hour",
         created_at: "2026-08-28T22:30:00.000Z",
+        updated_at: "2026-08-28T22:30:00.000Z",
+        version: 0,
         report_snapshot: { schemaVersion: 99 },
       },
       error: null,
@@ -250,6 +259,8 @@ describe("getOwnedReport", () => {
         business_category: "service",
         scenario: "minute",
         created_at: "2026-08-28T22:30:00.000Z",
+        updated_at: "2026-08-28T22:30:00.000Z",
+        version: 0,
         report_snapshot: snapshot,
       },
       error: null,
@@ -268,6 +279,8 @@ describe("getOwnedReport", () => {
         business_category: "product",
         scenario: "resale",
         created_at: "2026-08-31T15:00:00.000Z",
+        updated_at: "2026-08-31T15:00:00.000Z",
+        version: 0,
         report_snapshot: productSnapshot,
       },
       error: null,
@@ -278,6 +291,8 @@ describe("getOwnedReport", () => {
       report: {
         id: 84,
         createdAt: "2026-08-31T15:00:00.000Z",
+        updatedAt: "2026-08-31T15:00:00.000Z",
+        version: 0,
         snapshot: productSnapshot,
       },
     });
@@ -290,6 +305,8 @@ describe("getOwnedReport", () => {
         business_category: "product",
         scenario: "resale",
         created_at: "2026-09-17T15:00:00.000Z",
+        updated_at: "2026-09-17T15:00:00.000Z",
+        version: 0,
         report_snapshot: detailedSnapshot,
       },
       error: null,
@@ -300,6 +317,8 @@ describe("getOwnedReport", () => {
       report: {
         id: 168,
         createdAt: "2026-09-17T15:00:00.000Z",
+        updatedAt: "2026-09-17T15:00:00.000Z",
+        version: 0,
         snapshot: detailedSnapshot,
       },
     });
@@ -312,6 +331,8 @@ describe("getOwnedReport", () => {
         business_category: "product",
         scenario: "hour",
         created_at: "2026-08-31T15:00:00.000Z",
+        updated_at: "2026-08-31T15:00:00.000Z",
+        version: 0,
         report_snapshot: productSnapshot,
       },
       error: null,
@@ -330,6 +351,8 @@ describe("getOwnedReport", () => {
         business_category: "production",
         scenario: "manufacturing",
         created_at: "2026-09-01T15:00:00.000Z",
+        updated_at: "2026-09-01T15:00:00.000Z",
+        version: 0,
         report_snapshot: productionSnapshot,
       },
       error: null,
@@ -340,6 +363,8 @@ describe("getOwnedReport", () => {
       report: {
         id: 126,
         createdAt: "2026-09-01T15:00:00.000Z",
+        updatedAt: "2026-09-01T15:00:00.000Z",
+        version: 0,
         snapshot: productionSnapshot,
       },
     });
@@ -352,6 +377,8 @@ describe("getOwnedReport", () => {
         business_category: "production",
         scenario: "resale",
         created_at: "2026-09-01T15:00:00.000Z",
+        updated_at: "2026-09-01T15:00:00.000Z",
+        version: 0,
         report_snapshot: productionSnapshot,
       },
       error: null,

@@ -17,6 +17,8 @@ type GetOwnedReportInput = {
 type OwnedReport = {
   id: number;
   createdAt: string;
+  updatedAt: string;
+  version: number;
   snapshot: ReportSnapshot;
 };
 
@@ -48,7 +50,9 @@ async function getOwnedReport({
   try {
     const { data, error } = await supabase
       .from("diagnoses")
-      .select("id, business_category, scenario, created_at, report_snapshot")
+      .select(
+        "id, business_category, scenario, created_at, updated_at, version, report_snapshot",
+      )
       .eq("id", parsedId)
       .eq("user_id", userId)
       .maybeSingle();
@@ -60,6 +64,7 @@ async function getOwnedReport({
         .select("id")
         .eq("id", parsedId)
         .eq("user_id", userId)
+        .is("deleted_at", null)
         .maybeSingle();
 
       if (ownershipError) return { status: "read_failed" };
@@ -77,7 +82,13 @@ async function getOwnedReport({
 
       return {
         status: "found",
-        report: { id: data.id, createdAt: data.created_at, snapshot },
+        report: {
+          id: data.id,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+          version: data.version,
+          snapshot,
+        },
       };
     } catch {
       return {

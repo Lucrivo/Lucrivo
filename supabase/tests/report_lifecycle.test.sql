@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(16);
+select plan(23);
 
 insert into auth.users (id, aud, role, email)
 values
@@ -101,6 +101,14 @@ insert into public.diagnoses (
     'product', 'resale', 1, 1, 2, 10000, 1200, 1200,
     'tight_margin', 'margin', 'unit', '{"report":81004}',
     true, '2022-06-02T00:00:00Z'
+  ),
+  (
+    81005,
+    '81000000-0000-4000-8000-000000000105',
+    '81000000-0000-4000-8000-000000000001',
+    'product', 'resale', 3, 3, 4, 20000, 2400, 4800,
+    'adequate_margin', 'price', 'unit', '{"report":81005,"staged":true}',
+    false, '2022-06-03T00:00:00Z'
   );
 
 insert into public.product_diagnoses (
@@ -121,7 +129,7 @@ select
   diagnosis.submission_id,
   diagnosis.user_id,
   5000,
-  10000,
+  case when diagnosis.id = 81005 then 20000 else 10000 end,
   100000,
   100,
   true,
@@ -129,7 +137,7 @@ select
   600,
   200
 from public.diagnoses as diagnosis
-where diagnosis.id between 81001 and 81004;
+where diagnosis.id between 81001 and 81005;
 
 select has_column(
   'public',
@@ -210,6 +218,13 @@ select is(
   'an owner cannot delete another user report'
 );
 
+select throws_ok(
+  $$ select public.replace_owned_diagnosis_from_staged_v1(81002, 81005, 0) $$,
+  '42501',
+  'paid access required',
+  'report replacement requires current paid access'
+);
+
 select is(
   public.soft_delete_owned_diagnosis_v1(81003, 0),
   'deleted',
@@ -217,6 +232,64 @@ select is(
 );
 
 reset role;
+
+insert into public.billing_contracts (
+  id, user_id, price_id, external_reference, billing_mode,
+  payment_method, charge_type, amount_cents, currency, installment_limit,
+  access_months, status, access_starts_at, access_ends_at
+) values (
+  '81000000-0000-4000-8000-000000000011',
+  '81000000-0000-4000-8000-000000000001',
+  '20000000-0000-4000-8000-000000000001',
+  'current-report-access', 'monthly', 'pix', 'detached', 4990, 'BRL',
+  null, 1, 'active',
+  statement_timestamp() - interval '1 day',
+  statement_timestamp() + interval '1 month'
+);
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '81000000-0000-4000-8000-000000000001',
+  true
+);
+
+select is(
+  public.replace_owned_diagnosis_from_staged_v1(81002, 81005, 0),
+  81002::bigint,
+  'validated staged data replaces the target report'
+);
+
+reset role;
+
+select is(
+  (select created_at from public.diagnoses where id = 81002),
+  '2022-06-01T00:00:00Z'::timestamptz,
+  'replacement preserves the original creation time'
+);
+
+select is(
+  (select version from public.diagnoses where id = 81002),
+  1,
+  'replacement increments the target version'
+);
+
+select is(
+  (select report_snapshot from public.diagnoses where id = 81002),
+  '{"report":81005,"staged":true}'::jsonb,
+  'replacement stores the validated staged snapshot on the target'
+);
+
+select is(
+  (select unit_sale_price_cents from public.product_diagnoses where diagnosis_id = 81002),
+  20000::bigint,
+  'replacement copies normalized child values'
+);
+
+select is_empty(
+  $$ select id from public.diagnoses where id = 81005 $$,
+  'the transient staged diagnosis is removed'
+);
 
 select is(
   (select count(*)::bigint from public.diagnoses where id in (81001, 81003)),

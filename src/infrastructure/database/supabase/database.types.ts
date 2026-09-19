@@ -1071,6 +1071,14 @@ export type Database = {
         };
         Returns: Json;
       };
+      replace_owned_diagnosis_from_staged_v1: {
+        Args: {
+          p_expected_version: number;
+          p_staged_id: number;
+          p_target_id: number;
+        };
+        Returns: number;
+      };
       soft_delete_owned_diagnosis_v1: {
         Args: { p_diagnosis_id: number; p_expected_version: number };
         Returns: string;

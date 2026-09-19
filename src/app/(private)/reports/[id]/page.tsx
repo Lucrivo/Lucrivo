@@ -7,8 +7,11 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { createAdminClient } from "@/infrastructure/database/supabase/clients/admin.client";
 import { requireUser } from "@/modules/auth/services/require-user";
 import { LockedReportCard } from "@/modules/billing/components/locked-report-card";
+import { getBillingOverview } from "@/modules/billing/services/get-billing-overview.service";
 import { DetailedReportDetail } from "@/modules/reports/components/detailed-report-detail";
 import { ReportDetail } from "@/modules/reports/components/report-detail";
+import { ReportManagement } from "@/modules/reports/components/report-management";
+import { toEditableReportDraft } from "@/modules/reports/editor/report-editor.adapters";
 import { toReportViewModel } from "@/modules/reports/presenters/to-report-view-model";
 import { isDetailedReportSnapshot } from "@/modules/reports/schemas/report-snapshot.schema";
 import {
@@ -75,15 +78,31 @@ export default async function ReportPage({
   if (result.status === "read_failed") throw new Error("report_read_failed");
   if (result.status === "locked") return <LockedReportCard />;
   if (result.status === "unavailable") return <UnavailableReport />;
+
+  const billing = await getBillingOverview({ supabase, userId });
+  const canEdit =
+    billing.status === "success" && billing.overview.tier === "paid";
+  const draft = toEditableReportDraft(result.report.snapshot);
+  const management = (
+    <ReportManagement
+      diagnosisId={result.report.id}
+      version={result.report.version}
+      snapshot={result.report.snapshot}
+      draft={draft}
+      canEdit={canEdit}
+    />
+  );
+
   if (isDetailedReportSnapshot(result.report.snapshot))
     return (
       <DetailedReportDetail
         id={result.report.id}
         createdAt={result.report.createdAt}
         snapshot={result.report.snapshot}
+        management={management}
       />
     );
 
   const viewModel = toReportViewModel(result.report);
-  return <ReportDetail viewModel={viewModel} />;
+  return <ReportDetail viewModel={viewModel} management={management} />;
 }
