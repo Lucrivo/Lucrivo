@@ -1,9 +1,19 @@
 import type { AdminDashboardViewModel } from "../admin-dashboard.types";
+import {
+  defaultAdminSubscriptionFilters,
+  type AdminSubscriptionFilters,
+} from "../admin-dashboard-filters";
 import { AdminAnalytics } from "./admin-analytics";
 import { AdminMetricGrid } from "./admin-metric-grid";
 import { RecentSubscriptions } from "./recent-subscriptions";
 
-function AdminDashboard({ dashboard }: { dashboard: AdminDashboardViewModel }) {
+function AdminDashboard({
+  dashboard,
+  subscriptionFilters = defaultAdminSubscriptionFilters,
+}: {
+  dashboard: AdminDashboardViewModel;
+  subscriptionFilters?: AdminSubscriptionFilters;
+}) {
   return (
     <main className="mx-auto grid w-full max-w-[100rem] grid-cols-[minmax(0,1fr)] gap-6 lg:gap-8">
       <header className="border-primary/10 relative overflow-hidden rounded-3xl border bg-[linear-gradient(135deg,var(--card)_0%,color-mix(in_oklab,var(--primary)_7%,var(--card))_100%)] px-5 py-6 shadow-sm sm:px-7 sm:py-7">
@@ -31,7 +41,10 @@ function AdminDashboard({ dashboard }: { dashboard: AdminDashboardViewModel }) {
 
       <AdminMetricGrid metrics={dashboard.metrics} />
       <AdminAnalytics dashboard={dashboard} />
-      <RecentSubscriptions subscriptions={dashboard.recentSubscriptions} />
+      <RecentSubscriptions
+        subscriptions={dashboard.recentSubscriptions}
+        filters={subscriptionFilters}
+      />
     </main>
   );
 }

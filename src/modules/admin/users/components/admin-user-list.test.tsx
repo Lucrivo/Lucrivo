@@ -7,6 +7,10 @@ import { AdminUserList } from "./admin-user-list";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("../change-admin-user.action", () => ({ changeAdminUser: vi.fn() }));
+vi.mock("../admin-user-filters.action", () => ({
+  persistAdminUserFilters: vi.fn(),
+  clearAdminUserFilters: vi.fn(),
+}));
 
 const user: AdminUser = {
   id: "96300000-0000-4000-8000-000000000002",
@@ -63,5 +67,8 @@ describe("admin user list", () => {
     );
     expect(screen.getByText("Nenhum usuário encontrado")).toBeVisible();
     expect(screen.getByRole("searchbox")).toHaveValue("nada");
+    expect(
+      screen.getByRole("button", { name: "Limpar filtros salvos" }),
+    ).toBeVisible();
   });
 });

@@ -101,7 +101,10 @@ describe("AdminDashboard", () => {
     ).toBeVisible();
 
     expect(screen.getAllByText("1 cancelamento este mês")).toHaveLength(1);
-    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("combobox")).toHaveLength(3);
+    expect(
+      screen.getByText("Os filtros abaixo afetam somente esta lista."),
+    ).toBeVisible();
     expect(screen.queryByText("Novo diagnóstico")).not.toBeInTheDocument();
   });
 

@@ -1050,6 +1050,10 @@ export type Database = {
       current_user_is_admin: { Args: never; Returns: boolean };
       get_admin_dashboard_v1: { Args: never; Returns: Json };
       get_admin_user_v1: { Args: { p_user_id: string }; Returns: Json };
+      list_admin_recent_subscriptions_v1: {
+        Args: { p_billing_mode: string; p_period: string; p_state: string };
+        Returns: Json;
+      };
       list_admin_user_items_v1: {
         Args: {
           p_cursor_created_at?: string;

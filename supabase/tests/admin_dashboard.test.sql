@@ -11,6 +11,13 @@ select has_function(
   'versioned dashboard RPC exists'
 );
 
+select has_function(
+  'public',
+  'list_admin_recent_subscriptions_v1',
+  array['text', 'text', 'text'],
+  'filtered recent-subscription RPC exists'
+);
+
 select ok(
   (
     select prosecdef
@@ -179,6 +186,12 @@ select throws_ok(
   'administrator access required',
   'ordinary users are denied at aal2'
 );
+select throws_ok(
+  $$ select public.list_admin_recent_subscriptions_v1('all', 'all', 'all') $$,
+  '42501',
+  'administrator access required',
+  'ordinary users cannot list recent subscriptions'
+);
 reset role;
 
 set local role authenticated;
@@ -197,6 +210,12 @@ select throws_ok(
   '42501',
   'administrator access required',
   'assigned administrator is denied at aal1'
+);
+select throws_ok(
+  $$ select public.list_admin_recent_subscriptions_v1('all', 'all', 'all') $$,
+  '42501',
+  'administrator access required',
+  'administrator at aal1 cannot list recent subscriptions'
 );
 reset role;
 
@@ -342,9 +361,9 @@ cross join lateral (
       '94300000-0000-4000-8000-000000000003'::uuid,
       '94000000-0000-4000-8000-000000000003'::uuid,
       'admin-dashboard-test-recent-3',
-      'failed',
-      null::timestamptz,
-      null::timestamptz,
+      'expired',
+      clock.snapshot_at - interval '2 months',
+      clock.snapshot_at - interval '1 month',
       false,
       null::timestamptz,
       null::timestamptz,
@@ -456,7 +475,12 @@ create temporary table dashboard_authorized_snapshot (
   payload jsonb not null
 );
 
+create temporary table dashboard_recent_subscriptions (
+  payload jsonb not null
+);
+
 grant insert on dashboard_authorized_snapshot to authenticated;
+grant insert on dashboard_recent_subscriptions to authenticated;
 
 set local role authenticated;
 select set_config(
@@ -472,6 +496,60 @@ select set_config(
 
 insert into dashboard_authorized_snapshot (payload)
 select public.get_admin_dashboard_v1();
+
+insert into dashboard_recent_subscriptions (payload)
+select public.list_admin_recent_subscriptions_v1('all', 'all', 'all');
+
+reset role;
+
+select is(
+  jsonb_array_length((select payload from dashboard_recent_subscriptions)),
+  3,
+  'only contracts that granted access appear as subscriptions'
+);
+
+select is_empty(
+  $$
+    select value
+    from jsonb_array_elements(
+      (select payload from dashboard_recent_subscriptions)
+    )
+    where value ->> 'id' in (
+      '94300000-0000-4000-8000-000000000004',
+      '94300000-0000-4000-8000-000000000005',
+      '94300000-0000-4000-8000-000000000006'
+    )
+  $$,
+  'checkout attempts without an access interval are excluded'
+);
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '94000000-0000-4000-8000-000000000001',
+  true
+);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"94000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal2"}',
+  true
+);
+
+select is(
+  jsonb_array_length(
+    public.list_admin_recent_subscriptions_v1('30d', 'monthly', 'active')
+  ),
+  2,
+  'active filters are applied before the five-row limit'
+);
+
+select is(
+  jsonb_array_length(
+    public.list_admin_recent_subscriptions_v1('all', 'all', 'ended')
+  ),
+  1,
+  'ended means the contract no longer grants access'
+);
 
 reset role;
 

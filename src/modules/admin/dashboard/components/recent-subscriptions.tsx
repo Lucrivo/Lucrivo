@@ -21,6 +21,11 @@ import type {
   AdminDashboardViewModel,
   StatusTone,
 } from "../admin-dashboard.types";
+import {
+  hasAdminSubscriptionFilters,
+  type AdminSubscriptionFilters,
+} from "../admin-dashboard-filters";
+import { RecentSubscriptionFilters } from "./recent-subscription-filters";
 
 const badgeVariantByTone = {
   success: "success",
@@ -56,8 +61,10 @@ function StatusBadge({ subscription }: { subscription: Subscription }) {
 
 function RecentSubscriptions({
   subscriptions,
+  filters,
 }: {
   subscriptions: AdminDashboardViewModel["recentSubscriptions"];
+  filters: AdminSubscriptionFilters;
 }) {
   return (
     <section aria-labelledby="recent-subscriptions-title">
@@ -70,7 +77,8 @@ function RecentSubscriptions({
             Os cinco contratos mais recentes registrados na plataforma
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="grid gap-5">
+          <RecentSubscriptionFilters filters={filters} />
           {subscriptions.length === 0 ? (
             <div className="bg-muted/20 grid min-h-36 place-items-center rounded-xl border border-dashed px-5 text-center">
               <div className="space-y-2">
@@ -79,7 +87,9 @@ function RecentSubscriptions({
                   className="text-muted-foreground mx-auto size-6"
                 />
                 <p className="text-muted-foreground text-sm">
-                  Nenhuma assinatura registrada até agora.
+                  {hasAdminSubscriptionFilters(filters)
+                    ? "Nenhuma assinatura corresponde aos filtros."
+                    : "Nenhuma assinatura registrada até agora."}
                 </p>
               </div>
             </div>

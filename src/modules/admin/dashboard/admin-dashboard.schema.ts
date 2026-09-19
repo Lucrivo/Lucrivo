@@ -36,6 +36,16 @@ const contractStatusSchema = z.enum([
   "failed",
 ]);
 
+const recentSubscriptionSchema = z.strictObject({
+  id: z.uuid(),
+  email: z.email().nullable(),
+  billingMode: z.enum(["monthly", "annual"]),
+  status: contractStatusSchema,
+  createdAt: z.iso.datetime({ offset: true }),
+});
+
+const recentSubscriptionsSchema = z.array(recentSubscriptionSchema).max(5);
+
 const adminDashboardSnapshotSchema = z.strictObject({
   generatedAt: z.iso.datetime({ offset: true }),
   metrics: z.strictObject({
@@ -54,17 +64,7 @@ const adminDashboardSnapshotSchema = z.strictObject({
   }),
   revenueHistory: z.array(historyPointSchema).length(12),
   userGrowth: z.array(growthPointSchema).length(6),
-  recentSubscriptions: z
-    .array(
-      z.strictObject({
-        id: z.uuid(),
-        email: z.email().nullable(),
-        billingMode: z.enum(["monthly", "annual"]),
-        status: contractStatusSchema,
-        createdAt: z.iso.datetime({ offset: true }),
-      }),
-    )
-    .max(5),
+  recentSubscriptions: recentSubscriptionsSchema,
 });
 
 type AdminDashboardSnapshot = z.infer<typeof adminDashboardSnapshotSchema>;
@@ -73,6 +73,8 @@ type ContractStatus = z.infer<typeof contractStatusSchema>;
 export {
   adminDashboardSnapshotSchema,
   contractStatusSchema,
+  recentSubscriptionSchema,
+  recentSubscriptionsSchema,
   type AdminDashboardSnapshot,
   type ContractStatus,
 };
