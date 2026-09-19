@@ -138,10 +138,19 @@ describe("category-specific detailed costs", () => {
     expect(
       screen.getByRole("group", { name: "Ingredientes da receita" }),
     ).toBeVisible();
-    expect(screen.getByLabelText("Nome do ingrediente 1")).toBeEnabled();
-    expect(
-      screen.getByRole("button", { name: "Remover ingrediente 1" }),
-    ).toBeDisabled();
+    expect(screen.getByLabelText("Nome do ingrediente")).toHaveValue(
+      "Ingrediente 1",
+    );
+    expect(screen.queryByLabelText("Quantidade usada")).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Continuar com Ingrediente 1" }),
+    );
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "confirmIngredientName",
+      itemId: "item-1",
+      ingredientId: "ingredient-1",
+    });
 
     await user.click(
       screen.getByRole("radio", { name: /custo total por unidade/i }),
@@ -182,6 +191,7 @@ describe("category-specific detailed costs", () => {
     if (item.kind !== "manufacturing") throw new Error("unexpected item");
     const withTwo = {
       ...state,
+      pendingIngredientNameId: null,
       values: {
         ...state.values,
         items: [
@@ -212,9 +222,7 @@ describe("category-specific detailed costs", () => {
       createId: expect.any(Function),
     });
 
-    await user.click(
-      screen.getByRole("button", { name: "Remover ingrediente 2" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Remover Açúcar" }));
     expect(dispatch).toHaveBeenCalledWith({
       type: "removeIngredient",
       itemId: "item-1",

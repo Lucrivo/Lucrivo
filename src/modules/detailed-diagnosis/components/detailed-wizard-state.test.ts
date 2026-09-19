@@ -34,6 +34,7 @@ describe("createInitialDetailedWizardState", () => {
       itemSubstep: "basics",
       activeItemId: "item-1",
       status: "editing",
+      pendingIngredientNameId: null,
       pendingRemovalItemId: null,
       submitError: null,
       values: {
@@ -76,7 +77,7 @@ describe("createInitialDetailedWizardState", () => {
         ingredients: [
           {
             id: "ingredient-1",
-            name: "",
+            name: "Ingrediente 1",
             quantity: "",
             unit: "",
             unitCost: "",
@@ -84,6 +85,7 @@ describe("createInitialDetailedWizardState", () => {
         ],
       },
     ]);
+    expect(state.pendingIngredientNameId).toBe("ingredient-1");
   });
 });
 
@@ -223,6 +225,7 @@ describe("detailedWizardReducer", () => {
       "ingredient-2",
     ]);
     expect(item.ingredients[1].name).toBe("Açúcar");
+    expect(state.pendingIngredientNameId).toBe("ingredient-2");
 
     state = detailedWizardReducer(state, {
       type: "removeIngredient",
@@ -241,6 +244,60 @@ describe("detailedWizardReducer", () => {
     });
     item = state.values.items[0] as DetailedProductionItemInput;
     expect(item.ingredients).toHaveLength(1);
+  });
+
+  it("confirms and cancels the ingredient name step", () => {
+    let state = productionState();
+
+    state = detailedWizardReducer(state, {
+      type: "confirmIngredientName",
+      itemId: "item-1",
+      ingredientId: "ingredient-1",
+    });
+    expect(state.pendingIngredientNameId).toBeNull();
+
+    state = detailedWizardReducer(state, {
+      type: "addIngredient",
+      itemId: "item-1",
+      createId: ids("ingredient-2"),
+    });
+    let item = state.values.items[0] as DetailedProductionItemInput;
+    expect(state.pendingIngredientNameId).toBe("ingredient-2");
+    expect(item.ingredients[1].name).toBe("Ingrediente 2");
+
+    state = detailedWizardReducer(state, {
+      type: "cancelIngredientName",
+      itemId: "item-1",
+      ingredientId: "ingredient-2",
+    });
+    item = state.values.items[0] as DetailedProductionItemInput;
+    expect(state.pendingIngredientNameId).toBeNull();
+    expect(item.ingredients.map((ingredient) => ingredient.id)).toEqual([
+      "ingredient-1",
+    ]);
+
+    state = detailedWizardReducer(
+      {
+        ...state,
+        pendingIngredientNameId: "ingredient-1",
+        values: {
+          ...state.values,
+          items: [
+            { ...item, ingredients: [{ ...item.ingredients[0], name: "" }] },
+          ],
+        },
+      },
+      {
+        type: "cancelIngredientName",
+        itemId: "item-1",
+        ingredientId: "ingredient-1",
+      },
+    );
+    item = state.values.items[0] as DetailedProductionItemInput;
+    expect(state.pendingIngredientNameId).toBe("ingredient-1");
+    expect(item.ingredients).toEqual([
+      expect.objectContaining({ id: "ingredient-1", name: "Ingrediente 1" }),
+    ]);
   });
 
   it("preserves inactive Production cost values when switching modes", () => {

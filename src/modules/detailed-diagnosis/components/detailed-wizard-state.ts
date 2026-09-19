@@ -26,6 +26,7 @@ type DetailedWizardState = {
   activeItemId: string;
   values: DetailedDiagnosisInput;
   fieldErrors: DetailedDiagnosisFieldErrors;
+  pendingIngredientNameId: string | null;
   pendingRemovalItemId: string | null;
   status: "editing" | "submitting";
   submitError: DetailedSubmitError | null;
@@ -78,6 +79,16 @@ type DetailedWizardAction =
       value: string;
     }
   | { type: "addIngredient"; itemId: string; createId: () => string }
+  | {
+      type: "confirmIngredientName";
+      itemId: string;
+      ingredientId: string;
+    }
+  | {
+      type: "cancelIngredientName";
+      itemId: string;
+      ingredientId: string;
+    }
   | { type: "removeIngredient"; itemId: string; ingredientId: string }
   | { type: "addItem"; createId: () => string }
   | { type: "editItem"; itemId: string }
@@ -117,8 +128,17 @@ function substepForPhase(phase: DetailedWizardPhase): DetailedItemSubstep {
   return "basics";
 }
 
-function blankIngredient(id: string): DetailedIngredientInput {
-  return { id, name: "", quantity: "", unit: "", unitCost: "" };
+function blankIngredient(
+  id: string,
+  position: number,
+): DetailedIngredientInput {
+  return {
+    id,
+    name: `Ingrediente ${position + 1}`,
+    quantity: "",
+    unit: "",
+    unitCost: "",
+  };
 }
 
 function blankProductItem(id: string): DetailedProductItemInput {
@@ -150,7 +170,7 @@ function blankProductionItem(
     packagingUnitCost: "",
     directLaborUnitCost: "",
     otherVariableUnitCost: "",
-    ingredients: [blankIngredient(ingredientId)],
+    ingredients: [blankIngredient(ingredientId, 0)],
   };
 }
 
@@ -187,6 +207,8 @@ function createInitialDetailedWizardState(
       items: [item],
     },
     fieldErrors: {},
+    pendingIngredientNameId:
+      item.kind === "manufacturing" ? item.ingredients[0]?.id : null,
     pendingRemovalItemId: null,
     status: "editing",
     submitError: null,
@@ -201,6 +223,17 @@ function withoutError(
   const next = { ...errors };
   delete next[path];
   return next;
+}
+
+function withoutErrorsUnder(
+  errors: DetailedDiagnosisFieldErrors,
+  path: string,
+): DetailedDiagnosisFieldErrors {
+  return Object.fromEntries(
+    Object.entries(errors).filter(
+      ([candidate]) => candidate !== path && !candidate.startsWith(`${path}.`),
+    ),
+  );
 }
 
 function itemIndex(state: DetailedWizardState, itemId: string): number {
@@ -335,21 +368,94 @@ function detailedWizardReducer(
       };
     }
 
-    case "addIngredient":
-      return updateItem(state, action.itemId, (item) =>
-        item.kind === "manufacturing"
+    case "addIngredient": {
+      const item = state.values.items.find(
+        (candidate) => candidate.id === action.itemId,
+      );
+      if (!item || item.kind !== "manufacturing") return state;
+      const ingredientId = action.createId();
+      const updated = updateItem(state, action.itemId, (candidate) =>
+        candidate.kind === "manufacturing"
           ? {
-              ...item,
+              ...candidate,
               ingredients: [
-                ...item.ingredients,
-                blankIngredient(action.createId()),
+                ...candidate.ingredients,
+                blankIngredient(ingredientId, candidate.ingredients.length),
               ],
             }
-          : item,
+          : candidate,
       );
+      return { ...updated, pendingIngredientNameId: ingredientId };
+    }
 
-    case "removeIngredient":
-      return updateItem(state, action.itemId, (item) => {
+    case "confirmIngredientName": {
+      const index = itemIndex(state, action.itemId);
+      if (index < 0) return state;
+      const item = state.values.items[index];
+      if (item.kind !== "manufacturing") return state;
+      const ingredientIndex = item.ingredients.findIndex(
+        (ingredient) => ingredient.id === action.ingredientId,
+      );
+      if (
+        ingredientIndex < 0 ||
+        item.ingredients[ingredientIndex].name.trim() === ""
+      )
+        return state;
+      const path = `items.${index}.ingredients.${ingredientIndex}.name`;
+      return {
+        ...state,
+        pendingIngredientNameId:
+          state.pendingIngredientNameId === action.ingredientId
+            ? null
+            : state.pendingIngredientNameId,
+        fieldErrors: withoutError(state.fieldErrors, path),
+      };
+    }
+
+    case "cancelIngredientName": {
+      const index = itemIndex(state, action.itemId);
+      if (index < 0) return state;
+      const item = state.values.items[index];
+      if (item.kind !== "manufacturing") return state;
+      const ingredientIndex = item.ingredients.findIndex(
+        (ingredient) => ingredient.id === action.ingredientId,
+      );
+      if (ingredientIndex < 0) return state;
+      const path = `items.${index}.ingredients.${ingredientIndex}`;
+      if (item.ingredients.length === 1) {
+        const updated = updateItem(state, action.itemId, (candidate) =>
+          candidate.kind === "manufacturing"
+            ? {
+                ...candidate,
+                ingredients: [blankIngredient(action.ingredientId, 0)],
+              }
+            : candidate,
+        );
+        return {
+          ...updated,
+          pendingIngredientNameId: action.ingredientId,
+          fieldErrors: withoutErrorsUnder(updated.fieldErrors, path),
+        };
+      }
+      const updated = updateItem(state, action.itemId, (candidate) =>
+        candidate.kind === "manufacturing"
+          ? {
+              ...candidate,
+              ingredients: candidate.ingredients.filter(
+                (ingredient) => ingredient.id !== action.ingredientId,
+              ),
+            }
+          : candidate,
+      );
+      return {
+        ...updated,
+        pendingIngredientNameId: null,
+        fieldErrors: withoutErrorsUnder(updated.fieldErrors, path),
+      };
+    }
+
+    case "removeIngredient": {
+      const updated = updateItem(state, action.itemId, (item) => {
         if (item.kind !== "manufacturing" || item.ingredients.length <= 1)
           return item;
         return {
@@ -359,6 +465,14 @@ function detailedWizardReducer(
           ),
         };
       });
+      return {
+        ...updated,
+        pendingIngredientNameId:
+          state.pendingIngredientNameId === action.ingredientId
+            ? null
+            : state.pendingIngredientNameId,
+      };
+    }
 
     case "addItem": {
       const item = createBlankItem(state.values.category, action.createId);
@@ -368,6 +482,8 @@ function detailedWizardReducer(
         itemSubstep: "basics",
         activeItemId: item.id,
         values: { ...state.values, items: [...state.values.items, item] },
+        pendingIngredientNameId:
+          item.kind === "manufacturing" ? item.ingredients[0]?.id : null,
         pendingRemovalItemId: null,
         submitError: null,
       };

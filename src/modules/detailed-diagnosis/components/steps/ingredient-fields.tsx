@@ -1,8 +1,9 @@
-import { PlusIcon, Trash2Icon } from "lucide-react";
+import { PlusIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { StepField } from "@/modules/quick-diagnosis/components/shared/step-field";
 import type { DetailedProductionItemInput } from "../../types";
+import { IngredientCard } from "../ingredients/ingredient-card";
+import { IngredientNameEntry } from "../ingredients/ingredient-name-entry";
 
 import type { DetailedStepProps } from "./types";
 
@@ -38,69 +39,76 @@ function IngredientFields({
           {collectionError}
         </p>
       ) : null}
-      {item.ingredients.map((ingredient, ingredientIndex) => (
-        <div
-          key={ingredient.id}
-          className="border-border/70 bg-muted/20 grid gap-4 rounded-xl border p-4"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <h4 className="font-medium">Ingrediente {ingredientIndex + 1}</h4>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-lg"
-              aria-label={`Remover ingrediente ${ingredientIndex + 1}`}
-              disabled={item.ingredients.length === 1}
-              onClick={() =>
+      <div className="grid gap-3">
+        {item.ingredients.map((ingredient, ingredientIndex) => {
+          const basePath = `items.${itemIndex}.ingredients.${ingredientIndex}`;
+          if (state.pendingIngredientNameId === ingredient.id) {
+            return (
+              <IngredientNameEntry
+                key={ingredient.id}
+                id={ingredient.id}
+                value={ingredient.name}
+                error={state.fieldErrors[`${basePath}.name`]?.[0]}
+                canCancel
+                onChange={(value) =>
+                  dispatch({
+                    type: "changeIngredientField",
+                    itemId: item.id,
+                    ingredientId: ingredient.id,
+                    field: "name",
+                    value,
+                  })
+                }
+                onContinue={() =>
+                  dispatch({
+                    type: "confirmIngredientName",
+                    itemId: item.id,
+                    ingredientId: ingredient.id,
+                  })
+                }
+                onCancel={() =>
+                  dispatch({
+                    type: "cancelIngredientName",
+                    itemId: item.id,
+                    ingredientId: ingredient.id,
+                  })
+                }
+              />
+            );
+          }
+
+          return (
+            <IngredientCard
+              key={ingredient.id}
+              ingredient={ingredient}
+              basePath={basePath}
+              errors={state.fieldErrors}
+              canRemove={item.ingredients.length > 1}
+              defaultOpen={
+                ingredient.quantity.trim() === "" ||
+                ingredient.unit.trim() === "" ||
+                ingredient.unitCost.trim() === ""
+              }
+              onChange={(field, value) =>
+                dispatch({
+                  type: "changeIngredientField",
+                  itemId: item.id,
+                  ingredientId: ingredient.id,
+                  field,
+                  value,
+                })
+              }
+              onRemove={() =>
                 dispatch({
                   type: "removeIngredient",
                   itemId: item.id,
                   ingredientId: ingredient.id,
                 })
               }
-            >
-              <Trash2Icon aria-hidden="true" />
-            </Button>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {(
-              [
-                ["name", `Nome do ingrediente ${ingredientIndex + 1}`],
-                [
-                  "quantity",
-                  `Quantidade do ingrediente ${ingredientIndex + 1}`,
-                ],
-                ["unit", `Unidade do ingrediente ${ingredientIndex + 1}`],
-                [
-                  "unitCost",
-                  `Custo unitário do ingrediente ${ingredientIndex + 1}`,
-                ],
-              ] as const
-            ).map(([field, label]) => (
-              <StepField
-                key={field}
-                field={`items.${itemIndex}.ingredients.${ingredientIndex}.${field}`}
-                label={label}
-                value={ingredient[field]}
-                errors={state.fieldErrors}
-                onChange={(_path, value) =>
-                  dispatch({
-                    type: "changeIngredientField",
-                    itemId: item.id,
-                    ingredientId: ingredient.id,
-                    field,
-                    value,
-                  })
-                }
-                prefix={field === "unitCost" ? "R$" : undefined}
-                inputMode={
-                  field === "name" || field === "unit" ? "decimal" : "decimal"
-                }
-              />
-            ))}
-          </div>
-        </div>
-      ))}
+            />
+          );
+        })}
+      </div>
       <Button
         type="button"
         variant="outline"

@@ -1,3 +1,5 @@
+import type { HTMLAttributes } from "react";
+
 import {
   InputGroup,
   InputGroupAddon,
@@ -20,7 +22,7 @@ type StepFieldProps<Field extends string> = {
   suffix?: string;
   description?: string;
   help?: PlainLanguageHelpContent;
-  inputMode?: "decimal" | "numeric";
+  inputMode?: HTMLAttributes<HTMLInputElement>["inputMode"];
   labelClassName?: string;
 };
 
