@@ -1,31 +1,17 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
-import { formatCurrency } from "../formatters";
-import type { CurrentDetailedReportSnapshot } from "../types";
+import type { DetailedComparisonEntryViewModel } from "../presenters/to-detailed-report-view-model";
 
 function DetailedItemBreakdown({
-  snapshot,
+  comparison,
 }: {
-  snapshot: CurrentDetailedReportSnapshot;
+  comparison: DetailedComparisonEntryViewModel[];
 }) {
-  const byId = new Map(snapshot.inputs.items.map((item) => [item.id, item]));
-  const items = [...snapshot.results.items].sort((left, right) => {
-    if (!snapshot.results.isPartial)
-      return (
-        (right.monthlyContributionCents ?? 0) -
-        (left.monthlyContributionCents ?? 0)
-      );
-    return (
-      (byId.get(left.itemId)?.position ?? 0) -
-      (byId.get(right.itemId)?.position ?? 0)
-    );
-  });
-  const amounts = items.map((item) =>
-    snapshot.results.isPartial
-      ? item.unitContributionCents
-      : (item.monthlyContributionCents ?? 0),
+  const largest = Math.max(
+    1,
+    ...comparison.map((entry) => Math.abs(entry.amountCents)),
   );
-  const largest = Math.max(1, ...amounts.map((value) => Math.abs(value)));
+  const contextLabel = comparison[0]?.contextLabel ?? "por unidade";
 
   return (
     <section aria-labelledby="item-comparison-title" className="grid gap-3">
@@ -34,55 +20,43 @@ function DetailedItemBreakdown({
           Comparação
         </p>
         <h2 id="item-comparison-title" className="text-2xl">
-          O que cada item deixa para o negócio
+          Quais itens ajudam ou prejudicam o resultado?
         </h2>
         <p className="text-muted-foreground text-sm leading-6">
-          {snapshot.results.isPartial
-            ? "Como faltam volumes, a comparação usa o valor deixado por unidade."
-            : "Os itens estão ordenados pela contribuição mensal para o mix."}
+          {contextLabel === "por unidade"
+            ? "Sobra por unidade. Complete as vendas mensais para comparar o impacto no mês."
+            : "Resultado no mês, considerando quanto cada item vendeu."}
         </p>
       </div>
       <Card className="border-border/70 shadow-sm">
-        <CardHeader className="sr-only">Contribuição dos itens</CardHeader>
+        <CardHeader className="sr-only">Comparação dos itens</CardHeader>
         <CardContent>
           <ul className="grid gap-5">
-            {items.map((result) => {
-              const input = byId.get(result.itemId);
-              if (!input) return null;
-              const amount = snapshot.results.isPartial
-                ? result.unitContributionCents
-                : (result.monthlyContributionCents ?? 0);
-              const label = snapshot.results.isPartial
-                ? "por unidade"
-                : "no mês";
-              return (
-                <li key={result.itemId} className="grid gap-2">
-                  <div className="flex items-baseline justify-between gap-4 text-sm">
-                    <span className="font-medium">{input.name}</span>
-                    <span className="tabular-nums">
-                      {formatCurrency(amount)} {label}
-                    </span>
-                  </div>
+            {comparison.map((entry) => (
+              <li key={entry.id} className="grid gap-2">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-sm">
+                  <span className="font-medium">{entry.name}</span>
+                  <span className="tabular-nums">
+                    {entry.amountLabel} {entry.contextLabel}
+                  </span>
+                </div>
+                <div
+                  role="img"
+                  aria-label={`${entry.name}: ${entry.amountLabel} ${entry.contextLabel}; ${entry.statusLabel}`}
+                  className="bg-muted h-2.5 overflow-hidden rounded-full"
+                >
                   <div
-                    role="img"
-                    aria-label={`${input.name}: ${formatCurrency(amount)} ${label}; ${amount < 0 ? "valor negativo" : "valor positivo"}`}
-                    className="bg-muted h-2.5 overflow-hidden rounded-full"
-                  >
-                    <div
-                      className={`h-full rounded-full ${amount < 0 ? "bg-destructive" : "bg-primary"}`}
-                      style={{
-                        width: `${Math.max(4, (Math.abs(amount) / largest) * 100)}%`,
-                      }}
-                    />
-                  </div>
-                  <p className="text-muted-foreground text-xs">
-                    {amount < 0
-                      ? "Este item reduz o resultado a cada venda."
-                      : "Este item contribui positivamente para cobrir os gastos."}
-                  </p>
-                </li>
-              );
-            })}
+                    className={`h-full rounded-full ${entry.tone === "critical" ? "bg-destructive" : "bg-primary"}`}
+                    style={{
+                      width: `${Math.max(4, (Math.abs(entry.amountCents) / largest) * 100)}%`,
+                    }}
+                  />
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  {entry.statusLabel}
+                </p>
+              </li>
+            ))}
           </ul>
         </CardContent>
       </Card>

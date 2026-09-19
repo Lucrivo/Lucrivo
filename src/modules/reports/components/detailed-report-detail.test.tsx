@@ -81,7 +81,8 @@ function snapshotFor(command: DetailedDiagnosisCommand) {
 }
 
 describe("DetailedReportDetail", () => {
-  it("presents a complete Product mix, loss warning, price floors, and guidance", () => {
+  it("presents decisions before details and starts item details collapsed", async () => {
+    const user = userEvent.setup();
     render(
       <DetailedReportDetail
         id={168}
@@ -91,21 +92,40 @@ describe("DetailedReportDetail", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Resultado detalhado do seu mix" }),
+      screen.getByRole("heading", { name: "Resultado dos seus produtos" }),
     ).toBeVisible();
+    const conclusionHeading = screen.getByRole("heading", {
+      name: "Como está seu negócio",
+    });
+    const priorityHeading = screen.getByRole("heading", {
+      name: "O que fazer primeiro",
+    });
+    const comparisonHeading = screen.getByRole("heading", {
+      name: "Quais itens ajudam ou prejudicam o resultado?",
+    });
     expect(screen.getByText("Análise completa")).toBeVisible();
-    expect(screen.getByText("Faturamento mensal")).toBeVisible();
-    expect(screen.getByText("Faturamento de equilíbrio")).toBeVisible();
+    expect(screen.getByText("Quanto entrou com as vendas")).toBeVisible();
+    expect(screen.getByText("Quanto sobrou ou faltou no mês")).toBeVisible();
+    expect(priorityHeading.compareDocumentPosition(comparisonHeading)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(conclusionHeading.compareDocumentPosition(priorityHeading)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(screen.queryByText(/^Indisponível$/)).not.toBeInTheDocument();
+
+    const lossTrigger = screen.getByRole("button", {
+      name: "Abrir detalhes de Camiseta em perda",
+    });
+    expect(lossTrigger).toHaveAttribute("aria-expanded", "false");
+    await user.click(lossTrigger);
     expect(
-      screen.getByRole("heading", {
-        name: "O que cada item deixa para o negócio",
-      }),
-    ).toBeVisible();
-    expect(screen.getByText("Perda por venda")).toBeVisible();
-    expect(screen.getAllByText("Preço de equilíbrio")).toHaveLength(2);
-    expect(screen.getAllByText("Piso para promoção")).toHaveLength(2);
-    expect(screen.getByText("Onde agir primeiro")).toBeVisible();
-    expect(screen.getByText(/não cobre os custos variáveis/i)).toBeVisible();
+      screen.getAllByText("Menor preço sem prejuízo na venda"),
+    ).not.toHaveLength(0);
+    expect(
+      screen.getAllByText("Menor preço para promoção planejada"),
+    ).not.toHaveLength(0);
+    expect(screen.getByText(/não cobre o custo do item/i)).toBeVisible();
     expect(
       screen.getByRole("link", { name: "Voltar aos relatórios" }),
     ).toHaveAttribute("href", "/reports");
@@ -125,20 +145,29 @@ describe("DetailedReportDetail", () => {
     expect(
       screen.getAllByText(/volume mensal de Bolo de festa/i),
     ).not.toHaveLength(0);
-    expect(screen.getAllByText("Indisponível").length).toBeGreaterThanOrEqual(
-      3,
-    );
+    expect(screen.queryByText(/^Indisponível$/)).not.toBeInTheDocument();
     expect(
-      screen.getByText(/comparação usa o valor deixado por unidade/i),
-    ).toBeVisible();
+      screen.getAllByText("Informe as vendas mensais para calcular."),
+    ).not.toHaveLength(0);
+    expect(screen.getByText(/Sobra por unidade/i)).toBeVisible();
 
-    const item = screen
-      .getByRole("heading", { name: "Bolo de festa" })
-      .closest<HTMLElement>('[data-slot="card"]');
+    const trigger = screen.getByRole("button", {
+      name: "Abrir detalhes de Bolo de festa",
+    });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await user.click(trigger);
+    const item = trigger.closest<HTMLElement>('[data-slot="accordion-item"]');
     expect(item).not.toBeNull();
-    expect(within(item!).getByText("Volume mensal pendente")).toBeVisible();
-    await user.click(within(item!).getByText("Detalhes da produção"));
-    expect(within(item!).getByText(/Ficha técnica/)).toBeVisible();
+    expect(
+      within(item!).getByText("Vendas mensais ainda não informadas"),
+    ).toBeVisible();
+    expect(
+      within(item!).getAllByText("Entenda este valor").length,
+    ).toBeGreaterThan(0);
+    await user.click(
+      within(item!).getByText("Ver memória de cálculo da produção"),
+    );
+    expect(within(item!).getByText("Ficha técnica completa")).toBeVisible();
     expect(within(item!).getByText(/Farinha/)).toBeVisible();
     expect(
       screen.queryByText(/inteligência artificial/i),

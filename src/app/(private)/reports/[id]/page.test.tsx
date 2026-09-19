@@ -190,7 +190,7 @@ describe("ReportPage", () => {
     await renderPage("168");
 
     expect(
-      screen.getByRole("heading", { name: "Resultado detalhado do seu mix" }),
+      screen.getByRole("heading", { name: "Resultado dos seus produtos" }),
     ).toBeVisible();
     expect(
       screen.queryByText("Resultado do seu diagnóstico"),
