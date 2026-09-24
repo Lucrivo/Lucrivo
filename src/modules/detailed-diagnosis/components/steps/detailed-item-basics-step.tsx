@@ -43,7 +43,7 @@ function DetailedItemBasicsStep({ state, dispatch }: DetailedStepProps) {
         errors={state.fieldErrors}
         onChange={(_field, value) => change("monthlySalesVolume", value)}
         inputMode="numeric"
-        description="Se você já vende este item, informe a média mensal. Digite 0 se não vendeu nenhuma unidade. Se ainda não sabe ou quer descobrir quanto precisa vender, deixe em branco — o resultado será parcial e a meta aparecerá apenas como referência."
+        description="Se você já vende este item, informe a média mensal. Digite 0 se não vendeu nenhuma unidade. Se ainda não sabe ou quer descobrir quanto precisa vender, deixe em branco, o resultado será parcial e a meta aparecerá apenas como referência."
       />
     </div>
   );

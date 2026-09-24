@@ -105,7 +105,7 @@ describe("detailed common steps", () => {
     ).toBeEnabled();
     expect(
       screen.getByText(
-        "Se você já vende este item, informe a média mensal. Digite 0 se não vendeu nenhuma unidade. Se ainda não sabe ou quer descobrir quanto precisa vender, deixe em branco — o resultado será parcial e a meta aparecerá apenas como referência.",
+        "Se você já vende este item, informe a média mensal. Digite 0 se não vendeu nenhuma unidade. Se ainda não sabe ou quer descobrir quanto precisa vender, deixe em branco, o resultado será parcial e a meta aparecerá apenas como referência.",
       ),
     ).toBeVisible();
   });

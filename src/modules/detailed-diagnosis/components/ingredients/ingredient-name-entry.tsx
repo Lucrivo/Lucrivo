@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ function IngredientNameEntry({
   onCancel,
 }: IngredientNameEntryProps) {
   const [localError, setLocalError] = useState<string | null>(null);
+  const selectedOnFirstFocus = useRef(false);
   const inputId = `${id}-name`;
   const errorMessage = localError ?? error;
 
@@ -56,7 +57,11 @@ function IngredientNameEntry({
           autoComplete="off"
           aria-invalid={Boolean(errorMessage)}
           aria-describedby={errorMessage ? `${inputId}-error` : undefined}
-          onFocus={(event) => event.currentTarget.select()}
+          onFocus={(event) => {
+            if (selectedOnFirstFocus.current) return;
+            event.currentTarget.select();
+            selectedOnFirstFocus.current = true;
+          }}
           onChange={(event) => {
             setLocalError(null);
             onChange(event.target.value);

@@ -72,12 +72,14 @@ function IngredientCard({
               <span className="truncate text-base font-semibold">
                 {ingredient.name}
               </span>
-              <span className="text-muted-foreground font-normal">
-                {detailSummary}
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="text-muted-foreground font-normal">
+                  {detailSummary}
+                </span>
+                {pending ? <Badge variant="warning">Pendente</Badge> : null}
               </span>
             </span>
           </AccordionTrigger>
-          {pending ? <Badge variant="warning">Pendente</Badge> : null}
           <Button
             type="button"
             variant="ghost"

@@ -65,8 +65,15 @@ function DetailedEditorItem({
               <span className="truncate text-base font-semibold">
                 {summary.name}
               </span>
-              <span className="text-muted-foreground font-normal sm:hidden">
-                Venda {summary.priceLabel} · Custo {summary.costLabel}
+              <span className="flex flex-wrap items-center gap-2 sm:hidden">
+                <span className="text-muted-foreground font-normal">
+                  Venda {summary.priceLabel} · Custo {summary.costLabel}
+                </span>
+                <Badge variant={badgeVariant}>
+                  {summary.pendingCount > 0
+                    ? `${summary.pendingCount} pendência${summary.pendingCount > 1 ? "s" : ""}`
+                    : summary.status.label}
+                </Badge>
               </span>
             </span>
             <span className="text-muted-foreground hidden font-normal sm:block">
@@ -77,13 +84,13 @@ function DetailedEditorItem({
               Custo{" "}
               <strong className="text-foreground">{summary.costLabel}</strong>
             </span>
+            <Badge variant={badgeVariant} className="hidden sm:inline-flex">
+              {summary.pendingCount > 0
+                ? `${summary.pendingCount} pendência${summary.pendingCount > 1 ? "s" : ""}`
+                : summary.status.label}
+            </Badge>
           </span>
         </AccordionTrigger>
-        <Badge variant={badgeVariant}>
-          {summary.pendingCount > 0
-            ? `${summary.pendingCount} pendência${summary.pendingCount > 1 ? "s" : ""}`
-            : summary.status.label}
-        </Badge>
         <Button
           type="button"
           variant="ghost"
