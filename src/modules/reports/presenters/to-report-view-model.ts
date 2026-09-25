@@ -26,7 +26,17 @@ import {
 import { isDetailedReportSnapshot } from "../schemas/report-snapshot.schema";
 
 type ReportNumberViewModel = {
-  key: "price" | "margin" | "profit" | "minimum" | "target" | "sales";
+  key:
+    | "price"
+    | "margin"
+    | "profit"
+    | "minimum"
+    | "target"
+    | "sales"
+    | "revenue"
+    | "costs"
+    | "result"
+    | "break_even";
   label: string;
   value: string;
   supportingText?: string;

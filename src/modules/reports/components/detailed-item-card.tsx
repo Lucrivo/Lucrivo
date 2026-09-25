@@ -12,12 +12,13 @@ import {
   surplusHelp,
   type DetailedItemViewModel,
 } from "../presenters/to-detailed-report-view-model";
+import { DiscountSimulator } from "./discount-simulator";
 
 function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
   return (
     <AccordionItem
       value={item.id}
-      className="border-border bg-card overflow-hidden rounded-xl border shadow-sm"
+      className="border-border bg-card data-open:border-primary/35 data-open:bg-primary/3 overflow-hidden rounded-xl border shadow-sm transition-[background-color,border-color,box-shadow] data-open:shadow-md"
     >
       <AccordionTrigger
         aria-label={`Abrir detalhes de ${item.name}`}
@@ -30,11 +31,17 @@ function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
               {item.volumeLabel}
             </span>
           </span>
-          <span className="text-muted-foreground font-normal">
-            Venda <strong className="text-foreground">{item.priceLabel}</strong>
+          <span className="text-muted-foreground grid gap-0.5 font-normal">
+            <span className="text-xs">Preço de venda</span>
+            <strong className="text-foreground tabular-nums">
+              {item.priceLabel}
+            </strong>
           </span>
-          <span className="text-muted-foreground font-normal">
-            Custo <strong className="text-foreground">{item.costLabel}</strong>
+          <span className="text-muted-foreground grid gap-0.5 font-normal">
+            <span className="text-xs">Quanto este item deixa no mês</span>
+            <strong className="text-foreground tabular-nums">
+              {item.monthlyContributionLabel}
+            </strong>
           </span>
           <Badge
             variant={item.statusTone === "critical" ? "destructive" : "success"}
@@ -46,35 +53,79 @@ function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
           </Badge>
         </span>
       </AccordionTrigger>
-      <AccordionContent className="border-border grid gap-5 border-t px-4 pt-5 pb-5 sm:px-5">
+
+      <AccordionContent className="border-border grid gap-6 border-t px-4 pt-5 pb-5 sm:px-5">
         {item.statusTone === "critical" ? (
           <p className="border-destructive/25 bg-destructive/5 text-destructive rounded-xl border p-3 text-sm">
             O preço atual não cobre o custo do item e as taxas desta venda.
           </p>
         ) : null}
 
-        <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <div className="grid gap-1">
-            <dt className="text-muted-foreground text-sm">Sobra por venda</dt>
-            <dd className="font-semibold tabular-nums">{item.surplusLabel}</dd>
-            <PlainLanguageHelp {...surplusHelp} />
-          </div>
-          <div className="grid gap-1">
-            <dt className="text-muted-foreground text-sm">
-              Percentual que sobra da venda
-            </dt>
-            <dd className="font-semibold tabular-nums">{item.marginLabel}</dd>
-            <PlainLanguageHelp
-              title="O que este percentual mostra?"
-              description="Mostra quanto do preço fica disponível para pagar os gastos do mês depois do custo do item e das taxas."
-              technicalTerm="margem de contribuição"
-            />
-          </div>
-          <div className="grid gap-1">
+        <div className="grid gap-5 lg:grid-cols-2">
+          <section aria-labelledby={`${item.id}-sale`} className="grid gap-3">
+            <h4 id={`${item.id}-sale`} className="text-base font-semibold">
+              Venda
+            </h4>
+            <dl className="border-border/70 divide-border bg-background/70 grid divide-y rounded-xl border px-4">
+              <div className="flex items-end justify-between gap-4 py-3">
+                <dt className="text-muted-foreground">Preço</dt>
+                <dd className="font-semibold tabular-nums">
+                  {item.priceLabel}
+                </dd>
+              </div>
+              <div className="flex items-end justify-between gap-4 py-3">
+                <dt className="text-muted-foreground">
+                  Depois de impostos e cartão
+                </dt>
+                <dd className="font-semibold tabular-nums">
+                  {item.netRevenueLabel}
+                </dd>
+              </div>
+              <div className="flex items-end justify-between gap-4 py-3">
+                <dt className="text-muted-foreground">
+                  Valor deixado por venda
+                </dt>
+                <dd className="font-semibold tabular-nums">
+                  {item.unitContributionLabel}
+                </dd>
+              </div>
+            </dl>
+          </section>
+
+          <section aria-labelledby={`${item.id}-costs`} className="grid gap-3">
+            <h4 id={`${item.id}-costs`} className="text-base font-semibold">
+              Gastos desta venda
+            </h4>
+            <dl className="border-border/70 divide-border bg-background/70 grid divide-y rounded-xl border px-4">
+              <div className="flex items-end justify-between gap-4 py-3">
+                <dt className="text-muted-foreground">Custo do item</dt>
+                <dd className="font-semibold tabular-nums">
+                  {item.variableCostLabel}
+                </dd>
+              </div>
+              <div className="flex items-end justify-between gap-4 py-3">
+                <dt className="text-muted-foreground">Impostos e cartão</dt>
+                <dd className="font-semibold tabular-nums">{item.feeLabel}</dd>
+              </div>
+              <div className="grid gap-1 py-3">
+                <dt className="text-muted-foreground">
+                  Percentual que sobra da venda
+                </dt>
+                <dd className="font-semibold tabular-nums">
+                  {item.marginLabel}
+                </dd>
+                <PlainLanguageHelp {...surplusHelp} />
+              </div>
+            </dl>
+          </section>
+        </div>
+
+        <dl className="grid gap-4 sm:grid-cols-2">
+          <div className="border-border/70 bg-background/70 grid gap-1 rounded-xl border p-4">
             <dt className="text-muted-foreground text-sm">
               Menor preço sem prejuízo na venda
             </dt>
-            <dd className="font-semibold tabular-nums">
+            <dd className="text-lg font-semibold tabular-nums">
               {item.breakEvenLabel}
             </dd>
             {item.breakEvenUnavailableReason ? (
@@ -83,7 +134,23 @@ function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
               </p>
             ) : null}
           </div>
+          <div className="border-border/70 bg-background/70 grid gap-1 rounded-xl border p-4">
+            <dt className="text-muted-foreground text-sm">
+              Quanto este item deixa no mês
+            </dt>
+            <dd className="text-lg font-semibold tabular-nums">
+              {item.monthlyContributionLabel}
+            </dd>
+          </div>
         </dl>
+
+        <DiscountSimulator
+          base={item.discountSimulationBase}
+          context={{
+            category: item.category,
+            mode: "detailed_item_attention",
+          }}
+        />
 
         {item.technicalDetails ? (
           <details className="border-border/70 rounded-xl border p-4">

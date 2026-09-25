@@ -12,8 +12,8 @@ const baseCommand: DetailedDiagnosisCommand = {
   fixedMonthlyExpensesCents: 10_000,
   proLaboreIncluded: false,
   proLaboreCents: 0,
-  taxRateBasisPoints: 500,
-  cardFeeRateBasisPoints: 250,
+  taxRateBasisPoints: 0,
+  cardFeeRateBasisPoints: 0,
   items: [
     {
       id: "11111111-1111-4111-8111-111111111111",
@@ -22,7 +22,7 @@ const baseCommand: DetailedDiagnosisCommand = {
       kind: "resale",
       unitSalePriceCents: 5_000,
       monthlySalesVolume: 20,
-      purchaseUnitCostCents: 1_500,
+      purchaseUnitCostCents: 2_000,
       packagingUnitCostCents: 200,
     },
   ],
@@ -55,18 +55,27 @@ describe("toDetailedReportViewModel", () => {
       snapshot,
     });
 
-    expect(model.conclusion).toMatchObject({
-      title: "O mix cobre os gastos com folga",
-      completenessLabel: "Análise completa",
-    });
-    expect(model.metrics.map((metric) => metric.label)).toEqual([
+    expect(model.executiveSummary.headline).toBe("Seus produtos dão lucro?");
+    expect(model.numbers.map((number) => number.label)).toEqual([
       "Quanto entrou com as vendas",
-      "Quanto sobrou ou faltou no mês",
+      "Custos do mês",
+      "Resultado do mês",
+      "Quanto sobra a cada R$ 100",
       "Quanto precisa vender para cobrir os gastos",
     ]);
-    expect(model.items[0]?.rawValues).toEqual({
-      unitSalePriceCents: snapshot.inputs.items[0]?.unitSalePriceCents,
-      variableUnitCostCents: snapshot.results.items[0]?.variableUnitCostCents,
+    expect(model.sections.map((section) => section.key)).toEqual([
+      "break_even",
+      "hidden_cost",
+      "margin_diagnosis",
+      "sales_goal",
+    ]);
+    expect(model.items[0]?.discountSimulationBase).toEqual({
+      originalPriceCents: 5_000,
+      unitCostCents: 2_200,
+      totalFeeBasisPoints: 0,
+      attentionBandBasisPoints: 2_000,
+      minimumPriceCents: 2_200,
+      partial: true,
     });
     expect(snapshot).toEqual(before);
   });
@@ -82,11 +91,10 @@ describe("toDetailedReportViewModel", () => {
       snapshot: snapshotFor(command),
     });
 
-    expect(model.conclusion.completenessLabel).toBe("Análise parcial");
-    expect(model.priority.title).toMatch(/Falta informar/i);
-    expect(model.metrics[0]).toMatchObject({
-      valueLabel: "Ainda não calculado",
-      unavailableReason: "Informe as vendas mensais para calcular.",
+    expect(model.executiveSummary.verdict.label).toMatch(/Falta informar/i);
+    expect(model.numbers[0]).toMatchObject({
+      value: "Ainda não calculado",
+      supportingText: "Informe as vendas mensais para calcular.",
     });
   });
 
@@ -107,8 +115,8 @@ describe("toDetailedReportViewModel", () => {
       snapshot: snapshotFor(command),
     });
 
-    expect(model.conclusion.tone).toBe("critical");
-    expect(model.priority.title).toMatch(/não se paga por venda/i);
+    expect(model.executiveSummary.verdict.tone).toBe("critical");
+    expect(model.executiveSummary.priority.body).toMatch(/preços e os gastos/i);
     expect(model.items[0]).toMatchObject({
       statusLabel: "Perda por venda",
       statusTone: "critical",

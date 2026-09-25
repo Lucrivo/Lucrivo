@@ -9,10 +9,12 @@ import { cn } from "@/lib/utils";
 
 import { toDetailedReportViewModel } from "../presenters/to-detailed-report-view-model";
 import type { CurrentDetailedReportSnapshot } from "../types";
-import { DetailedBusinessSummary } from "./detailed-business-summary";
 import { DetailedGuidanceList } from "./detailed-guidance-list";
 import { DetailedItemBreakdown } from "./detailed-item-breakdown";
 import { DetailedItemCard } from "./detailed-item-card";
+import { ReportExecutiveSummary } from "./report-executive-summary";
+import { ReportNumbers } from "./report-numbers";
+import { ReportSectionCard } from "./report-section-card";
 
 function DetailedReportDetail({
   id,
@@ -75,32 +77,58 @@ function DetailedReportDetail({
 
       {management}
 
-      <DetailedBusinessSummary
-        conclusion={viewModel.conclusion}
-        priority={viewModel.priority}
-        metrics={viewModel.metrics}
+      <ReportExecutiveSummary
+        summary={viewModel.executiveSummary}
+        priorityEyebrow="Comece por aqui"
       />
-      <DetailedItemBreakdown comparison={viewModel.comparison} />
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)]">
+        <ReportNumbers
+          numbers={viewModel.numbers}
+          title="Seus números"
+          description="Valores calculados com todos os itens e gastos que você informou."
+        />
+        <section
+          aria-labelledby="detailed-analysis-title"
+          className="grid gap-4"
+        >
+          <div className="mb-1 grid gap-2 px-1">
+            <h2 id="detailed-analysis-title" className="text-2xl">
+              Como chegamos a esse resultado
+            </h2>
+            <p className="text-muted-foreground max-w-2xl text-sm leading-6">
+              Veja os preços mínimos por item, o que sai das vendas, o resultado
+              do mês e o faturamento necessário.
+            </p>
+          </div>
+          {viewModel.sections.map((section) => (
+            <ReportSectionCard key={section.key} section={section} />
+          ))}
+        </section>
+      </div>
 
       <section aria-labelledby="item-details-title" className="grid gap-4">
-        <div className="grid gap-1 px-1">
-          <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
-            Item por item
-          </p>
+        <div className="grid gap-2 px-1">
           <h2 id="item-details-title" className="text-2xl">
-            Entenda cada item
+            Item por item
           </h2>
-          <p className="text-muted-foreground text-sm">
-            Abra um item para ver preços de referência e a memória de cálculo.
+          <p className="text-muted-foreground max-w-3xl text-sm leading-6">
+            Veja como cada item participa do resultado. Os gastos mensais
+            permanecem no resultado geral e não entram no simulador individual.
           </p>
         </div>
-        <Accordion multiple defaultValue={[]} className="grid gap-3">
+        <Accordion
+          multiple
+          defaultValue={viewModel.items[0] ? [viewModel.items[0].id] : []}
+          className="grid gap-4"
+        >
           {viewModel.items.map((item) => (
             <DetailedItemCard key={item.id} item={item} />
           ))}
         </Accordion>
       </section>
 
+      <DetailedItemBreakdown comparison={viewModel.comparison} />
       <DetailedGuidanceList guidance={viewModel.secondaryGuidance} />
     </main>
   );

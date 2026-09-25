@@ -80,7 +80,7 @@ function snapshotFor(command: DetailedDiagnosisCommand) {
 }
 
 describe("DetailedReportDetail", () => {
-  it("presents decisions before details and starts item details collapsed", async () => {
+  it("presents quick insights before item details and opens the first item", async () => {
     const user = userEvent.setup();
     render(
       <DetailedReportDetail
@@ -93,36 +93,59 @@ describe("DetailedReportDetail", () => {
     expect(
       screen.getByRole("heading", { name: "Resultado dos seus produtos" }),
     ).toBeVisible();
-    const conclusionHeading = screen.getByRole("heading", {
-      name: "Como está seu negócio",
-    });
-    const priorityHeading = screen.getByRole("heading", {
-      name: "O que fazer primeiro",
+    expect(
+      screen.getByRole("heading", { name: "Seus produtos dão lucro?" }),
+    ).toBeVisible();
+    expect(screen.getByText("Estou ganhando dinheiro?")).toBeVisible();
+    expect(screen.getByText("Meus preços pagam os gastos?")).toBeVisible();
+    expect(screen.getByText("O que preciso fazer agora?")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Seus números" })).toBeVisible();
+    const itemsHeading = screen.getByRole("heading", {
+      name: "Item por item",
     });
     const comparisonHeading = screen.getByRole("heading", {
       name: "Quais itens ajudam ou prejudicam o resultado?",
     });
-    expect(screen.getByText("Análise completa")).toBeVisible();
+    expect(
+      screen.getByRole("heading", {
+        name: "Seus menores preços sem prejuízo",
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "O que sai das vendas" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Quanto sobra no mês" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Quanto você precisa vender" }),
+    ).toBeVisible();
     expect(screen.getByText("Quanto entrou com as vendas")).toBeVisible();
-    expect(screen.getByText("Quanto sobrou ou faltou no mês")).toBeVisible();
-    expect(priorityHeading.compareDocumentPosition(comparisonHeading)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    );
-    expect(conclusionHeading.compareDocumentPosition(priorityHeading)).toBe(
+    expect(screen.getByText("Custos do mês")).toBeVisible();
+    expect(itemsHeading.compareDocumentPosition(comparisonHeading)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
     expect(screen.queryByText(/^Indisponível$/)).not.toBeInTheDocument();
 
+    const firstTrigger = screen.getByRole("button", {
+      name: "Abrir detalhes de Caneca",
+    });
     const lossTrigger = screen.getByRole("button", {
       name: "Abrir detalhes de Camiseta em perda",
     });
+    expect(firstTrigger).toHaveAttribute("aria-expanded", "true");
     expect(lossTrigger).toHaveAttribute("aria-expanded", "false");
+    const firstItem = firstTrigger.closest<HTMLElement>(
+      '[data-slot="accordion-item"]',
+    );
+    expect(firstItem).not.toBeNull();
+    expect(within(firstItem!).getByTestId("discount-simulator")).toBeVisible();
+    expect(firstItem).toHaveTextContent(
+      "Os gastos mensais permanecem no resultado geral.",
+    );
     await user.click(lossTrigger);
     expect(
       screen.getAllByText("Menor preço sem prejuízo na venda"),
-    ).not.toHaveLength(0);
-    expect(
-      screen.getAllByText("Menor preço para promoção planejada"),
     ).not.toHaveLength(0);
     expect(screen.getByText(/não cobre o custo do item/i)).toBeVisible();
     expect(
@@ -140,21 +163,18 @@ describe("DetailedReportDetail", () => {
       />,
     );
 
-    expect(screen.getByText("Análise parcial")).toBeVisible();
+    expect(screen.getByText("Falta informar as vendas")).toBeVisible();
     expect(
       screen.getAllByText(/volume mensal de Bolo de festa/i),
     ).not.toHaveLength(0);
     expect(screen.queryByText(/^Indisponível$/)).not.toBeInTheDocument();
-    expect(
-      screen.getAllByText("Informe as vendas mensais para calcular."),
-    ).not.toHaveLength(0);
+    expect(screen.getAllByText("Ainda não calculado")).not.toHaveLength(0);
     expect(screen.getByText(/Sobra por unidade/i)).toBeVisible();
 
     const trigger = screen.getByRole("button", {
       name: "Abrir detalhes de Bolo de festa",
     });
-    expect(trigger).toHaveAttribute("aria-expanded", "false");
-    await user.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
     const item = trigger.closest<HTMLElement>('[data-slot="accordion-item"]');
     expect(item).not.toBeNull();
     expect(

@@ -6,18 +6,18 @@ import {
   formatIntegerVolume,
   formatReportDate,
 } from "../formatters";
-import type { CurrentDetailedReportSnapshot } from "../types";
+import type {
+  CurrentDetailedReportSnapshot,
+  ReportDiscountSimulationBase,
+} from "../types";
+import { getReportLanguageProfile } from "./report-language";
+import type {
+  ReportExecutiveSummaryViewModel,
+  ReportNumberViewModel,
+  ReportSectionViewModel,
+} from "./to-report-view-model";
 
 type DetailedTone = "neutral" | "positive" | "warning" | "critical";
-
-type DetailedMetricViewModel = {
-  key: "revenue" | "monthly_result" | "break_even_revenue";
-  label: string;
-  valueLabel: string;
-  unavailableReason?: string;
-  tone: DetailedTone;
-  help?: PlainLanguageHelpContent;
-};
 
 type DetailedTechnicalDetailsViewModel = {
   modeLabel: "Custo total informado" | "Ficha técnica completa";
@@ -33,21 +33,22 @@ type DetailedTechnicalDetailsViewModel = {
 
 type DetailedItemViewModel = {
   id: string;
+  category: "product" | "production";
   name: string;
   volumeLabel: string;
   statusLabel: string;
   statusTone: "positive" | "critical";
   priceLabel: string;
-  costLabel: string;
-  surplusLabel: string;
+  variableCostLabel: string;
+  feeLabel: string;
+  netRevenueLabel: string;
+  unitContributionLabel: string;
+  monthlyContributionLabel: string;
   marginLabel: string;
   breakEvenLabel: string;
   breakEvenUnavailableReason?: string;
   technicalDetails: DetailedTechnicalDetailsViewModel | null;
-  rawValues: {
-    unitSalePriceCents: number;
-    variableUnitCostCents: number;
-  };
+  discountSimulationBase: ReportDiscountSimulationBase;
 };
 
 type DetailedComparisonEntryViewModel = {
@@ -67,14 +68,9 @@ type DetailedReportViewModel = {
     createdAtLabel: string;
     reportLabel: string;
   };
-  conclusion: {
-    title: string;
-    description: string;
-    completenessLabel: "Análise completa" | "Análise parcial";
-    tone: DetailedTone;
-  };
-  priority: { title: string; body: string; tone: DetailedTone };
-  metrics: DetailedMetricViewModel[];
+  executiveSummary: ReportExecutiveSummaryViewModel;
+  numbers: ReportNumberViewModel[];
+  sections: ReportSectionViewModel[];
   comparison: DetailedComparisonEntryViewModel[];
   items: DetailedItemViewModel[];
   secondaryGuidance: Array<{
@@ -85,52 +81,18 @@ type DetailedReportViewModel = {
   }>;
 };
 
-const verdictPresentation: Record<
-  CurrentDetailedReportSnapshot["results"]["verdict"],
-  { title: string; description: string; tone: DetailedTone }
-> = {
-  direct_loss: {
-    title: "Há itens que perdem dinheiro a cada venda",
-    description:
-      "Corrija primeiro os preços ou custos desses itens antes de buscar mais vendas.",
-    tone: "critical",
-  },
-  incomplete_volume: {
-    title: "Faltam vendas mensais para concluir a análise",
-    description:
-      "Os valores por item já ajudam na decisão, mas o resultado do mês depende dos volumes que faltam.",
-    tone: "neutral",
-  },
-  no_sales: {
-    title: "As vendas informadas ainda não cobrem o mês",
-    description:
-      "Sem vendas, os gastos mensais continuam sem cobertura. Use a meta abaixo para planejar o próximo passo.",
-    tone: "warning",
-  },
-  operational_loss: {
-    title: "O mix ainda não cobre os gastos do mês",
-    description:
-      "O valor deixado pelas vendas é menor que os gastos mensais informados.",
-    tone: "critical",
-  },
-  break_even: {
-    title: "O negócio está cobrindo os gastos, sem folga",
-    description:
-      "O resultado chegou ao ponto de equilíbrio e ainda não formou uma margem para imprevistos ou crescimento.",
-    tone: "warning",
-  },
-  tight_margin: {
-    title: "O mix cobre os gastos, mas com pouca folga",
-    description:
-      "O mês fecha positivo, porém pequenas mudanças em custos ou vendas podem consumir o resultado.",
-    tone: "warning",
-  },
-  adequate_margin: {
-    title: "O mix cobre os gastos com folga",
-    description:
-      "As vendas informadas pagam os custos e gastos mensais e ainda deixam um resultado saudável.",
-    tone: "positive",
-  },
+const breakEvenHelp: PlainLanguageHelpContent = {
+  title: "Quanto precisa entrar para cobrir os gastos?",
+  description:
+    "É a estimativa de faturamento mensal necessária para que o valor deixado pelas vendas pague os gastos do mês.",
+  technicalTerm: "faturamento de equilíbrio",
+};
+
+const marginHelp: PlainLanguageHelpContent = {
+  title: "Quanto sobra a cada R$ 100?",
+  description:
+    "Mostra quanto fica no negócio depois dos custos dos itens, impostos, cartão e gastos mensais usados neste diagnóstico.",
+  technicalTerm: "margem",
 };
 
 const surplusHelp: PlainLanguageHelpContent = {
@@ -140,12 +102,13 @@ const surplusHelp: PlainLanguageHelpContent = {
   technicalTerm: "contribuição unitária",
 };
 
-const breakEvenHelp: PlainLanguageHelpContent = {
-  title: "Quanto precisa entrar para cobrir os gastos?",
-  description:
-    "É a estimativa de faturamento mensal necessária para que o valor deixado pelas vendas pague os gastos do mês.",
-  technicalTerm: "faturamento de equilíbrio",
-};
+function optionalCurrency(value: number | null): string {
+  return value === null ? "Ainda não calculado" : formatCurrency(value);
+}
+
+function optionalPercentage(value: number | null): string {
+  return value === null ? "Ainda não calculado" : formatBasisPoints(value);
+}
 
 function unavailableReason(snapshot: CurrentDetailedReportSnapshot): string {
   return snapshot.results.isPartial
@@ -188,7 +151,7 @@ function toDetailedReportViewModel({
   createdAt: string;
   snapshot: CurrentDetailedReportSnapshot;
 }): DetailedReportViewModel {
-  const verdict = verdictPresentation[snapshot.results.verdict];
+  const language = getReportLanguageProfile(snapshot);
   const inputById = new Map(
     snapshot.inputs.items.map((item) => [item.id, item]),
   );
@@ -196,73 +159,60 @@ function toDetailedReportViewModel({
     snapshot.results.items.map((result) => [result.itemId, result]),
   );
   const reason = unavailableReason(snapshot);
-  const primaryGuidance =
-    snapshot.guidance.find((entry) => entry.key === "direct_loss") ??
-    snapshot.guidance.find((entry) => entry.key === "missing_volume") ??
-    snapshot.guidance.find((entry) => entry.key !== "business_result") ??
-    snapshot.guidance[0];
-  const priority = primaryGuidance
-    ? {
-        title: primaryGuidance.title,
-        body: primaryGuidance.body,
-        tone: primaryGuidance.tone,
-      }
-    : {
-        title: "Acompanhe preços, custos e vendas",
-        body: "Atualize o diagnóstico quando houver mudanças relevantes no seu mix.",
-        tone: "neutral" as const,
-      };
+  const totalFeeBasisPoints =
+    snapshot.inputs.taxRateBasisPoints + snapshot.inputs.cardFeeRateBasisPoints;
 
-  const metrics: DetailedMetricViewModel[] = [
-    {
-      key: "revenue",
-      label: "Quanto entrou com as vendas",
-      valueLabel:
-        snapshot.results.monthlyGrossRevenueCents === null
-          ? "Ainda não calculado"
-          : formatCurrency(snapshot.results.monthlyGrossRevenueCents),
-      unavailableReason:
-        snapshot.results.monthlyGrossRevenueCents === null ? reason : undefined,
-      tone: "neutral",
-    },
-    {
-      key: "monthly_result",
-      label: "Quanto sobrou ou faltou no mês",
-      valueLabel:
-        snapshot.results.monthlyResultCents === null
-          ? "Ainda não calculado"
-          : formatCurrency(snapshot.results.monthlyResultCents),
-      unavailableReason:
-        snapshot.results.monthlyResultCents === null ? reason : undefined,
-      tone:
-        snapshot.results.monthlyResultCents === null
-          ? "neutral"
-          : snapshot.results.monthlyResultCents < 0
-            ? "critical"
-            : "positive",
-    },
-    {
-      key: "break_even_revenue",
-      label: "Quanto precisa vender para cobrir os gastos",
-      valueLabel:
-        snapshot.results.breakEvenRevenueCents === null
-          ? "Ainda não calculado"
-          : formatCurrency(snapshot.results.breakEvenRevenueCents),
-      unavailableReason:
-        snapshot.results.breakEvenRevenueCents === null ? reason : undefined,
-      tone: "neutral",
-      help: breakEvenHelp,
-    },
+  const number = (
+    key: ReportNumberViewModel["key"],
+    label: string,
+    value: string,
+    help?: PlainLanguageHelpContent,
+  ): ReportNumberViewModel => ({
+    key,
+    label,
+    value,
+    ...(value === "Ainda não calculado" ? { supportingText: reason } : {}),
+    ...(help ? { help } : {}),
+  });
+
+  const numbers: ReportNumberViewModel[] = [
+    number(
+      "revenue",
+      "Quanto entrou com as vendas",
+      optionalCurrency(snapshot.results.monthlyGrossRevenueCents),
+    ),
+    number(
+      "costs",
+      "Custos do mês",
+      optionalCurrency(snapshot.results.monthlyCostCents),
+    ),
+    number(
+      "result",
+      "Resultado do mês",
+      optionalCurrency(snapshot.results.monthlyResultCents),
+    ),
+    number(
+      "margin",
+      "Quanto sobra a cada R$ 100",
+      optionalPercentage(snapshot.results.finalMarginBasisPoints),
+      marginHelp,
+    ),
+    number(
+      "break_even",
+      "Quanto precisa vender para cobrir os gastos",
+      optionalCurrency(snapshot.results.breakEvenRevenueCents),
+      breakEvenHelp,
+    ),
   ];
 
   const items: DetailedItemViewModel[] = snapshot.inputs.items.flatMap(
     (item) => {
       const result = resultById.get(item.id);
       if (!result) return [];
-      const rateReason = "As taxas informadas impedem este cálculo.";
       return [
         {
           id: item.id,
+          category: snapshot.category,
           name: item.name,
           volumeLabel:
             item.monthlySalesVolume === null
@@ -273,8 +223,14 @@ function toDetailedReportViewModel({
             : "Deixa valor por venda",
           statusTone: result.directLoss ? "critical" : "positive",
           priceLabel: formatCurrency(item.unitSalePriceCents),
-          costLabel: formatCurrency(result.variableUnitCostCents),
-          surplusLabel: formatCurrency(result.unitContributionCents),
+          variableCostLabel: formatCurrency(result.variableUnitCostCents),
+          feeLabel: formatCurrency(result.feeAmountCents),
+          netRevenueLabel: formatCurrency(result.netUnitRevenueCents),
+          unitContributionLabel: formatCurrency(result.unitContributionCents),
+          monthlyContributionLabel:
+            result.monthlyContributionCents === null
+              ? "Ainda não calculado"
+              : formatCurrency(result.monthlyContributionCents),
           marginLabel:
             result.contributionMarginBasisPoints === null
               ? "Ainda não calculada"
@@ -284,11 +240,17 @@ function toDetailedReportViewModel({
               ? "Ainda não calculado"
               : formatCurrency(result.breakEvenUnitPriceCents),
           breakEvenUnavailableReason:
-            result.breakEvenUnitPriceCents === null ? rateReason : undefined,
+            result.breakEvenUnitPriceCents === null
+              ? "As taxas informadas impedem este cálculo."
+              : undefined,
           technicalDetails: technicalDetails(item),
-          rawValues: {
-            unitSalePriceCents: item.unitSalePriceCents,
-            variableUnitCostCents: result.variableUnitCostCents,
+          discountSimulationBase: {
+            originalPriceCents: item.unitSalePriceCents,
+            unitCostCents: result.variableUnitCostCents,
+            totalFeeBasisPoints,
+            attentionBandBasisPoints: snapshot.policy.attentionBandBasisPoints,
+            minimumPriceCents: result.breakEvenUnitPriceCents,
+            partial: true,
           },
         },
       ];
@@ -329,20 +291,23 @@ function toDetailedReportViewModel({
       createdAtLabel: `Gerado em ${formatReportDate(createdAt)}`,
       reportLabel: `Relatório financeiro #${id}`,
     },
-    conclusion: {
-      ...verdict,
-      completenessLabel: snapshot.results.isPartial
-        ? "Análise parcial"
-        : "Análise completa",
+    executiveSummary: {
+      ...snapshot.executiveSummary,
+      verdict: {
+        ...snapshot.executiveSummary.verdict,
+        toneLabel: language.toneLabels[snapshot.executiveSummary.verdict.tone],
+      },
+      facts: snapshot.executiveSummary.facts,
     },
-    priority,
-    metrics,
+    numbers,
+    sections: snapshot.sections.map((section) => ({
+      ...section,
+      toneLabel: language.toneLabels[section.tone],
+    })),
     comparison,
     items,
     secondaryGuidance: snapshot.guidance
-      .filter(
-        (entry) => entry !== primaryGuidance && entry.key !== "business_result",
-      )
+      .filter((entry) => entry.key !== "business_result")
       .map((entry) => ({
         key: entry.key,
         title: entry.title,
@@ -357,7 +322,6 @@ export {
   toDetailedReportViewModel,
   type DetailedComparisonEntryViewModel,
   type DetailedItemViewModel,
-  type DetailedMetricViewModel,
   type DetailedReportViewModel,
   type DetailedTechnicalDetailsViewModel,
 };

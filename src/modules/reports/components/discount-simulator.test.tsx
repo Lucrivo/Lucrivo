@@ -376,4 +376,21 @@ describe("DiscountSimulator", () => {
       "limite de 50%",
     );
   });
+
+  it("explains the direct-cost scope for a detailed item", () => {
+    render(
+      <DiscountSimulator
+        base={zeroCostCurrentBase}
+        context={{ category: "product", mode: "detailed_item_attention" }}
+      />,
+    );
+
+    const simulator = screen.getByTestId("discount-simulator");
+    expect(
+      screen.getByText(
+        "Esta simulação considera os gastos desta venda. Os gastos mensais permanecem no resultado geral.",
+      ),
+    ).toBeVisible();
+    expect(simulator).not.toHaveTextContent(/nenhuma venda foi informada/i);
+  });
 });
