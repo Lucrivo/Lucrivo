@@ -2,6 +2,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 import { productKinds, type ProductKind } from "../../../types";
 import { StepField } from "../../shared/step-field";
+import {
+  ResalePurchaseCostField,
+  UnitSalePriceField,
+} from "../../shared/unit-value-fields";
 import type { ProductStepProps } from "./types";
 
 const productKindLabels = {
@@ -53,34 +57,34 @@ function ProductValuesStep(props: ProductStepProps) {
 
       {kind ? (
         <div className="grid gap-5 sm:grid-cols-2">
-          <StepField
-            {...props}
-            field="purchaseUnitCost"
-            label={
-              kind === "digital"
-                ? "Existe algum gasto a cada venda?"
-                : "Quanto você paga ao fornecedor por unidade?"
-            }
-            value={props.values.purchaseUnitCost}
-            prefix="R$"
-            description="Opcional. Deixe em branco se o produto não tiver custo direto."
-            help={
-              kind === "digital"
-                ? {
-                    triggerLabel: "Entenda este custo",
-                    title: "Custo por venda",
-                    description:
-                      "Um produto digital pode não ter custo direto. Se houver licença, plataforma, entrega ou outra cobrança que acontece a cada venda, informe esse valor.",
-                  }
-                : undefined
-            }
-          />
-          <StepField
-            {...props}
+          {kind === "digital" ? (
+            <StepField
+              {...props}
+              field="purchaseUnitCost"
+              label="Existe algum gasto a cada venda?"
+              value={props.values.purchaseUnitCost}
+              prefix="R$"
+              description="Opcional. Deixe em branco se o produto não tiver custo direto."
+              help={{
+                triggerLabel: "Entenda este custo",
+                title: "Custo por venda",
+                description:
+                  "Um produto digital pode não ter custo direto. Se houver licença, plataforma, entrega ou outra cobrança que acontece a cada venda, informe esse valor.",
+              }}
+            />
+          ) : (
+            <ResalePurchaseCostField
+              field="purchaseUnitCost"
+              value={props.values.purchaseUnitCost}
+              errors={props.errors}
+              onChange={(value) => props.onChange("purchaseUnitCost", value)}
+            />
+          )}
+          <UnitSalePriceField
             field="unitSalePrice"
-            label="Por quanto você vende cada unidade?"
             value={props.values.unitSalePrice}
-            prefix="R$"
+            errors={props.errors}
+            onChange={(value) => props.onChange("unitSalePrice", value)}
           />
         </div>
       ) : null}
