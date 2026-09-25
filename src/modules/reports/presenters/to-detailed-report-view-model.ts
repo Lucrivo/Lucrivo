@@ -5,6 +5,7 @@ import {
   formatCurrency,
   formatIntegerVolume,
   formatReportDate,
+  formatReportScenario,
 } from "../formatters";
 import type {
   CurrentDetailedReportSnapshot,
@@ -65,6 +66,7 @@ type DetailedReportViewModel = {
   identity: {
     title: string;
     categoryLabel: string;
+    scenarioLabel: string;
     createdAtLabel: string;
     reportLabel: string;
   };
@@ -288,6 +290,7 @@ function toDetailedReportViewModel({
           ? "Resultado dos seus produtos"
           : "Resultado das suas produções",
       categoryLabel: snapshot.category === "product" ? "Produtos" : "Produções",
+      scenarioLabel: formatReportScenario(snapshot.scenario),
       createdAtLabel: `Gerado em ${formatReportDate(createdAt)}`,
       reportLabel: `Relatório financeiro #${id}`,
     },

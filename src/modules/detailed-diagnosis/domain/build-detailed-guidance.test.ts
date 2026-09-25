@@ -59,6 +59,7 @@ describe("buildDetailedGuidance", () => {
       itemIds: [highVolumeItem.id],
     });
     expect(guidance[0].body).toContain("Caneca popular");
+    expect(guidance.map(({ body }) => body).join(" ")).not.toMatch(/\bmix\b/i);
     expect(guidance.map(({ key }) => key)).not.toContain("business_result");
     expect(guidance.map(({ key }) => key)).not.toContain("concentration");
     expect(guidance.map(({ key }) => key)).not.toContain(
@@ -178,6 +179,9 @@ describe("buildDetailedGuidance", () => {
     expect(guidance.find(({ key }) => key === "business_result")).toMatchObject(
       { tone: "positive", itemIds: [] },
     );
+    expect(
+      guidance.flatMap(({ title, body }) => [title, body]).join(" "),
+    ).not.toMatch(/\bmix\b/i);
   });
 
   it("returns compatible rules in their specified order", () => {

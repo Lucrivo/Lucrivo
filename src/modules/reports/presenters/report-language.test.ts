@@ -117,4 +117,24 @@ describe("getReportLanguageProfile", () => {
       expect(mismatched.verdictLabels.adequate_margin).not.toBe("Lucro");
     },
   );
+
+  it.each(["product", "production"] as const)(
+    "uses the current unit profile for detailed %s summaries",
+    (category) => {
+      const language = getReportLanguageProfile({
+        category,
+        schemaVersion: 1,
+        calculationVersion: 1,
+        contentVersion: 1,
+        analysisMode: "detailed",
+      });
+
+      expect(language.verdictLabels).toMatchObject({
+        direct_loss: "Prejuízo por venda",
+        incomplete_volume: "Falta informar as vendas",
+        tight_margin: "Margem apertada",
+        adequate_margin: "Lucro",
+      });
+    },
+  );
 });

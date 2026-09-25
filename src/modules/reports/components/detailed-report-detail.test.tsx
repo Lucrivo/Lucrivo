@@ -93,6 +93,9 @@ describe("DetailedReportDetail", () => {
     expect(
       screen.getByRole("heading", { name: "Resultado dos seus produtos" }),
     ).toBeVisible();
+    expect(screen.getByText("Produtos")).toBeVisible();
+    expect(screen.getByText("Revenda")).toBeVisible();
+    expect(screen.queryByText("Diagnóstico detalhado")).not.toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Seus produtos dão lucro?" }),
     ).toBeVisible();
@@ -151,6 +154,7 @@ describe("DetailedReportDetail", () => {
     expect(
       screen.getByRole("link", { name: "Voltar aos relatórios" }),
     ).toHaveAttribute("href", "/reports");
+    expect(screen.queryByText(/\bmix\b/i)).not.toBeInTheDocument();
   });
 
   it("presents a partial Production mix neutrally with technical-sheet details", async () => {
@@ -194,5 +198,6 @@ describe("DetailedReportDetail", () => {
     expect(
       screen.queryByRole("button", { name: /ia/i }),
     ).not.toBeInTheDocument();
+    expect(screen.queryByText(/\bmix\b/i)).not.toBeInTheDocument();
   });
 });

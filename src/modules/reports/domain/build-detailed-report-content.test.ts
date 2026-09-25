@@ -106,7 +106,9 @@ describe("buildDetailedReportContent", () => {
         unitSalePriceCents: item.unitSalePriceCents,
         monthlySalesVolume: item.monthlySalesVolume,
         productionUnitCostCents:
-          item.purchaseUnitCostCents + item.packagingUnitCostCents,
+          item.kind === "resale"
+            ? item.purchaseUnitCostCents + item.packagingUnitCostCents
+            : 0,
       })),
     };
 

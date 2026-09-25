@@ -59,7 +59,9 @@ function DetailedReportDetail({
           <div className="grid gap-4">
             <div className="flex flex-wrap gap-2">
               <Badge variant="info">{viewModel.identity.categoryLabel}</Badge>
-              <Badge variant="outline">Diagnóstico detalhado</Badge>
+              <Badge variant="outline">
+                {viewModel.identity.scenarioLabel}
+              </Badge>
             </div>
             <div className="grid gap-2">
               <p className="text-primary text-xs font-semibold tracking-[0.18em] uppercase">

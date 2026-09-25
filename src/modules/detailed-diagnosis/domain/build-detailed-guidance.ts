@@ -28,7 +28,7 @@ function buildMissingVolumeGuidance(
     key: "missing_volume",
     tone: "neutral",
     title: "Falta informar algumas vendas",
-    body: `Informe o volume mensal de ${namesFor(command, calculation.missingVolumeItemIds)} para concluir o resultado do mix. Os valores por unidade continuam disponíveis.`,
+    body: `Informe o volume mensal de ${namesFor(command, calculation.missingVolumeItemIds)} para concluir o resultado geral. Os valores por unidade continuam disponíveis.`,
     itemIds: calculation.missingVolumeItemIds,
   };
 }
@@ -65,7 +65,7 @@ function buildBusinessResultGuidance(
   > = {
     direct_loss: {
       tone: "critical",
-      title: "O mix contém perda por venda",
+      title: "O conjunto de itens contém perda por venda",
       body: "Corrija os itens que não deixam contribuição antes de buscar mais volume.",
     },
     incomplete_volume: {
@@ -81,7 +81,7 @@ function buildBusinessResultGuidance(
     operational_loss: {
       tone: "critical",
       title: "As vendas não cobrem os gastos mensais",
-      body: "A contribuição do mix ainda é menor que os gastos mensais considerados.",
+      body: "O valor deixado por todos os itens ainda é menor que os gastos mensais considerados.",
     },
     break_even: {
       tone: "warning",
@@ -91,11 +91,11 @@ function buildBusinessResultGuidance(
     tight_margin: {
       tone: "warning",
       title: "O resultado tem pouca folga",
-      body: "O mix supera os gastos mensais, mas a margem final ainda é apertada.",
+      body: "O conjunto de itens supera os gastos mensais, mas a margem final ainda é apertada.",
     },
     adequate_margin: {
       tone: "positive",
-      title: "O mix cobre os gastos com folga",
+      title: "O conjunto de itens cobre os gastos com folga",
       body: "O resultado mensal está acima do ponto de equilíbrio e tem margem adequada.",
     },
   };
@@ -150,7 +150,7 @@ function buildConcentrationGuidance(
     key: "concentration",
     tone: "warning",
     title: "A contribuição está concentrada em um item",
-    body: `${namesFor(command, [leadingItem.itemId])} responde por mais de 45% da contribuição positiva do mix. Acompanhe essa dependência.`,
+    body: `${namesFor(command, [leadingItem.itemId])} responde por mais de 45% do valor positivo deixado pelo conjunto de itens. Acompanhe essa dependência.`,
     itemIds: [leadingItem.itemId],
   };
 }
@@ -211,7 +211,7 @@ function buildBestUnitContributionGuidance(
     key: "best_unit_contribution",
     tone: "positive",
     title: "Este item deixa mais valor por venda",
-    body: `${namesFor(command, [bestItem.itemId])} tem a maior contribuição unitária do mix atual.`,
+    body: `${namesFor(command, [bestItem.itemId])} deixa o maior valor por venda entre os itens analisados.`,
     itemIds: [bestItem.itemId],
   };
 }

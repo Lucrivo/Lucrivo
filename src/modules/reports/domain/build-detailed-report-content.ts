@@ -18,7 +18,10 @@ function optionalCurrency(value: number | null): string {
 function verdictContent(
   calculation: DetailedDiagnosisCalculation,
 ): ReportExecutiveSummary["verdict"] {
-  return {
+  const content: Record<
+    DetailedDiagnosisCalculation["verdict"],
+    ReportExecutiveSummary["verdict"]
+  > = {
     direct_loss: {
       label: "Prejuízo por venda",
       body: "Há itens que deixam um valor negativo antes mesmo dos gastos mensais.",
@@ -54,7 +57,8 @@ function verdictContent(
       body: "O mês terminou positivo com as vendas e os gastos informados.",
       tone: "positive",
     },
-  }[calculation.verdict];
+  };
+  return content[calculation.verdict];
 }
 
 function immediateAction(calculation: DetailedDiagnosisCalculation): string {
