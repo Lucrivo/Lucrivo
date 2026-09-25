@@ -1,16 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("./create-service-report.service", () => ({
+vi.mock("./report-rpc-args", () => ({
   toServiceRpcArgs: () => ({ marker: "service" }),
-}));
-vi.mock("./create-product-report.service", () => ({
   toProductRpcArgs: () => ({ marker: "product" }),
-}));
-vi.mock("./create-production-report.service", () => ({
   toProductionRpcArgs: () => ({ marker: "production" }),
-}));
-vi.mock("./create-detailed-report.service", () => ({
   toDetailedRpcArgs: () => ({
     marker: "detailed",
     p_fixed_monthly_expenses_cents: 80_000,

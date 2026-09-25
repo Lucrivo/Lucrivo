@@ -16,10 +16,12 @@ import type {
   CurrentProductionReportSnapshot,
   CurrentServiceReportSnapshot,
 } from "../types";
-import { toDetailedRpcArgs } from "./create-detailed-report.service";
-import { toProductRpcArgs } from "./create-product-report.service";
-import { toProductionRpcArgs } from "./create-production-report.service";
-import { toServiceRpcArgs } from "./create-service-report.service";
+import {
+  toDetailedRpcArgs,
+  toProductRpcArgs,
+  toProductionRpcArgs,
+  toServiceRpcArgs,
+} from "./report-rpc-args";
 
 type ReplaceReportBase = {
   supabase: SupabaseClient<Database>;
