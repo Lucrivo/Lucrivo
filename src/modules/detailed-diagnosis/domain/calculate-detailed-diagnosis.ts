@@ -62,7 +62,6 @@ function calculateDetailedDiagnosis(
   const rates = {
     taxRateBasisPoints: command.taxRateBasisPoints,
     cardFeeRateBasisPoints: command.cardFeeRateBasisPoints,
-    promotionMarginBasisPoints: command.promotionMarginBasisPoints,
   };
   const items = command.items.map((item) => calculateDetailedItem(item, rates));
   const missingVolumeItemIds = command.items
@@ -86,6 +85,10 @@ function calculateDetailedDiagnosis(
       missingVolumeItemIds,
       items,
       monthlyGrossRevenueCents: null,
+      monthlyFeeAmountCents: null,
+      monthlyVariableCostCents: null,
+      monthlyNetRevenueCents: null,
+      monthlyCostCents: null,
       monthlyContributionCents: null,
       monthlyResultCents: null,
       mixContributionMarginBasisPoints: null,
@@ -99,6 +102,35 @@ function calculateDetailedDiagnosis(
   const monthlyGrossRevenueCents = sumIntegers(
     items.map((item) => item.monthlyGrossRevenueCents ?? 0),
   );
+  const volumeByItemId = new Map(
+    command.items.map((item) => [item.id, item.monthlySalesVolume ?? 0]),
+  );
+  const monthlyFeeAmountCents = sumIntegers(
+    items.map((item) =>
+      roundDivide(
+        BigInt(item.feeAmountCents) *
+          BigInt(volumeByItemId.get(item.itemId) ?? 0),
+        BigInt(1),
+      ),
+    ),
+  );
+  const monthlyVariableCostCents = sumIntegers(
+    items.map((item) =>
+      roundDivide(
+        BigInt(item.variableUnitCostCents) *
+          BigInt(volumeByItemId.get(item.itemId) ?? 0),
+        BigInt(1),
+      ),
+    ),
+  );
+  const monthlyNetRevenueCents = sumIntegers([
+    monthlyGrossRevenueCents,
+    -monthlyFeeAmountCents,
+  ]);
+  const monthlyCostCents = sumIntegers([
+    monthlyVariableCostCents,
+    effectiveFixedCostCents,
+  ]);
   const monthlyContributionCents = sumIntegers(
     items.map((item) => item.monthlyContributionCents ?? 0),
   );
@@ -141,6 +173,10 @@ function calculateDetailedDiagnosis(
     missingVolumeItemIds,
     items,
     monthlyGrossRevenueCents,
+    monthlyFeeAmountCents,
+    monthlyVariableCostCents,
+    monthlyNetRevenueCents,
+    monthlyCostCents,
     monthlyContributionCents,
     monthlyResultCents,
     mixContributionMarginBasisPoints,

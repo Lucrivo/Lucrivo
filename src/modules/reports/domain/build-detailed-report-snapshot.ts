@@ -3,6 +3,7 @@ import type {
   DetailedDiagnosisCalculation,
   DetailedDiagnosisCommand,
 } from "@/modules/detailed-diagnosis/types";
+import { DETAILED_ATTENTION_BAND_BASIS_POINTS } from "@/modules/detailed-diagnosis/domain/calculate-detailed-diagnosis";
 
 import {
   parseDetailedReportSnapshot,
@@ -13,6 +14,7 @@ import {
   DETAILED_REPORT_CONTENT_VERSION,
   DETAILED_REPORT_SCHEMA_VERSION,
 } from "../types";
+import { buildDetailedReportContent } from "./build-detailed-report-content";
 
 function buildDetailedReportSnapshot(
   command: DetailedDiagnosisCommand,
@@ -41,6 +43,10 @@ function buildDetailedReportSnapshot(
     }),
   };
   const orderedCommand = { ...command, items: orderedItems };
+  const content = buildDetailedReportContent(
+    orderedCommand,
+    orderedCalculation,
+  );
   const snapshot = {
     schemaVersion: DETAILED_REPORT_SCHEMA_VERSION,
     calculationVersion: DETAILED_REPORT_CALCULATION_VERSION,
@@ -54,7 +60,7 @@ function buildDetailedReportSnapshot(
     currency: "BRL" as const,
     unit: "mix" as const,
     policy: {
-      promotionMarginBasisPoints: command.promotionMarginBasisPoints,
+      attentionBandBasisPoints: DETAILED_ATTENTION_BAND_BASIS_POINTS,
       concentrationThresholdBasisPoints: 4_500 as const,
       weeklyDivisorHundredths: 433 as const,
       operatingDaysPerWeek: 6 as const,
@@ -62,6 +68,8 @@ function buildDetailedReportSnapshot(
     },
     inputs: orderedCommand,
     results: orderedCalculation,
+    executiveSummary: content.executiveSummary,
+    sections: content.sections,
     guidance: buildDetailedGuidance(orderedCommand, orderedCalculation),
   };
 

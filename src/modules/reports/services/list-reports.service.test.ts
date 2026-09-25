@@ -64,6 +64,7 @@ describe("report cursor", () => {
 describe("listOwnedReports", () => {
   const select = vi.fn();
   const byUser = vi.fn();
+  const activeOnly = vi.fn();
   const or = vi.fn();
   const firstOrder = vi.fn();
   const secondOrder = vi.fn();
@@ -75,7 +76,8 @@ describe("listOwnedReports", () => {
     vi.clearAllMocks();
     from.mockReturnValue({ select });
     select.mockReturnValue({ eq: byUser });
-    byUser.mockReturnValue({ or, order: firstOrder });
+    byUser.mockReturnValue({ is: activeOnly });
+    activeOnly.mockReturnValue({ or, order: firstOrder });
     or.mockReturnValue({ order: firstOrder });
     firstOrder.mockReturnValue({ order: secondOrder });
     secondOrder.mockReturnValue({ limit });
@@ -124,6 +126,7 @@ describe("listOwnedReports", () => {
     );
     expect(select.mock.calls[0]?.[0]).not.toContain("report_snapshot");
     expect(byUser).toHaveBeenCalledWith("user_id", "trusted-user");
+    expect(activeOnly).toHaveBeenCalledWith("deleted_at", null);
     expect(firstOrder).toHaveBeenCalledWith("created_at", {
       ascending: false,
     });

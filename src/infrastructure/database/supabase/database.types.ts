@@ -273,7 +273,6 @@ export type Database = {
           item_count: number;
           pro_labore_cents: number;
           pro_labore_included: boolean;
-          promotion_margin_basis_points: number;
           submission_id: string;
           tax_rate_basis_points: number;
           user_id: string;
@@ -286,7 +285,6 @@ export type Database = {
           item_count: number;
           pro_labore_cents: number;
           pro_labore_included: boolean;
-          promotion_margin_basis_points: number;
           submission_id: string;
           tax_rate_basis_points: number;
           user_id: string;
@@ -299,7 +297,6 @@ export type Database = {
           item_count?: number;
           pro_labore_cents?: number;
           pro_labore_included?: boolean;
-          promotion_margin_basis_points?: number;
           submission_id?: string;
           tax_rate_basis_points?: number;
           user_id?: string;
@@ -386,7 +383,6 @@ export type Database = {
           packaging_unit_cost_cents: number | null;
           position: number;
           production_unit_cost_cents: number | null;
-          promotion_floor_cents: number | null;
           purchase_unit_cost_cents: number | null;
           recipe_yield: number | null;
           submission_id: string;
@@ -416,7 +412,6 @@ export type Database = {
           packaging_unit_cost_cents?: number | null;
           position: number;
           production_unit_cost_cents?: number | null;
-          promotion_floor_cents?: number | null;
           purchase_unit_cost_cents?: number | null;
           recipe_yield?: number | null;
           submission_id: string;
@@ -446,7 +441,6 @@ export type Database = {
           packaging_unit_cost_cents?: number | null;
           position?: number;
           production_unit_cost_cents?: number | null;
-          promotion_floor_cents?: number | null;
           purchase_unit_cost_cents?: number | null;
           recipe_yield?: number | null;
           submission_id?: string;
@@ -473,6 +467,7 @@ export type Database = {
           content_version: number;
           created_at: string;
           current_price_cents: number | null;
+          deleted_at: string | null;
           id: number;
           is_free_report: boolean;
           is_partial: boolean | null;
@@ -487,8 +482,10 @@ export type Database = {
           submission_id: string;
           unit: string;
           unit_profit_cents: number | null;
+          updated_at: string;
           user_id: string;
           verdict: string;
+          version: number;
         };
         Insert: {
           analysis_mode?: string;
@@ -497,6 +494,7 @@ export type Database = {
           content_version: number;
           created_at?: string;
           current_price_cents?: number | null;
+          deleted_at?: string | null;
           id?: never;
           is_free_report?: boolean;
           is_partial?: boolean | null;
@@ -511,8 +509,10 @@ export type Database = {
           submission_id: string;
           unit: string;
           unit_profit_cents?: number | null;
+          updated_at?: string;
           user_id: string;
           verdict: string;
+          version?: number;
         };
         Update: {
           analysis_mode?: string;
@@ -521,6 +521,7 @@ export type Database = {
           content_version?: number;
           created_at?: string;
           current_price_cents?: number | null;
+          deleted_at?: string | null;
           id?: never;
           is_free_report?: boolean;
           is_partial?: boolean | null;
@@ -535,8 +536,10 @@ export type Database = {
           submission_id?: string;
           unit?: string;
           unit_profit_cents?: number | null;
+          updated_at?: string;
           user_id?: string;
           verdict?: string;
+          version?: number;
         };
         Relationships: [];
       };
@@ -787,7 +790,6 @@ export type Database = {
           p_priority: string;
           p_pro_labore_cents: number;
           p_pro_labore_included: boolean;
-          p_promotion_margin_basis_points: number;
           p_real_margin_basis_points: number;
           p_report_snapshot: Json;
           p_schema_version: number;
@@ -1041,6 +1043,10 @@ export type Database = {
       current_user_is_admin: { Args: never; Returns: boolean };
       get_admin_dashboard_v1: { Args: never; Returns: Json };
       get_admin_user_v1: { Args: { p_user_id: string }; Returns: Json };
+      list_admin_recent_subscriptions_v1: {
+        Args: { p_billing_mode: string; p_period: string; p_state: string };
+        Returns: Json;
+      };
       list_admin_user_items_v1: {
         Args: {
           p_cursor_created_at?: string;
@@ -1061,6 +1067,137 @@ export type Database = {
           p_state?: string;
         };
         Returns: Json;
+      };
+      replace_detailed_diagnosis_report_v1: {
+        Args: {
+          p_calculation_version: number;
+          p_card_fee_rate_basis_points: number;
+          p_category: Database["public"]["Enums"]["business_category"];
+          p_content_version: number;
+          p_diagnosis_id: number;
+          p_expected_version: number;
+          p_fixed_monthly_expenses_cents: number;
+          p_is_partial: boolean;
+          p_item_count: number;
+          p_items: Json;
+          p_monthly_gross_revenue_cents: number;
+          p_monthly_result_cents: number;
+          p_priority: string;
+          p_pro_labore_cents: number;
+          p_pro_labore_included: boolean;
+          p_real_margin_basis_points: number;
+          p_report_snapshot: Json;
+          p_schema_version: number;
+          p_submission_id: string;
+          p_tax_rate_basis_points: number;
+          p_verdict: string;
+        };
+        Returns: number;
+      };
+      replace_product_diagnosis_report_v1: {
+        Args: {
+          p_calculation_version: number;
+          p_card_fee_rate_basis_points: number;
+          p_content_version: number;
+          p_current_price_cents: number;
+          p_diagnosis_id: number;
+          p_expected_version: number;
+          p_fixed_monthly_expenses_cents: number;
+          p_monthly_result_cents: number;
+          p_monthly_sales_volume: number;
+          p_priority: string;
+          p_pro_labore_cents: number;
+          p_pro_labore_included: boolean;
+          p_product_kind: string;
+          p_purchase_unit_cost_cents: number;
+          p_real_margin_basis_points: number;
+          p_report_snapshot: Json;
+          p_scenario: string;
+          p_schema_version: number;
+          p_submission_id: string;
+          p_tax_rate_basis_points: number;
+          p_unit: string;
+          p_unit_profit_cents: number;
+          p_unit_sale_price_cents: number;
+          p_verdict: string;
+        };
+        Returns: number;
+      };
+      replace_production_diagnosis_report_v1: {
+        Args: {
+          p_calculation_version: number;
+          p_card_fee_rate_basis_points: number;
+          p_content_version: number;
+          p_cost_composition_enabled: boolean;
+          p_current_price_cents: number;
+          p_diagnosis_id: number;
+          p_direct_labor_unit_cost_cents: number;
+          p_expected_version: number;
+          p_fixed_monthly_expenses_cents: number;
+          p_material_unit_cost_cents: number;
+          p_monthly_result_cents: number;
+          p_monthly_sales_volume: number;
+          p_other_variable_unit_cost_cents: number;
+          p_packaging_unit_cost_cents: number;
+          p_priority: string;
+          p_pro_labore_cents: number;
+          p_pro_labore_included: boolean;
+          p_production_unit_cost_cents: number;
+          p_real_margin_basis_points: number;
+          p_report_snapshot: Json;
+          p_scenario: string;
+          p_schema_version: number;
+          p_submission_id: string;
+          p_tax_rate_basis_points: number;
+          p_unit: string;
+          p_unit_profit_cents: number;
+          p_unit_sale_price_cents: number;
+          p_verdict: string;
+        };
+        Returns: number;
+      };
+      replace_service_diagnosis_report_v1: {
+        Args: {
+          p_appointment_duration_minutes: number;
+          p_appointment_rate_cents: number;
+          p_calculation_version: number;
+          p_card_fee_rate_basis_points: number;
+          p_content_version: number;
+          p_current_price_cents: number;
+          p_daily_work_minutes: number;
+          p_desired_monthly_income_cents: number;
+          p_diagnosis_id: number;
+          p_expected_version: number;
+          p_fixed_monthly_expenses_cents: number;
+          p_hourly_rate_cents: number;
+          p_material_unit_cost_cents: number;
+          p_minute_rate_cents: number;
+          p_monthly_work_minutes: number;
+          p_pricing_method: Database["public"]["Enums"]["service_pricing_method"];
+          p_priority: string;
+          p_real_margin_basis_points: number;
+          p_report_snapshot: Json;
+          p_scenario: string;
+          p_schema_version: number;
+          p_source_appointment_duration_minutes: number;
+          p_source_current_price_cents: number;
+          p_source_material_cost_cents: number;
+          p_source_material_cost_unit: string;
+          p_source_pricing_method: string;
+          p_submission_id: string;
+          p_tax_rate_basis_points: number;
+          p_unit: string;
+          p_unit_profit_cents: number;
+          p_verdict: string;
+          p_weekly_work_days: number;
+          p_work_hours_period: Database["public"]["Enums"]["service_work_hours_period"];
+          p_work_period_minutes: number;
+        };
+        Returns: number;
+      };
+      soft_delete_owned_diagnosis_v1: {
+        Args: { p_diagnosis_id: number; p_expected_version: number };
+        Returns: string;
       };
     };
     Enums: {

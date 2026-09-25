@@ -2,13 +2,11 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type {
-  Database,
-  Json,
-} from "@/infrastructure/database/supabase/database.types";
+import type { Database } from "@/infrastructure/database/supabase/database.types";
 import type { ProductDiagnosisCommand } from "@/modules/quick-diagnosis/types";
 
 import type { CurrentProductReportSnapshot } from "../types";
+import { toProductRpcArgs } from "./report-rpc-args";
 
 type CreateProductReportInput = {
   supabase: SupabaseClient<Database>;
@@ -22,49 +20,6 @@ type CreateProductReportResult =
 
 type GeneratedProductV3RpcArgs =
   Database["public"]["Functions"]["create_product_diagnosis_report_v3"]["Args"];
-
-type ProductRpcArgs = Omit<
-  GeneratedProductV3RpcArgs,
-  | "p_monthly_sales_volume"
-  | "p_monthly_result_cents"
-  | "p_real_margin_basis_points"
-  | "p_unit_profit_cents"
-> & {
-  p_monthly_sales_volume: number | null;
-  p_monthly_result_cents: number | null;
-  p_real_margin_basis_points: number | null;
-  p_unit_profit_cents: number | null;
-};
-
-function toProductRpcArgs(
-  command: ProductDiagnosisCommand,
-  snapshot: CurrentProductReportSnapshot,
-): ProductRpcArgs {
-  return {
-    p_submission_id: command.submissionId,
-    p_product_kind: command.productKind,
-    p_purchase_unit_cost_cents: command.purchaseUnitCostCents,
-    p_unit_sale_price_cents: command.unitSalePriceCents,
-    p_fixed_monthly_expenses_cents: command.fixedMonthlyExpensesCents,
-    p_monthly_sales_volume: command.monthlySalesVolume,
-    p_pro_labore_included: command.proLaboreIncluded,
-    p_pro_labore_cents: command.proLaboreCents,
-    p_tax_rate_basis_points: command.taxRateBasisPoints,
-    p_card_fee_rate_basis_points: command.cardFeeRateBasisPoints,
-    p_schema_version: snapshot.schemaVersion,
-    p_calculation_version: snapshot.calculationVersion,
-    p_content_version: snapshot.contentVersion,
-    p_scenario: snapshot.scenario,
-    p_current_price_cents: snapshot.results.currentPriceCents,
-    p_real_margin_basis_points: snapshot.results.realMarginBasisPoints,
-    p_unit_profit_cents: snapshot.results.unitProfitCents,
-    p_monthly_result_cents: snapshot.results.monthlyResultCents,
-    p_verdict: snapshot.results.verdict,
-    p_priority: snapshot.results.priority,
-    p_unit: snapshot.unit,
-    p_report_snapshot: snapshot as Json,
-  };
-}
 
 async function createProductReport({
   supabase,

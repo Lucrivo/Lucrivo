@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import type { DetailedDiagnosisCommand, DetailedProductItem } from "../types";
-import { calculateDetailedDiagnosis } from "./calculate-detailed-diagnosis";
+import {
+  DETAILED_ATTENTION_BAND_BASIS_POINTS,
+  calculateDetailedDiagnosis,
+} from "./calculate-detailed-diagnosis";
 
 const firstItem: DetailedProductItem = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -32,13 +35,19 @@ function command(
     proLaboreCents: 0,
     taxRateBasisPoints: 0,
     cardFeeRateBasisPoints: 0,
-    promotionMarginBasisPoints: 1500,
     items: [firstItem],
     ...overrides,
   };
 }
 
 describe("calculateDetailedDiagnosis", () => {
+  it("keeps the internal attention band at 20%", () => {
+    expect(DETAILED_ATTENTION_BAND_BASIS_POINTS).toBe(2_000);
+    expect(
+      calculateDetailedDiagnosis(command({ fixedMonthlyExpensesCents: 400 })),
+    ).toMatchObject({ finalMarginBasisPoints: 1000, verdict: "tight_margin" });
+  });
+
   it("keeps item economics but hides every mix-dependent result when partial", () => {
     const result = calculateDetailedDiagnosis(
       command({
@@ -51,6 +60,10 @@ describe("calculateDetailedDiagnosis", () => {
       isPartial: true,
       missingVolumeItemIds: [secondItem.id],
       monthlyGrossRevenueCents: null,
+      monthlyFeeAmountCents: null,
+      monthlyVariableCostCents: null,
+      monthlyNetRevenueCents: null,
+      monthlyCostCents: null,
       monthlyContributionCents: null,
       monthlyResultCents: null,
       mixContributionMarginBasisPoints: null,
@@ -101,6 +114,10 @@ describe("calculateDetailedDiagnosis", () => {
       effectiveFixedCostCents: 500,
       isPartial: false,
       monthlyGrossRevenueCents: 0,
+      monthlyFeeAmountCents: 0,
+      monthlyVariableCostCents: 0,
+      monthlyNetRevenueCents: 0,
+      monthlyCostCents: 500,
       monthlyContributionCents: 0,
       monthlyResultCents: -500,
       mixContributionMarginBasisPoints: null,
@@ -140,6 +157,10 @@ describe("calculateDetailedDiagnosis", () => {
 
     expect(result).toMatchObject({
       monthlyGrossRevenueCents: 5000,
+      monthlyFeeAmountCents: 0,
+      monthlyVariableCostCents: 2500,
+      monthlyNetRevenueCents: 5000,
+      monthlyCostCents: 3000,
       monthlyContributionCents: 2500,
       monthlyResultCents: 2000,
       mixContributionMarginBasisPoints: 5000,

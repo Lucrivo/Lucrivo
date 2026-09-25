@@ -54,7 +54,6 @@ const validInput: DetailedDiagnosisInput = {
   proLabore: "",
   taxRate: "6",
   cardFeeRate: "2",
-  promotionMarginRate: "15",
   items: [
     {
       id: "11111111-1111-4111-8111-111111111111",
@@ -90,7 +89,6 @@ const command: DetailedDiagnosisCommand = {
   proLaboreCents: 0,
   taxRateBasisPoints: 600,
   cardFeeRateBasisPoints: 200,
-  promotionMarginBasisPoints: 1500,
   items: [
     {
       id: validInput.items[0].id,

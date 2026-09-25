@@ -13,21 +13,20 @@ import { buildServiceReportSnapshot } from "@/modules/reports/domain/build-servi
 import { calculateProductReport } from "@/modules/reports/domain/calculate-product-report";
 import { calculateServiceReport } from "@/modules/reports/domain/calculate-service-report";
 
-const { createAdminClient, getOwnedReport, notFound, requireUser } = vi.hoisted(
-  () => ({
-    createAdminClient: vi.fn(),
+const { getBillingOverview, getOwnedReport, notFound, requireUser } =
+  vi.hoisted(() => ({
+    getBillingOverview: vi.fn(),
     getOwnedReport: vi.fn(),
     notFound: vi.fn(() => {
       throw new Error("NEXT_NOT_FOUND");
     }),
     requireUser: vi.fn(),
-  }),
-);
+  }));
 
 vi.mock("next/navigation", () => ({ notFound }));
 vi.mock("@/modules/auth/services/require-user", () => ({ requireUser }));
-vi.mock("@/infrastructure/database/supabase/clients/admin.client", () => ({
-  createAdminClient,
+vi.mock("@/modules/billing/services/get-billing-overview.service", () => ({
+  getBillingOverview,
 }));
 vi.mock("@/modules/reports/services/get-report.service", () => ({
   getOwnedReport,
@@ -36,6 +35,9 @@ vi.mock("@/modules/reports/services/get-report.service", () => ({
     const parsed = Number(value);
     return Number.isSafeInteger(parsed) ? parsed : null;
   },
+}));
+vi.mock("@/modules/reports/components/report-management", () => ({
+  ReportManagement: () => <div>Gerenciar relatório</div>,
 }));
 import ReportPage from "./page";
 
@@ -96,7 +98,6 @@ const detailedCommand: DetailedDiagnosisCommand = {
   proLaboreCents: 0,
   taxRateBasisPoints: 600,
   cardFeeRateBasisPoints: 200,
-  promotionMarginBasisPoints: 1_500,
   items: [
     {
       id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
@@ -117,18 +118,22 @@ const detailedSnapshot = buildDetailedReportSnapshot(
 
 describe("ReportPage", () => {
   const supabase = { from: vi.fn() };
-  const admin = { from: vi.fn() };
   const snapshot = legacyServiceSnapshot;
 
   beforeEach(() => {
     vi.clearAllMocks();
     requireUser.mockResolvedValue({ userId: "trusted-user", supabase });
-    createAdminClient.mockReturnValue(admin);
+    getBillingOverview.mockResolvedValue({
+      status: "success",
+      overview: { tier: "paid" },
+    });
     getOwnedReport.mockResolvedValue({
       status: "found",
       report: {
         id: 42,
         createdAt: "2026-08-28T22:30:00.000Z",
+        updatedAt: "2026-08-28T22:30:00.000Z",
+        version: 0,
         snapshot,
       },
     });
@@ -145,7 +150,6 @@ describe("ReportPage", () => {
     expect(requireUser).toHaveBeenCalledOnce();
     expect(getOwnedReport).toHaveBeenCalledWith({
       supabase,
-      admin,
       userId: "trusted-user",
       diagnosisId: "42",
     });
@@ -157,6 +161,8 @@ describe("ReportPage", () => {
       report: {
         id: 84,
         createdAt: "2026-08-31T15:00:00.000Z",
+        updatedAt: "2026-08-31T15:00:00.000Z",
+        version: 0,
         snapshot: currentProductSnapshot,
       },
     });
@@ -174,6 +180,8 @@ describe("ReportPage", () => {
       report: {
         id: 168,
         createdAt: "2026-09-17T15:00:00.000Z",
+        updatedAt: "2026-09-17T15:00:00.000Z",
+        version: 0,
         snapshot: detailedSnapshot,
       },
     });
@@ -181,7 +189,7 @@ describe("ReportPage", () => {
     await renderPage("168");
 
     expect(
-      screen.getByRole("heading", { name: "Resultado detalhado do seu mix" }),
+      screen.getByRole("heading", { name: "Resultado dos seus produtos" }),
     ).toBeVisible();
     expect(
       screen.queryByText("Resultado do seu diagnóstico"),
@@ -203,20 +211,6 @@ describe("ReportPage", () => {
       ReportPage({ params: Promise.resolve({ id: "42" }) }),
     ).rejects.toThrow("NEXT_NOT_FOUND");
     expect(notFound).toHaveBeenCalledOnce();
-  });
-
-  it("renders an upgrade card for an owned report hidden by RLS", async () => {
-    getOwnedReport.mockResolvedValue({ status: "locked" });
-
-    await renderPage();
-
-    expect(
-      screen.getByRole("heading", { name: "Relatório bloqueado" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Reativar acesso" }),
-    ).toHaveAttribute("href", "/billing");
-    expect(notFound).not.toHaveBeenCalled();
   });
 
   it("renders a stable unavailable panel for an invalid owned snapshot", async () => {

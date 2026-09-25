@@ -606,7 +606,7 @@ const validDetailedProductSnapshot = {
   currency: "BRL",
   unit: "mix",
   policy: {
-    promotionMarginBasisPoints: 1500,
+    attentionBandBasisPoints: 2000,
     concentrationThresholdBasisPoints: 4500,
     weeklyDivisorHundredths: 433,
     operatingDaysPerWeek: 6,
@@ -620,7 +620,6 @@ const validDetailedProductSnapshot = {
     proLaboreCents: 0,
     taxRateBasisPoints: 0,
     cardFeeRateBasisPoints: 0,
-    promotionMarginBasisPoints: 1500,
     items: [
       {
         id: "11111111-1111-4111-8111-111111111111",
@@ -649,11 +648,14 @@ const validDetailedProductSnapshot = {
         monthlyGrossRevenueCents: 1000,
         monthlyContributionCents: 500,
         breakEvenUnitPriceCents: 500,
-        promotionFloorCents: 589,
         directLoss: false,
       },
     ],
     monthlyGrossRevenueCents: 1000,
+    monthlyFeeAmountCents: 0,
+    monthlyVariableCostCents: 500,
+    monthlyNetRevenueCents: 1000,
+    monthlyCostCents: 700,
     monthlyContributionCents: 500,
     monthlyResultCents: 300,
     mixContributionMarginBasisPoints: 5000,
@@ -662,6 +664,8 @@ const validDetailedProductSnapshot = {
     verdict: "adequate_margin",
     priority: "volume",
   },
+  executiveSummary,
+  sections: sections.slice(0, 4),
   guidance: [],
 };
 

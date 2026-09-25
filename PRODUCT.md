@@ -60,8 +60,14 @@ financeiras, identifica a principal correção, apresenta metas aplicáveis e
 permite simular descontos. O detalhado consolida o mix e também mostra a
 contribuição e as referências de cada item.
 
-Os diagnósticos confirmados são salvos como registros históricos imutáveis e
-podem ser reabertos na biblioteca privada de relatórios.
+Os diagnósticos confirmados podem ser reabertos na biblioteca privada de
+relatórios. Relatórios gerados durante uma assinatura continuam disponíveis
+depois do fim do acesso. Clientes com plano pago podem editar os dados com uma
+prévia calculada em tempo real e escolher entre substituir o relatório atual ou
+salvar uma nova cópia. A substituição preserva o identificador e a data de
+criação do relatório; a exclusão explícita é lógica e o remove da biblioteca.
+Snapshots legados continuam sendo lidos com as regras da versão em que foram
+criados.
 
 ## Capabilities and Constraints
 
@@ -73,6 +79,9 @@ podem ser reabertos na biblioteca privada de relatórios.
 - Relatórios privados com resumo executivo, números principais, explicações e
   simulação de desconto.
 - Histórico paginado de diagnósticos pertencentes ao usuário autenticado.
+- Edição de relatórios compatíveis para assinantes pagos, com substituição ou
+  salvamento de uma nova cópia.
+- Exclusão lógica de relatórios pelo proprietário.
 - Valores monetários apresentados em real brasileiro (`BRL`) e conteúdo de
   interface em português brasileiro.
 - Faixa interna de atenção abaixo de R$ 20 a cada R$ 100 para produto e

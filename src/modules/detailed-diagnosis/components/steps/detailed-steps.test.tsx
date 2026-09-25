@@ -6,8 +6,9 @@ import type { DetailedProductItemInput } from "../../types";
 import { createInitialDetailedWizardState } from "../detailed-wizard-state";
 import { DetailedFeesStep } from "./detailed-fees-step";
 import { DetailedFixedExpensesStep } from "./detailed-fixed-expenses-step";
-import { DetailedItemBasicsStep } from "./detailed-item-basics-step";
 import { DetailedItemCompleteStep } from "./detailed-item-complete-step";
+import { DetailedItemNameStep } from "./detailed-item-name-step";
+import { DetailedItemVolumeStep } from "./detailed-item-volume-step";
 import { DetailedOwnerCompensationStep } from "./detailed-owner-compensation-step";
 import { DetailedProductCostsStep } from "./detailed-product-costs-step";
 import { DetailedProductionCostsStep } from "./detailed-production-costs-step";
@@ -79,45 +80,55 @@ describe("detailed common steps", () => {
     ).toBeEnabled();
   });
 
-  it("makes global fees and the promotion simulation explicit", () => {
+  it("makes both global fees explicit without a promotion field", () => {
     render(<DetailedFeesStep state={productState()} dispatch={vi.fn()} />);
 
-    expect(
-      screen.getByText(/se aplicam igualmente a todos os itens/i),
-    ).toBeVisible();
     expect(
       screen.getByLabelText("Qual porcentagem da venda vai para impostos?"),
     ).toBeEnabled();
     expect(
-      screen.getByLabelText("Margem mínima para simular promoções"),
-    ).toHaveValue("15");
+      screen.getByLabelText(
+        "Qual porcentagem fica com o cartão ou a plataforma?",
+      ),
+    ).toBeEnabled();
+    expect(
+      screen.queryByLabelText(/margem mínima para simular promoções/i),
+    ).not.toBeInTheDocument();
   });
 
-  it("shows the approved optional-volume guidance next to item basics", () => {
-    render(
-      <DetailedItemBasicsStep state={productState()} dispatch={vi.fn()} />,
+  it("separates the item name and shared optional-volume guidance", () => {
+    const state = productState();
+    const { rerender } = render(
+      <DetailedItemNameStep state={state} dispatch={vi.fn()} />,
     );
 
     expect(screen.getByLabelText("Nome do produto")).toBeEnabled();
-    expect(screen.getByLabelText("Preço de venda por unidade")).toBeEnabled();
     expect(
-      screen.getByLabelText("Quantas unidades você vende por mês? (Opcional)"),
+      screen.queryByLabelText("Por quanto você vende cada unidade?"),
+    ).not.toBeInTheDocument();
+
+    rerender(<DetailedItemVolumeStep state={state} dispatch={vi.fn()} />);
+    expect(
+      screen.getByLabelText("Quantas unidades você vende por mês?"),
     ).toBeEnabled();
+    expect(screen.getByText("Opcional")).toBeVisible();
     expect(
-      screen.getByText(
-        "Se você já vende este item, informe a média mensal. Digite 0 se não vendeu nenhuma unidade. Se ainda não sabe ou quer descobrir quanto precisa vender, deixe em branco — o resultado será parcial e a meta aparecerá apenas como referência.",
-      ),
+      screen.getByText(/Digite 0 se não vendeu nenhuma unidade/),
     ).toBeVisible();
   });
 });
 
 describe("category-specific detailed costs", () => {
-  it("keeps Product focused on resale purchase and packaging costs", () => {
+  it("keeps Product focused on shared resale cost and sale price", () => {
     const state = productState();
     render(<DetailedProductCostsStep state={state} dispatch={vi.fn()} />);
 
-    expect(screen.getByText(/produto para revenda/i)).toBeVisible();
-    expect(screen.getByLabelText("Custo de compra por unidade")).toBeEnabled();
+    expect(
+      screen.getByLabelText("Quanto você paga ao fornecedor por unidade?"),
+    ).toBeEnabled();
+    expect(
+      screen.getByLabelText("Por quanto você vende cada unidade?"),
+    ).toBeEnabled();
     expect(screen.getByLabelText("Embalagem por unidade")).toBeEnabled();
     expect(screen.queryByText(/ingrediente/i)).not.toBeInTheDocument();
   });
@@ -138,10 +149,19 @@ describe("category-specific detailed costs", () => {
     expect(
       screen.getByRole("group", { name: "Ingredientes da receita" }),
     ).toBeVisible();
-    expect(screen.getByLabelText("Nome do ingrediente 1")).toBeEnabled();
-    expect(
-      screen.getByRole("button", { name: "Remover ingrediente 1" }),
-    ).toBeDisabled();
+    expect(screen.getByLabelText("Nome do ingrediente")).toHaveValue(
+      "Ingrediente 1",
+    );
+    expect(screen.queryByLabelText("Quantidade usada")).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Continuar com Ingrediente 1" }),
+    );
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "confirmIngredientName",
+      itemId: "item-1",
+      ingredientId: "ingredient-1",
+    });
 
     await user.click(
       screen.getByRole("radio", { name: /custo total por unidade/i }),
@@ -167,7 +187,10 @@ describe("category-specific detailed costs", () => {
       />,
     );
     expect(
-      screen.getByLabelText("Custo total por unidade pronta"),
+      screen.getByLabelText("Quanto custa produzir uma unidade?"),
+    ).toBeEnabled();
+    expect(
+      screen.getByLabelText("Por quanto você vende cada unidade?"),
     ).toBeEnabled();
     expect(
       screen.queryByText("Ingredientes da receita"),
@@ -182,6 +205,7 @@ describe("category-specific detailed costs", () => {
     if (item.kind !== "manufacturing") throw new Error("unexpected item");
     const withTwo = {
       ...state,
+      pendingIngredientNameId: null,
       values: {
         ...state.values,
         items: [
@@ -212,9 +236,7 @@ describe("category-specific detailed costs", () => {
       createId: expect.any(Function),
     });
 
-    await user.click(
-      screen.getByRole("button", { name: "Remover ingrediente 2" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Remover Açúcar" }));
     expect(dispatch).toHaveBeenCalledWith({
       type: "removeIngredient",
       itemId: "item-1",
@@ -232,7 +254,6 @@ describe("detailed item completion and review", () => {
     const withTwo = {
       ...state,
       phase: "itemComplete" as const,
-      itemSubstep: "complete" as const,
       values: {
         ...state.values,
         items: [

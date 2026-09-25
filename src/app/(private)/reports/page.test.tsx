@@ -145,8 +145,16 @@ describe("ReportsPage", () => {
       expect.objectContaining({ cursor: "valid-cursor" }),
     );
     expect(
-      screen.getByRole("link", { name: "Ver diagnósticos anteriores" }),
-    ).toHaveAttribute("href", "/reports?cursor=next-opaque-cursor");
+      screen.getByRole("link", { name: "Primeira página" }),
+    ).toHaveAttribute("href", "/reports");
+    expect(screen.getByRole("link", { name: "Anterior" })).toHaveAttribute(
+      "href",
+      "/reports",
+    );
+    expect(screen.getByRole("link", { name: "Próxima" })).toHaveAttribute(
+      "href",
+      expect.stringContaining("/reports?cursor=next-opaque-cursor"),
+    );
   });
 
   it.each([{ cursor: "malformed" }, { cursor: ["valid-cursor", "another"] }])(

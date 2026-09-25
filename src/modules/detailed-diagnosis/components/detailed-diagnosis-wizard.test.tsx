@@ -63,15 +63,9 @@ describe("DetailedDiagnosisWizard", () => {
     const { onBackToMode } = renderWizard();
     const user = userEvent.setup();
 
-    expect(screen.getByText("3 de 7")).toBeInTheDocument();
-    await user.type(
-      screen.getByLabelText("Gastos que existem todo mês"),
-      "inválido",
-    );
+    expect(screen.getByText("3 de 10")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "Informe um valor monetário válido",
-    );
+    expect(screen.getByRole("alert")).toHaveTextContent("Informe um nome");
 
     await user.click(screen.getByRole("button", { name: "Voltar" }));
     expect(onBackToMode).toHaveBeenCalledOnce();
@@ -90,10 +84,26 @@ describe("DetailedDiagnosisWizard", () => {
     renderWizard({ createDiagnosis });
     const user = userEvent.setup();
 
+    await user.type(screen.getByLabelText("Nome do produto"), "Camiseta");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.type(
+      screen.getByLabelText("Quanto você paga ao fornecedor por unidade?"),
+      "40",
+    );
+    await user.type(
+      screen.getByLabelText("Por quanto você vende cada unidade?"),
+      "100",
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+
     await user.type(
       screen.getByLabelText("Gastos que existem todo mês"),
       "1000",
     );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    expect(
+      screen.getByLabelText("Quantas unidades você vende por mês?"),
+    ).toBeEnabled();
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
@@ -109,11 +119,6 @@ describe("DetailedDiagnosisWizard", () => {
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
-    await user.type(screen.getByLabelText("Nome do produto"), "Camiseta");
-    await user.type(screen.getByLabelText("Preço de venda por unidade"), "100");
-    await user.click(screen.getByRole("button", { name: "Continuar" }));
-    await user.type(screen.getByLabelText("Custo de compra por unidade"), "40");
-    await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.click(
       screen.getByRole("button", { name: "Revisar diagnóstico" }),
     );
@@ -154,7 +159,6 @@ describe("DetailedDiagnosisWizard", () => {
     const state: DetailedWizardState = {
       ...initial,
       phase: "review",
-      itemSubstep: "complete",
       values: {
         ...initial.values,
         fixedMonthlyExpenses: "1000",
@@ -188,10 +192,174 @@ describe("DetailedDiagnosisWizard", () => {
       screen.getByRole("button", { name: "Gerar diagnóstico detalhado" }),
     );
 
-    const field = await screen.findByLabelText("Custo de compra por unidade");
+    const field = await screen.findByLabelText(
+      "Quanto você paga ao fornecedor por unidade?",
+    );
     expect(field).toHaveFocus();
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Revise o custo de compra.",
     );
+  });
+
+  it("focuses the ingredient collection when the recipe total is invalid", async () => {
+    let index = 0;
+    const initial = createInitialDetailedWizardState(
+      "production",
+      () => ids[index++] ?? ids[2],
+    );
+    const item = initial.values.items[0];
+    if (item.kind !== "manufacturing") throw new Error("unexpected item");
+    const state: DetailedWizardState = {
+      ...initial,
+      phase: "review",
+      values: {
+        ...initial.values,
+        fixedMonthlyExpenses: "1000",
+        taxRate: "6",
+        cardFeeRate: "3",
+        items: [
+          {
+            ...item,
+            name: "Bolo",
+            unitSalePrice: "100",
+            ingredients: [
+              {
+                ...item.ingredients[0],
+                name: "Farinha",
+                quantity: "1",
+                unit: "kg",
+                unitCost: "0",
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const createDiagnosis = vi
+      .fn<CreateDetailedDiagnosisAction>()
+      .mockResolvedValue({
+        status: "error",
+        error: "invalid_input",
+        fieldErrors: {
+          "items.0.ingredients": [
+            "A receita precisa ter pelo menos um ingrediente com custo maior que zero.",
+          ],
+        },
+      });
+    renderWizard({ state, createDiagnosis });
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByRole("button", { name: "Gerar diagnóstico detalhado" }),
+    );
+
+    expect(
+      await screen.findByRole("alert", { name: "Erro nos ingredientes" }),
+    ).toHaveFocus();
+  });
+
+  it("adds another Product without repeating business fields", async () => {
+    const initial = createInitialDetailedWizardState(
+      "product",
+      (() => {
+        let index = 0;
+        return () => ids[index++] ?? ids[2];
+      })(),
+    );
+    const state: DetailedWizardState = {
+      ...initial,
+      phase: "itemComplete",
+      values: {
+        ...initial.values,
+        fixedMonthlyExpenses: "1000",
+        taxRate: "6",
+        cardFeeRate: "3",
+        items: [
+          {
+            ...initial.values.items[0],
+            kind: "resale",
+            name: "Caneca",
+            unitSalePrice: "30",
+            purchaseUnitCost: "10",
+          },
+        ],
+      },
+    };
+    renderWizard({ state });
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByRole("button", { name: "Adicionar outro produto" }),
+    );
+    await user.type(screen.getByLabelText("Nome do produto"), "Caderno");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.type(
+      screen.getByLabelText("Quanto você paga ao fornecedor por unidade?"),
+      "12",
+    );
+    await user.type(
+      screen.getByLabelText("Por quanto você vende cada unidade?"),
+      "35",
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+
+    expect(
+      screen.getByLabelText("Quantas unidades você vende por mês?"),
+    ).toBeEnabled();
+    expect(
+      screen.queryByLabelText("Gastos que existem todo mês"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("switch", {
+        name: "Você quer incluir o valor que recebe pelo seu trabalho?",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Qual porcentagem da venda vai para impostos?"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("follows the aligned Production order with summarized cost", async () => {
+    let idIndex = 0;
+    const initial = createInitialDetailedWizardState(
+      "production",
+      () => ids[idIndex++] ?? ids[2],
+    );
+    const item = initial.values.items[0];
+    if (item.kind !== "manufacturing") throw new Error("unexpected item");
+    renderWizard({
+      state: {
+        ...initial,
+        values: {
+          ...initial.values,
+          items: [{ ...item, costMode: "summarized" }],
+        },
+      },
+    });
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Nome da produção"), "Bolo");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    expect(
+      screen.getByLabelText("Quanto custa produzir uma unidade?"),
+    ).toBeEnabled();
+    expect(
+      screen.getByLabelText("Por quanto você vende cada unidade?"),
+    ).toBeEnabled();
+    await user.type(
+      screen.getByLabelText("Quanto custa produzir uma unidade?"),
+      "20",
+    );
+    await user.type(
+      screen.getByLabelText("Por quanto você vende cada unidade?"),
+      "50",
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    expect(screen.getByLabelText("Gastos que existem todo mês")).toBeEnabled();
+    await user.type(screen.getByLabelText("Gastos que existem todo mês"), "0");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    expect(
+      screen.getByLabelText("Quantas unidades você vende por mês?"),
+    ).toBeEnabled();
   });
 });

@@ -18,7 +18,7 @@ type ReportLanguageProfile = {
 type ReportVersionIdentity = Pick<
   ReportSnapshot,
   "category" | "schemaVersion" | "calculationVersion" | "contentVersion"
->;
+> & { analysisMode?: "quick" | "detailed" };
 
 const legacyReportLanguage = {
   isPlainLanguage: false,
@@ -121,6 +121,7 @@ function usesPlainLanguage(snapshot: ReportVersionIdentity): boolean {
 function getReportLanguageProfile(
   snapshot: ReportVersionIdentity,
 ): ReportLanguageProfile {
+  if (snapshot.analysisMode === "detailed") return currentUnitReportLanguage;
   if (
     (snapshot.category === "product" || snapshot.category === "production") &&
     ((snapshot.schemaVersion === 2 &&

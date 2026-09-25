@@ -95,8 +95,26 @@ function optionalMargin(value: number | null): string {
 
 function DetailedReportListCard({ report }: { report: OwnedReportSummary }) {
   const category = categoryLabels[report.businessCategory];
-  const itemLabel =
-    report.businessCategory === "product" ? "produto" : "produção";
+  const scenario =
+    scenarioLabels[report.scenario as ReportScenario] ?? report.scenario;
+  const language = getReportLanguageProfile({
+    category: report.businessCategory,
+    schemaVersion: report.schemaVersion,
+    calculationVersion: report.calculationVersion,
+    contentVersion: report.contentVersion,
+    analysisMode: report.analysisMode,
+  });
+  const verdict =
+    verdictPresentation[report.verdict as ReportVerdict] ??
+    verdictPresentation.missing_price;
+  const VerdictIcon = verdict.icon;
+  const verdictLabel =
+    language.verdictLabels[report.verdict as ReportVerdict] ??
+    language.verdictLabels.missing_price;
+  const title =
+    report.businessCategory === "product"
+      ? "Análise de produtos"
+      : "Análise de produções";
   const itemCount = report.itemCount ?? 0;
   const resultAvailable = report.monthlyResultCents !== null;
   const marginAvailable = report.realMarginBasisPoints !== null;
@@ -104,7 +122,7 @@ function DetailedReportListCard({ report }: { report: OwnedReportSummary }) {
   return (
     <Card
       role="article"
-      aria-label={`Diagnóstico detalhado de ${category}`}
+      aria-label={`${title} — ${scenario}`}
       className="group border-border/70 hover:border-primary/30 relative h-full overflow-hidden py-0 shadow-sm transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none"
     >
       <div
@@ -116,25 +134,22 @@ function DetailedReportListCard({ report }: { report: OwnedReportSummary }) {
           <div className="grid gap-2">
             <div className="flex flex-wrap gap-2">
               <Badge variant="info">{category}</Badge>
-              <Badge variant="outline">Diagnóstico detalhado</Badge>
+              <Badge variant="outline">{scenario}</Badge>
             </div>
-            <h2 className="text-xl font-semibold tracking-tight">
-              Resultado do mix
-            </h2>
+            <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
           </div>
-          <Badge variant={report.isPartial ? "warning" : "success"}>
-            {report.isPartial ? (
-              <CircleAlertIcon aria-hidden="true" />
-            ) : (
-              <CircleCheckIcon aria-hidden="true" />
-            )}
-            {report.isPartial ? "Parcial" : "Completo"}
+          <Badge variant={verdict.badge}>
+            <VerdictIcon aria-hidden="true" />
+            {verdictLabel}
           </Badge>
         </div>
         <p className="text-muted-foreground flex items-center gap-2 text-xs">
           <CalendarDaysIcon aria-hidden="true" className="size-3.5" />
-          {formatReportDate(report.createdAt)} · {itemCount} {itemLabel}
-          {itemCount === 1 ? "" : "s"}
+          {formatReportDate(report.createdAt)} ·{" "}
+          <span>
+            {itemCount}{" "}
+            {itemCount === 1 ? "item analisado" : "itens analisados"}
+          </span>
         </p>
       </CardHeader>
 
@@ -162,7 +177,8 @@ function DetailedReportListCard({ report }: { report: OwnedReportSummary }) {
           </dl>
         ) : (
           <p className="text-muted-foreground text-sm">
-            Complete os volumes pendentes para ver o resultado mensal do mix.
+            Complete os volumes pendentes para ver o resultado mensal do
+            conjunto de itens.
           </p>
         )}
 
@@ -192,6 +208,7 @@ function ReportListCard({ report }: { report: OwnedReportSummary }) {
     schemaVersion: report.schemaVersion,
     calculationVersion: report.calculationVersion,
     contentVersion: report.contentVersion,
+    analysisMode: report.analysisMode,
   });
   const category = categoryLabels[report.businessCategory];
   const scenario =

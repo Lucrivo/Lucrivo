@@ -134,7 +134,7 @@ select has_function(
   'create_detailed_diagnosis_report',
   array[
     'uuid', 'business_category', 'bigint', 'boolean', 'bigint', 'integer',
-    'integer', 'integer', 'jsonb', 'smallint', 'smallint', 'smallint',
+    'integer', 'jsonb', 'smallint', 'smallint', 'smallint',
     'bigint', 'bigint', 'integer', 'text', 'text', 'integer', 'boolean',
     'jsonb'
   ],
@@ -146,7 +146,7 @@ select ok(
     from pg_proc
     where oid = 'public.create_detailed_diagnosis_report(
       uuid, public.business_category, bigint, boolean, bigint, integer,
-      integer, integer, jsonb, smallint, smallint, smallint, bigint, bigint,
+      integer, jsonb, smallint, smallint, smallint, bigint, bigint,
       integer, text, text, integer, boolean, jsonb
     )'::regprocedure
   ),
@@ -158,7 +158,7 @@ select ok(
     from pg_proc
     where oid = 'public.create_detailed_diagnosis_report(
       uuid, public.business_category, bigint, boolean, bigint, integer,
-      integer, integer, jsonb, smallint, smallint, smallint, bigint, bigint,
+      integer, jsonb, smallint, smallint, smallint, bigint, bigint,
       integer, text, text, integer, boolean, jsonb
     )'::regprocedure
   ) = array['search_path=""']::text[],
@@ -169,7 +169,7 @@ select ok(
     'anon',
     'public.create_detailed_diagnosis_report(
       uuid, public.business_category, bigint, boolean, bigint, integer,
-      integer, integer, jsonb, smallint, smallint, smallint, bigint, bigint,
+      integer, jsonb, smallint, smallint, smallint, bigint, bigint,
       integer, text, text, integer, boolean, jsonb
     )',
     'execute'
@@ -178,7 +178,7 @@ select ok(
     'authenticated',
     'public.create_detailed_diagnosis_report(
       uuid, public.business_category, bigint, boolean, bigint, integer,
-      integer, integer, jsonb, smallint, smallint, smallint, bigint, bigint,
+      integer, jsonb, smallint, smallint, smallint, bigint, bigint,
       integer, text, text, integer, boolean, jsonb
     )',
     'execute'
@@ -245,7 +245,6 @@ as $$
       'monthlyGrossRevenueCents', 10000,
       'monthlyContributionCents', 4200,
       'breakEvenUnitPriceCents', 610,
-      'promotionFloorCents', 782,
       'directLoss', false
     ),
     jsonb_build_object(
@@ -265,8 +264,101 @@ as $$
       'monthlyGrossRevenueCents', 10000,
       'monthlyContributionCents', 4200,
       'breakEvenUnitPriceCents', 1220,
-      'promotionFloorCents', 1563,
       'directLoss', false
+    )
+  );
+$$;
+
+create function pg_temp.detailed_executive_summary(p_headline text)
+returns jsonb
+language sql
+immutable
+as $$
+  select jsonb_build_object(
+    'headline', p_headline,
+    'introduction', 'Veja o resultado geral e os próximos passos.',
+    'verdict', jsonb_build_object(
+      'label', 'Lucro',
+      'body', 'O mês terminou positivo.',
+      'tone', 'positive'
+    ),
+    'facts', jsonb_build_array(
+      jsonb_build_object(
+        'key', 'margin',
+        'currentLabel', 'Resultado do mês',
+        'currentValue', 'R$ 83,00',
+        'referenceLabel', 'Quanto sobra a cada R$ 100',
+        'referenceValue', '41,5%'
+      ),
+      jsonb_build_object(
+        'key', 'price',
+        'currentLabel', 'Faturamento atual',
+        'currentValue', 'R$ 200,00',
+        'referenceLabel', 'Quanto precisa vender para cobrir os gastos',
+        'referenceValue', 'R$ 2,39'
+      )
+    ),
+    'priority', jsonb_build_object(
+      'label', 'Faturamento do mês',
+      'body', 'Acompanhe o resultado e preserve as condições atuais.'
+    ),
+    'answers', jsonb_build_array(
+      jsonb_build_object(
+        'key', 'profitability',
+        'question', 'Estou ganhando dinheiro?',
+        'answer', 'Sim.'
+      ),
+      jsonb_build_object(
+        'key', 'price_sufficiency',
+        'question', 'Meus preços pagam os gastos?',
+        'answer', 'Sim.'
+      ),
+      jsonb_build_object(
+        'key', 'immediate_action',
+        'question', 'O que preciso fazer agora?',
+        'answer', 'Acompanhe o resultado.'
+      )
+    )
+  );
+$$;
+
+create function pg_temp.detailed_sections()
+returns jsonb
+language sql
+immutable
+as $$
+  select jsonb_build_array(
+    jsonb_build_object(
+      'key', 'break_even',
+      'title', 'Seus menores preços sem prejuízo',
+      'body', 'Valores por item.',
+      'emphasisLabel', 'Itens analisados',
+      'emphasisValue', '2',
+      'tone', 'neutral'
+    ),
+    jsonb_build_object(
+      'key', 'hidden_cost',
+      'title', 'O que sai das vendas',
+      'body', 'Custos e cobranças das vendas.',
+      'emphasisLabel', 'Receita líquida',
+      'emphasisValue', 'R$ 184,00',
+      'tone', 'neutral'
+    ),
+    jsonb_build_object(
+      'key', 'margin_diagnosis',
+      'title', 'Quanto sobra no mês',
+      'body', 'Resultado depois dos gastos.',
+      'emphasisLabel', 'Lucro',
+      'emphasisValue', 'R$ 83,00',
+      'tone', 'positive'
+    ),
+    jsonb_build_object(
+      'key', 'sales_goal',
+      'title', 'Quanto você precisa vender',
+      'body', 'Referência para pagar os gastos mensais.',
+      'emphasisLabel', 'Faturamento necessário',
+      'emphasisValue', 'R$ 2,39',
+      'tone', 'neutral'
     )
   );
 $$;
@@ -286,7 +378,7 @@ as $$
     'currency', 'BRL',
     'unit', 'mix',
     'policy', jsonb_build_object(
-      'promotionMarginBasisPoints', 1500,
+      'attentionBandBasisPoints', 2000,
       'concentrationThresholdBasisPoints', 4500,
       'weeklyDivisorHundredths', 433,
       'operatingDaysPerWeek', 6,
@@ -300,7 +392,6 @@ as $$
       'proLaboreCents', 0,
       'taxRateBasisPoints', 600,
       'cardFeeRateBasisPoints', 200,
-      'promotionMarginBasisPoints', 1500,
       'items', (
         select jsonb_agg(
           item - array[
@@ -308,7 +399,7 @@ as $$
             'netUnitRevenueCents', 'unitContributionCents',
             'contributionMarginBasisPoints', 'monthlyGrossRevenueCents',
             'monthlyContributionCents', 'breakEvenUnitPriceCents',
-            'promotionFloorCents', 'directLoss'
+            'directLoss'
           ]
           order by (item ->> 'position')::integer
         )
@@ -332,7 +423,6 @@ as $$
             'monthlyGrossRevenueCents', item -> 'monthlyGrossRevenueCents',
             'monthlyContributionCents', item -> 'monthlyContributionCents',
             'breakEvenUnitPriceCents', item -> 'breakEvenUnitPriceCents',
-            'promotionFloorCents', item -> 'promotionFloorCents',
             'directLoss', item -> 'directLoss'
           )
           order by (item ->> 'position')::integer
@@ -340,6 +430,10 @@ as $$
         from jsonb_array_elements(pg_temp.detailed_items()) as item
       ),
       'monthlyGrossRevenueCents', 20000,
+      'monthlyFeeAmountCents', 1600,
+      'monthlyVariableCostCents', 10000,
+      'monthlyNetRevenueCents', 18400,
+      'monthlyCostCents', 10100,
       'monthlyContributionCents', 8400,
       'monthlyResultCents', 8300,
       'mixContributionMarginBasisPoints', 4200,
@@ -348,6 +442,10 @@ as $$
       'verdict', 'adequate_margin',
       'priority', 'volume'
     ),
+    'executiveSummary', pg_temp.detailed_executive_summary(
+      'Seus produtos dão lucro?'
+    ),
+    'sections', pg_temp.detailed_sections(),
     'guidance', jsonb_build_array()
   );
 $$;
@@ -389,7 +487,6 @@ as $$
       'monthlyGrossRevenueCents', 6000,
       'monthlyContributionCents', 4220,
       'breakEvenUnitPriceCents', 810,
-      'promotionFloorCents', 1020,
       'directLoss', false
     )
   );
@@ -410,7 +507,7 @@ as $$
     'currency', 'BRL',
     'unit', 'mix',
     'policy', jsonb_build_object(
-      'promotionMarginBasisPoints', 1500,
+      'attentionBandBasisPoints', 2000,
       'concentrationThresholdBasisPoints', 4500,
       'weeklyDivisorHundredths', 433,
       'operatingDaysPerWeek', 6,
@@ -424,7 +521,6 @@ as $$
       'proLaboreCents', 0,
       'taxRateBasisPoints', 600,
       'cardFeeRateBasisPoints', 200,
-      'promotionMarginBasisPoints', 1500,
       'items', (
         select jsonb_agg(
           item - array[
@@ -432,7 +528,7 @@ as $$
             'netUnitRevenueCents', 'unitContributionCents',
             'contributionMarginBasisPoints', 'monthlyGrossRevenueCents',
             'monthlyContributionCents', 'breakEvenUnitPriceCents',
-            'promotionFloorCents', 'directLoss'
+            'directLoss'
           ]
         )
         from jsonb_array_elements(pg_temp.production_items()) as item
@@ -455,13 +551,16 @@ as $$
             'monthlyGrossRevenueCents', item -> 'monthlyGrossRevenueCents',
             'monthlyContributionCents', item -> 'monthlyContributionCents',
             'breakEvenUnitPriceCents', item -> 'breakEvenUnitPriceCents',
-            'promotionFloorCents', item -> 'promotionFloorCents',
             'directLoss', item -> 'directLoss'
           )
         )
         from jsonb_array_elements(pg_temp.production_items()) as item
       ),
       'monthlyGrossRevenueCents', 6000,
+      'monthlyFeeAmountCents', 480,
+      'monthlyVariableCostCents', 1300,
+      'monthlyNetRevenueCents', 5520,
+      'monthlyCostCents', 1400,
       'monthlyContributionCents', 4220,
       'monthlyResultCents', 4120,
       'mixContributionMarginBasisPoints', 7033,
@@ -470,6 +569,10 @@ as $$
       'verdict', 'adequate_margin',
       'priority', 'volume'
     ),
+    'executiveSummary', pg_temp.detailed_executive_summary(
+      'Suas produções dão lucro?'
+    ),
+    'sections', pg_temp.detailed_sections(),
     'guidance', jsonb_build_array()
   );
 $$;
@@ -491,7 +594,6 @@ as $$
     0,
     600,
     200,
-    1500,
     p_items,
     1::smallint,
     1::smallint,
@@ -589,7 +691,6 @@ select lives_ok(
     0,
     600,
     200,
-    1500,
     pg_temp.production_items(),
     1::smallint,
     1::smallint,
@@ -675,13 +776,23 @@ select throws_ok(
   'invalid detailed report payload',
   'a mismatched detailed snapshot is rejected atomically'
 );
+select throws_ok(
+  $$ select pg_temp.create_detailed_report(
+    p_submission_id => '71000000-0000-4000-8000-000000000103',
+    p_report_snapshot => pg_temp.detailed_snapshot() - 'sections'
+  ) $$,
+  '22023',
+  'invalid detailed report payload',
+  'a detailed snapshot without report sections is rejected atomically'
+);
 select results_eq(
   $$
     select count(*)::bigint
     from public.diagnoses
     where submission_id in (
       '71000000-0000-4000-8000-000000000101',
-      '71000000-0000-4000-8000-000000000102'
+      '71000000-0000-4000-8000-000000000102',
+      '71000000-0000-4000-8000-000000000103'
     )
   $$,
   array[0::bigint],
@@ -693,12 +804,12 @@ select throws_ok(
     diagnosis_id, submission_id, user_id, category,
     fixed_monthly_expenses_cents, pro_labore_included, pro_labore_cents,
     tax_rate_basis_points, card_fee_rate_basis_points,
-    promotion_margin_basis_points, item_count
+    item_count
   ) values (
     999999,
     '71000000-0000-4000-8000-000000000999',
     '71000000-0000-4000-8000-000000000001',
-    'product', 0, false, 0, 0, 0, 1500, 1
+    'product', 0, false, 0, 0, 0, 1
   ) $$,
   '42501',
   null,
@@ -799,7 +910,7 @@ select throws_ok(
     diagnosis_id, submission_id, user_id, category,
     fixed_monthly_expenses_cents, pro_labore_included, pro_labore_cents,
     tax_rate_basis_points, card_fee_rate_basis_points,
-    promotion_margin_basis_points, item_count
+    item_count
   ) values (
     (
       select id from public.diagnoses
@@ -807,7 +918,7 @@ select throws_ok(
     ),
     '71000000-0000-4000-8000-000000000400',
     '71000000-0000-4000-8000-000000000001',
-    'product', -1, false, 0, 0, 0, 1500, 1
+    'product', -1, false, 0, 0, 0, 1
   ) $$,
   '23514',
   null,

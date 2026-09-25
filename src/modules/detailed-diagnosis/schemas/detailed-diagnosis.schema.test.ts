@@ -52,7 +52,6 @@ const validProductInput: DetailedDiagnosisInput = {
   proLabore: "texto ignorado",
   taxRate: "6",
   cardFeeRate: "2",
-  promotionMarginRate: "15",
   items: [product],
 };
 
@@ -72,7 +71,6 @@ describe("detailedDiagnosisSchema", () => {
       proLaboreCents: 0,
       taxRateBasisPoints: 600,
       cardFeeRateBasisPoints: 200,
-      promotionMarginBasisPoints: 1500,
     });
     expect(parsed.items[0]).toMatchObject({
       id: product.id,
@@ -109,6 +107,86 @@ describe("detailedDiagnosisSchema", () => {
         }),
       ],
     });
+  });
+
+  it("distinguishes a blank ingredient cost from an explicit zero", () => {
+    const blankCost = detailedDiagnosisSchema.safeParse({
+      ...validTechnicalSheetInput,
+      items: [
+        {
+          ...production,
+          ingredients: [{ ...production.ingredients[0], unitCost: "   " }],
+        },
+      ],
+    });
+
+    expect(blankCost.success).toBe(false);
+    if (blankCost.success) throw new Error("expected invalid ingredient cost");
+    expect(blankCost.error.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: ["items", 0, "ingredients", 0, "unitCost"],
+          message:
+            "Informe o custo unitário. Se este ingrediente não tiver custo, digite 0.",
+        }),
+      ]),
+    );
+
+    const explicitZero = validateDetailedDiagnosisPaths(
+      ["items.0.ingredients"],
+      {
+        ...validTechnicalSheetInput,
+        items: [
+          {
+            ...production,
+            ingredients: [
+              { ...production.ingredients[0], unitCost: "0" },
+              {
+                ...production.ingredients[0],
+                id: "44444444-4444-4444-8444-444444444444",
+                name: "Açúcar",
+                unitCost: "1",
+              },
+            ],
+          },
+        ],
+      },
+    );
+
+    expect(explicitZero).not.toHaveProperty("items.0.ingredients.0.unitCost");
+  });
+
+  it("reports the recipe total separately from the unit-cost format", () => {
+    const allZero = validateDetailedDiagnosisPaths(["items.0.ingredients"], {
+      ...validTechnicalSheetInput,
+      items: [
+        {
+          ...production,
+          ingredients: [{ ...production.ingredients[0], unitCost: "0" }],
+        },
+      ],
+    });
+    expect(allZero["items.0.ingredients"]).toEqual([
+      "A receita precisa ter pelo menos um ingrediente com custo maior que zero.",
+    ]);
+
+    const excessivePrecision = validateDetailedDiagnosisPaths(
+      ["items.0.ingredients"],
+      {
+        ...validTechnicalSheetInput,
+        items: [
+          {
+            ...production,
+            ingredients: [
+              { ...production.ingredients[0], unitCost: "1,12345" },
+            ],
+          },
+        ],
+      },
+    );
+    expect(excessivePrecision["items.0.ingredients.0.unitCost"]).toEqual([
+      "Informe um custo unitário válido com até quatro casas decimais.",
+    ]);
   });
 
   it("normalizes summarized manufacturing without inactive technical fields", () => {

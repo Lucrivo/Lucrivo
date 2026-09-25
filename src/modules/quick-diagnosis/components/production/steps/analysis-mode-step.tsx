@@ -22,7 +22,7 @@ const analysisModes = [
     value: "detailed",
     label: "Diagnóstico detalhado",
     detail:
-      "Analise uma ou mais produções com ficha técnica e o resultado do mix.",
+      "Analise uma ou mais produções com ficha técnica e o resultado geral.",
     icon: FactoryIcon,
   },
 ] satisfies ReadonlyArray<{

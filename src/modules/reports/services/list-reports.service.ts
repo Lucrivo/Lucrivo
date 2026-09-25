@@ -141,7 +141,8 @@ async function listOwnedReports({
     let query = supabase
       .from("diagnoses")
       .select(REPORT_SUMMARY_COLUMNS)
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      .is("deleted_at", null);
 
     if (decodedCursor) {
       query = query.or(

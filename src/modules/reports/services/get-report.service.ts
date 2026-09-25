@@ -9,7 +9,6 @@ import type { ReportSnapshot } from "../types";
 
 type GetOwnedReportInput = {
   supabase: SupabaseClient<Database>;
-  admin: SupabaseClient<Database>;
   userId: string;
   diagnosisId: string;
 };
@@ -17,13 +16,14 @@ type GetOwnedReportInput = {
 type OwnedReport = {
   id: number;
   createdAt: string;
+  updatedAt: string;
+  version: number;
   snapshot: ReportSnapshot;
 };
 
 type GetOwnedReportResult =
   | { status: "found"; report: OwnedReport }
   | { status: "not_found" }
-  | { status: "locked" }
   | {
       status: "unavailable";
       report: { id: number; createdAt: string };
@@ -38,7 +38,6 @@ function parseDiagnosisId(value: string): number | null {
 
 async function getOwnedReport({
   supabase,
-  admin,
   userId,
   diagnosisId,
 }: GetOwnedReportInput): Promise<GetOwnedReportResult> {
@@ -48,23 +47,15 @@ async function getOwnedReport({
   try {
     const { data, error } = await supabase
       .from("diagnoses")
-      .select("id, business_category, scenario, created_at, report_snapshot")
+      .select(
+        "id, business_category, scenario, created_at, updated_at, version, report_snapshot",
+      )
       .eq("id", parsedId)
       .eq("user_id", userId)
       .maybeSingle();
 
     if (error) return { status: "read_failed" };
-    if (!data) {
-      const { data: ownedLockedRow, error: ownershipError } = await admin
-        .from("diagnoses")
-        .select("id")
-        .eq("id", parsedId)
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (ownershipError) return { status: "read_failed" };
-      return ownedLockedRow ? { status: "locked" } : { status: "not_found" };
-    }
+    if (!data) return { status: "not_found" };
 
     try {
       const snapshot = parseReportSnapshot(data.report_snapshot);
@@ -77,7 +68,13 @@ async function getOwnedReport({
 
       return {
         status: "found",
-        report: { id: data.id, createdAt: data.created_at, snapshot },
+        report: {
+          id: data.id,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+          version: data.version,
+          snapshot,
+        },
       };
     } catch {
       return {

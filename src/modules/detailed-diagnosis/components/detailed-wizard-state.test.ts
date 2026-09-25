@@ -25,21 +25,31 @@ function productionState() {
   );
 }
 
+function phasesFrom(initial: ReturnType<typeof productState>) {
+  const phases = [initial.phase];
+  let state = initial;
+  while (state.phase !== "review") {
+    state = detailedWizardReducer(state, { type: "next" });
+    phases.push(state.phase);
+  }
+  return phases;
+}
+
 describe("createInitialDetailedWizardState", () => {
-  it("starts Product with one resale item and the approved promotion margin", () => {
+  it("starts Product with one resale item in the first-item journey", () => {
     const state = productState();
 
     expect(state).toMatchObject({
-      phase: "fixedExpenses",
-      itemSubstep: "basics",
+      phase: "itemName",
+      itemJourney: "first",
       activeItemId: "item-1",
       status: "editing",
+      pendingIngredientNameId: null,
       pendingRemovalItemId: null,
       submitError: null,
       values: {
         submissionId: "submission-1",
         category: "product",
-        promotionMarginRate: "15",
       },
     });
     expect(state.values.items).toEqual([
@@ -58,7 +68,6 @@ describe("createInitialDetailedWizardState", () => {
   it("starts Production in technical-sheet mode with one ingredient", () => {
     const state = productionState();
 
-    expect(state.values.promotionMarginRate).toBe("15");
     expect(state.values.items).toEqual([
       {
         id: "item-1",
@@ -76,7 +85,7 @@ describe("createInitialDetailedWizardState", () => {
         ingredients: [
           {
             id: "ingredient-1",
-            name: "",
+            name: "Ingrediente 1",
             quantity: "",
             unit: "",
             unitCost: "",
@@ -84,6 +93,7 @@ describe("createInitialDetailedWizardState", () => {
         ],
       },
     ]);
+    expect(state.pendingIngredientNameId).toBe("ingredient-1");
   });
 });
 
@@ -126,12 +136,12 @@ describe("detailedWizardReducer", () => {
       value: "Caneca",
     });
     const state = detailedWizardReducer(
-      { ...populated, phase: "itemComplete", itemSubstep: "complete" },
+      { ...populated, phase: "itemComplete" },
       { type: "addItem", createId: ids("item-2") },
     );
 
-    expect(state.phase).toBe("itemBasics");
-    expect(state.itemSubstep).toBe("basics");
+    expect(state.phase).toBe("itemName");
+    expect(state.itemJourney).toBe("additional");
     expect(state.activeItemId).toBe("item-2");
     expect(state.values.items).toHaveLength(2);
     expect(state.values.items[0].name).toBe("Caneca");
@@ -166,7 +176,8 @@ describe("detailedWizardReducer", () => {
     });
 
     expect(state.activeItemId).toBe("item-1");
-    expect(state.phase).toBe("itemBasics");
+    expect(state.phase).toBe("itemName");
+    expect(state.itemJourney).toBe("editing");
     expect(state.values.items[0]).toEqual({
       ...beforeFirst,
       unitSalePrice: "25,00",
@@ -223,6 +234,7 @@ describe("detailedWizardReducer", () => {
       "ingredient-2",
     ]);
     expect(item.ingredients[1].name).toBe("Açúcar");
+    expect(state.pendingIngredientNameId).toBe("ingredient-2");
 
     state = detailedWizardReducer(state, {
       type: "removeIngredient",
@@ -241,6 +253,60 @@ describe("detailedWizardReducer", () => {
     });
     item = state.values.items[0] as DetailedProductionItemInput;
     expect(item.ingredients).toHaveLength(1);
+  });
+
+  it("confirms and cancels the ingredient name step", () => {
+    let state = productionState();
+
+    state = detailedWizardReducer(state, {
+      type: "confirmIngredientName",
+      itemId: "item-1",
+      ingredientId: "ingredient-1",
+    });
+    expect(state.pendingIngredientNameId).toBeNull();
+
+    state = detailedWizardReducer(state, {
+      type: "addIngredient",
+      itemId: "item-1",
+      createId: ids("ingredient-2"),
+    });
+    let item = state.values.items[0] as DetailedProductionItemInput;
+    expect(state.pendingIngredientNameId).toBe("ingredient-2");
+    expect(item.ingredients[1].name).toBe("Ingrediente 2");
+
+    state = detailedWizardReducer(state, {
+      type: "cancelIngredientName",
+      itemId: "item-1",
+      ingredientId: "ingredient-2",
+    });
+    item = state.values.items[0] as DetailedProductionItemInput;
+    expect(state.pendingIngredientNameId).toBeNull();
+    expect(item.ingredients.map((ingredient) => ingredient.id)).toEqual([
+      "ingredient-1",
+    ]);
+
+    state = detailedWizardReducer(
+      {
+        ...state,
+        pendingIngredientNameId: "ingredient-1",
+        values: {
+          ...state.values,
+          items: [
+            { ...item, ingredients: [{ ...item.ingredients[0], name: "" }] },
+          ],
+        },
+      },
+      {
+        type: "cancelIngredientName",
+        itemId: "item-1",
+        ingredientId: "ingredient-1",
+      },
+    );
+    item = state.values.items[0] as DetailedProductionItemInput;
+    expect(state.pendingIngredientNameId).toBe("ingredient-1");
+    expect(item.ingredients).toEqual([
+      expect.objectContaining({ id: "ingredient-1", name: "Ingrediente 1" }),
+    ]);
   });
 
   it("preserves inactive Production cost values when switching modes", () => {
@@ -274,33 +340,42 @@ describe("detailedWizardReducer", () => {
     expect(item.ingredients[0].name).toBe("Farinha");
   });
 
-  it("moves forward and backward through stable phases", () => {
-    let state = productState();
-    const forward = [
+  it("uses the aligned first, additional, and editing journeys", () => {
+    expect(phasesFrom(productState())).toEqual([
+      "itemName",
+      "itemValues",
+      "fixedExpenses",
+      "itemVolume",
       "ownerCompensation",
       "fees",
-      "itemBasics",
-      "itemCosts",
       "itemComplete",
       "review",
-    ];
-    for (const phase of forward) {
-      state = detailedWizardReducer(state, { type: "next" });
-      expect(state.phase).toBe(phase);
-    }
+    ]);
 
-    const backward = [
+    const additional = detailedWizardReducer(productState(), {
+      type: "addItem",
+      createId: ids("item-2"),
+    });
+    expect(phasesFrom(additional)).toEqual([
+      "itemName",
+      "itemValues",
+      "itemVolume",
       "itemComplete",
-      "itemCosts",
-      "itemBasics",
-      "fees",
-      "ownerCompensation",
-      "fixedExpenses",
-    ];
-    for (const phase of backward) {
-      state = detailedWizardReducer(state, { type: "back" });
-      expect(state.phase).toBe(phase);
-    }
+      "review",
+    ]);
+
+    const editing = detailedWizardReducer(additional, {
+      type: "editItem",
+      itemId: "item-1",
+    });
+    expect(phasesFrom(editing)).toEqual([
+      "itemName",
+      "itemValues",
+      "itemVolume",
+      "itemComplete",
+      "review",
+    ]);
+    expect(editing.values.items[1]).toEqual(additional.values.items[1]);
   });
 
   it("opens the first invalid item and cost phase for nested server errors", () => {
@@ -317,8 +392,8 @@ describe("detailedWizardReducer", () => {
     });
 
     expect(state.activeItemId).toBe("item-2");
-    expect(state.phase).toBe("itemCosts");
-    expect(state.itemSubstep).toBe("costs");
+    expect(state.phase).toBe("itemValues");
+    expect(state.itemJourney).toBe("editing");
     expect(state.status).toBe("editing");
     expect(state.fieldErrors).toEqual({
       "items.1.ingredients.0.quantity": ["Quantidade inválida"],
@@ -330,8 +405,10 @@ describe("detailedWizardReducer", () => {
     ["fixedMonthlyExpenses", "fixedExpenses"],
     ["proLabore", "ownerCompensation"],
     ["cardFeeRate", "fees"],
-    ["items.0.name", "itemBasics"],
-    ["items.0.purchaseUnitCost", "itemCosts"],
+    ["items.0.name", "itemName"],
+    ["items.0.unitSalePrice", "itemValues"],
+    ["items.0.monthlySalesVolume", "itemVolume"],
+    ["items.0.purchaseUnitCost", "itemValues"],
   ] as const)("maps server path %s to phase %s", (path, phase) => {
     const state = detailedWizardReducer(productState(), {
       type: "applyServerErrors",

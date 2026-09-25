@@ -92,7 +92,6 @@ const detailedCommand: DetailedDiagnosisCommand = {
   proLaboreCents: 0,
   taxRateBasisPoints: 0,
   cardFeeRateBasisPoints: 0,
-  promotionMarginBasisPoints: 1_500,
   items: [
     {
       id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
@@ -118,12 +117,6 @@ describe("getOwnedReport", () => {
   const maybeSingle = vi.fn();
   const from = vi.fn();
   const supabase = { from };
-  const adminSelect = vi.fn();
-  const adminById = vi.fn();
-  const adminByUser = vi.fn();
-  const adminMaybeSingle = vi.fn();
-  const adminFrom = vi.fn();
-  const admin = { from: adminFrom };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -131,17 +124,14 @@ describe("getOwnedReport", () => {
     select.mockReturnValue({ eq: byId });
     byId.mockReturnValue({ eq: byUser });
     byUser.mockReturnValue({ maybeSingle });
-    adminFrom.mockReturnValue({ select: adminSelect });
-    adminSelect.mockReturnValue({ eq: adminById });
-    adminById.mockReturnValue({ eq: adminByUser });
-    adminByUser.mockReturnValue({ maybeSingle: adminMaybeSingle });
-    adminMaybeSingle.mockResolvedValue({ data: null, error: null });
     maybeSingle.mockResolvedValue({
       data: {
         id: 42,
         business_category: "service",
         scenario: "hour",
         created_at: "2026-08-28T22:30:00.000Z",
+        updated_at: "2026-08-28T22:30:00.000Z",
+        version: 0,
         report_snapshot: snapshot,
       },
       error: null,
@@ -151,7 +141,6 @@ describe("getOwnedReport", () => {
   async function get(diagnosisId: string = "42") {
     return getOwnedReport({
       supabase: supabase as never,
-      admin: admin as never,
       userId: "trusted-user",
       diagnosisId,
     });
@@ -163,17 +152,18 @@ describe("getOwnedReport", () => {
       report: {
         id: 42,
         createdAt: "2026-08-28T22:30:00.000Z",
+        updatedAt: "2026-08-28T22:30:00.000Z",
+        version: 0,
         snapshot,
       },
     });
     expect(from).toHaveBeenCalledWith("diagnoses");
     expect(select).toHaveBeenCalledWith(
-      "id, business_category, scenario, created_at, report_snapshot",
+      "id, business_category, scenario, created_at, updated_at, version, report_snapshot",
     );
     expect(byId).toHaveBeenCalledWith("id", 42);
     expect(byUser).toHaveBeenCalledWith("user_id", "trusted-user");
     expect(maybeSingle).toHaveBeenCalledOnce();
-    expect(adminFrom).not.toHaveBeenCalled();
   });
 
   it.each(["", "0", "-1", "1.5", "abc", "9007199254740992"])(
@@ -181,7 +171,6 @@ describe("getOwnedReport", () => {
     async (diagnosisId) => {
       await expect(get(diagnosisId)).resolves.toEqual({ status: "not_found" });
       expect(from).not.toHaveBeenCalled();
-      expect(adminFrom).not.toHaveBeenCalled();
     },
   );
 
@@ -189,37 +178,12 @@ describe("getOwnedReport", () => {
     maybeSingle.mockResolvedValue({ data: null, error: null });
 
     await expect(get()).resolves.toEqual({ status: "not_found" });
-    expect(adminSelect).toHaveBeenCalledWith("id");
-    expect(adminById).toHaveBeenCalledWith("id", 42);
-    expect(adminByUser).toHaveBeenCalledWith("user_id", "trusted-user");
-  });
-
-  it("returns locked only for an owned row hidden by RLS", async () => {
-    maybeSingle.mockResolvedValue({ data: null, error: null });
-    adminMaybeSingle.mockResolvedValue({ data: { id: 42 }, error: null });
-
-    await expect(get()).resolves.toEqual({ status: "locked" });
-    expect(adminSelect).toHaveBeenCalledWith("id");
-    expect(adminSelect.mock.calls[0]?.[0]).not.toContain("report_snapshot");
-    expect(adminById).toHaveBeenCalledWith("id", 42);
-    expect(adminByUser).toHaveBeenCalledWith("user_id", "trusted-user");
   });
 
   it("returns read_failed for a technical database error", async () => {
     maybeSingle.mockResolvedValue({
       data: null,
       error: { code: "XX001", message: "private provider detail" },
-    });
-
-    await expect(get()).resolves.toEqual({ status: "read_failed" });
-    expect(adminFrom).not.toHaveBeenCalled();
-  });
-
-  it("fails closed when the metadata-only ownership check fails", async () => {
-    maybeSingle.mockResolvedValue({ data: null, error: null });
-    adminMaybeSingle.mockResolvedValue({
-      data: null,
-      error: { code: "XX001", message: "private admin detail" },
     });
 
     await expect(get()).resolves.toEqual({ status: "read_failed" });
@@ -232,6 +196,8 @@ describe("getOwnedReport", () => {
         business_category: "service",
         scenario: "hour",
         created_at: "2026-08-28T22:30:00.000Z",
+        updated_at: "2026-08-28T22:30:00.000Z",
+        version: 0,
         report_snapshot: { schemaVersion: 99 },
       },
       error: null,
@@ -250,6 +216,8 @@ describe("getOwnedReport", () => {
         business_category: "service",
         scenario: "minute",
         created_at: "2026-08-28T22:30:00.000Z",
+        updated_at: "2026-08-28T22:30:00.000Z",
+        version: 0,
         report_snapshot: snapshot,
       },
       error: null,
@@ -268,6 +236,8 @@ describe("getOwnedReport", () => {
         business_category: "product",
         scenario: "resale",
         created_at: "2026-08-31T15:00:00.000Z",
+        updated_at: "2026-08-31T15:00:00.000Z",
+        version: 0,
         report_snapshot: productSnapshot,
       },
       error: null,
@@ -278,6 +248,8 @@ describe("getOwnedReport", () => {
       report: {
         id: 84,
         createdAt: "2026-08-31T15:00:00.000Z",
+        updatedAt: "2026-08-31T15:00:00.000Z",
+        version: 0,
         snapshot: productSnapshot,
       },
     });
@@ -290,6 +262,8 @@ describe("getOwnedReport", () => {
         business_category: "product",
         scenario: "resale",
         created_at: "2026-09-17T15:00:00.000Z",
+        updated_at: "2026-09-17T15:00:00.000Z",
+        version: 0,
         report_snapshot: detailedSnapshot,
       },
       error: null,
@@ -300,6 +274,8 @@ describe("getOwnedReport", () => {
       report: {
         id: 168,
         createdAt: "2026-09-17T15:00:00.000Z",
+        updatedAt: "2026-09-17T15:00:00.000Z",
+        version: 0,
         snapshot: detailedSnapshot,
       },
     });
@@ -312,6 +288,8 @@ describe("getOwnedReport", () => {
         business_category: "product",
         scenario: "hour",
         created_at: "2026-08-31T15:00:00.000Z",
+        updated_at: "2026-08-31T15:00:00.000Z",
+        version: 0,
         report_snapshot: productSnapshot,
       },
       error: null,
@@ -330,6 +308,8 @@ describe("getOwnedReport", () => {
         business_category: "production",
         scenario: "manufacturing",
         created_at: "2026-09-01T15:00:00.000Z",
+        updated_at: "2026-09-01T15:00:00.000Z",
+        version: 0,
         report_snapshot: productionSnapshot,
       },
       error: null,
@@ -340,6 +320,8 @@ describe("getOwnedReport", () => {
       report: {
         id: 126,
         createdAt: "2026-09-01T15:00:00.000Z",
+        updatedAt: "2026-09-01T15:00:00.000Z",
+        version: 0,
         snapshot: productionSnapshot,
       },
     });
@@ -352,6 +334,8 @@ describe("getOwnedReport", () => {
         business_category: "production",
         scenario: "resale",
         created_at: "2026-09-01T15:00:00.000Z",
+        updated_at: "2026-09-01T15:00:00.000Z",
+        version: 0,
         report_snapshot: productionSnapshot,
       },
       error: null,

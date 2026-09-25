@@ -72,6 +72,7 @@ describe("Production diagnosis steps", () => {
     await user.click(detailed);
     expect(detailed).toBeEnabled();
     expect(onModeChange).toHaveBeenLastCalledWith("detailed");
+    expect(screen.queryByText(/\bmix\b/i)).not.toBeInTheDocument();
   });
 
   it("links summarized Production value errors and excludes other categories", () => {

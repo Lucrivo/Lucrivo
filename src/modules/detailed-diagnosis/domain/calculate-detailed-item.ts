@@ -9,7 +9,6 @@ import type {
 type DetailedItemRates = {
   taxRateBasisPoints: number;
   cardFeeRateBasisPoints: number;
-  promotionMarginBasisPoints: number;
 };
 
 function calculateTechnicalSheetCost(
@@ -118,10 +117,6 @@ function calculateDetailedItem(
     breakEvenUnitPriceCents: calculatePriceFloor(
       variableUnitCostCents,
       10_000 - feeRateBasisPoints,
-    ),
-    promotionFloorCents: calculatePriceFloor(
-      variableUnitCostCents,
-      10_000 - feeRateBasisPoints - rates.promotionMarginBasisPoints,
     ),
     directLoss: unitContributionCents <= 0,
   };

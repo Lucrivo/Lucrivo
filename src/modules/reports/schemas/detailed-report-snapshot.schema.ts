@@ -6,6 +6,8 @@ import type { DetailedDiagnosisCommand } from "@/modules/detailed-diagnosis/type
 import {
   nonNegativeSafeIntegerSchema,
   positiveSafeIntegerSchema,
+  reportExecutiveSummarySchema,
+  reportSectionSchema,
   reportToneSchema,
   safeIntegerSchema,
 } from "./report-content.schema";
@@ -77,7 +79,6 @@ const detailedDiagnosisCommandSchema = z.strictObject({
   proLaboreCents: nonNegativeSafeIntegerSchema,
   taxRateBasisPoints: basisPointsSchema,
   cardFeeRateBasisPoints: basisPointsSchema,
-  promotionMarginBasisPoints: z.number().int().min(0).max(9_999),
   items: z.array(detailedDiagnosisItemSchema).min(1),
 });
 
@@ -91,7 +92,6 @@ const detailedItemCalculationSchema = z.strictObject({
   monthlyGrossRevenueCents: nonNegativeSafeIntegerSchema.nullable(),
   monthlyContributionCents: safeIntegerSchema.nullable(),
   breakEvenUnitPriceCents: nonNegativeSafeIntegerSchema.nullable(),
-  promotionFloorCents: nonNegativeSafeIntegerSchema.nullable(),
   directLoss: z.boolean(),
 });
 
@@ -101,6 +101,10 @@ const detailedDiagnosisResultsSchema = z.strictObject({
   missingVolumeItemIds: z.array(uuidSchema),
   items: z.array(detailedItemCalculationSchema).min(1),
   monthlyGrossRevenueCents: nonNegativeSafeIntegerSchema.nullable(),
+  monthlyFeeAmountCents: nonNegativeSafeIntegerSchema.nullable(),
+  monthlyVariableCostCents: nonNegativeSafeIntegerSchema.nullable(),
+  monthlyNetRevenueCents: nonNegativeSafeIntegerSchema.nullable(),
+  monthlyCostCents: nonNegativeSafeIntegerSchema.nullable(),
   monthlyContributionCents: safeIntegerSchema.nullable(),
   monthlyResultCents: safeIntegerSchema.nullable(),
   mixContributionMarginBasisPoints: safeIntegerSchema.nullable(),
@@ -144,7 +148,7 @@ const detailedReportSnapshotSchema = z
     currency: z.literal("BRL"),
     unit: z.literal("mix"),
     policy: z.strictObject({
-      promotionMarginBasisPoints: z.number().int().min(0).max(9_999),
+      attentionBandBasisPoints: z.literal(2_000),
       concentrationThresholdBasisPoints: z.literal(4_500),
       weeklyDivisorHundredths: z.literal(433),
       operatingDaysPerWeek: z.literal(6),
@@ -152,6 +156,8 @@ const detailedReportSnapshotSchema = z
     }),
     inputs: detailedDiagnosisCommandSchema,
     results: detailedDiagnosisResultsSchema,
+    executiveSummary: reportExecutiveSummarySchema,
+    sections: z.array(reportSectionSchema).length(4),
     guidance: z.array(detailedGuidanceSchema),
   })
   .superRefine((snapshot, context) => {
@@ -169,9 +175,7 @@ const detailedReportSnapshotSchema = z
     }
 
     if (
-      snapshot.policy.proLaboreIncluded !== snapshot.inputs.proLaboreIncluded ||
-      snapshot.policy.promotionMarginBasisPoints !==
-        snapshot.inputs.promotionMarginBasisPoints
+      snapshot.policy.proLaboreIncluded !== snapshot.inputs.proLaboreIncluded
     ) {
       context.addIssue({
         code: "custom",
@@ -225,6 +229,21 @@ const detailedReportSnapshotSchema = z
         message: "Os resultados não correspondem às entradas normalizadas.",
       });
     }
+
+    const expectedSectionKeys = [
+      "break_even",
+      "hidden_cost",
+      "margin_diagnosis",
+      "sales_goal",
+    ];
+    expectedSectionKeys.forEach((key, index) => {
+      if (snapshot.sections[index]?.key === key) return;
+      context.addIssue({
+        code: "custom",
+        path: ["sections", index, "key"],
+        message: "As seções do relatório detalhado estão fora de ordem.",
+      });
+    });
   });
 
 type DetailedReportSnapshotV1 = z.infer<typeof detailedReportSnapshotSchema>;

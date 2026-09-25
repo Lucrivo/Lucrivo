@@ -17,8 +17,9 @@ import {
 } from "./detailed-wizard-state";
 import { DetailedFeesStep } from "./steps/detailed-fees-step";
 import { DetailedFixedExpensesStep } from "./steps/detailed-fixed-expenses-step";
-import { DetailedItemBasicsStep } from "./steps/detailed-item-basics-step";
 import { DetailedItemCompleteStep } from "./steps/detailed-item-complete-step";
+import { DetailedItemNameStep } from "./steps/detailed-item-name-step";
+import { DetailedItemVolumeStep } from "./steps/detailed-item-volume-step";
 import { DetailedOwnerCompensationStep } from "./steps/detailed-owner-compensation-step";
 import { DetailedProductCostsStep } from "./steps/detailed-product-costs-step";
 import { DetailedProductionCostsStep } from "./steps/detailed-production-costs-step";
@@ -37,13 +38,14 @@ type DetailedDiagnosisWizardProps = {
 };
 
 const phaseProgress: Record<DetailedWizardPhase, number> = {
-  fixedExpenses: 3,
-  ownerCompensation: 4,
-  fees: 5,
-  itemBasics: 6,
-  itemCosts: 6,
-  itemComplete: 6,
-  review: 7,
+  itemName: 3,
+  itemValues: 4,
+  fixedExpenses: 5,
+  itemVolume: 6,
+  ownerCompensation: 7,
+  fees: 8,
+  itemComplete: 9,
+  review: 10,
 };
 
 function activeItemIndex(state: DetailedWizardState): number {
@@ -57,16 +59,18 @@ function itemLabel(state: DetailedWizardState): string {
 function stepTitle(state: DetailedWizardState): string {
   const itemNumber = Math.max(activeItemIndex(state), 0) + 1;
   switch (state.phase) {
+    case "itemName":
+      return `${itemLabel(state)} ${itemNumber} · nome`;
+    case "itemValues":
+      return `${itemLabel(state)} ${itemNumber} · custos e preço`;
     case "fixedExpenses":
       return "Quais gastos você tem todo mês?";
+    case "itemVolume":
+      return `${itemLabel(state)} ${itemNumber} · vendas no mês`;
     case "ownerCompensation":
       return "Quanto você quer receber por mês?";
     case "fees":
       return "Quais taxas se aplicam a todos os itens?";
-    case "itemBasics":
-      return `${itemLabel(state)} ${itemNumber} · informações`;
-    case "itemCosts":
-      return `${itemLabel(state)} ${itemNumber} · custos`;
     case "itemComplete":
       return "Revise os itens do diagnóstico";
     case "review":
@@ -77,24 +81,15 @@ function stepTitle(state: DetailedWizardState): string {
 function pathsForCurrentPhase(state: DetailedWizardState): string[] {
   const index = activeItemIndex(state);
   switch (state.phase) {
-    case "fixedExpenses":
-      return ["fixedMonthlyExpenses"];
-    case "ownerCompensation":
-      return ["proLaboreIncluded", "proLabore"];
-    case "fees":
-      return ["taxRate", "cardFeeRate", "promotionMarginRate"];
-    case "itemBasics":
-      return [
-        `items.${index}.name`,
-        `items.${index}.unitSalePrice`,
-        `items.${index}.monthlySalesVolume`,
-      ];
-    case "itemCosts": {
+    case "itemName":
+      return [`items.${index}.name`];
+    case "itemValues": {
       const item = state.values.items[index];
       if (item?.kind === "resale") {
         return [
           `items.${index}.purchaseUnitCost`,
           `items.${index}.packagingUnitCost`,
+          `items.${index}.unitSalePrice`,
         ];
       }
       return [
@@ -106,8 +101,17 @@ function pathsForCurrentPhase(state: DetailedWizardState): string[] {
         `items.${index}.directLaborUnitCost`,
         `items.${index}.otherVariableUnitCost`,
         `items.${index}.ingredients`,
+        `items.${index}.unitSalePrice`,
       ];
     }
+    case "fixedExpenses":
+      return ["fixedMonthlyExpenses"];
+    case "itemVolume":
+      return [`items.${index}.monthlySalesVolume`];
+    case "ownerCompensation":
+      return ["proLaboreIncluded", "proLabore"];
+    case "fees":
+      return ["taxRate", "cardFeeRate"];
     case "itemComplete":
     case "review":
       return [];
@@ -137,20 +141,22 @@ function DetailedDiagnosisWizard({
 
   function renderStep() {
     switch (state.phase) {
-      case "fixedExpenses":
-        return <DetailedFixedExpensesStep {...stepProps} />;
-      case "ownerCompensation":
-        return <DetailedOwnerCompensationStep {...stepProps} />;
-      case "fees":
-        return <DetailedFeesStep {...stepProps} />;
-      case "itemBasics":
-        return <DetailedItemBasicsStep {...stepProps} />;
-      case "itemCosts":
+      case "itemName":
+        return <DetailedItemNameStep {...stepProps} />;
+      case "itemValues":
         return state.values.category === "product" ? (
           <DetailedProductCostsStep {...stepProps} />
         ) : (
           <DetailedProductionCostsStep {...stepProps} />
         );
+      case "fixedExpenses":
+        return <DetailedFixedExpensesStep {...stepProps} />;
+      case "itemVolume":
+        return <DetailedItemVolumeStep {...stepProps} />;
+      case "ownerCompensation":
+        return <DetailedOwnerCompensationStep {...stepProps} />;
+      case "fees":
+        return <DetailedFeesStep {...stepProps} />;
       case "itemComplete":
         return <DetailedItemCompleteStep {...stepProps} />;
       case "review":
@@ -166,7 +172,7 @@ function DetailedDiagnosisWizard({
   }
 
   function goBack() {
-    if (state.phase === "fixedExpenses") {
+    if (state.phase === "itemName" && state.itemJourney === "first") {
       onBackToMode();
       return;
     }
@@ -219,7 +225,7 @@ function DetailedDiagnosisWizard({
   return (
     <WizardShell
       stepNumber={phaseProgress[state.phase]}
-      totalSteps={7}
+      totalSteps={10}
       title={stepTitle(state)}
       onBack={goBack}
       onContinue={onContinue}

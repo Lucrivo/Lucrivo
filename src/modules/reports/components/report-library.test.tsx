@@ -81,6 +81,8 @@ const detailedReport = {
   contentVersion: 1,
   monthlyGrossRevenueCents: 500_000,
   monthlyResultCents: 92_500,
+  verdict: "adequate_margin",
+  priority: "volume",
   itemCount: 3,
   isPartial: false,
 } satisfies OwnedReportSummary;
@@ -193,25 +195,32 @@ describe("ReportListCard", () => {
     expect(screen.getByText("Diagnóstico salvo")).toBeInTheDocument();
   });
 
-  it("presents a complete Detailed mix without formatting a current price", () => {
+  it("presents a complete Detailed report with the current unit identity", () => {
     render(<ReportListCard report={detailedReport} />);
 
     const card = screen.getByRole("article", {
-      name: "Diagnóstico detalhado de Produto",
+      name: "Análise de produtos — Revenda",
     });
-    expect(within(card).getByText("Diagnóstico detalhado")).toBeVisible();
     expect(within(card).getByText("Produto")).toBeVisible();
-    expect(within(card).getByText(/3 produtos/)).toBeVisible();
-    expect(within(card).getByText("Completo")).toBeVisible();
+    expect(within(card).getByText("Revenda")).toBeVisible();
+    expect(within(card).getByText("Análise de produtos")).toBeVisible();
+    expect(within(card).getByText("3 itens analisados")).toBeVisible();
+    expect(within(card).getByText("Lucro")).toBeVisible();
     expect(within(card).getByText("R$ 925,00")).toBeVisible();
     expect(within(card).getByText("18,5%")).toBeVisible();
+    expect(
+      within(card).queryByText("Diagnóstico detalhado"),
+    ).not.toBeInTheDocument();
+    expect(within(card).queryByText("Completo")).not.toBeInTheDocument();
+    expect(within(card).queryByText("Parcial")).not.toBeInTheDocument();
+    expect(card).not.toHaveTextContent(/\bmix\b/i);
     expect(within(card).queryByText("Preço atual")).not.toBeInTheDocument();
     expect(
       within(card).getByRole("link", { name: "Abrir relatório" }),
     ).toHaveAttribute("href", "/reports/168");
   });
 
-  it("presents a partial Detailed mix without invented totals", () => {
+  it("presents a partial Detailed report without invented totals", () => {
     render(
       <ReportListCard
         report={{
@@ -219,14 +228,17 @@ describe("ReportListCard", () => {
           monthlyGrossRevenueCents: null,
           monthlyResultCents: null,
           realMarginBasisPoints: null,
+          verdict: "incomplete_volume",
           isPartial: true,
         }}
       />,
     );
 
-    expect(screen.getByText("Parcial")).toBeVisible();
+    expect(screen.getByText("Falta informar as vendas")).toBeVisible();
     expect(screen.getByText(/complete os volumes pendentes/i)).toBeVisible();
     expect(screen.queryByText("Resultado mensal")).not.toBeInTheDocument();
+    expect(screen.queryByText("Parcial")).not.toBeInTheDocument();
+    expect(screen.queryByText(/\bmix\b/i)).not.toBeInTheDocument();
   });
 });
 

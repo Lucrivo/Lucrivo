@@ -32,11 +32,52 @@ Reconstrua o banco a partir de `supabase/config.toml`, migrations e
 `supabase/seed.sql` com:
 
 ```bash
+pnpm seed:generate
+pnpm seed:check
 pnpm supabase:reset
 ```
 
-Esse comando apaga os dados locais. O seed deve permanecer idempotente e nunca é
-executado automaticamente nos ambientes hospedados.
+`seed:generate` atualiza o SQL determinístico e `seed:check` detecta drift entre
+o catálogo TypeScript e o artefato versionado. O reset apaga os dados locais e
+recria 97 identidades fictícias, 295 relatórios, assinaturas, pagamentos e
+históricos administrativos. Para reaplicar o seed sem resetar o banco, ou
+validar sua idempotência e a preservação de dados externos, use:
+
+```bash
+pnpm seed:local
+pnpm seed:verify-local
+```
+
+O acesso administrativo, exclusivo para desenvolvimento e homologação, é:
+
+```text
+E-mail: admin@seed.lucrivo.test
+Senha:  LucrivoSeed2026AA
+```
+
+Os clientes seguem o padrão `cliente+001@seed.lucrivo.test` até
+`cliente+096@seed.lucrivo.test` e usam a mesma senha fictícia. O seed é
+idempotente e não é executado automaticamente nos ambientes hospedados.
+
+### Seed de homologação
+
+Primeiro aplique as migrations versionadas pelo fluxo normal de deploy. Obtenha
+a URL PostgreSQL do projeto de homologação no gerenciador de segredos, sem
+registrá-la no repositório ou em logs, e exponha-a como
+`STAGING_DATABASE_URL`. Com a CLI vinculada ao projeto correto, execute:
+
+```bash
+ALLOW_STAGING_SEED=true pnpm seed:staging
+```
+
+O runner exige simultaneamente o opt-in explícito, a URL do banco e o project
+ref de homologação `camekuaudqgwawidieym`. Ele recusa qualquer outro projeto,
+inclusive produção, e não possui comando equivalente para produção. A execução
+recria somente as identidades do namespace reservado do seed, preserva os
+demais registros e aborta se já existir outro administrador configurado.
+
+O comando não executa migrations nem `db reset`; migrations pendentes devem ser
+resolvidas antes. Nunca adapte o guard para apontar ao ambiente de produção.
 
 Gere os tipos TypeScript do schema `public` e valide o banco local com:
 

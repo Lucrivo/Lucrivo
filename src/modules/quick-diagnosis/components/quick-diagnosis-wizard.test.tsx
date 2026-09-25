@@ -309,10 +309,10 @@ describe("QuickDiagnosisWizard category orchestration", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "Quais gastos você tem todo mês?",
+        name: "Produto 1 · nome",
       }),
     ).toHaveFocus();
-    expect(screen.getByText("3 de 7")).toBeInTheDocument();
+    expect(screen.getByText("3 de 10")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Voltar" }));
     expect(

@@ -1,19 +1,20 @@
-import { StepField } from "@/modules/quick-diagnosis/components/shared/step-field";
+import { FixedExpensesField } from "@/modules/quick-diagnosis/components/shared/business-fields";
 
 import type { DetailedStepProps } from "./types";
 
 function DetailedFixedExpensesStep({ state, dispatch }: DetailedStepProps) {
   return (
-    <StepField
+    <FixedExpensesField
       field="fixedMonthlyExpenses"
-      label="Gastos que existem todo mês"
       value={state.values.fixedMonthlyExpenses}
       errors={state.fieldErrors}
-      onChange={(field, value) =>
-        dispatch({ type: "changeGeneralField", field, value })
+      onChange={(value) =>
+        dispatch({
+          type: "changeGeneralField",
+          field: "fixedMonthlyExpenses",
+          value,
+        })
       }
-      prefix="R$"
-      description="Some aluguel, energia, sistemas e outros gastos que continuam existindo mesmo sem vendas."
     />
   );
 }

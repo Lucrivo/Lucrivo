@@ -16,7 +16,6 @@ const productCommand: DetailedDiagnosisCommand = {
   proLaboreCents: 0,
   taxRateBasisPoints: 0,
   cardFeeRateBasisPoints: 0,
-  promotionMarginBasisPoints: 1_500,
   items: [
     {
       id: "11111111-1111-4111-8111-111111111111",
@@ -81,7 +80,8 @@ function snapshotFor(command: DetailedDiagnosisCommand) {
 }
 
 describe("DetailedReportDetail", () => {
-  it("presents a complete Product mix, loss warning, price floors, and guidance", () => {
+  it("presents quick insights before item details and opens the first item", async () => {
+    const user = userEvent.setup();
     render(
       <DetailedReportDetail
         id={168}
@@ -91,24 +91,70 @@ describe("DetailedReportDetail", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Resultado detalhado do seu mix" }),
+      screen.getByRole("heading", { name: "Resultado dos seus produtos" }),
     ).toBeVisible();
-    expect(screen.getByText("Análise completa")).toBeVisible();
-    expect(screen.getByText("Faturamento mensal")).toBeVisible();
-    expect(screen.getByText("Faturamento de equilíbrio")).toBeVisible();
+    expect(screen.getByText("Produtos")).toBeVisible();
+    expect(screen.getByText("Revenda")).toBeVisible();
+    expect(screen.queryByText("Diagnóstico detalhado")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Seus produtos dão lucro?" }),
+    ).toBeVisible();
+    expect(screen.getByText("Estou ganhando dinheiro?")).toBeVisible();
+    expect(screen.getByText("Meus preços pagam os gastos?")).toBeVisible();
+    expect(screen.getByText("O que preciso fazer agora?")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Seus números" })).toBeVisible();
+    const itemsHeading = screen.getByRole("heading", {
+      name: "Item por item",
+    });
+    const comparisonHeading = screen.getByRole("heading", {
+      name: "Quais itens ajudam ou prejudicam o resultado?",
+    });
     expect(
       screen.getByRole("heading", {
-        name: "O que cada item deixa para o negócio",
+        name: "Seus menores preços sem prejuízo",
       }),
     ).toBeVisible();
-    expect(screen.getByText("Perda por venda")).toBeVisible();
-    expect(screen.getAllByText("Preço de equilíbrio")).toHaveLength(2);
-    expect(screen.getAllByText("Piso para promoção")).toHaveLength(2);
-    expect(screen.getByText("Onde agir primeiro")).toBeVisible();
-    expect(screen.getByText(/não cobre os custos variáveis/i)).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "O que sai das vendas" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Quanto sobra no mês" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Quanto você precisa vender" }),
+    ).toBeVisible();
+    expect(screen.getByText("Quanto entrou com as vendas")).toBeVisible();
+    expect(screen.getByText("Custos do mês")).toBeVisible();
+    expect(itemsHeading.compareDocumentPosition(comparisonHeading)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(screen.queryByText(/^Indisponível$/)).not.toBeInTheDocument();
+
+    const firstTrigger = screen.getByRole("button", {
+      name: "Abrir detalhes de Caneca",
+    });
+    const lossTrigger = screen.getByRole("button", {
+      name: "Abrir detalhes de Camiseta em perda",
+    });
+    expect(firstTrigger).toHaveAttribute("aria-expanded", "true");
+    expect(lossTrigger).toHaveAttribute("aria-expanded", "false");
+    const firstItem = firstTrigger.closest<HTMLElement>(
+      '[data-slot="accordion-item"]',
+    );
+    expect(firstItem).not.toBeNull();
+    expect(within(firstItem!).getByTestId("discount-simulator")).toBeVisible();
+    expect(firstItem).toHaveTextContent(
+      "Os gastos mensais permanecem no resultado geral.",
+    );
+    await user.click(lossTrigger);
+    expect(
+      screen.getAllByText("Menor preço sem prejuízo na venda"),
+    ).not.toHaveLength(0);
+    expect(screen.getByText(/não cobre o custo do item/i)).toBeVisible();
     expect(
       screen.getByRole("link", { name: "Voltar aos relatórios" }),
     ).toHaveAttribute("href", "/reports");
+    expect(screen.queryByText(/\bmix\b/i)).not.toBeInTheDocument();
   });
 
   it("presents a partial Production mix neutrally with technical-sheet details", async () => {
@@ -121,24 +167,30 @@ describe("DetailedReportDetail", () => {
       />,
     );
 
-    expect(screen.getByText("Análise parcial")).toBeVisible();
+    expect(screen.getByText("Falta informar as vendas")).toBeVisible();
     expect(
       screen.getAllByText(/volume mensal de Bolo de festa/i),
     ).not.toHaveLength(0);
-    expect(screen.getAllByText("Indisponível").length).toBeGreaterThanOrEqual(
-      3,
-    );
-    expect(
-      screen.getByText(/comparação usa o valor deixado por unidade/i),
-    ).toBeVisible();
+    expect(screen.queryByText(/^Indisponível$/)).not.toBeInTheDocument();
+    expect(screen.getAllByText("Ainda não calculado")).not.toHaveLength(0);
+    expect(screen.getByText(/Sobra por unidade/i)).toBeVisible();
 
-    const item = screen
-      .getByRole("heading", { name: "Bolo de festa" })
-      .closest<HTMLElement>('[data-slot="card"]');
+    const trigger = screen.getByRole("button", {
+      name: "Abrir detalhes de Bolo de festa",
+    });
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    const item = trigger.closest<HTMLElement>('[data-slot="accordion-item"]');
     expect(item).not.toBeNull();
-    expect(within(item!).getByText("Volume mensal pendente")).toBeVisible();
-    await user.click(within(item!).getByText("Detalhes da produção"));
-    expect(within(item!).getByText(/Ficha técnica/)).toBeVisible();
+    expect(
+      within(item!).getByText("Vendas mensais ainda não informadas"),
+    ).toBeVisible();
+    expect(
+      within(item!).getAllByText("Entenda este valor").length,
+    ).toBeGreaterThan(0);
+    await user.click(
+      within(item!).getByText("Ver memória de cálculo da produção"),
+    );
+    expect(within(item!).getByText("Ficha técnica completa")).toBeVisible();
     expect(within(item!).getByText(/Farinha/)).toBeVisible();
     expect(
       screen.queryByText(/inteligência artificial/i),
@@ -146,5 +198,6 @@ describe("DetailedReportDetail", () => {
     expect(
       screen.queryByRole("button", { name: /ia/i }),
     ).not.toBeInTheDocument();
+    expect(screen.queryByText(/\bmix\b/i)).not.toBeInTheDocument();
   });
 });

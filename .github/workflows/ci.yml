@@ -44,6 +44,9 @@ jobs:
       - name: Run tests
         run: pnpm test
 
+      - name: Verify generated demo seed
+        run: pnpm seed:check
+
       - name: Check types
         run: pnpm typecheck
 
@@ -84,6 +87,9 @@ jobs:
 
       - name: Rebuild local database
         run: pnpm supabase:reset
+
+      - name: Verify idempotent and non-destructive demo seed
+        run: pnpm seed:verify-local
 
       - name: Test database policies and constraints
         run: pnpm exec supabase test db

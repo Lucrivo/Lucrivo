@@ -2,6 +2,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
 import { StepField } from "../../shared/step-field";
+import {
+  ProductionUnitCostField,
+  UnitSalePriceField,
+} from "../../shared/unit-value-fields";
 import { deriveProductionUnitCostDisplay } from "../production-wizard-state";
 import type { ProductionStepProps } from "./types";
 
@@ -112,23 +116,19 @@ function ProductionValuesStep({
           </div>
         </div>
       ) : (
-        <StepField
+        <ProductionUnitCostField
           field="productionUnitCost"
-          label="Quanto custa produzir uma unidade?"
           value={values.productionUnitCost}
           errors={errors}
-          onChange={onChange}
-          prefix="R$"
+          onChange={(value) => onChange("productionUnitCost", value)}
         />
       )}
 
-      <StepField
+      <UnitSalePriceField
         field="unitSalePrice"
-        label="Por quanto você vende cada unidade?"
         value={values.unitSalePrice}
         errors={errors}
-        onChange={onChange}
-        prefix="R$"
+        onChange={(value) => onChange("unitSalePrice", value)}
       />
     </div>
   );

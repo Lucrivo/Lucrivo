@@ -21,7 +21,11 @@ type DiscountSimulationStatus =
 
 type DiscountSimulationContext = {
   category: "service" | "product" | "production";
-  mode: "legacy_target" | "service_attention" | "unit_attention";
+  mode:
+    | "legacy_target"
+    | "service_attention"
+    | "unit_attention"
+    | "detailed_item_attention";
 };
 
 type DiscountSimulation = {
@@ -142,6 +146,21 @@ function safetyMessage(
     context.category === "production"
       ? "custo de fabricação"
       : "custo de compra";
+
+  if (context.mode === "detailed_item_attention") {
+    switch (simulation.status) {
+      case "unavailable":
+        return "Não foi possível simular o desconto porque faltam dados para calcular o menor preço sem prejuízo.";
+      case "target":
+        return "Lucro: este desconto preserva uma boa folga nos gastos desta venda.";
+      case "below_target":
+        return "Margem apertada: o preço ainda paga os gastos desta venda, mas deixa pouca folga.";
+      case "break_even":
+        return "No limite: este preço apenas paga os gastos desta venda, sem deixar dinheiro.";
+      case "loss":
+        return "Prejuízo: este preço não paga os gastos desta venda. Reduza o desconto.";
+    }
+  }
 
   if (context.mode === "service_attention") {
     switch (simulation.status) {
@@ -264,16 +283,20 @@ function DiscountSimulator({
         </div>
         <p className="text-muted-foreground max-w-3xl text-[0.9375rem] leading-6">
           {partial
-            ? "Arraste e veja como o desconto altera o preço e a contribuição disponível para pagar a operação."
+            ? context.mode === "detailed_item_attention"
+              ? "Arraste e veja como o desconto altera o preço e o valor deixado por esta venda."
+              : "Arraste e veja como o desconto altera o preço e a contribuição disponível para pagar a operação."
             : context.mode === "service_attention"
               ? "Arraste e veja como o desconto muda o preço e quanto sobra depois dos gastos."
               : "Arraste e veja o preço, a margem e o lucro mudarem — e onde está o seu limite."}
         </p>
         {partial ? (
           <p className="border-info/25 bg-info/8 text-info rounded-xl border px-4 py-3 text-sm leading-5 font-medium">
-            {context.mode === "unit_attention"
-              ? "Esta simulação ainda não inclui os gastos mensais, porque nenhuma venda foi informada."
-              : "Simulação parcial: despesas fixas e pró-labore não foram rateados por unidade."}
+            {context.mode === "detailed_item_attention"
+              ? "Esta simulação considera os gastos desta venda. Os gastos mensais permanecem no resultado geral."
+              : context.mode === "unit_attention"
+                ? "Esta simulação ainda não inclui os gastos mensais, porque nenhuma venda foi informada."
+                : "Simulação parcial: despesas fixas e pró-labore não foram rateados por unidade."}
           </p>
         ) : null}
       </CardHeader>
@@ -328,7 +351,8 @@ function DiscountSimulator({
             <div className="border-border/70 bg-card grid gap-1 rounded-xl border p-3">
               <dt className="text-muted-foreground text-xs">
                 {partial
-                  ? context.mode === "unit_attention"
+                  ? context.mode === "unit_attention" ||
+                    context.mode === "detailed_item_attention"
                     ? "Quanto sobra a cada R$ 100"
                     : "Margem de contribuição"
                   : isUnitReport
@@ -345,7 +369,8 @@ function DiscountSimulator({
             <div className="border-border/70 bg-card grid gap-1 rounded-xl border p-3">
               <dt className="text-muted-foreground text-xs">
                 {partial
-                  ? context.mode === "unit_attention"
+                  ? context.mode === "unit_attention" ||
+                    context.mode === "detailed_item_attention"
                     ? "Valor deixado por unidade"
                     : "Contribuição por unidade"
                   : isUnitReport

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { ArrowLeftIcon, CalendarDaysIcon, PlusIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +12,13 @@ import { ReportExecutiveSummary } from "./report-executive-summary";
 import { ReportNumbers } from "./report-numbers";
 import { ReportSectionCard } from "./report-section-card";
 
-function ReportDetail({ viewModel }: { viewModel: ReportViewModel }) {
+function ReportDetail({
+  viewModel,
+  management,
+}: {
+  viewModel: ReportViewModel;
+  management?: ReactNode;
+}) {
   return (
     <main className="mx-auto grid w-full max-w-7xl gap-7 pb-10">
       <header className="border-primary/15 bg-card relative overflow-hidden rounded-3xl border px-5 py-6 shadow-sm sm:px-8 sm:py-8">
@@ -60,6 +67,8 @@ function ReportDetail({ viewModel }: { viewModel: ReportViewModel }) {
           </div>
         </div>
       </header>
+
+      {management}
 
       <ReportExecutiveSummary
         summary={viewModel.executiveSummary}

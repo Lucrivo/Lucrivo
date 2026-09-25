@@ -30,7 +30,10 @@ select columns_are(
     'monthly_gross_revenue_cents',
     'monthly_result_cents',
     'item_count',
-    'is_partial'
+    'is_partial',
+    'updated_at',
+    'deleted_at',
+    'version'
   ],
   'registry exposes only common identity, summary, and snapshot columns'
 );
@@ -78,7 +81,10 @@ select ok(
       ["monthly_gross_revenue_cents", "pg_catalog", "int8"],
       ["monthly_result_cents", "pg_catalog", "int8"],
       ["item_count", "pg_catalog", "int4"],
-      ["is_partial", "pg_catalog", "bool"]
+      ["is_partial", "pg_catalog", "bool"],
+      ["updated_at", "pg_catalog", "timestamptz"],
+      ["deleted_at", "pg_catalog", "timestamptz"],
+      ["version", "pg_catalog", "int4"]
     ]
   $json$::jsonb,
   'registry columns use exact durable database types'
@@ -91,7 +97,7 @@ select results_eq(
       and table_name = 'diagnoses'
       and is_nullable = 'NO'
   $$,
-  array[15::bigint],
+  array[17::bigint],
   'only mode-specific summary columns may be unavailable'
 );
 select fk_ok(
@@ -134,6 +140,7 @@ select ok(
       "diagnoses_analysis_mode_check",
       "diagnoses_analysis_shape_check",
       "diagnoses_current_price_check",
+      "diagnoses_deleted_after_creation_check",
       "diagnoses_item_count_check",
       "diagnoses_monthly_gross_revenue_check",
       "diagnoses_priority_check",
@@ -141,6 +148,7 @@ select ok(
       "diagnoses_snapshot_object_check",
       "diagnoses_unit_check",
       "diagnoses_verdict_check",
+      "diagnoses_version_check",
       "diagnoses_versions_check"
     ]
   $json$::jsonb,
@@ -149,17 +157,18 @@ select ok(
 select has_index(
   'public',
   'diagnoses',
-  'diagnoses_user_created_id_idx',
-  'registry has deterministic keyset listing index'
+  'diagnoses_user_active_created_id_idx',
+  'registry has deterministic active keyset listing index'
 );
 select ok(
   (
     select pg_get_indexdef(indexrelid) like
       '%(user_id, created_at DESC, id DESC)%'
     from pg_index
-    where indexrelid = 'public.diagnoses_user_created_id_idx'::regclass
+    where indexrelid = 'public.diagnoses_user_active_created_id_idx'::regclass
+      and pg_get_expr(indpred, indrelid) = '(deleted_at IS NULL)'
   ),
-  'listing index matches ownership and descending cursor order'
+  'listing index matches ownership, descending cursor order, and active rows'
 );
 
 select col_is_null(

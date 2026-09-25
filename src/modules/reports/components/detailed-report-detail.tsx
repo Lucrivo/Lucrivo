@@ -1,30 +1,33 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { ArrowLeftIcon, CalendarDaysIcon, PlusIcon } from "lucide-react";
 
+import { Accordion } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-import { formatReportDate } from "../formatters";
+import { toDetailedReportViewModel } from "../presenters/to-detailed-report-view-model";
 import type { CurrentDetailedReportSnapshot } from "../types";
-import { DetailedBusinessSummary } from "./detailed-business-summary";
 import { DetailedGuidanceList } from "./detailed-guidance-list";
 import { DetailedItemBreakdown } from "./detailed-item-breakdown";
 import { DetailedItemCard } from "./detailed-item-card";
+import { ReportExecutiveSummary } from "./report-executive-summary";
+import { ReportNumbers } from "./report-numbers";
+import { ReportSectionCard } from "./report-section-card";
 
 function DetailedReportDetail({
   id,
   createdAt,
   snapshot,
+  management,
 }: {
   id: number;
   createdAt: string;
   snapshot: CurrentDetailedReportSnapshot;
+  management?: ReactNode;
 }) {
-  const category = snapshot.category === "product" ? "Produtos" : "Produções";
-  const resultsById = new Map(
-    snapshot.results.items.map((item) => [item.itemId, item]),
-  );
+  const viewModel = toDetailedReportViewModel({ id, createdAt, snapshot });
 
   return (
     <main className="mx-auto grid w-full max-w-7xl gap-7 pb-10">
@@ -55,44 +58,80 @@ function DetailedReportDetail({
           </div>
           <div className="grid gap-4">
             <div className="flex flex-wrap gap-2">
-              <Badge variant="info">{category}</Badge>
-              <Badge variant="outline">Diagnóstico detalhado</Badge>
+              <Badge variant="info">{viewModel.identity.categoryLabel}</Badge>
+              <Badge variant="outline">
+                {viewModel.identity.scenarioLabel}
+              </Badge>
             </div>
             <div className="grid gap-2">
               <p className="text-primary text-xs font-semibold tracking-[0.18em] uppercase">
-                Relatório financeiro #{id}
+                {viewModel.identity.reportLabel}
               </p>
-              <h1>Resultado detalhado do seu mix</h1>
+              <h1>{viewModel.identity.title}</h1>
               <p className="text-muted-foreground flex items-center gap-2 text-sm">
                 <CalendarDaysIcon aria-hidden="true" className="size-4" />
-                Gerado em {formatReportDate(createdAt)}
+                {viewModel.identity.createdAtLabel}
               </p>
             </div>
           </div>
         </div>
       </header>
 
-      <DetailedBusinessSummary snapshot={snapshot} />
-      <DetailedItemBreakdown snapshot={snapshot} />
+      {management}
+
+      <ReportExecutiveSummary
+        summary={viewModel.executiveSummary}
+        priorityEyebrow="Comece por aqui"
+      />
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)]">
+        <ReportNumbers
+          numbers={viewModel.numbers}
+          title="Seus números"
+          description="Valores calculados com todos os itens e gastos que você informou."
+        />
+        <section
+          aria-labelledby="detailed-analysis-title"
+          className="grid gap-4"
+        >
+          <div className="mb-1 grid gap-2 px-1">
+            <h2 id="detailed-analysis-title" className="text-2xl">
+              Como chegamos a esse resultado
+            </h2>
+            <p className="text-muted-foreground max-w-2xl text-sm leading-6">
+              Veja os preços mínimos por item, o que sai das vendas, o resultado
+              do mês e o faturamento necessário.
+            </p>
+          </div>
+          {viewModel.sections.map((section) => (
+            <ReportSectionCard key={section.key} section={section} />
+          ))}
+        </section>
+      </div>
 
       <section aria-labelledby="item-details-title" className="grid gap-4">
-        <div className="grid gap-1 px-1">
-          <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
-            Item por item
-          </p>
+        <div className="grid gap-2 px-1">
           <h2 id="item-details-title" className="text-2xl">
-            Custos, margens e preços de referência
+            Item por item
           </h2>
+          <p className="text-muted-foreground max-w-3xl text-sm leading-6">
+            Veja como cada item participa do resultado. Os gastos mensais
+            permanecem no resultado geral e não entram no simulador individual.
+          </p>
         </div>
-        {snapshot.inputs.items.map((item) => {
-          const result = resultsById.get(item.id);
-          return result ? (
-            <DetailedItemCard key={item.id} item={item} result={result} />
-          ) : null;
-        })}
+        <Accordion
+          multiple
+          defaultValue={viewModel.items[0] ? [viewModel.items[0].id] : []}
+          className="grid gap-4"
+        >
+          {viewModel.items.map((item) => (
+            <DetailedItemCard key={item.id} item={item} />
+          ))}
+        </Accordion>
       </section>
 
-      <DetailedGuidanceList guidance={snapshot.guidance} />
+      <DetailedItemBreakdown comparison={viewModel.comparison} />
+      <DetailedGuidanceList guidance={viewModel.secondaryGuidance} />
     </main>
   );
 }
