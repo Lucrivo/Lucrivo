@@ -132,6 +132,10 @@ type DetailedDiagnosisCalculation = {
   missingVolumeItemIds: string[];
   items: DetailedItemCalculation[];
   monthlyGrossRevenueCents: number | null;
+  monthlyFeeAmountCents: number | null;
+  monthlyVariableCostCents: number | null;
+  monthlyNetRevenueCents: number | null;
+  monthlyCostCents: number | null;
   monthlyContributionCents: number | null;
   monthlyResultCents: number | null;
   mixContributionMarginBasisPoints: number | null;

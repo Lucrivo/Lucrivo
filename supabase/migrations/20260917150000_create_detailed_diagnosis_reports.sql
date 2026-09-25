@@ -349,6 +349,10 @@ begin
       is distinct from 'object'
     or pg_catalog.jsonb_typeof(p_report_snapshot #> '{results,items}')
       is distinct from 'array'
+    or pg_catalog.jsonb_typeof(p_report_snapshot -> 'executiveSummary')
+      is distinct from 'object'
+    or pg_catalog.jsonb_typeof(p_report_snapshot -> 'sections')
+      is distinct from 'array'
     or pg_catalog.jsonb_typeof(p_report_snapshot -> 'guidance')
       is distinct from 'array'
   then
@@ -368,6 +372,13 @@ begin
     or pg_catalog.jsonb_array_length(
       p_report_snapshot #> '{results,items}'
     ) is distinct from p_item_count
+    or pg_catalog.jsonb_array_length(p_report_snapshot -> 'sections')
+      is distinct from 4
+    or p_report_snapshot #>> '{sections,0,key}' is distinct from 'break_even'
+    or p_report_snapshot #>> '{sections,1,key}' is distinct from 'hidden_cost'
+    or p_report_snapshot #>> '{sections,2,key}'
+      is distinct from 'margin_diagnosis'
+    or p_report_snapshot #>> '{sections,3,key}' is distinct from 'sales_goal'
     or p_report_snapshot ->> 'schemaVersion'
       is distinct from p_schema_version::text
     or p_report_snapshot ->> 'calculationVersion'

@@ -269,6 +269,100 @@ as $$
   );
 $$;
 
+create function pg_temp.detailed_executive_summary(p_headline text)
+returns jsonb
+language sql
+immutable
+as $$
+  select jsonb_build_object(
+    'headline', p_headline,
+    'introduction', 'Veja o resultado geral e os próximos passos.',
+    'verdict', jsonb_build_object(
+      'label', 'Lucro',
+      'body', 'O mês terminou positivo.',
+      'tone', 'positive'
+    ),
+    'facts', jsonb_build_array(
+      jsonb_build_object(
+        'key', 'margin',
+        'currentLabel', 'Resultado do mês',
+        'currentValue', 'R$ 83,00',
+        'referenceLabel', 'Quanto sobra a cada R$ 100',
+        'referenceValue', '41,5%'
+      ),
+      jsonb_build_object(
+        'key', 'price',
+        'currentLabel', 'Faturamento atual',
+        'currentValue', 'R$ 200,00',
+        'referenceLabel', 'Quanto precisa vender para cobrir os gastos',
+        'referenceValue', 'R$ 2,39'
+      )
+    ),
+    'priority', jsonb_build_object(
+      'label', 'Faturamento do mês',
+      'body', 'Acompanhe o resultado e preserve as condições atuais.'
+    ),
+    'answers', jsonb_build_array(
+      jsonb_build_object(
+        'key', 'profitability',
+        'question', 'Estou ganhando dinheiro?',
+        'answer', 'Sim.'
+      ),
+      jsonb_build_object(
+        'key', 'price_sufficiency',
+        'question', 'Meus preços pagam os gastos?',
+        'answer', 'Sim.'
+      ),
+      jsonb_build_object(
+        'key', 'immediate_action',
+        'question', 'O que preciso fazer agora?',
+        'answer', 'Acompanhe o resultado.'
+      )
+    )
+  );
+$$;
+
+create function pg_temp.detailed_sections()
+returns jsonb
+language sql
+immutable
+as $$
+  select jsonb_build_array(
+    jsonb_build_object(
+      'key', 'break_even',
+      'title', 'Seus menores preços sem prejuízo',
+      'body', 'Valores por item.',
+      'emphasisLabel', 'Itens analisados',
+      'emphasisValue', '2',
+      'tone', 'neutral'
+    ),
+    jsonb_build_object(
+      'key', 'hidden_cost',
+      'title', 'O que sai das vendas',
+      'body', 'Custos e cobranças das vendas.',
+      'emphasisLabel', 'Receita líquida',
+      'emphasisValue', 'R$ 184,00',
+      'tone', 'neutral'
+    ),
+    jsonb_build_object(
+      'key', 'margin_diagnosis',
+      'title', 'Quanto sobra no mês',
+      'body', 'Resultado depois dos gastos.',
+      'emphasisLabel', 'Lucro',
+      'emphasisValue', 'R$ 83,00',
+      'tone', 'positive'
+    ),
+    jsonb_build_object(
+      'key', 'sales_goal',
+      'title', 'Quanto você precisa vender',
+      'body', 'Referência para pagar os gastos mensais.',
+      'emphasisLabel', 'Faturamento necessário',
+      'emphasisValue', 'R$ 2,39',
+      'tone', 'neutral'
+    )
+  );
+$$;
+
 create function pg_temp.detailed_snapshot()
 returns jsonb
 language sql
@@ -336,6 +430,10 @@ as $$
         from jsonb_array_elements(pg_temp.detailed_items()) as item
       ),
       'monthlyGrossRevenueCents', 20000,
+      'monthlyFeeAmountCents', 1600,
+      'monthlyVariableCostCents', 10000,
+      'monthlyNetRevenueCents', 18400,
+      'monthlyCostCents', 10100,
       'monthlyContributionCents', 8400,
       'monthlyResultCents', 8300,
       'mixContributionMarginBasisPoints', 4200,
@@ -344,6 +442,10 @@ as $$
       'verdict', 'adequate_margin',
       'priority', 'volume'
     ),
+    'executiveSummary', pg_temp.detailed_executive_summary(
+      'Seus produtos dão lucro?'
+    ),
+    'sections', pg_temp.detailed_sections(),
     'guidance', jsonb_build_array()
   );
 $$;
@@ -455,6 +557,10 @@ as $$
         from jsonb_array_elements(pg_temp.production_items()) as item
       ),
       'monthlyGrossRevenueCents', 6000,
+      'monthlyFeeAmountCents', 480,
+      'monthlyVariableCostCents', 1300,
+      'monthlyNetRevenueCents', 5520,
+      'monthlyCostCents', 1400,
       'monthlyContributionCents', 4220,
       'monthlyResultCents', 4120,
       'mixContributionMarginBasisPoints', 7033,
@@ -463,6 +569,10 @@ as $$
       'verdict', 'adequate_margin',
       'priority', 'volume'
     ),
+    'executiveSummary', pg_temp.detailed_executive_summary(
+      'Suas produções dão lucro?'
+    ),
+    'sections', pg_temp.detailed_sections(),
     'guidance', jsonb_build_array()
   );
 $$;
@@ -666,13 +776,23 @@ select throws_ok(
   'invalid detailed report payload',
   'a mismatched detailed snapshot is rejected atomically'
 );
+select throws_ok(
+  $$ select pg_temp.create_detailed_report(
+    p_submission_id => '71000000-0000-4000-8000-000000000103',
+    p_report_snapshot => pg_temp.detailed_snapshot() - 'sections'
+  ) $$,
+  '22023',
+  'invalid detailed report payload',
+  'a detailed snapshot without report sections is rejected atomically'
+);
 select results_eq(
   $$
     select count(*)::bigint
     from public.diagnoses
     where submission_id in (
       '71000000-0000-4000-8000-000000000101',
-      '71000000-0000-4000-8000-000000000102'
+      '71000000-0000-4000-8000-000000000102',
+      '71000000-0000-4000-8000-000000000103'
     )
   $$,
   array[0::bigint],

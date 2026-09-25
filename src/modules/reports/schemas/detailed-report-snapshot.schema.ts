@@ -6,6 +6,8 @@ import type { DetailedDiagnosisCommand } from "@/modules/detailed-diagnosis/type
 import {
   nonNegativeSafeIntegerSchema,
   positiveSafeIntegerSchema,
+  reportExecutiveSummarySchema,
+  reportSectionSchema,
   reportToneSchema,
   safeIntegerSchema,
 } from "./report-content.schema";
@@ -99,6 +101,10 @@ const detailedDiagnosisResultsSchema = z.strictObject({
   missingVolumeItemIds: z.array(uuidSchema),
   items: z.array(detailedItemCalculationSchema).min(1),
   monthlyGrossRevenueCents: nonNegativeSafeIntegerSchema.nullable(),
+  monthlyFeeAmountCents: nonNegativeSafeIntegerSchema.nullable(),
+  monthlyVariableCostCents: nonNegativeSafeIntegerSchema.nullable(),
+  monthlyNetRevenueCents: nonNegativeSafeIntegerSchema.nullable(),
+  monthlyCostCents: nonNegativeSafeIntegerSchema.nullable(),
   monthlyContributionCents: safeIntegerSchema.nullable(),
   monthlyResultCents: safeIntegerSchema.nullable(),
   mixContributionMarginBasisPoints: safeIntegerSchema.nullable(),
@@ -150,6 +156,8 @@ const detailedReportSnapshotSchema = z
     }),
     inputs: detailedDiagnosisCommandSchema,
     results: detailedDiagnosisResultsSchema,
+    executiveSummary: reportExecutiveSummarySchema,
+    sections: z.array(reportSectionSchema).length(4),
     guidance: z.array(detailedGuidanceSchema),
   })
   .superRefine((snapshot, context) => {
@@ -166,7 +174,9 @@ const detailedReportSnapshotSchema = z
       });
     }
 
-    if (snapshot.policy.proLaboreIncluded !== snapshot.inputs.proLaboreIncluded) {
+    if (
+      snapshot.policy.proLaboreIncluded !== snapshot.inputs.proLaboreIncluded
+    ) {
       context.addIssue({
         code: "custom",
         path: ["policy"],
@@ -219,6 +229,21 @@ const detailedReportSnapshotSchema = z
         message: "Os resultados não correspondem às entradas normalizadas.",
       });
     }
+
+    const expectedSectionKeys = [
+      "break_even",
+      "hidden_cost",
+      "margin_diagnosis",
+      "sales_goal",
+    ];
+    expectedSectionKeys.forEach((key, index) => {
+      if (snapshot.sections[index]?.key === key) return;
+      context.addIssue({
+        code: "custom",
+        path: ["sections", index, "key"],
+        message: "As seções do relatório detalhado estão fora de ordem.",
+      });
+    });
   });
 
 type DetailedReportSnapshotV1 = z.infer<typeof detailedReportSnapshotSchema>;

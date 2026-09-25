@@ -14,6 +14,7 @@ import {
   DETAILED_REPORT_CONTENT_VERSION,
   DETAILED_REPORT_SCHEMA_VERSION,
 } from "../types";
+import { buildDetailedReportContent } from "./build-detailed-report-content";
 
 function buildDetailedReportSnapshot(
   command: DetailedDiagnosisCommand,
@@ -42,6 +43,10 @@ function buildDetailedReportSnapshot(
     }),
   };
   const orderedCommand = { ...command, items: orderedItems };
+  const content = buildDetailedReportContent(
+    orderedCommand,
+    orderedCalculation,
+  );
   const snapshot = {
     schemaVersion: DETAILED_REPORT_SCHEMA_VERSION,
     calculationVersion: DETAILED_REPORT_CALCULATION_VERSION,
@@ -63,6 +68,8 @@ function buildDetailedReportSnapshot(
     },
     inputs: orderedCommand,
     results: orderedCalculation,
+    executiveSummary: content.executiveSummary,
+    sections: content.sections,
     guidance: buildDetailedGuidance(orderedCommand, orderedCalculation),
   };
 
