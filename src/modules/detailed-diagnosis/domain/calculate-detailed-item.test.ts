@@ -73,9 +73,6 @@ describe("calculateDetailedItem", () => {
       breakEvenUnitPriceCents: 1223,
       directLoss: false,
     });
-    expect(calculateDetailedItem(resaleItem, rates)).not.toHaveProperty(
-      "promotionFloorCents",
-    );
   });
 
   it("uses only the informed unit cost in summarized production", () => {

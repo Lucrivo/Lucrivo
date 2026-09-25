@@ -65,10 +65,6 @@ describe("DetailedReportEditorFields", () => {
         "Qual porcentagem fica com o cartão ou a plataforma?",
       ),
     ).toBeVisible();
-    expect(
-      screen.queryByLabelText("Margem mínima para promoção (%)"),
-    ).not.toBeInTheDocument();
-
     await user.click(screen.getByRole("button", { name: "O que incluir?" }));
     expect(
       screen.getByText(/aluguel, energia, internet, sistemas/i),

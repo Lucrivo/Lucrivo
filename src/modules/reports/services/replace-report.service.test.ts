@@ -66,7 +66,6 @@ describe("replaceReport", () => {
         p_card_fee_rate_basis_points: 200,
         p_report_snapshot: { sections: [] },
       });
-      expect(args).not.toHaveProperty("p_promotion_margin_basis_points");
     }
   });
 

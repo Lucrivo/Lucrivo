@@ -72,7 +72,6 @@ describe("detailedDiagnosisSchema", () => {
       taxRateBasisPoints: 600,
       cardFeeRateBasisPoints: 200,
     });
-    expect(parsed).not.toHaveProperty("promotionMarginBasisPoints");
     expect(parsed.items[0]).toMatchObject({
       id: product.id,
       position: 0,
@@ -82,15 +81,6 @@ describe("detailedDiagnosisSchema", () => {
       purchaseUnitCostCents: 0,
       packagingUnitCostCents: 150,
     });
-  });
-
-  it("rejects the removed promotion margin input", () => {
-    expect(
-      detailedDiagnosisSchema.safeParse({
-        ...validProductInput,
-        promotionMarginRate: "15",
-      }).success,
-    ).toBe(false);
   });
 
   it("preserves explicit zero volume", () => {

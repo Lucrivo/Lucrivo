@@ -41,8 +41,4 @@ function UnitSalePriceField(binding: FieldBinding) {
   );
 }
 
-export {
-  ProductionUnitCostField,
-  ResalePurchaseCostField,
-  UnitSalePriceField,
-};
+export { ProductionUnitCostField, ResalePurchaseCostField, UnitSalePriceField };

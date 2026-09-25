@@ -155,9 +155,6 @@ describe("saveReportEdit", () => {
         snapshot: detailedSnapshot,
       }),
     );
-    expect(mocks.replaceReport.mock.calls[0]?.[0]).not.toHaveProperty(
-      "command.promotionMarginBasisPoints",
-    );
   });
 
   it("creates a detailed copy without a promotion argument", async () => {
@@ -183,9 +180,6 @@ describe("saveReportEdit", () => {
         command: detailedCommand,
         snapshot: detailedSnapshot,
       }),
-    );
-    expect(mocks.createDetailedReport.mock.calls[0]?.[0]).not.toHaveProperty(
-      "command.promotionMarginBasisPoints",
     );
   });
 

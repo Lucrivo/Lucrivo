@@ -27,26 +27,26 @@
 
 ## File Structure
 
-| Path | Responsibility |
-| --- | --- |
-| `src/modules/quick-diagnosis/components/shared/business-fields.tsx` | Campos comuns de gastos mensais, volume, valor do dono e taxas. |
-| `src/modules/quick-diagnosis/components/shared/unit-value-fields.tsx` | Campos comuns de custo direto, custo de produção e preço de venda. |
-| `src/modules/detailed-diagnosis/components/detailed-wizard-state.ts` | Nova sequência do primeiro item, dados do negócio e itens adicionais. |
-| `src/modules/detailed-diagnosis/components/steps/detailed-item-name-step.tsx` | Nome do item como diferença exclusiva do detalhado. |
-| `src/modules/detailed-diagnosis/components/steps/detailed-item-volume-step.tsx` | Volume do item na mesma experiência do rápido. |
-| `src/modules/detailed-diagnosis/types.ts` | Entrada, comando e resultados detalhados sem margem promocional. |
-| `src/modules/detailed-diagnosis/domain/calculate-detailed-item.ts` | Resultado unitário e menor preço por item. |
-| `src/modules/detailed-diagnosis/domain/calculate-detailed-diagnosis.ts` | Totais mensais do conjunto de itens e faixa interna de 20%. |
-| `src/modules/reports/domain/build-detailed-report-content.ts` | Resumo executivo e quatro seções do rápido adaptadas a vários itens. |
-| `src/modules/reports/schemas/detailed-report-snapshot.schema.ts` | Snapshot detalhado atual, sem compatibilidade com o formato descartado. |
-| `src/modules/reports/presenters/to-detailed-report-view-model.ts` | Modelo de leitura geral, itens, comparação e simuladores. |
-| `src/modules/reports/components/detailed-report-detail.tsx` | Ordem final: resultado geral, itens, comparação e orientações. |
-| `src/modules/reports/components/detailed-item-card.tsx` | Item destacado, detalhes agrupados e simulador próprio. |
-| `src/modules/reports/components/report-list-card.tsx` | Cartão detalhado semanticamente igual ao rápido. |
-| `src/modules/reports/components/detailed-report-editor-fields.tsx` | Editor detalhado com os mesmos nomes e ajudas do fluxo. |
-| `supabase/migrations/20260917150000_create_detailed_diagnosis_reports.sql` | Contrato limpo de criação e armazenamento detalhado. |
-| `supabase/migrations/20260918234830_report_lifecycle.sql` | Substituição de relatório detalhado usando o novo contrato. |
-| `supabase/tests/detailed_diagnosis_reports.test.sql` | Segurança, validação e persistência do contrato limpo. |
+| Path                                                                            | Responsibility                                                          |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `src/modules/quick-diagnosis/components/shared/business-fields.tsx`             | Campos comuns de gastos mensais, volume, valor do dono e taxas.         |
+| `src/modules/quick-diagnosis/components/shared/unit-value-fields.tsx`           | Campos comuns de custo direto, custo de produção e preço de venda.      |
+| `src/modules/detailed-diagnosis/components/detailed-wizard-state.ts`            | Nova sequência do primeiro item, dados do negócio e itens adicionais.   |
+| `src/modules/detailed-diagnosis/components/steps/detailed-item-name-step.tsx`   | Nome do item como diferença exclusiva do detalhado.                     |
+| `src/modules/detailed-diagnosis/components/steps/detailed-item-volume-step.tsx` | Volume do item na mesma experiência do rápido.                          |
+| `src/modules/detailed-diagnosis/types.ts`                                       | Entrada, comando e resultados detalhados sem margem promocional.        |
+| `src/modules/detailed-diagnosis/domain/calculate-detailed-item.ts`              | Resultado unitário e menor preço por item.                              |
+| `src/modules/detailed-diagnosis/domain/calculate-detailed-diagnosis.ts`         | Totais mensais do conjunto de itens e faixa interna de 20%.             |
+| `src/modules/reports/domain/build-detailed-report-content.ts`                   | Resumo executivo e quatro seções do rápido adaptadas a vários itens.    |
+| `src/modules/reports/schemas/detailed-report-snapshot.schema.ts`                | Snapshot detalhado atual, sem compatibilidade com o formato descartado. |
+| `src/modules/reports/presenters/to-detailed-report-view-model.ts`               | Modelo de leitura geral, itens, comparação e simuladores.               |
+| `src/modules/reports/components/detailed-report-detail.tsx`                     | Ordem final: resultado geral, itens, comparação e orientações.          |
+| `src/modules/reports/components/detailed-item-card.tsx`                         | Item destacado, detalhes agrupados e simulador próprio.                 |
+| `src/modules/reports/components/report-list-card.tsx`                           | Cartão detalhado semanticamente igual ao rápido.                        |
+| `src/modules/reports/components/detailed-report-editor-fields.tsx`              | Editor detalhado com os mesmos nomes e ajudas do fluxo.                 |
+| `supabase/migrations/20260917150000_create_detailed_diagnosis_reports.sql`      | Contrato limpo de criação e armazenamento detalhado.                    |
+| `supabase/migrations/20260918234830_report_lifecycle.sql`                       | Substituição de relatório detalhado usando o novo contrato.             |
+| `supabase/tests/detailed_diagnosis_reports.test.sql`                            | Segurança, validação e persistência do contrato limpo.                  |
 
 ---
 
@@ -87,7 +87,9 @@ expect(screen.getByText(/aluguel, energia, internet, sistemas/i)).toBeVisible();
 
 render(<MonthlyVolumeField {...binding("monthlySalesVolume")} />);
 expect(screen.getByText("Opcional")).toBeVisible();
-expect(screen.getByText(/Digite 0 se não vendeu nenhuma unidade/)).toBeVisible();
+expect(
+  screen.getByText(/Digite 0 se não vendeu nenhuma unidade/),
+).toBeVisible();
 ```
 
 Also assert the owner switch, its help, both fee labels, `Quanto você paga ao fornecedor por unidade?`, `Quanto custa produzir uma unidade?`, and `Por quanto você vende cada unidade?`.

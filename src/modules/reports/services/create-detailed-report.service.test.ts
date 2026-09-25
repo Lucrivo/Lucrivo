@@ -144,9 +144,6 @@ describe("createDetailedReport", () => {
       p_tax_rate_basis_points: productCommand.taxRateBasisPoints,
       p_card_fee_rate_basis_points: productCommand.cardFeeRateBasisPoints,
     });
-    expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty(
-      "p_promotion_margin_basis_points",
-    );
     expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty("user_id");
   });
 

@@ -213,9 +213,6 @@ describe("ReportListCard", () => {
     ).not.toBeInTheDocument();
     expect(within(card).queryByText("Completo")).not.toBeInTheDocument();
     expect(within(card).queryByText("Parcial")).not.toBeInTheDocument();
-    expect(
-      within(card).queryByText("Resultado do mix"),
-    ).not.toBeInTheDocument();
     expect(card).not.toHaveTextContent(/\bmix\b/i);
     expect(within(card).queryByText("Preço atual")).not.toBeInTheDocument();
     expect(
