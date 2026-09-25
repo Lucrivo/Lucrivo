@@ -64,9 +64,6 @@ function DetailedReportDetail({
               </Badge>
             </div>
             <div className="grid gap-2">
-              <p className="text-primary text-xs font-semibold tracking-[0.18em] uppercase">
-                {viewModel.identity.reportLabel}
-              </p>
               <h1>{viewModel.identity.title}</h1>
               <p className="text-muted-foreground flex items-center gap-2 text-sm">
                 <CalendarDaysIcon aria-hidden="true" className="size-4" />
