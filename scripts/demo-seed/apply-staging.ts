@@ -6,6 +6,7 @@ import {
   STAGING_PROJECT_REF,
   assertStagingDatabaseUrl,
   assertStagingSeedAllowed,
+  toPostgresEnvironment,
 } from "./staging-target";
 
 const linkedProjectRef = readFileSync("supabase/.temp/project-ref", "utf8");
@@ -14,6 +15,11 @@ assertStagingSeedAllowed({
   linkedProjectRef,
 });
 const databaseUrl = assertStagingDatabaseUrl(process.env.STAGING_DATABASE_URL);
+const psqlEnvironment: NodeJS.ProcessEnv = { ...process.env };
+for (const name of Object.keys(psqlEnvironment)) {
+  if (name.startsWith("PG")) delete psqlEnvironment[name];
+}
+Object.assign(psqlEnvironment, toPostgresEnvironment(databaseUrl));
 checkGeneratedSeed(generateDemoSeed());
 
 console.log(
@@ -23,7 +29,7 @@ const apply = spawnSync(
   "psql",
   ["-X", "-v", "ON_ERROR_STOP=1", "-f", "supabase/seed.sql"],
   {
-    env: { ...process.env, PGDATABASE: databaseUrl },
+    env: psqlEnvironment,
     shell: false,
     stdio: ["ignore", "ignore", "inherit"],
   },
@@ -53,7 +59,7 @@ const counts = spawnSync(
   ],
   {
     encoding: "utf8",
-    env: { ...process.env, PGDATABASE: databaseUrl },
+    env: psqlEnvironment,
     shell: false,
     stdio: ["ignore", "pipe", "inherit"],
   },

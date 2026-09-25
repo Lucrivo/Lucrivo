@@ -4,6 +4,7 @@ import {
   STAGING_PROJECT_REF,
   assertStagingDatabaseUrl,
   assertStagingSeedAllowed,
+  toPostgresEnvironment,
 } from "./staging-target";
 
 describe("assertStagingSeedAllowed", () => {
@@ -45,5 +46,35 @@ describe("assertStagingSeedAllowed", () => {
         `postgresql://postgres.${STAGING_PROJECT_REF}:secret@pooler.supabase.com/postgres`,
       ),
     ).toContain(STAGING_PROJECT_REF);
+  });
+});
+
+describe("toPostgresEnvironment", () => {
+  it("passes a staging URI to psql as separate connection parameters", () => {
+    expect(
+      toPostgresEnvironment(
+        `postgresql://postgres.${STAGING_PROJECT_REF}:p%40ss@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require`,
+      ),
+    ).toEqual({
+      PGCONNECT_TIMEOUT: "15",
+      PGDATABASE: "postgres",
+      PGHOST: "aws-0-sa-east-1.pooler.supabase.com",
+      PGPASSWORD: "p@ss",
+      PGPORT: "6543",
+      PGSSLMODE: "require",
+      PGUSER: `postgres.${STAGING_PROJECT_REF}`,
+    });
+  });
+
+  it("uses the PostgreSQL default port and still requires TLS", () => {
+    expect(
+      toPostgresEnvironment(
+        `postgresql://postgres:secret@db.${STAGING_PROJECT_REF}.supabase.co/postgres`,
+      ),
+    ).toMatchObject({
+      PGDATABASE: "postgres",
+      PGPORT: "5432",
+      PGSSLMODE: "require",
+    });
   });
 });
