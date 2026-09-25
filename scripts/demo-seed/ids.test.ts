@@ -4,12 +4,8 @@ import { seedUuid } from "./ids";
 
 describe("seedUuid", () => {
   it("allocates stable UUIDs per kind and ordinal", () => {
-    expect(seedUuid("user", 0)).toBe(
-      "d1000000-0000-4000-8000-000000000000",
-    );
-    expect(seedUuid("user", 96)).toBe(
-      "d1000000-0000-4000-8000-000000000060",
-    );
+    expect(seedUuid("user", 0)).toBe("d1000000-0000-4000-8000-000000000000");
+    expect(seedUuid("user", 96)).toBe("d1000000-0000-4000-8000-000000000060");
     expect(seedUuid("submission", 1, 35)).not.toBe(
       seedUuid("submission", 1, 34),
     );

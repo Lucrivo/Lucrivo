@@ -190,9 +190,7 @@ function legacySnapshot(category: "product" | "production") {
   };
 }
 
-const productSnapshot = parseProductReportSnapshot(
-  legacySnapshot("product"),
-);
+const productSnapshot = parseProductReportSnapshot(legacySnapshot("product"));
 const productionSnapshot = parseProductionReportSnapshot(
   legacySnapshot("production"),
 );

@@ -1,12 +1,14 @@
 import type {
   SeedRpcCall,
   SeedSqlArgument,
+  SeedSqlExpression,
   SeedSqlValue,
   SqlCast,
 } from "./model";
 
 const IDENTIFIER_PATTERN = /^[a-z_][a-z0-9_.]*$/;
 const MAX_BATCH_SIZE = 500;
+const SAFE_EXPRESSION_PATTERN = /^[a-z0-9_.'(), +\-]*$/i;
 
 function assertIdentifier(value: string, label: string): void {
   if (!IDENTIFIER_PATTERN.test(value)) {
@@ -14,15 +16,17 @@ function assertIdentifier(value: string, label: string): void {
   }
 }
 
-function stableJsonValue(
-  value: unknown,
-  seen: WeakSet<object>,
-): unknown {
-  if (value === null || typeof value === "string" || typeof value === "boolean") {
+function stableJsonValue(value: unknown, seen: WeakSet<object>): unknown {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "boolean"
+  ) {
     return value;
   }
   if (typeof value === "number") {
-    if (!Number.isFinite(value)) throw new Error("JSON numbers must be finite.");
+    if (!Number.isFinite(value))
+      throw new Error("JSON numbers must be finite.");
     if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
       throw new Error("JSON integers must be safe integers.");
     }
@@ -60,8 +64,33 @@ function quoteText(value: string): string {
   return `'${value.replaceAll("'", "''")}'`;
 }
 
+function sqlExpression(sql: string): SeedSqlExpression {
+  if (
+    sql.length === 0 ||
+    !SAFE_EXPRESSION_PATTERN.test(sql) ||
+    sql.includes("--") ||
+    sql.includes("/*") ||
+    sql.includes("*/")
+  ) {
+    throw new Error("Unsafe SQL expression.");
+  }
+  return { __seedSqlExpression: true, sql };
+}
+
+function isSqlExpression(value: unknown): value is SeedSqlExpression {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "__seedSqlExpression" in value &&
+    value.__seedSqlExpression === true &&
+    "sql" in value &&
+    typeof value.sql === "string"
+  );
+}
+
 function sqlLiteral(value: SeedSqlValue, cast: SqlCast): string {
   if (value === null) return `null::${cast}`;
+  if (isSqlExpression(value)) return `(${value.sql})::${cast}`;
 
   if (cast === "jsonb") {
     if (typeof value !== "object") {
@@ -144,4 +173,4 @@ function renderRpcCall(call: SeedRpcCall): string {
     : `select ${call.functionName}();`;
 }
 
-export { renderBatchInsert, renderRpcCall, sqlLiteral };
+export { renderBatchInsert, renderRpcCall, sqlExpression, sqlLiteral };

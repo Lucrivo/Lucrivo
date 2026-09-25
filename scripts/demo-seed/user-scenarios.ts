@@ -60,7 +60,9 @@ function relativeTime(
 
 function clientReportCount(ordinal: number): number {
   if (!Number.isInteger(ordinal) || ordinal < 1 || ordinal > 96) {
-    throw new RangeError("Client ordinal must be an integer from 1 through 96.");
+    throw new RangeError(
+      "Client ordinal must be an integer from 1 through 96.",
+    );
   }
   if (ordinal <= 24) return 0;
   if (ordinal <= 48) return 1;
@@ -127,7 +129,10 @@ function buildUsers(): { admin: SeedUser; clients: SeedUser[] } {
   return { admin, clients };
 }
 
-function buildReports(admin: SeedUser, clients: SeedUser[]): SeedAssignedReport[] {
+function buildReports(
+  admin: SeedUser,
+  clients: SeedUser[],
+): SeedAssignedReport[] {
   const reports: SeedAssignedReport[] = allAdminReportTemplates.map(
     (template, reportOrdinal) => ({
       ownerId: admin.id,
@@ -140,7 +145,11 @@ function buildReports(admin: SeedUser, clients: SeedUser[]): SeedAssignedReport[
   );
 
   for (const client of clients) {
-    for (let reportOrdinal = 0; reportOrdinal < client.reportCount; reportOrdinal += 1) {
+    for (
+      let reportOrdinal = 0;
+      reportOrdinal < client.reportCount;
+      reportOrdinal += 1
+    ) {
       const template =
         currentReportTemplates[
           (client.ordinal + reportOrdinal) % currentReportTemplates.length
@@ -149,7 +158,11 @@ function buildReports(admin: SeedUser, clients: SeedUser[]): SeedAssignedReport[
         client.accessSource === "courtesy"
           ? -(2 + (reportOrdinal % 5))
           : -(reportOrdinal % 6);
-      const createdAt = relativeTime(months, (client.ordinal + reportOrdinal) % 20, 10);
+      const createdAt = relativeTime(
+        months,
+        (client.ordinal + reportOrdinal) % 20,
+        10,
+      );
       reports.push({
         ownerId: client.id,
         ownerOrdinal: client.ordinal,
@@ -157,9 +170,7 @@ function buildReports(admin: SeedUser, clients: SeedUser[]): SeedAssignedReport[
         templateKey: template.key,
         createdAt,
         deletedAt:
-          client.ordinal >= 81 &&
-          client.ordinal <= 88 &&
-          reportOrdinal < 2
+          client.ordinal >= 81 && client.ordinal <= 88 && reportOrdinal < 2
             ? { ...createdAt, days: createdAt.days + 1 }
             : null,
       });
@@ -322,7 +333,9 @@ function buildBilling(admin: SeedUser, clients: SeedUser[]) {
     );
   }
 
-  for (const client of clients.filter((user) => user.accessSource === "courtesy")) {
+  for (const client of clients.filter(
+    (user) => user.accessSource === "courtesy",
+  )) {
     const contract = baseContract({
       ownerOrdinal: client.ordinal,
       childOrdinal: 0,
@@ -402,10 +415,8 @@ function buildStatesAndEvents(
     const expiredCourtesy = client.ordinal >= 69 && client.ordinal <= 72;
     const state: SeedAdminUserState = {
       userId: client.id,
-      blockedAt:
-        client.accountState === "blocked" ? relativeTime(-1, 4) : null,
-      deletedAt:
-        client.accountState === "deleted" ? relativeTime(-1, 8) : null,
+      blockedAt: client.accountState === "blocked" ? relativeTime(-1, 4) : null,
+      deletedAt: client.accountState === "deleted" ? relativeTime(-1, 8) : null,
       courtesyExpiresAt: activeCourtesy
         ? relativeTime(2)
         : expiredCourtesy

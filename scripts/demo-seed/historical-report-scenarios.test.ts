@@ -30,7 +30,8 @@ describe("historical report scenario catalog", () => {
     ]);
 
     const [product, production] = historicalReportTemplates.map(
-      (template, index) => template.materialize(buildSeedReportIds(0, 34 + index)),
+      (template, index) =>
+        template.materialize(buildSeedReportIds(0, 34 + index)),
     );
     const productSnapshot = parseProductReportSnapshot(
       argumentValue(product!, "p_report_snapshot"),

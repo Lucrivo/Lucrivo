@@ -23,10 +23,7 @@ import {
   toProductionRpcArgs,
   toServiceRpcArgs,
 } from "@/modules/reports/services/report-rpc-args";
-import type {
-  ReportPriority,
-  ReportVerdict,
-} from "@/modules/reports/types";
+import type { ReportPriority, ReportVerdict } from "@/modules/reports/types";
 
 import { seedUuid } from "./ids";
 import type {
@@ -113,10 +110,7 @@ function castForArgument(name: string, value: unknown): SqlCast {
   return "text";
 }
 
-function toSeedRpcCall(
-  functionName: string,
-  args: object,
-): SeedRpcCall {
+function toSeedRpcCall(functionName: string, args: object): SeedRpcCall {
   const argumentsList: SeedSqlArgument[] = Object.entries(
     args as Record<string, SeedSqlValue>,
   ).map(([name, value]) => ({
@@ -149,8 +143,14 @@ const serviceShapes = [
 function buildServiceTemplate(
   shape: (typeof serviceShapes)[number],
 ): SeedReportTemplate {
-  const [expectedVerdict, pricingMethod, currentPrice, hasMaterialCost, materialCost, materialCostUnit] =
-    shape;
+  const [
+    expectedVerdict,
+    pricingMethod,
+    currentPrice,
+    hasMaterialCost,
+    materialCost,
+    materialCostUnit,
+  ] = shape;
   const key = `service.quick.${expectedVerdict}`;
 
   return {
@@ -494,7 +494,11 @@ function buildDetailedTemplate(
 
       const calculation = calculateDetailedDiagnosis(command);
       const snapshot = buildDetailedReportSnapshot(command, calculation);
-      assertVerdict(key, verdict, calculation.verdict as DetailedDiagnosisVerdict);
+      assertVerdict(
+        key,
+        verdict,
+        calculation.verdict as DetailedDiagnosisVerdict,
+      );
 
       return {
         templateKey: key,

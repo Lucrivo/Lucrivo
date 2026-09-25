@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  buildSeedReportIds,
-  currentReportTemplates,
-} from "./report-scenarios";
+import { buildSeedReportIds, currentReportTemplates } from "./report-scenarios";
 
 const expected = [
   ["service", "quick", "missing_price"],
@@ -73,7 +70,9 @@ describe("current report scenario catalog", () => {
       expect(report.verdict).toBe(
         currentReportTemplates[index]?.expectedVerdict,
       );
-      expect(report.submissionId).toBe(buildSeedReportIds(0, index).submissionId);
+      expect(report.submissionId).toBe(
+        buildSeedReportIds(0, index).submissionId,
+      );
       expect(argumentValue(report, "p_report_snapshot")).toBeTruthy();
     });
     expect(new Set(reports.map((report) => report.submissionId)).size).toBe(34);
@@ -93,14 +92,20 @@ describe("current report scenario catalog", () => {
         },
     );
 
-    expect(snapshots.slice(0, 7).map((snapshot) => snapshot.inputs.items.length)).toEqual([
-      1, 2, 3, 5, 8, 10, 12,
-    ]);
-    expect(snapshots.slice(7).map((snapshot) => snapshot.inputs.items.length)).toEqual([
-      12, 10, 8, 5, 3, 2, 1,
-    ]);
     expect(
-      [...new Set(snapshots.flatMap((snapshot) => snapshot.guidance.map(({ key }) => key)))].sort(),
+      snapshots.slice(0, 7).map((snapshot) => snapshot.inputs.items.length),
+    ).toEqual([1, 2, 3, 5, 8, 10, 12]);
+    expect(
+      snapshots.slice(7).map((snapshot) => snapshot.inputs.items.length),
+    ).toEqual([12, 10, 8, 5, 3, 2, 1]);
+    expect(
+      [
+        ...new Set(
+          snapshots.flatMap((snapshot) =>
+            snapshot.guidance.map(({ key }) => key),
+          ),
+        ),
+      ].sort(),
     ).toEqual(
       [
         "missing_volume",
@@ -120,18 +125,19 @@ describe("current report scenario catalog", () => {
           template.category === "production" &&
           template.analysisMode === "detailed",
       )
-      .map((template, index) =>
-        argumentValue(
-          template.materialize(buildSeedReportIds(8, index)),
-          "p_report_snapshot",
-        ) as {
-          inputs: {
-            items: Array<{
-              costMode: "summarized" | "technical_sheet";
-              ingredients?: unknown[];
-            }>;
-          };
-        },
+      .map(
+        (template, index) =>
+          argumentValue(
+            template.materialize(buildSeedReportIds(8, index)),
+            "p_report_snapshot",
+          ) as {
+            inputs: {
+              items: Array<{
+                costMode: "summarized" | "technical_sheet";
+                ingredients?: unknown[];
+              }>;
+            };
+          },
       );
     const modes = productionSnapshots.flatMap((snapshot) =>
       snapshot.inputs.items.map((item) => item.costMode),
@@ -140,8 +146,9 @@ describe("current report scenario catalog", () => {
     expect(modes).toContain("summarized");
     expect(modes).toContain("technical_sheet");
     expect(
-      productionSnapshots.some((snapshot) =>
-        new Set(snapshot.inputs.items.map((item) => item.costMode)).size > 1,
+      productionSnapshots.some(
+        (snapshot) =>
+          new Set(snapshot.inputs.items.map((item) => item.costMode)).size > 1,
       ),
     ).toBe(true);
     productionSnapshots

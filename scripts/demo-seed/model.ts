@@ -21,7 +21,13 @@ type SqlCast =
   | "public.service_pricing_method"
   | "public.service_work_hours_period";
 
-type SeedSqlValue = string | number | boolean | null | object | unknown[];
+type SeedSqlExpression = {
+  readonly __seedSqlExpression: true;
+  readonly sql: string;
+};
+
+type SeedSqlValue =
+  string | number | boolean | null | object | unknown[] | SeedSqlExpression;
 
 type SeedSqlArgument = {
   name: string;
@@ -37,10 +43,7 @@ type SeedRpcCall = {
 type SeedAccountState = "active" | "blocked" | "deleted";
 type SeedAccessSource = "free" | "paid" | "courtesy";
 type SeedCreatedBucket =
-  | "today"
-  | "week"
-  | "month"
-  | `month-${1 | 2 | 3 | 4 | 5}`;
+  "today" | "week" | "month" | `month-${1 | 2 | 3 | 4 | 5}`;
 
 type SeedUser = {
   ordinal: number;
@@ -178,6 +181,7 @@ export type {
   SeedRelativeTime,
   SeedRpcCall,
   SeedSqlArgument,
+  SeedSqlExpression,
   SeedSqlValue,
   SeedUuidKind,
   SeedUser,

@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import { seedUuid } from "./ids";
-import { renderBatchInsert, renderRpcCall, sqlLiteral } from "./sql";
+import {
+  renderBatchInsert,
+  renderRpcCall,
+  sqlExpression,
+  sqlLiteral,
+} from "./sql";
 
 describe("sqlLiteral", () => {
   it("escapes text while preserving unicode and newlines", () => {
-    expect(sqlLiteral("D'Ávila\nSul", "text")).toBe(
-      "'D''Ávila\nSul'::text",
-    );
+    expect(sqlLiteral("D'Ávila\nSul", "text")).toBe("'D''Ávila\nSul'::text");
   });
 
   it("renders nulls and primitive values with explicit casts", () => {
@@ -29,6 +32,18 @@ describe("sqlLiteral", () => {
     expect(() => sqlLiteral({ value: undefined }, "jsonb")).toThrow(/json/i);
     expect(() => sqlLiteral({ value: 1 }, "text")).toThrow(/jsonb/i);
   });
+
+  it("renders only explicitly safe SQL expressions", () => {
+    expect(
+      sqlLiteral(
+        sqlExpression("pg_catalog.statement_timestamp() - interval '2 days'"),
+        "timestamptz",
+      ),
+    ).toBe(
+      "(pg_catalog.statement_timestamp() - interval '2 days')::timestamptz",
+    );
+    expect(() => sqlExpression("now(); drop table users")).toThrow(/unsafe/i);
+  });
 });
 
 describe("renderBatchInsert", () => {
@@ -42,7 +57,8 @@ describe("renderBatchInsert", () => {
       columns: ["id", "display_name"],
       rows,
       casts: ["uuid", "text"],
-      suffix: "on conflict (id) do update set display_name = excluded.display_name",
+      suffix:
+        "on conflict (id) do update set display_name = excluded.display_name",
     });
 
     expect(sql.match(/insert into public\.profiles/g)).toHaveLength(2);
