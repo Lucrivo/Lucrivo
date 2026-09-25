@@ -1,38 +1,29 @@
-import { StepField } from "@/modules/quick-diagnosis/components/shared/step-field";
+import { SalesFeesFields } from "@/modules/quick-diagnosis/components/shared/business-fields";
 
 import type { DetailedStepProps } from "./types";
 
 function DetailedFeesStep({ state, dispatch }: DetailedStepProps) {
-  const onChange = (
-    field: "taxRate" | "cardFeeRate",
-    value: string,
-  ) => dispatch({ type: "changeGeneralField", field, value });
-
   return (
-    <div className="grid gap-5">
-      <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
-        Estas porcentagens se aplicam igualmente a todos os itens deste
-        diagnóstico.
-      </p>
-      <div className="grid gap-5 sm:grid-cols-2">
-        <StepField
-          field="taxRate"
-          label="Qual porcentagem da venda vai para impostos?"
-          value={state.values.taxRate}
-          errors={state.fieldErrors}
-          onChange={onChange}
-          suffix="%"
-        />
-        <StepField
-          field="cardFeeRate"
-          label="Qual porcentagem fica com o cartão ou a plataforma?"
-          value={state.values.cardFeeRate}
-          errors={state.fieldErrors}
-          onChange={onChange}
-          suffix="%"
-        />
-      </div>
-    </div>
+    <SalesFeesFields
+      tax={{
+        field: "taxRate",
+        value: state.values.taxRate,
+        errors: state.fieldErrors,
+        onChange: (value) =>
+          dispatch({ type: "changeGeneralField", field: "taxRate", value }),
+      }}
+      card={{
+        field: "cardFeeRate",
+        value: state.values.cardFeeRate,
+        errors: state.fieldErrors,
+        onChange: (value) =>
+          dispatch({
+            type: "changeGeneralField",
+            field: "cardFeeRate",
+            value,
+          }),
+      }}
+    />
   );
 }
 

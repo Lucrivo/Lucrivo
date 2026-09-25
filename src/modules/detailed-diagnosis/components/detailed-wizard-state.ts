@@ -9,20 +9,21 @@ import type {
 } from "../types";
 
 type DetailedWizardPhase =
+  | "itemName"
+  | "itemValues"
   | "fixedExpenses"
+  | "itemVolume"
   | "ownerCompensation"
   | "fees"
-  | "itemBasics"
-  | "itemCosts"
   | "itemComplete"
   | "review";
 
-type DetailedItemSubstep = "basics" | "costs" | "complete";
+type DetailedItemJourney = "first" | "additional" | "editing";
 type DetailedSubmitError = "unauthorized" | "limit_reached" | "create_failed";
 
 type DetailedWizardState = {
   phase: DetailedWizardPhase;
-  itemSubstep: DetailedItemSubstep;
+  itemJourney: DetailedItemJourney;
   activeItemId: string;
   values: DetailedDiagnosisInput;
   fieldErrors: DetailedDiagnosisFieldErrors;
@@ -101,30 +102,33 @@ type DetailedWizardAction =
   | { type: "submitFailed"; error: DetailedSubmitError }
   | { type: "reset"; createId: () => string };
 
-const nextPhase: Record<DetailedWizardPhase, DetailedWizardPhase> = {
-  fixedExpenses: "ownerCompensation",
-  ownerCompensation: "fees",
-  fees: "itemBasics",
-  itemBasics: "itemCosts",
-  itemCosts: "itemComplete",
-  itemComplete: "review",
-  review: "review",
-};
+function nextDetailedPhase(state: DetailedWizardState): DetailedWizardPhase {
+  if (state.phase === "itemName") return "itemValues";
+  if (state.phase === "itemValues")
+    return state.itemJourney === "first" ? "fixedExpenses" : "itemVolume";
+  if (state.phase === "fixedExpenses") return "itemVolume";
+  if (state.phase === "itemVolume")
+    return state.itemJourney === "first" ? "ownerCompensation" : "itemComplete";
+  if (state.phase === "ownerCompensation") return "fees";
+  if (state.phase === "fees") return "itemComplete";
+  if (state.phase === "itemComplete") return "review";
+  return "review";
+}
 
-const previousPhase: Record<DetailedWizardPhase, DetailedWizardPhase> = {
-  fixedExpenses: "fixedExpenses",
-  ownerCompensation: "fixedExpenses",
-  fees: "ownerCompensation",
-  itemBasics: "fees",
-  itemCosts: "itemBasics",
-  itemComplete: "itemCosts",
-  review: "itemComplete",
-};
-
-function substepForPhase(phase: DetailedWizardPhase): DetailedItemSubstep {
-  if (phase === "itemCosts") return "costs";
-  if (phase === "itemComplete" || phase === "review") return "complete";
-  return "basics";
+function previousDetailedPhase(
+  state: DetailedWizardState,
+): DetailedWizardPhase {
+  if (state.phase === "itemName") return "itemComplete";
+  if (state.phase === "itemValues") return "itemName";
+  if (state.phase === "fixedExpenses") return "itemValues";
+  if (state.phase === "itemVolume")
+    return state.itemJourney === "first" ? "fixedExpenses" : "itemValues";
+  if (state.phase === "ownerCompensation") return "itemVolume";
+  if (state.phase === "fees") return "ownerCompensation";
+  if (state.phase === "itemComplete")
+    return state.itemJourney === "first" ? "fees" : "itemVolume";
+  if (state.phase === "review") return "itemComplete";
+  return "itemName";
 }
 
 function blankIngredient(
@@ -191,8 +195,8 @@ function createInitialDetailedWizardState(
   const item = createBlankItem(category, createId);
 
   return {
-    phase: "fixedExpenses",
-    itemSubstep: "basics",
+    phase: "itemName",
+    itemJourney: "first",
     activeItemId: item.id,
     values: {
       submissionId,
@@ -270,18 +274,15 @@ function resolveErrorPhase(path: string): {
     return { phase: "fees", itemIndex: null };
 
   const match = /^items\.(\d+)(?:\.(.+))?/.exec(path);
-  if (!match) return { phase: "fixedExpenses", itemIndex: null };
+  if (!match) return { phase: "itemName", itemIndex: null };
   const nestedPath = match[2] ?? "";
-  const baseFields = new Set([
-    "id",
-    "kind",
-    "name",
-    "unitSalePrice",
-    "monthlySalesVolume",
-  ]);
+  if (nestedPath === "name" || nestedPath === "id" || nestedPath === "kind")
+    return { phase: "itemName", itemIndex: Number(match[1]) };
+  if (nestedPath === "monthlySalesVolume")
+    return { phase: "itemVolume", itemIndex: Number(match[1]) };
 
   return {
-    phase: baseFields.has(nestedPath) ? "itemBasics" : "itemCosts",
+    phase: "itemValues",
     itemIndex: Number(match[1]),
   };
 }
@@ -472,8 +473,8 @@ function detailedWizardReducer(
       const item = createBlankItem(state.values.category, action.createId);
       return {
         ...state,
-        phase: "itemBasics",
-        itemSubstep: "basics",
+        phase: "itemName",
+        itemJourney: "additional",
         activeItemId: item.id,
         values: { ...state.values, items: [...state.values.items, item] },
         pendingIngredientNameId:
@@ -488,8 +489,8 @@ function detailedWizardReducer(
         ? state
         : {
             ...state,
-            phase: "itemBasics",
-            itemSubstep: "basics",
+            phase: "itemName",
+            itemJourney: "editing",
             activeItemId: action.itemId,
             pendingRemovalItemId: null,
           };
@@ -531,13 +532,11 @@ function detailedWizardReducer(
     }
 
     case "next": {
-      const phase = nextPhase[state.phase];
-      return { ...state, phase, itemSubstep: substepForPhase(phase) };
+      return { ...state, phase: nextDetailedPhase(state) };
     }
 
     case "back": {
-      const phase = previousPhase[state.phase];
-      return { ...state, phase, itemSubstep: substepForPhase(phase) };
+      return { ...state, phase: previousDetailedPhase(state) };
     }
 
     case "applyServerErrors": {
@@ -557,7 +556,12 @@ function detailedWizardReducer(
       return {
         ...state,
         phase: resolved.phase,
-        itemSubstep: substepForPhase(resolved.phase),
+        itemJourney:
+          resolved.itemIndex === null
+            ? "first"
+            : state.itemJourney === "first" && state.phase !== "review"
+              ? "first"
+              : "editing",
         activeItemId: activeItem?.id ?? state.activeItemId,
         fieldErrors: action.fieldErrors,
         status: "editing",
@@ -586,7 +590,7 @@ export {
   detailedWizardReducer,
   type DetailedGeneralField,
   type DetailedIngredientTextField,
-  type DetailedItemSubstep,
+  type DetailedItemJourney,
   type DetailedItemTextField,
   type DetailedSubmitError,
   type DetailedWizardAction,

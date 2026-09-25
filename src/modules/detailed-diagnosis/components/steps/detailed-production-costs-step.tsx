@@ -1,6 +1,10 @@
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { StepField } from "@/modules/quick-diagnosis/components/shared/step-field";
+import {
+  ProductionUnitCostField,
+  UnitSalePriceField,
+} from "@/modules/quick-diagnosis/components/shared/unit-value-fields";
 
 import { IngredientFields } from "./ingredient-fields";
 import type { DetailedStepProps } from "./types";
@@ -47,12 +51,11 @@ function DetailedProductionCostsStep({ state, dispatch }: DetailedStepProps) {
       </div>
 
       {item.costMode === "summarized" ? (
-        <StepField
+        <ProductionUnitCostField
           field={`items.${itemIndex}.productionUnitCost`}
-          label="Custo total por unidade pronta"
           value={item.productionUnitCost}
           errors={state.fieldErrors}
-          onChange={(_field, value) =>
+          onChange={(value) =>
             dispatch({
               type: "changeItemField",
               itemId: item.id,
@@ -60,7 +63,6 @@ function DetailedProductionCostsStep({ state, dispatch }: DetailedStepProps) {
               value,
             })
           }
-          prefix="R$"
         />
       ) : (
         <div className="grid gap-6">
@@ -114,6 +116,20 @@ function DetailedProductionCostsStep({ state, dispatch }: DetailedStepProps) {
           />
         </div>
       )}
+
+      <UnitSalePriceField
+        field={`items.${itemIndex}.unitSalePrice`}
+        value={item.unitSalePrice}
+        errors={state.fieldErrors}
+        onChange={(value) =>
+          dispatch({
+            type: "changeItemField",
+            itemId: item.id,
+            field: "unitSalePrice",
+            value,
+          })
+        }
+      />
     </div>
   );
 }

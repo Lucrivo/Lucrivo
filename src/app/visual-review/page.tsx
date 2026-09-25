@@ -81,7 +81,7 @@ function VisualReviewPage() {
     return (
       <main className="mx-auto max-w-5xl p-4 sm:p-8">
         <DetailedProductionCostsStep
-          state={{ ...wizardState, phase: "itemCosts", itemSubstep: "costs" }}
+          state={{ ...wizardState, phase: "itemValues" }}
           dispatch={dispatch}
         />
       </main>

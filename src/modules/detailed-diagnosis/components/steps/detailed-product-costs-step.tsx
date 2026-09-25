@@ -1,4 +1,8 @@
 import { StepField } from "@/modules/quick-diagnosis/components/shared/step-field";
+import {
+  ResalePurchaseCostField,
+  UnitSalePriceField,
+} from "@/modules/quick-diagnosis/components/shared/unit-value-fields";
 
 import type { DetailedStepProps } from "./types";
 
@@ -11,16 +15,12 @@ function DetailedProductCostsStep({ state, dispatch }: DetailedStepProps) {
 
   return (
     <div className="grid gap-5">
-      <p className="text-muted-foreground text-sm">
-        Informe os custos de cada produto para revenda, sempre por unidade.
-      </p>
       <div className="grid gap-5 sm:grid-cols-2">
-        <StepField
+        <ResalePurchaseCostField
           field={`items.${itemIndex}.purchaseUnitCost`}
-          label="Custo de compra por unidade"
           value={item.purchaseUnitCost}
           errors={state.fieldErrors}
-          onChange={(_field, value) =>
+          onChange={(value) =>
             dispatch({
               type: "changeItemField",
               itemId: item.id,
@@ -28,7 +28,19 @@ function DetailedProductCostsStep({ state, dispatch }: DetailedStepProps) {
               value,
             })
           }
-          prefix="R$"
+        />
+        <UnitSalePriceField
+          field={`items.${itemIndex}.unitSalePrice`}
+          value={item.unitSalePrice}
+          errors={state.fieldErrors}
+          onChange={(value) =>
+            dispatch({
+              type: "changeItemField",
+              itemId: item.id,
+              field: "unitSalePrice",
+              value,
+            })
+          }
         />
         <StepField
           field={`items.${itemIndex}.packagingUnitCost`}
