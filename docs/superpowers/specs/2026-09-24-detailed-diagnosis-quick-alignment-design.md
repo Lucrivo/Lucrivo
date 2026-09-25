@@ -214,8 +214,8 @@ Os detalhes serão agrupados em:
 
 Cada item terá seu próprio simulador de desconto. O simulador mostrará o preço
 com desconto, o que ainda sobra na venda e quando a venda passa a gerar perda.
-Também chamará atenção para descontos acima de 20%, seguindo a regra implícita
-do diagnóstico rápido.
+Também chamará atenção quando, depois do desconto, sobrarem menos de R$ 20 a
+cada R$ 100 vendidos, seguindo a regra implícita do diagnóstico rápido.
 
 Junto ao menor preço, o relatório explicará:
 
@@ -271,7 +271,7 @@ entre os itens.
 A simulação de desconto combina duas verificações:
 
 - se o preço com desconto ainda cobre os gastos daquela venda;
-- se o desconto ultrapassa a faixa de atenção de 20%.
+- se, depois do desconto, ainda sobram pelo menos R$ 20 a cada R$ 100 vendidos.
 
 A faixa de 20% é uma regra do sistema, não uma resposta do usuário. Ela será
 registrada no resultado para que a explicação continue ligada à regra usada na
