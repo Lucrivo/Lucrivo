@@ -6,12 +6,16 @@ import { PlusIcon } from "lucide-react";
 import { Accordion } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import type { DetailedDiagnosisInput } from "@/modules/detailed-diagnosis/types";
+import {
+  FixedExpensesField,
+  OwnerCompensationFields,
+  SalesFeesFields,
+} from "@/modules/quick-diagnosis/components/shared/business-fields";
 
 import { buildDetailedEditorItemSummary } from "../editor/detailed-editor-summary";
 import type { EditableReportDraft } from "../editor/report-editor.types";
 import type { CurrentDetailedReportSnapshot } from "../types";
 import { DetailedEditorItem } from "./detailed-editor-item";
-import { EditorField } from "./quick-report-editor-fields";
 
 type DetailedDraft = Extract<EditableReportDraft, { kind: "detailed" }>;
 
@@ -119,40 +123,37 @@ function DetailedReportEditorFields({
             Estes valores afetam todos os itens desta simulação.
           </p>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <EditorField
-            id="fixedMonthlyExpenses"
-            label="Gastos fixos mensais (R$)"
+        <div className="grid gap-5">
+          <FixedExpensesField
+            field="fixedMonthlyExpenses"
             value={values.fixedMonthlyExpenses}
-            error={errors.fixedMonthlyExpenses}
+            errors={errors}
             onChange={(value) => updateRoot("fixedMonthlyExpenses", value)}
           />
-          <EditorField
-            id="proLabore"
-            label="Pró-labore mensal (R$)"
-            value={values.proLabore}
-            error={errors.proLabore}
-            onChange={(value) =>
-              changeValues({
-                ...values,
-                proLabore: value,
-                proLaboreIncluded: value.trim() !== "",
-              })
-            }
+          <OwnerCompensationFields
+            switchId="proLaboreIncluded"
+            included={values.proLaboreIncluded}
+            amount={{
+              field: "proLabore",
+              value: values.proLabore,
+              errors,
+              onChange: (value) => updateRoot("proLabore", value),
+            }}
+            onIncludedChange={(value) => updateRoot("proLaboreIncluded", value)}
           />
-          <EditorField
-            id="taxRate"
-            label="Impostos (%)"
-            value={values.taxRate}
-            error={errors.taxRate}
-            onChange={(value) => updateRoot("taxRate", value)}
-          />
-          <EditorField
-            id="cardFeeRate"
-            label="Cartão ou plataforma (%)"
-            value={values.cardFeeRate}
-            error={errors.cardFeeRate}
-            onChange={(value) => updateRoot("cardFeeRate", value)}
+          <SalesFeesFields
+            tax={{
+              field: "taxRate",
+              value: values.taxRate,
+              errors,
+              onChange: (value) => updateRoot("taxRate", value),
+            }}
+            card={{
+              field: "cardFeeRate",
+              value: values.cardFeeRate,
+              errors,
+              onChange: (value) => updateRoot("cardFeeRate", value),
+            }}
           />
         </div>
       </section>

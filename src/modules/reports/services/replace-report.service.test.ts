@@ -11,7 +11,16 @@ vi.mock("./create-production-report.service", () => ({
   toProductionRpcArgs: () => ({ marker: "production" }),
 }));
 vi.mock("./create-detailed-report.service", () => ({
-  toDetailedRpcArgs: () => ({ marker: "detailed" }),
+  toDetailedRpcArgs: () => ({
+    marker: "detailed",
+    p_fixed_monthly_expenses_cents: 80_000,
+    p_pro_labore_included: false,
+    p_pro_labore_cents: 0,
+    p_tax_rate_basis_points: 600,
+    p_card_fee_rate_basis_points: 200,
+    p_items: [],
+    p_report_snapshot: { sections: [] },
+  }),
 }));
 
 import { replaceReport } from "./replace-report.service";
@@ -48,6 +57,17 @@ describe("replaceReport", () => {
         p_expected_version: 2,
       }),
     );
+    if (kind === "detailed") {
+      const args = rpc.mock.calls[0]?.[1];
+      expect(args).toMatchObject({
+        p_fixed_monthly_expenses_cents: 80_000,
+        p_pro_labore_included: false,
+        p_tax_rate_basis_points: 600,
+        p_card_fee_rate_basis_points: 200,
+        p_report_snapshot: { sections: [] },
+      });
+      expect(args).not.toHaveProperty("p_promotion_margin_basis_points");
+    }
   });
 
   it.each([

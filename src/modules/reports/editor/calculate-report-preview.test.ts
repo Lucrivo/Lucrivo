@@ -30,4 +30,26 @@ describe("calculateReportPreview", () => {
       fieldErrors: { unitSalePrice: expect.any(Array) },
     });
   });
+
+  it("keeps an invalid detailed draft intact and maps its nested field", () => {
+    const draft = toEditableReportDraft(snapshots()[3]!, () => submissionId)!;
+    if (draft.kind !== "detailed") throw new Error("unexpected draft");
+    const invalidDraft = {
+      ...draft,
+      values: {
+        ...draft.values,
+        items: [
+          { ...draft.values.items[0]!, unitSalePrice: "" },
+          ...draft.values.items.slice(1),
+        ],
+      },
+    };
+    const before = structuredClone(invalidDraft);
+
+    expect(calculateReportPreview(invalidDraft)).toMatchObject({
+      status: "invalid",
+      fieldErrors: { "items.0.unitSalePrice": expect.any(Array) },
+    });
+    expect(invalidDraft).toEqual(before);
+  });
 });

@@ -134,12 +134,14 @@ describe("toEditableReportDraft", () => {
       kind: "production",
       values: { productionUnitCost: "12.5", monthlySalesVolume: "40" },
     });
-    expect(toEditableReportDraft(detailed!, () => submissionId)).toMatchObject({
+    const detailedDraft = toEditableReportDraft(detailed!, () => submissionId);
+    expect(detailedDraft).toMatchObject({
       kind: "detailed",
       values: {
         items: [{ id: itemId, monthlySalesVolume: "" }],
       },
     });
+    expect(detailedDraft?.values).not.toHaveProperty("promotionMargin");
   });
 
   it("keeps legacy snapshots readable but not editable", () => {

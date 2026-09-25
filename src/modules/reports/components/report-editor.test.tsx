@@ -116,7 +116,7 @@ describe("ReportEditor", () => {
   it.each([
     ["service", 0, "Preço cobrado hoje (R$)", "120.00"],
     ["production", 2, "Preço de venda (R$)", "45.00"],
-    ["detailed", 3, "Preço de venda (R$)", "45.00"],
+    ["detailed", 3, "Por quanto você vende cada unidade?", "45.00"],
   ] as const)(
     "edits and submits a valid %s draft",
     async (kind, snapshotIndex, fieldLabel, value) => {
@@ -187,6 +187,44 @@ describe("ReportEditor", () => {
     expect(
       screen.getByText("Revise os campos destacados antes de salvar."),
     ).toBeVisible();
+    expect(saveReportEdit).not.toHaveBeenCalled();
+  });
+
+  it("keeps an invalid detailed draft and reopens its first invalid item", async () => {
+    const user = userEvent.setup();
+    const editableSnapshot = allEditableSnapshots()[3]!;
+    const editableDraft = toEditableReportDraft(
+      editableSnapshot,
+      () => submissionId,
+    )!;
+    render(
+      <ReportEditor
+        diagnosisId={41}
+        version={2}
+        initialDraft={editableDraft}
+        initialSnapshot={editableSnapshot}
+        onCancel={vi.fn()}
+        onPlanRequired={vi.fn()}
+      />,
+    );
+
+    const trigger = screen.getByRole("button", { name: /Abrir Produto A/i });
+    await user.click(trigger);
+    const price = screen.getByLabelText("Por quanto você vende cada unidade?");
+    await user.clear(price);
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText("Por quanto você vende cada unidade?"),
+      ).toHaveFocus(),
+    );
+    expect(
+      screen.getByLabelText("Por quanto você vende cada unidade?"),
+    ).toHaveValue("");
     expect(saveReportEdit).not.toHaveBeenCalled();
   });
 

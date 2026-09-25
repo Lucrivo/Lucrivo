@@ -17,6 +17,12 @@ import type {
   DetailedDiagnosisInput,
   DetailedProductionItemInput,
 } from "@/modules/detailed-diagnosis/types";
+import { MonthlyVolumeField } from "@/modules/quick-diagnosis/components/shared/business-fields";
+import {
+  ProductionUnitCostField,
+  ResalePurchaseCostField,
+  UnitSalePriceField,
+} from "@/modules/quick-diagnosis/components/shared/unit-value-fields";
 
 import type { DetailedEditorItemSummary } from "../editor/detailed-editor-summary";
 import { EditorField } from "./quick-report-editor-fields";
@@ -112,29 +118,25 @@ function DetailedEditorItem({
             error={errors[`${base}.name`]}
             onChange={(value) => onChange("name", value)}
           />
-          <EditorField
-            id={`${base}.unitSalePrice`}
-            label="Preço de venda (R$)"
+          <UnitSalePriceField
+            field={`${base}.unitSalePrice`}
             value={item.unitSalePrice}
-            error={errors[`${base}.unitSalePrice`]}
+            errors={errors}
             onChange={(value) => onChange("unitSalePrice", value)}
           />
-          <EditorField
-            id={`${base}.monthlySalesVolume`}
-            label="Vendas por mês"
-            inputMode="numeric"
+          <MonthlyVolumeField
+            field={`${base}.monthlySalesVolume`}
             value={item.monthlySalesVolume}
-            error={errors[`${base}.monthlySalesVolume`]}
+            errors={errors}
             onChange={(value) => onChange("monthlySalesVolume", value)}
           />
         </div>
         {item.kind === "resale" ? (
           <div className="grid gap-4 md:grid-cols-2">
-            <EditorField
-              id={`${base}.purchaseUnitCost`}
-              label="Custo de compra (R$)"
+            <ResalePurchaseCostField
+              field={`${base}.purchaseUnitCost`}
               value={item.purchaseUnitCost}
-              error={errors[`${base}.purchaseUnitCost`]}
+              errors={errors}
               onChange={(value) => onChange("purchaseUnitCost", value)}
             />
             <EditorField
@@ -235,11 +237,10 @@ function ProductionItemFields({
       </div>
       {item.costMode === "summarized" ? (
         <div className="md:max-w-sm">
-          <EditorField
-            id={`${base}.productionUnitCost`}
-            label="Custo de fabricação (R$)"
+          <ProductionUnitCostField
+            field={`${base}.productionUnitCost`}
             value={item.productionUnitCost}
-            error={errors[`${base}.productionUnitCost`]}
+            errors={errors}
             onChange={(value) => onChange("productionUnitCost", value)}
           />
         </div>

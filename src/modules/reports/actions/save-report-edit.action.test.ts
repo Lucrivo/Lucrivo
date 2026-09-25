@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   calculateReportPreview: vi.fn(),
+  createDetailedReport: vi.fn(),
   createProductReport: vi.fn(),
   getBillingOverview: vi.fn(),
   parseProduct: vi.fn(),
+  parseDetailed: vi.fn(),
   replaceReport: vi.fn(),
   requireUser: vi.fn(),
 }));
@@ -20,6 +22,12 @@ vi.mock("@/modules/billing/services/get-billing-overview.service", () => ({
 vi.mock("@/modules/quick-diagnosis/schemas/product-diagnosis.schema", () => ({
   productDiagnosisSchema: { parse: mocks.parseProduct },
 }));
+vi.mock(
+  "@/modules/detailed-diagnosis/schemas/detailed-diagnosis.schema",
+  () => ({
+    detailedDiagnosisSchema: { parse: mocks.parseDetailed },
+  }),
+);
 vi.mock("../editor/calculate-report-preview", () => ({
   calculateReportPreview: mocks.calculateReportPreview,
 }));
@@ -33,7 +41,7 @@ vi.mock("../services/create-production-report.service", () => ({
   createProductionReport: vi.fn(),
 }));
 vi.mock("../services/create-detailed-report.service", () => ({
-  createDetailedReport: vi.fn(),
+  createDetailedReport: mocks.createDetailedReport,
 }));
 vi.mock("../services/replace-report.service", () => ({
   replaceReport: mocks.replaceReport,
@@ -44,12 +52,27 @@ import { saveReportEdit } from "./save-report-edit.action";
 const draft = { kind: "product", values: { unitSalePrice: "45.00" } } as never;
 const command = { submissionId: "new-submission" };
 const snapshot = { category: "product", results: {} };
+const detailedDraft = {
+  kind: "detailed",
+  values: { fixedMonthlyExpenses: "800", items: [] },
+} as never;
+const detailedCommand = {
+  submissionId: "new-detailed-submission",
+  fixedMonthlyExpensesCents: 80_000,
+  items: [],
+};
+const detailedSnapshot = {
+  analysisMode: "detailed",
+  category: "product",
+  sections: [],
+};
 
 describe("saveReportEdit", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.calculateReportPreview.mockReturnValue({ status: "valid", snapshot });
     mocks.parseProduct.mockReturnValue(command);
+    mocks.parseDetailed.mockReturnValue(detailedCommand);
     mocks.requireUser.mockResolvedValue({
       userId: "user-id",
       supabase: { rpc: vi.fn() },
@@ -105,6 +128,65 @@ describe("saveReportEdit", () => {
       expect.objectContaining({ command, snapshot }),
     );
     expect(mocks.replaceReport).not.toHaveBeenCalled();
+  });
+
+  it("replaces a detailed report with the clean command and snapshot", async () => {
+    mocks.calculateReportPreview.mockReturnValue({
+      status: "valid",
+      snapshot: detailedSnapshot,
+    });
+    mocks.replaceReport.mockResolvedValue({
+      status: "success",
+      diagnosisId: 41,
+      version: 3,
+    });
+
+    await saveReportEdit({
+      diagnosisId: 41,
+      expectedVersion: 2,
+      mode: "replace",
+      draft: detailedDraft,
+    });
+
+    expect(mocks.replaceReport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "detailed",
+        command: detailedCommand,
+        snapshot: detailedSnapshot,
+      }),
+    );
+    expect(mocks.replaceReport.mock.calls[0]?.[0]).not.toHaveProperty(
+      "command.promotionMarginBasisPoints",
+    );
+  });
+
+  it("creates a detailed copy without a promotion argument", async () => {
+    mocks.calculateReportPreview.mockReturnValue({
+      status: "valid",
+      snapshot: detailedSnapshot,
+    });
+    mocks.createDetailedReport.mockResolvedValue({
+      status: "success",
+      diagnosisId: 99,
+    });
+
+    await expect(
+      saveReportEdit({
+        diagnosisId: 41,
+        expectedVersion: 2,
+        mode: "copy",
+        draft: detailedDraft,
+      }),
+    ).resolves.toEqual({ status: "success", diagnosisId: 99, version: 0 });
+    expect(mocks.createDetailedReport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        command: detailedCommand,
+        snapshot: detailedSnapshot,
+      }),
+    );
+    expect(mocks.createDetailedReport.mock.calls[0]?.[0]).not.toHaveProperty(
+      "command.promotionMarginBasisPoints",
+    );
   });
 
   it("preserves canonical field errors without touching persistence", async () => {
