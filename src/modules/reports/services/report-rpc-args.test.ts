@@ -164,10 +164,7 @@ describe("report RPC argument mappers", () => {
 
   it("combines detailed source items with calculated fields", () => {
     const calculation = calculateDetailedDiagnosis(detailedCommand);
-    const snapshot = buildDetailedReportSnapshot(
-      detailedCommand,
-      calculation,
-    );
+    const snapshot = buildDetailedReportSnapshot(detailedCommand, calculation);
     const args = toDetailedRpcArgs(detailedCommand, snapshot);
     const sourceItem = detailedCommand.items[0];
     if (
