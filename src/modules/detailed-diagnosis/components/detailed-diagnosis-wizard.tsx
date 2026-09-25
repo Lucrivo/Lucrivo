@@ -82,7 +82,7 @@ function pathsForCurrentPhase(state: DetailedWizardState): string[] {
     case "ownerCompensation":
       return ["proLaboreIncluded", "proLabore"];
     case "fees":
-      return ["taxRate", "cardFeeRate", "promotionMarginRate"];
+      return ["taxRate", "cardFeeRate"];
     case "itemBasics":
       return [
         `items.${index}.name`,

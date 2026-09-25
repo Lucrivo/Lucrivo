@@ -36,7 +36,6 @@ function command(
     proLaboreCents: 0,
     taxRateBasisPoints: 0,
     cardFeeRateBasisPoints: 0,
-    promotionMarginBasisPoints: 1500,
     items,
   };
 }

@@ -79,7 +79,6 @@ function snapshots(): ReportSnapshot[] {
     proLabore: "",
     taxRate: "6",
     cardFeeRate: "3.5",
-    promotionMarginRate: "10",
     items: [
       {
         id: itemId,

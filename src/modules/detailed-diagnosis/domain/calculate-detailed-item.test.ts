@@ -10,7 +10,6 @@ import { calculateDetailedItem } from "./calculate-detailed-item";
 const rates = {
   taxRateBasisPoints: 600,
   cardFeeRateBasisPoints: 400,
-  promotionMarginBasisPoints: 1500,
 };
 
 const resaleItem: DetailedProductItem = {
@@ -72,9 +71,11 @@ describe("calculateDetailedItem", () => {
       monthlyGrossRevenueCents: 100000,
       monthlyContributionCents: 46000,
       breakEvenUnitPriceCents: 1223,
-      promotionFloorCents: 1467,
       directLoss: false,
     });
+    expect(calculateDetailedItem(resaleItem, rates)).not.toHaveProperty(
+      "promotionFloorCents",
+    );
   });
 
   it("uses only the informed unit cost in summarized production", () => {
@@ -87,7 +88,6 @@ describe("calculateDetailedItem", () => {
       monthlyGrossRevenueCents: 300000,
       monthlyContributionCents: 150000,
       breakEvenUnitPriceCents: 667,
-      promotionFloorCents: 800,
       directLoss: false,
     });
   });
@@ -103,7 +103,6 @@ describe("calculateDetailedItem", () => {
       monthlyGrossRevenueCents: 300000,
       monthlyContributionCents: 161200,
       breakEvenUnitPriceCents: 605,
-      promotionFloorCents: 726,
       directLoss: false,
     });
   });
@@ -190,23 +189,10 @@ describe("calculateDetailedItem", () => {
       calculateDetailedItem(resaleItem, {
         taxRateBasisPoints: 6000,
         cardFeeRateBasisPoints: 4000,
-        promotionMarginBasisPoints: 0,
       }),
     ).toMatchObject({
       netUnitRevenueCents: 0,
       breakEvenUnitPriceCents: null,
-      promotionFloorCents: null,
-    });
-
-    expect(
-      calculateDetailedItem(resaleItem, {
-        taxRateBasisPoints: 4000,
-        cardFeeRateBasisPoints: 3000,
-        promotionMarginBasisPoints: 3000,
-      }),
-    ).toMatchObject({
-      breakEvenUnitPriceCents: 3667,
-      promotionFloorCents: null,
     });
   });
 

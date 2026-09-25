@@ -43,8 +43,6 @@ type DetailedItemViewModel = {
   marginLabel: string;
   breakEvenLabel: string;
   breakEvenUnavailableReason?: string;
-  promotionFloorLabel: string;
-  promotionFloorUnavailableReason?: string;
   technicalDetails: DetailedTechnicalDetailsViewModel | null;
   rawValues: {
     unitSalePriceCents: number;
@@ -287,12 +285,6 @@ function toDetailedReportViewModel({
               : formatCurrency(result.breakEvenUnitPriceCents),
           breakEvenUnavailableReason:
             result.breakEvenUnitPriceCents === null ? rateReason : undefined,
-          promotionFloorLabel:
-            result.promotionFloorCents === null
-              ? "Ainda não calculado"
-              : formatCurrency(result.promotionFloorCents),
-          promotionFloorUnavailableReason:
-            result.promotionFloorCents === null ? rateReason : undefined,
           technicalDetails: technicalDetails(item),
           rawValues: {
             unitSalePriceCents: item.unitSalePriceCents,

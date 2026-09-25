@@ -283,13 +283,13 @@ begin
       diagnosis_id, submission_id, user_id, category,
       fixed_monthly_expenses_cents, pro_labore_included, pro_labore_cents,
       tax_rate_basis_points, card_fee_rate_basis_points,
-      promotion_margin_basis_points, item_count
+      item_count
     )
     select
       p_target_id, submission_id, user_id, category,
       fixed_monthly_expenses_cents, pro_labore_included, pro_labore_cents,
       tax_rate_basis_points, card_fee_rate_basis_points,
-      promotion_margin_basis_points, item_count
+      item_count
     from public.detailed_diagnoses
     where diagnosis_id = p_staged_id;
 
@@ -302,7 +302,7 @@ begin
       variable_unit_cost_cents, fee_amount_cents, net_unit_revenue_cents,
       unit_contribution_cents, contribution_margin_basis_points,
       monthly_gross_revenue_cents, monthly_contribution_cents,
-      break_even_unit_price_cents, promotion_floor_cents, direct_loss
+      break_even_unit_price_cents, direct_loss
     )
     select
       p_target_id, submission_id, user_id, client_item_id, position, name,
@@ -313,7 +313,7 @@ begin
       variable_unit_cost_cents, fee_amount_cents, net_unit_revenue_cents,
       unit_contribution_cents, contribution_margin_basis_points,
       monthly_gross_revenue_cents, monthly_contribution_cents,
-      break_even_unit_price_cents, promotion_floor_cents, direct_loss
+      break_even_unit_price_cents, direct_loss
     from public.detailed_diagnosis_items
     where diagnosis_id = p_staged_id
     order by position;
@@ -590,7 +590,7 @@ create function public.replace_detailed_diagnosis_report_v1(
   p_fixed_monthly_expenses_cents bigint, p_pro_labore_included boolean,
   p_pro_labore_cents bigint, p_tax_rate_basis_points integer,
   p_card_fee_rate_basis_points integer,
-  p_promotion_margin_basis_points integer, p_items jsonb,
+  p_items jsonb,
   p_schema_version smallint, p_calculation_version smallint,
   p_content_version smallint, p_monthly_gross_revenue_cents bigint,
   p_monthly_result_cents bigint, p_real_margin_basis_points integer,
@@ -609,7 +609,7 @@ begin
   staged_id := public.create_detailed_diagnosis_report(
     p_submission_id, p_category, p_fixed_monthly_expenses_cents,
     p_pro_labore_included, p_pro_labore_cents, p_tax_rate_basis_points,
-    p_card_fee_rate_basis_points, p_promotion_margin_basis_points, p_items,
+    p_card_fee_rate_basis_points, p_items,
     p_schema_version, p_calculation_version, p_content_version,
     p_monthly_gross_revenue_cents, p_monthly_result_cents,
     p_real_margin_basis_points, p_verdict, p_priority, p_item_count,
@@ -663,12 +663,12 @@ grant execute on function public.replace_production_diagnosis_report_v1(
 
 revoke execute on function public.replace_detailed_diagnosis_report_v1(
   bigint, integer, uuid, public.business_category, bigint, boolean, bigint,
-  integer, integer, integer, jsonb, smallint, smallint, smallint, bigint,
+  integer, integer, jsonb, smallint, smallint, smallint, bigint,
   bigint, integer, text, text, integer, boolean, jsonb
 ) from public, anon, service_role;
 grant execute on function public.replace_detailed_diagnosis_report_v1(
   bigint, integer, uuid, public.business_category, bigint, boolean, bigint,
-  integer, integer, integer, jsonb, smallint, smallint, smallint, bigint,
+  integer, integer, jsonb, smallint, smallint, smallint, bigint,
   bigint, integer, text, text, integer, boolean, jsonb
 ) to authenticated;
 

@@ -42,7 +42,6 @@ type DetailedDiagnosisInput = {
   proLabore: string;
   taxRate: string;
   cardFeeRate: string;
-  promotionMarginRate: string;
   items: Array<DetailedProductItemInput | DetailedProductionItemInput>;
 };
 
@@ -99,7 +98,6 @@ type DetailedDiagnosisCommand = {
   proLaboreCents: number;
   taxRateBasisPoints: number;
   cardFeeRateBasisPoints: number;
-  promotionMarginBasisPoints: number;
   items: DetailedDiagnosisItem[];
 };
 
@@ -113,7 +111,6 @@ type DetailedItemCalculation = {
   monthlyGrossRevenueCents: number | null;
   monthlyContributionCents: number | null;
   breakEvenUnitPriceCents: number | null;
-  promotionFloorCents: number | null;
   directLoss: boolean;
 };
 

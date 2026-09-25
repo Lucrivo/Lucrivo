@@ -62,7 +62,6 @@ function calculateDetailedDiagnosis(
   const rates = {
     taxRateBasisPoints: command.taxRateBasisPoints,
     cardFeeRateBasisPoints: command.cardFeeRateBasisPoints,
-    promotionMarginBasisPoints: command.promotionMarginBasisPoints,
   };
   const items = command.items.map((item) => calculateDetailedItem(item, rates));
   const missingVolumeItemIds = command.items

@@ -159,9 +159,6 @@ function toEditableReportDraft(
       proLabore: centsToInput(snapshot.inputs.proLaboreCents),
       taxRate: basisPointsToInput(snapshot.inputs.taxRateBasisPoints),
       cardFeeRate: basisPointsToInput(snapshot.inputs.cardFeeRateBasisPoints),
-      promotionMarginRate: basisPointsToInput(
-        snapshot.inputs.promotionMarginBasisPoints,
-      ),
       items: snapshot.inputs.items.map((item) => {
         const common = {
           id: item.id,

@@ -16,7 +16,6 @@ const productCommand: DetailedDiagnosisCommand = {
   proLaboreCents: 20000,
   taxRateBasisPoints: 600,
   cardFeeRateBasisPoints: 200,
-  promotionMarginBasisPoints: 1500,
   items: [
     {
       id: "22222222-2222-4222-8222-222222222222",
@@ -110,7 +109,6 @@ describe("createDetailedReport", () => {
       p_pro_labore_cents: 20000,
       p_tax_rate_basis_points: 600,
       p_card_fee_rate_basis_points: 200,
-      p_promotion_margin_basis_points: 1500,
       p_items: [
         {
           ...productCommand.items[1],
@@ -142,6 +140,13 @@ describe("createDetailedReport", () => {
       p_is_partial: false,
       p_report_snapshot: snapshot,
     });
+    expect(rpc.mock.calls[0]?.[1]).toMatchObject({
+      p_tax_rate_basis_points: productCommand.taxRateBasisPoints,
+      p_card_fee_rate_basis_points: productCommand.cardFeeRateBasisPoints,
+    });
+    expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty(
+      "p_promotion_margin_basis_points",
+    );
     expect(rpc.mock.calls[0]?.[1]).not.toHaveProperty("user_id");
   });
 

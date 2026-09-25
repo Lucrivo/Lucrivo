@@ -3,6 +3,7 @@ import type {
   DetailedDiagnosisCalculation,
   DetailedDiagnosisCommand,
 } from "@/modules/detailed-diagnosis/types";
+import { DETAILED_ATTENTION_BAND_BASIS_POINTS } from "@/modules/detailed-diagnosis/domain/calculate-detailed-diagnosis";
 
 import {
   parseDetailedReportSnapshot,
@@ -54,7 +55,7 @@ function buildDetailedReportSnapshot(
     currency: "BRL" as const,
     unit: "mix" as const,
     policy: {
-      promotionMarginBasisPoints: command.promotionMarginBasisPoints,
+      attentionBandBasisPoints: DETAILED_ATTENTION_BAND_BASIS_POINTS,
       concentrationThresholdBasisPoints: 4_500 as const,
       weeklyDivisorHundredths: 433 as const,
       operatingDaysPerWeek: 6 as const,

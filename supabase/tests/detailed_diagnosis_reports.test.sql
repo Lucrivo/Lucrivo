@@ -134,7 +134,7 @@ select has_function(
   'create_detailed_diagnosis_report',
   array[
     'uuid', 'business_category', 'bigint', 'boolean', 'bigint', 'integer',
-    'integer', 'integer', 'jsonb', 'smallint', 'smallint', 'smallint',
+    'integer', 'jsonb', 'smallint', 'smallint', 'smallint',
     'bigint', 'bigint', 'integer', 'text', 'text', 'integer', 'boolean',
     'jsonb'
   ],
@@ -146,7 +146,7 @@ select ok(
     from pg_proc
     where oid = 'public.create_detailed_diagnosis_report(
       uuid, public.business_category, bigint, boolean, bigint, integer,
-      integer, integer, jsonb, smallint, smallint, smallint, bigint, bigint,
+      integer, jsonb, smallint, smallint, smallint, bigint, bigint,
       integer, text, text, integer, boolean, jsonb
     )'::regprocedure
   ),
@@ -158,7 +158,7 @@ select ok(
     from pg_proc
     where oid = 'public.create_detailed_diagnosis_report(
       uuid, public.business_category, bigint, boolean, bigint, integer,
-      integer, integer, jsonb, smallint, smallint, smallint, bigint, bigint,
+      integer, jsonb, smallint, smallint, smallint, bigint, bigint,
       integer, text, text, integer, boolean, jsonb
     )'::regprocedure
   ) = array['search_path=""']::text[],
@@ -169,7 +169,7 @@ select ok(
     'anon',
     'public.create_detailed_diagnosis_report(
       uuid, public.business_category, bigint, boolean, bigint, integer,
-      integer, integer, jsonb, smallint, smallint, smallint, bigint, bigint,
+      integer, jsonb, smallint, smallint, smallint, bigint, bigint,
       integer, text, text, integer, boolean, jsonb
     )',
     'execute'
@@ -178,7 +178,7 @@ select ok(
     'authenticated',
     'public.create_detailed_diagnosis_report(
       uuid, public.business_category, bigint, boolean, bigint, integer,
-      integer, integer, jsonb, smallint, smallint, smallint, bigint, bigint,
+      integer, jsonb, smallint, smallint, smallint, bigint, bigint,
       integer, text, text, integer, boolean, jsonb
     )',
     'execute'
@@ -245,7 +245,6 @@ as $$
       'monthlyGrossRevenueCents', 10000,
       'monthlyContributionCents', 4200,
       'breakEvenUnitPriceCents', 610,
-      'promotionFloorCents', 782,
       'directLoss', false
     ),
     jsonb_build_object(
@@ -265,7 +264,6 @@ as $$
       'monthlyGrossRevenueCents', 10000,
       'monthlyContributionCents', 4200,
       'breakEvenUnitPriceCents', 1220,
-      'promotionFloorCents', 1563,
       'directLoss', false
     )
   );
@@ -286,7 +284,7 @@ as $$
     'currency', 'BRL',
     'unit', 'mix',
     'policy', jsonb_build_object(
-      'promotionMarginBasisPoints', 1500,
+      'attentionBandBasisPoints', 2000,
       'concentrationThresholdBasisPoints', 4500,
       'weeklyDivisorHundredths', 433,
       'operatingDaysPerWeek', 6,
@@ -300,7 +298,6 @@ as $$
       'proLaboreCents', 0,
       'taxRateBasisPoints', 600,
       'cardFeeRateBasisPoints', 200,
-      'promotionMarginBasisPoints', 1500,
       'items', (
         select jsonb_agg(
           item - array[
@@ -308,7 +305,7 @@ as $$
             'netUnitRevenueCents', 'unitContributionCents',
             'contributionMarginBasisPoints', 'monthlyGrossRevenueCents',
             'monthlyContributionCents', 'breakEvenUnitPriceCents',
-            'promotionFloorCents', 'directLoss'
+            'directLoss'
           ]
           order by (item ->> 'position')::integer
         )
@@ -332,7 +329,6 @@ as $$
             'monthlyGrossRevenueCents', item -> 'monthlyGrossRevenueCents',
             'monthlyContributionCents', item -> 'monthlyContributionCents',
             'breakEvenUnitPriceCents', item -> 'breakEvenUnitPriceCents',
-            'promotionFloorCents', item -> 'promotionFloorCents',
             'directLoss', item -> 'directLoss'
           )
           order by (item ->> 'position')::integer
@@ -389,7 +385,6 @@ as $$
       'monthlyGrossRevenueCents', 6000,
       'monthlyContributionCents', 4220,
       'breakEvenUnitPriceCents', 810,
-      'promotionFloorCents', 1020,
       'directLoss', false
     )
   );
@@ -410,7 +405,7 @@ as $$
     'currency', 'BRL',
     'unit', 'mix',
     'policy', jsonb_build_object(
-      'promotionMarginBasisPoints', 1500,
+      'attentionBandBasisPoints', 2000,
       'concentrationThresholdBasisPoints', 4500,
       'weeklyDivisorHundredths', 433,
       'operatingDaysPerWeek', 6,
@@ -424,7 +419,6 @@ as $$
       'proLaboreCents', 0,
       'taxRateBasisPoints', 600,
       'cardFeeRateBasisPoints', 200,
-      'promotionMarginBasisPoints', 1500,
       'items', (
         select jsonb_agg(
           item - array[
@@ -432,7 +426,7 @@ as $$
             'netUnitRevenueCents', 'unitContributionCents',
             'contributionMarginBasisPoints', 'monthlyGrossRevenueCents',
             'monthlyContributionCents', 'breakEvenUnitPriceCents',
-            'promotionFloorCents', 'directLoss'
+            'directLoss'
           ]
         )
         from jsonb_array_elements(pg_temp.production_items()) as item
@@ -455,7 +449,6 @@ as $$
             'monthlyGrossRevenueCents', item -> 'monthlyGrossRevenueCents',
             'monthlyContributionCents', item -> 'monthlyContributionCents',
             'breakEvenUnitPriceCents', item -> 'breakEvenUnitPriceCents',
-            'promotionFloorCents', item -> 'promotionFloorCents',
             'directLoss', item -> 'directLoss'
           )
         )
@@ -491,7 +484,6 @@ as $$
     0,
     600,
     200,
-    1500,
     p_items,
     1::smallint,
     1::smallint,
@@ -589,7 +581,6 @@ select lives_ok(
     0,
     600,
     200,
-    1500,
     pg_temp.production_items(),
     1::smallint,
     1::smallint,
@@ -693,12 +684,12 @@ select throws_ok(
     diagnosis_id, submission_id, user_id, category,
     fixed_monthly_expenses_cents, pro_labore_included, pro_labore_cents,
     tax_rate_basis_points, card_fee_rate_basis_points,
-    promotion_margin_basis_points, item_count
+    item_count
   ) values (
     999999,
     '71000000-0000-4000-8000-000000000999',
     '71000000-0000-4000-8000-000000000001',
-    'product', 0, false, 0, 0, 0, 1500, 1
+    'product', 0, false, 0, 0, 0, 1
   ) $$,
   '42501',
   null,
@@ -799,7 +790,7 @@ select throws_ok(
     diagnosis_id, submission_id, user_id, category,
     fixed_monthly_expenses_cents, pro_labore_included, pro_labore_cents,
     tax_rate_basis_points, card_fee_rate_basis_points,
-    promotion_margin_basis_points, item_count
+    item_count
   ) values (
     (
       select id from public.diagnoses
@@ -807,7 +798,7 @@ select throws_ok(
     ),
     '71000000-0000-4000-8000-000000000400',
     '71000000-0000-4000-8000-000000000001',
-    'product', -1, false, 0, 0, 0, 1500, 1
+    'product', -1, false, 0, 0, 0, 1
   ) $$,
   '23514',
   null,

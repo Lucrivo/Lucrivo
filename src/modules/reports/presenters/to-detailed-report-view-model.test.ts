@@ -14,7 +14,6 @@ const baseCommand: DetailedDiagnosisCommand = {
   proLaboreCents: 0,
   taxRateBasisPoints: 500,
   cardFeeRateBasisPoints: 250,
-  promotionMarginBasisPoints: 1_500,
   items: [
     {
       id: "11111111-1111-4111-8111-111111111111",

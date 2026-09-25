@@ -40,7 +40,6 @@ describe("createInitialDetailedWizardState", () => {
       values: {
         submissionId: "submission-1",
         category: "product",
-        promotionMarginRate: "15",
       },
     });
     expect(state.values.items).toEqual([
@@ -59,7 +58,6 @@ describe("createInitialDetailedWizardState", () => {
   it("starts Production in technical-sheet mode with one ingredient", () => {
     const state = productionState();
 
-    expect(state.values.promotionMarginRate).toBe("15");
     expect(state.values.items).toEqual([
       {
         id: "item-1",

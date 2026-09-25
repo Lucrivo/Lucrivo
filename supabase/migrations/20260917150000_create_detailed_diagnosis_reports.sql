@@ -71,7 +71,6 @@ create table public.detailed_diagnoses (
   pro_labore_cents bigint not null,
   tax_rate_basis_points integer not null,
   card_fee_rate_basis_points integer not null,
-  promotion_margin_basis_points integer not null,
   item_count integer not null,
   constraint detailed_diagnoses_user_submission_key
     unique (user_id, submission_id),
@@ -90,9 +89,6 @@ create table public.detailed_diagnoses (
   ),
   constraint detailed_diagnoses_card_fee_check check (
     card_fee_rate_basis_points between 0 and 10000
-  ),
-  constraint detailed_diagnoses_promotion_margin_check check (
-    promotion_margin_basis_points between 0 and 9999
   ),
   constraint detailed_diagnoses_item_count_check check (item_count > 0)
 );
@@ -125,7 +121,6 @@ create table public.detailed_diagnosis_items (
   monthly_gross_revenue_cents bigint,
   monthly_contribution_cents bigint,
   break_even_unit_price_cents bigint,
-  promotion_floor_cents bigint,
   direct_loss boolean not null,
   constraint detailed_diagnosis_items_position_key
     unique (diagnosis_id, position),
@@ -188,7 +183,6 @@ create table public.detailed_diagnosis_items (
     variable_unit_cost_cents >= 0
     and monthly_gross_revenue_cents >= 0
     and (break_even_unit_price_cents is null or break_even_unit_price_cents >= 0)
-    and (promotion_floor_cents is null or promotion_floor_cents >= 0)
   ),
   constraint detailed_diagnosis_items_monthly_shape_check check (
     (
@@ -302,7 +296,6 @@ create function private.create_detailed_diagnosis_report_impl(
   p_pro_labore_cents bigint,
   p_tax_rate_basis_points integer,
   p_card_fee_rate_basis_points integer,
-  p_promotion_margin_basis_points integer,
   p_items jsonb,
   p_schema_version smallint,
   p_calculation_version smallint,
@@ -400,10 +393,8 @@ begin
       is distinct from p_tax_rate_basis_points::text
     or p_report_snapshot #>> '{inputs,cardFeeRateBasisPoints}'
       is distinct from p_card_fee_rate_basis_points::text
-    or p_report_snapshot #>> '{inputs,promotionMarginBasisPoints}'
-      is distinct from p_promotion_margin_basis_points::text
-    or p_report_snapshot #>> '{policy,promotionMarginBasisPoints}'
-      is distinct from p_promotion_margin_basis_points::text
+    or p_report_snapshot #>> '{policy,attentionBandBasisPoints}'
+      is distinct from '2000'
     or p_report_snapshot #>> '{policy,proLaboreIncluded}'
       is distinct from p_pro_labore_included::text
     or p_report_snapshot #>> '{results,monthlyGrossRevenueCents}'
@@ -559,7 +550,6 @@ begin
     pro_labore_cents,
     tax_rate_basis_points,
     card_fee_rate_basis_points,
-    promotion_margin_basis_points,
     item_count
   ) values (
     report_id,
@@ -571,7 +561,6 @@ begin
     p_pro_labore_cents,
     p_tax_rate_basis_points,
     p_card_fee_rate_basis_points,
-    p_promotion_margin_basis_points,
     p_item_count
   );
 
@@ -601,7 +590,6 @@ begin
       "monthlyGrossRevenueCents" bigint,
       "monthlyContributionCents" bigint,
       "breakEvenUnitPriceCents" bigint,
-      "promotionFloorCents" bigint,
       "directLoss" boolean
     )
     order by position
@@ -659,7 +647,6 @@ begin
       monthly_gross_revenue_cents,
       monthly_contribution_cents,
       break_even_unit_price_cents,
-      promotion_floor_cents,
       direct_loss
     ) values (
       report_id,
@@ -687,7 +674,6 @@ begin
       item_record."monthlyGrossRevenueCents",
       item_record."monthlyContributionCents",
       item_record."breakEvenUnitPriceCents",
-      item_record."promotionFloorCents",
       item_record."directLoss"
     );
 
@@ -744,7 +730,6 @@ create function public.create_detailed_diagnosis_report(
   p_pro_labore_cents bigint,
   p_tax_rate_basis_points integer,
   p_card_fee_rate_basis_points integer,
-  p_promotion_margin_basis_points integer,
   p_items jsonb,
   p_schema_version smallint,
   p_calculation_version smallint,
@@ -771,7 +756,6 @@ as $wrapper$
     p_pro_labore_cents,
     p_tax_rate_basis_points,
     p_card_fee_rate_basis_points,
-    p_promotion_margin_basis_points,
     p_items,
     p_schema_version,
     p_calculation_version,
@@ -793,7 +777,6 @@ revoke execute on function public.create_detailed_diagnosis_report(
   bigint,
   boolean,
   bigint,
-  integer,
   integer,
   integer,
   jsonb,
@@ -819,7 +802,6 @@ grant execute on function public.create_detailed_diagnosis_report(
   bigint,
   integer,
   integer,
-  integer,
   jsonb,
   smallint,
   smallint,
@@ -843,7 +825,6 @@ revoke execute on function private.create_detailed_diagnosis_report_impl(
   bigint,
   integer,
   integer,
-  integer,
   jsonb,
   smallint,
   smallint,
@@ -865,7 +846,6 @@ grant execute on function private.create_detailed_diagnosis_report_impl(
   bigint,
   boolean,
   bigint,
-  integer,
   integer,
   integer,
   jsonb,

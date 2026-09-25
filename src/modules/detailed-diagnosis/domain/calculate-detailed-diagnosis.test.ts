@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import type { DetailedDiagnosisCommand, DetailedProductItem } from "../types";
-import { calculateDetailedDiagnosis } from "./calculate-detailed-diagnosis";
+import {
+  DETAILED_ATTENTION_BAND_BASIS_POINTS,
+  calculateDetailedDiagnosis,
+} from "./calculate-detailed-diagnosis";
 
 const firstItem: DetailedProductItem = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -32,13 +35,19 @@ function command(
     proLaboreCents: 0,
     taxRateBasisPoints: 0,
     cardFeeRateBasisPoints: 0,
-    promotionMarginBasisPoints: 1500,
     items: [firstItem],
     ...overrides,
   };
 }
 
 describe("calculateDetailedDiagnosis", () => {
+  it("keeps the internal attention band at 20%", () => {
+    expect(DETAILED_ATTENTION_BAND_BASIS_POINTS).toBe(2_000);
+    expect(
+      calculateDetailedDiagnosis(command({ fixedMonthlyExpensesCents: 400 })),
+    ).toMatchObject({ finalMarginBasisPoints: 1000, verdict: "tight_margin" });
+  });
+
   it("keeps item economics but hides every mix-dependent result when partial", () => {
     const result = calculateDetailedDiagnosis(
       command({

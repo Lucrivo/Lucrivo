@@ -77,7 +77,6 @@ const detailedDiagnosisCommandSchema = z.strictObject({
   proLaboreCents: nonNegativeSafeIntegerSchema,
   taxRateBasisPoints: basisPointsSchema,
   cardFeeRateBasisPoints: basisPointsSchema,
-  promotionMarginBasisPoints: z.number().int().min(0).max(9_999),
   items: z.array(detailedDiagnosisItemSchema).min(1),
 });
 
@@ -91,7 +90,6 @@ const detailedItemCalculationSchema = z.strictObject({
   monthlyGrossRevenueCents: nonNegativeSafeIntegerSchema.nullable(),
   monthlyContributionCents: safeIntegerSchema.nullable(),
   breakEvenUnitPriceCents: nonNegativeSafeIntegerSchema.nullable(),
-  promotionFloorCents: nonNegativeSafeIntegerSchema.nullable(),
   directLoss: z.boolean(),
 });
 
@@ -144,7 +142,7 @@ const detailedReportSnapshotSchema = z
     currency: z.literal("BRL"),
     unit: z.literal("mix"),
     policy: z.strictObject({
-      promotionMarginBasisPoints: z.number().int().min(0).max(9_999),
+      attentionBandBasisPoints: z.literal(2_000),
       concentrationThresholdBasisPoints: z.literal(4_500),
       weeklyDivisorHundredths: z.literal(433),
       operatingDaysPerWeek: z.literal(6),
@@ -168,11 +166,7 @@ const detailedReportSnapshotSchema = z
       });
     }
 
-    if (
-      snapshot.policy.proLaboreIncluded !== snapshot.inputs.proLaboreIncluded ||
-      snapshot.policy.promotionMarginBasisPoints !==
-        snapshot.inputs.promotionMarginBasisPoints
-    ) {
+    if (snapshot.policy.proLaboreIncluded !== snapshot.inputs.proLaboreIncluded) {
       context.addIssue({
         code: "custom",
         path: ["policy"],

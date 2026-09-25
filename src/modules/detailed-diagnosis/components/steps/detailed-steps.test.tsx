@@ -79,7 +79,7 @@ describe("detailed common steps", () => {
     ).toBeEnabled();
   });
 
-  it("makes global fees and the promotion simulation explicit", () => {
+  it("makes both global fees explicit without a promotion field", () => {
     render(<DetailedFeesStep state={productState()} dispatch={vi.fn()} />);
 
     expect(
@@ -89,8 +89,13 @@ describe("detailed common steps", () => {
       screen.getByLabelText("Qual porcentagem da venda vai para impostos?"),
     ).toBeEnabled();
     expect(
-      screen.getByLabelText("Margem mínima para simular promoções"),
-    ).toHaveValue("15");
+      screen.getByLabelText(
+        "Qual porcentagem fica com o cartão ou a plataforma?",
+      ),
+    ).toBeEnabled();
+    expect(
+      screen.queryByLabelText(/margem mínima para simular promoções/i),
+    ).not.toBeInTheDocument();
   });
 
   it("shows the approved optional-volume guidance next to item basics", () => {

@@ -37,8 +37,7 @@ type DetailedGeneralField =
   | "proLaboreIncluded"
   | "proLabore"
   | "taxRate"
-  | "cardFeeRate"
-  | "promotionMarginRate";
+  | "cardFeeRate";
 
 type DetailedItemTextField =
   | "name"
@@ -203,7 +202,6 @@ function createInitialDetailedWizardState(
       proLabore: "",
       taxRate: "",
       cardFeeRate: "",
-      promotionMarginRate: "15",
       items: [item],
     },
     fieldErrors: {},
@@ -268,11 +266,7 @@ function resolveErrorPhase(path: string): {
     return { phase: "fixedExpenses", itemIndex: null };
   if (path === "proLaboreIncluded" || path === "proLabore")
     return { phase: "ownerCompensation", itemIndex: null };
-  if (
-    path === "taxRate" ||
-    path === "cardFeeRate" ||
-    path === "promotionMarginRate"
-  )
+  if (path === "taxRate" || path === "cardFeeRate")
     return { phase: "fees", itemIndex: null };
 
   const match = /^items\.(\d+)(?:\.(.+))?/.exec(path);

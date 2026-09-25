@@ -154,13 +154,6 @@ function DetailedReportEditorFields({
             error={errors.cardFeeRate}
             onChange={(value) => updateRoot("cardFeeRate", value)}
           />
-          <EditorField
-            id="promotionMarginRate"
-            label="Margem mínima para promoção (%)"
-            value={values.promotionMarginRate}
-            error={errors.promotionMarginRate}
-            onChange={(value) => updateRoot("promotionMarginRate", value)}
-          />
         </div>
       </section>
 

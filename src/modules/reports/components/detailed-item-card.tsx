@@ -83,19 +83,6 @@ function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
               </p>
             ) : null}
           </div>
-          <div className="grid gap-1">
-            <dt className="text-muted-foreground text-sm">
-              Menor preço para promoção planejada
-            </dt>
-            <dd className="font-semibold tabular-nums">
-              {item.promotionFloorLabel}
-            </dd>
-            {item.promotionFloorUnavailableReason ? (
-              <p className="text-muted-foreground text-xs">
-                {item.promotionFloorUnavailableReason}
-              </p>
-            ) : null}
-          </div>
         </dl>
 
         {item.technicalDetails ? (

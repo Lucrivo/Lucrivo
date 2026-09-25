@@ -79,11 +79,6 @@ const percentageStringSchema = scaledString(
   "Informe um percentual entre 0 e 100 com até duas casas decimais.",
   { min: 0, max: 10_000 },
 );
-const promotionMarginStringSchema = scaledString(
-  2,
-  "Informe uma margem entre 0 e menos de 100%.",
-  { min: 0, max: 9_999 },
-);
 const monthlyVolumeStringSchema = scaledString(
   0,
   "Informe um volume mensal inteiro igual ou maior que zero.",
@@ -174,7 +169,6 @@ const rawDetailedDiagnosisSchema = z
     proLabore: z.string(),
     taxRate: percentageStringSchema,
     cardFeeRate: percentageStringSchema,
-    promotionMarginRate: promotionMarginStringSchema,
     items: z.array(detailedItemInputSchema).min(1, {
       message: "Cadastre ao menos um item.",
     }),
@@ -318,7 +312,6 @@ const detailedDiagnosisSchema = rawDetailedDiagnosisSchema.transform(
       : 0,
     taxRateBasisPoints: scaledInteger(input.taxRate, 2),
     cardFeeRateBasisPoints: scaledInteger(input.cardFeeRate, 2),
-    promotionMarginBasisPoints: scaledInteger(input.promotionMarginRate, 2),
     items: input.items.map(normalizeItem),
   }),
 );

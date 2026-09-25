@@ -273,7 +273,6 @@ export type Database = {
           item_count: number;
           pro_labore_cents: number;
           pro_labore_included: boolean;
-          promotion_margin_basis_points: number;
           submission_id: string;
           tax_rate_basis_points: number;
           user_id: string;
@@ -286,7 +285,6 @@ export type Database = {
           item_count: number;
           pro_labore_cents: number;
           pro_labore_included: boolean;
-          promotion_margin_basis_points: number;
           submission_id: string;
           tax_rate_basis_points: number;
           user_id: string;
@@ -299,7 +297,6 @@ export type Database = {
           item_count?: number;
           pro_labore_cents?: number;
           pro_labore_included?: boolean;
-          promotion_margin_basis_points?: number;
           submission_id?: string;
           tax_rate_basis_points?: number;
           user_id?: string;
@@ -386,7 +383,6 @@ export type Database = {
           packaging_unit_cost_cents: number | null;
           position: number;
           production_unit_cost_cents: number | null;
-          promotion_floor_cents: number | null;
           purchase_unit_cost_cents: number | null;
           recipe_yield: number | null;
           submission_id: string;
@@ -416,7 +412,6 @@ export type Database = {
           packaging_unit_cost_cents?: number | null;
           position: number;
           production_unit_cost_cents?: number | null;
-          promotion_floor_cents?: number | null;
           purchase_unit_cost_cents?: number | null;
           recipe_yield?: number | null;
           submission_id: string;
@@ -446,7 +441,6 @@ export type Database = {
           packaging_unit_cost_cents?: number | null;
           position?: number;
           production_unit_cost_cents?: number | null;
-          promotion_floor_cents?: number | null;
           purchase_unit_cost_cents?: number | null;
           recipe_yield?: number | null;
           submission_id?: string;
@@ -796,7 +790,6 @@ export type Database = {
           p_priority: string;
           p_pro_labore_cents: number;
           p_pro_labore_included: boolean;
-          p_promotion_margin_basis_points: number;
           p_real_margin_basis_points: number;
           p_report_snapshot: Json;
           p_schema_version: number;
@@ -1092,7 +1085,6 @@ export type Database = {
           p_priority: string;
           p_pro_labore_cents: number;
           p_pro_labore_included: boolean;
-          p_promotion_margin_basis_points: number;
           p_real_margin_basis_points: number;
           p_report_snapshot: Json;
           p_schema_version: number;

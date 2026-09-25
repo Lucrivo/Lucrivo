@@ -89,7 +89,6 @@ function toDetailedRpcArgs(
     p_pro_labore_cents: command.proLaboreCents,
     p_tax_rate_basis_points: command.taxRateBasisPoints,
     p_card_fee_rate_basis_points: command.cardFeeRateBasisPoints,
-    p_promotion_margin_basis_points: command.promotionMarginBasisPoints,
     p_items: toDetailedPersistenceItems(command, snapshot) as Json,
     p_schema_version: snapshot.schemaVersion,
     p_calculation_version: snapshot.calculationVersion,
