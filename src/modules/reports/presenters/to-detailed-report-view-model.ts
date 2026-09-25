@@ -68,7 +68,6 @@ type DetailedReportViewModel = {
     categoryLabel: string;
     scenarioLabel: string;
     createdAtLabel: string;
-    reportLabel: string;
   };
   executiveSummary: ReportExecutiveSummaryViewModel;
   numbers: ReportNumberViewModel[];
@@ -292,7 +291,6 @@ function toDetailedReportViewModel({
       categoryLabel: snapshot.category === "product" ? "Produtos" : "Produções",
       scenarioLabel: formatReportScenario(snapshot.scenario),
       createdAtLabel: `Gerado em ${formatReportDate(createdAt)}`,
-      reportLabel: `Relatório financeiro #${id}`,
     },
     executiveSummary: {
       ...snapshot.executiveSummary,
