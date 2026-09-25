@@ -2,7 +2,7 @@
 
 **Data:** 2026-09-25
 
-**Status:** Desenho aprovado em conversa; aguardando revisão do documento
+**Status:** Aprovado para implementação
 
 **Documentos relacionados:**
 
@@ -219,8 +219,9 @@ histórico na tela de detalhe do usuário.
 A transação executará as etapas nesta ordem:
 
 1. capturar o instante de referência;
-2. remover somente registros pertencentes ao namespace reservado do seed;
-3. criar usuários e identidades de autenticação;
+2. remover somente registros mutáveis pertencentes ao namespace reservado do
+   seed;
+3. criar ou atualizar usuários e identidades de autenticação;
 4. configurar o administrador com a proteção contra substituição;
 5. criar contratos necessários para autorizar os relatórios pagos;
 6. impersonar cada identidade por claim local e chamar as funções públicas de
@@ -237,9 +238,18 @@ ficarem inelegíveis.
 ## 10. Reexecução e isolamento
 
 O seed será reexecutável. Antes de inserir, removerá e recriará somente dados
-cujos identificadores pertençam ao namespace reservado. Essa limpeza é
-intencional: alterações manuais feitas nas contas fictícias não precisam
-sobreviver à regeneração do ambiente.
+mutáveis cujos identificadores pertençam ao namespace reservado. Usuários e
+identidades de autenticação serão atualizados por upsert, pois eventos
+administrativos imutáveis mantêm referências a essas identidades. Essa limpeza
+é intencional: alterações manuais feitas nos relatórios, contratos, pagamentos
+e estados atuais das contas fictícias não precisam sobreviver à regeneração do
+ambiente.
+
+Eventos administrativos são append-only por regra do banco e nunca serão
+apagados ou atualizados pelo seed. Cada evento gerado terá uma marca
+determinística em seu motivo e será inserido somente se essa marca ainda não
+existir para o mesmo usuário e ator. A trava transacional do seed impedirá duas
+execuções concorrentes de criarem a mesma marca.
 
 Registros fora do namespace, inclusive os que já existem em homologação, não
 serão apagados nem atualizados. Exclusões respeitarão a ordem das chaves
@@ -269,9 +279,10 @@ projeto. Ele executará apenas o arquivo de dados; não executará reset remoto 
 não aplicará migrações implicitamente. O fluxo não oferecerá uma opção análoga
 para produção.
 
-O README documentará que o comando de homologação recria as contas fictícias
-do namespace do seed, preserva dados externos a ele e deve ser executado apenas
-depois de as migrações correspondentes estarem presentes no ambiente.
+O README documentará que o comando de homologação restaura os dados mutáveis
+das contas fictícias do namespace do seed, preserva dados externos a ele e deve
+ser executado apenas depois de as migrações correspondentes estarem presentes
+no ambiente.
 
 ## 12. Validação e testes
 
@@ -343,7 +354,8 @@ A entrega estará concluída quando:
 4. filtros de conta e acesso retornarem grupos não vazios;
 5. KPIs e gráficos exibirem dados distribuídos no tempo;
 6. clientes exemplificarem ausência, pouco e muito uso do produto;
-7. a reaplicação recriar somente o namespace fictício sem duplicar dados;
+7. a reaplicação restaurar o namespace fictício sem duplicar dados ou alterar
+   eventos administrativos existentes;
 8. o comando remoto recusar qualquer destino diferente de
    `lucrivo-staging`;
 9. testes automatizados comprovarem as contagens, matrizes e invariantes;
