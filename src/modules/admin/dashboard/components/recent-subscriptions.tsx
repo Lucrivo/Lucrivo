@@ -1,8 +1,16 @@
-import { CalendarDaysIcon, CreditCardIcon, UserRoundIcon } from "lucide-react";
+import Link from "next/link";
+import {
+  ArrowRightIcon,
+  CalendarDaysIcon,
+  CreditCardIcon,
+  UserRoundIcon,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -21,12 +29,6 @@ import type {
   AdminDashboardViewModel,
   StatusTone,
 } from "../admin-dashboard.types";
-import {
-  hasAdminSubscriptionFilters,
-  type AdminSubscriptionFilters,
-} from "../admin-dashboard-filters";
-import { RecentSubscriptionFilters } from "./recent-subscription-filters";
-
 const badgeVariantByTone = {
   success: "success",
   warning: "warning",
@@ -61,10 +63,8 @@ function StatusBadge({ subscription }: { subscription: Subscription }) {
 
 function RecentSubscriptions({
   subscriptions,
-  filters,
 }: {
   subscriptions: AdminDashboardViewModel["recentSubscriptions"];
-  filters: AdminSubscriptionFilters;
 }) {
   return (
     <section aria-labelledby="recent-subscriptions-title">
@@ -76,9 +76,17 @@ function RecentSubscriptions({
           <CardDescription>
             Os cinco contratos mais recentes registrados na plataforma
           </CardDescription>
+          <CardAction>
+            <Link
+              href="/admin/users"
+              className={buttonVariants({ variant: "outline" })}
+            >
+              Ver todos
+              <ArrowRightIcon aria-hidden="true" />
+            </Link>
+          </CardAction>
         </CardHeader>
-        <CardContent className="grid gap-5">
-          <RecentSubscriptionFilters filters={filters} />
+        <CardContent>
           {subscriptions.length === 0 ? (
             <div className="bg-muted/20 grid min-h-36 place-items-center rounded-xl border border-dashed px-5 text-center">
               <div className="space-y-2">
@@ -87,9 +95,7 @@ function RecentSubscriptions({
                   className="text-muted-foreground mx-auto size-6"
                 />
                 <p className="text-muted-foreground text-sm">
-                  {hasAdminSubscriptionFilters(filters)
-                    ? "Nenhuma assinatura corresponde aos filtros."
-                    : "Nenhuma assinatura registrada até agora."}
+                  Nenhuma assinatura registrada até agora.
                 </p>
               </div>
             </div>

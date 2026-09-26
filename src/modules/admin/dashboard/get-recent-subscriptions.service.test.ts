@@ -31,14 +31,8 @@ describe("getRecentSubscriptions", () => {
     });
   });
 
-  it("authorizes, filters, validates, and presents the list", async () => {
-    await expect(
-      getRecentSubscriptions({
-        period: "30d",
-        billingMode: "annual",
-        state: "active",
-      }),
-    ).resolves.toEqual([
+  it("authorizes, loads the overview, validates, and presents the list", async () => {
+    await expect(getRecentSubscriptions()).resolves.toEqual([
       expect.objectContaining({
         email: "cliente@example.com",
         billingModeLabel: "Anual",
@@ -46,9 +40,9 @@ describe("getRecentSubscriptions", () => {
       }),
     ]);
     expect(rpc).toHaveBeenCalledWith("list_admin_recent_subscriptions_v1", {
-      p_period: "30d",
-      p_billing_mode: "annual",
-      p_state: "active",
+      p_period: "all",
+      p_billing_mode: "all",
+      p_state: "all",
     });
   });
 
@@ -59,13 +53,9 @@ describe("getRecentSubscriptions", () => {
     "returns a stable unavailable error for invalid provider data",
     async (value) => {
       rpc.mockResolvedValue(value);
-      await expect(
-        getRecentSubscriptions({
-          period: "all",
-          billingMode: "all",
-          state: "all",
-        }),
-      ).rejects.toBeInstanceOf(AdminRecentSubscriptionsUnavailableError);
+      await expect(getRecentSubscriptions()).rejects.toBeInstanceOf(
+        AdminRecentSubscriptionsUnavailableError,
+      );
     },
   );
 });

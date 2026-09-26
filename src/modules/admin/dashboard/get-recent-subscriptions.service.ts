@@ -6,7 +6,6 @@ import {
   formatSubscriptionDate,
   presentContractStatus,
 } from "./admin-dashboard.formatters";
-import type { AdminSubscriptionFilters } from "./admin-dashboard-filters";
 import { recentSubscriptionsSchema } from "./admin-dashboard.schema";
 import type { AdminDashboardViewModel } from "./admin-dashboard.types";
 
@@ -17,18 +16,18 @@ class AdminRecentSubscriptionsUnavailableError extends Error {
   }
 }
 
-async function getRecentSubscriptions(
-  filters: AdminSubscriptionFilters,
-): Promise<AdminDashboardViewModel["recentSubscriptions"]> {
+async function getRecentSubscriptions(): Promise<
+  AdminDashboardViewModel["recentSubscriptions"]
+> {
   const { supabase } = await requireAdmin();
 
   try {
     const { data, error } = await supabase.rpc(
       "list_admin_recent_subscriptions_v1",
       {
-        p_period: filters.period,
-        p_billing_mode: filters.billingMode,
-        p_state: filters.state,
+        p_period: "all",
+        p_billing_mode: "all",
+        p_state: "all",
       },
     );
     if (error) throw new AdminRecentSubscriptionsUnavailableError();

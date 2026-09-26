@@ -99,12 +99,13 @@ describe("AdminDashboard", () => {
     expect(
       screen.getByRole("heading", { name: "Assinaturas recentes" }),
     ).toBeVisible();
+    expect(screen.getByRole("link", { name: "Ver todos" })).toHaveAttribute(
+      "href",
+      "/admin/users",
+    );
 
     expect(screen.getAllByText("1 cancelamento este mês")).toHaveLength(1);
-    expect(screen.getAllByRole("combobox")).toHaveLength(3);
-    expect(
-      screen.getByText("Os filtros abaixo afetam somente esta lista."),
-    ).toBeVisible();
+    expect(screen.queryAllByRole("combobox")).toHaveLength(0);
     expect(screen.queryByText("Novo diagnóstico")).not.toBeInTheDocument();
   });
 
@@ -168,23 +169,6 @@ describe("AdminDashboard", () => {
     ).toHaveLength(2);
     expect(
       screen.getByText("Nenhuma assinatura registrada até agora."),
-    ).toBeVisible();
-  });
-
-  it("distinguishes a filtered subscription empty state", () => {
-    render(
-      <AdminDashboard
-        dashboard={{ ...dashboardFixture, recentSubscriptions: [] }}
-        subscriptionFilters={{
-          period: "30d",
-          billingMode: "annual",
-          state: "active",
-        }}
-      />,
-    );
-
-    expect(
-      screen.getByText("Nenhuma assinatura corresponde aos filtros."),
     ).toBeVisible();
   });
 
