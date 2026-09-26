@@ -57,6 +57,18 @@ select has_table(
   'detailed_diagnosis_ingredients',
   'normalized detailed ingredients exist'
 );
+select hasnt_column(
+  'public',
+  'detailed_diagnoses',
+  'promotion_margin_basis_points',
+  'detailed parents no longer persist the removed promotion margin'
+);
+select hasnt_column(
+  'public',
+  'detailed_diagnosis_items',
+  'promotion_floor_cents',
+  'detailed items no longer persist the removed promotion floor'
+);
 
 select col_is_pk(
   'public',
@@ -139,6 +151,28 @@ select has_function(
     'jsonb'
   ],
   'the atomic detailed report RPC exists'
+);
+select hasnt_function(
+  'public',
+  'create_detailed_diagnosis_report',
+  array[
+    'uuid', 'business_category', 'bigint', 'boolean', 'bigint', 'integer',
+    'integer', 'integer', 'jsonb', 'smallint', 'smallint', 'smallint',
+    'bigint', 'bigint', 'integer', 'text', 'text', 'integer', 'boolean',
+    'jsonb'
+  ],
+  'the obsolete public RPC overload is removed'
+);
+select hasnt_function(
+  'private',
+  'create_detailed_diagnosis_report_impl',
+  array[
+    'uuid', 'business_category', 'bigint', 'boolean', 'bigint', 'integer',
+    'integer', 'integer', 'jsonb', 'smallint', 'smallint', 'smallint',
+    'bigint', 'bigint', 'integer', 'text', 'text', 'integer', 'boolean',
+    'jsonb'
+  ],
+  'the obsolete private implementation overload is removed'
 );
 select ok(
   not (
