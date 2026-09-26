@@ -133,7 +133,10 @@ function AdminUserList({
               Resultados por cadastro mais recente
             </p>
           </div>
-          <AdminUserFilterForm filters={filters} />
+          <AdminUserFilterForm
+            key={JSON.stringify([filters.q, filters.state, filters.access])}
+            filters={filters}
+          />
         </CardHeader>
         <CardContent className="min-w-0 space-y-5">
           {data.items.length === 0 ? (
