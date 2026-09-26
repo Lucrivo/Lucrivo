@@ -23,6 +23,7 @@ import {
   getReportLanguageProfile,
   type ReportLanguageProfile,
 } from "./report-language";
+import { toComfortableReportAnswers } from "./to-comfortable-report-answers";
 import { isDetailedReportSnapshot } from "../schemas/report-snapshot.schema";
 
 type ReportNumberViewModel = {
@@ -270,6 +271,7 @@ function toNormalizedServiceNumbers(
   const monthly = snapshot.results.monthlySalesGoal;
   const weekly = snapshot.results.weeklySalesGoal;
   const daily = snapshot.results.dailySalesGoal;
+  const priceHelp = normalizationHelp(snapshot);
   const supporting =
     weekly === null
       ? undefined
@@ -280,6 +282,7 @@ function toNormalizedServiceNumbers(
       key: "price",
       label: "Preço atual",
       value: formatCurrency(snapshot.results.currentPriceCents),
+      ...(priceHelp ? { help: priceHelp } : {}),
     },
     {
       key: "minimum",
@@ -619,17 +622,16 @@ function toReportViewModel({
         ...snapshot.executiveSummary.verdict,
         toneLabel: language.toneLabels[snapshot.executiveSummary.verdict.tone],
       },
-      facts: snapshot.executiveSummary.facts.map((fact) =>
-        normalizedService && fact.key === "price"
-          ? { ...fact, help: normalizationHelp(snapshot) }
-          : fact,
-      ),
+      facts: snapshot.executiveSummary.facts,
+      answers: toComfortableReportAnswers(snapshot.executiveSummary.answers),
     },
     numbers,
-    sections: snapshot.sections.map((section) => ({
-      ...section,
-      toneLabel: language.toneLabels[section.tone],
-    })),
+    sections: snapshot.sections
+      .filter(({ key }) => key !== "hidden_cost")
+      .map((section) => ({
+        ...section,
+        toneLabel: language.toneLabels[section.tone],
+      })),
     discountSimulationBase: snapshot.discountSimulationBase,
     discountSimulationContext: {
       category: snapshot.category,

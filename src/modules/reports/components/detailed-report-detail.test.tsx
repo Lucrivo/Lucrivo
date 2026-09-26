@@ -97,8 +97,11 @@ describe("DetailedReportDetail", () => {
     expect(screen.getByText("Revenda")).toBeVisible();
     expect(screen.queryByText("Diagnóstico detalhado")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Seus produtos dão lucro?" }),
+      screen.getByRole("heading", { name: "Comece por aqui" }),
     ).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { name: "Seus produtos dão lucro?" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("Estou ganhando dinheiro?")).toBeVisible();
     expect(screen.getByText("Meus preços pagam os gastos?")).toBeVisible();
     expect(screen.getByText("O que preciso fazer agora?")).toBeVisible();
@@ -115,15 +118,15 @@ describe("DetailedReportDetail", () => {
       }),
     ).toBeVisible();
     expect(
-      screen.getByRole("heading", { name: "O que sai das vendas" }),
-    ).toBeVisible();
+      screen.queryByRole("heading", { name: "O que sai das vendas" }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Quanto sobra no mês" }),
     ).toBeVisible();
     expect(
       screen.getByRole("heading", { name: "Quanto você precisa vender" }),
     ).toBeVisible();
-    expect(screen.getByText("Quanto entrou com as vendas")).toBeVisible();
+    expect(screen.getByText("Quanto entraria neste cenário")).toBeVisible();
     expect(screen.getByText("Custos do mês")).toBeVisible();
     expect(itemsHeading.compareDocumentPosition(comparisonHeading)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
@@ -167,7 +170,11 @@ describe("DetailedReportDetail", () => {
       />,
     );
 
-    expect(screen.getByText("Falta informar as vendas")).toBeVisible();
+    expect(
+      within(screen.getByRole("region", { name: "Comece por aqui" })).getByText(
+        "Informação",
+      ),
+    ).toBeVisible();
     expect(
       screen.getAllByText(/volume mensal de Bolo de festa/i),
     ).not.toHaveLength(0);

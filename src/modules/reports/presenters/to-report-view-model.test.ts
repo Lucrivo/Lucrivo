@@ -127,6 +127,23 @@ describe("toReportViewModel", () => {
     });
     expect(viewModel.executiveSummary).toEqual({
       ...snapshot.executiveSummary,
+      answers: [
+        {
+          ...snapshot.executiveSummary.answers[0]!,
+          answer:
+            "Sim, está. Com base nas informações, sobram R$ 27,41 por hora depois de pagar os gastos.",
+        },
+        {
+          ...snapshot.executiveSummary.answers[1]!,
+          answer:
+            "Sim. Com base nas informações, o preço paga todos os gastos usados no cálculo.",
+        },
+        {
+          ...snapshot.executiveSummary.answers[2]!,
+          answer:
+            "Agora, o mais importante é: mantenha a quantidade de trabalho usada no cálculo e acompanhe se seus clientes aceitam o preço.",
+        },
+      ],
       verdict: {
         ...snapshot.executiveSummary.verdict,
         toneLabel: "Bom resultado",
@@ -165,13 +182,13 @@ describe("toReportViewModel", () => {
       },
     });
 
-    expect(viewModel.executiveSummary.facts[0].help).toMatchObject({
+    expect(viewModel.numbers[0]?.help).toMatchObject({
       title: "Por que mostramos o valor por hora?",
     });
-    expect(viewModel.executiveSummary.facts[0].help?.description).toContain(
+    expect(viewModel.numbers[0]?.help?.description).toContain(
       "R$ 10.392,00 por mês",
     );
-    expect(viewModel.executiveSummary.facts[0].help?.description).toContain(
+    expect(viewModel.numbers[0]?.help?.description).toContain(
       "R$ 80,00 por hora",
     );
   });

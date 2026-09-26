@@ -152,7 +152,7 @@ describe("ReportDetail", () => {
   it("renders the executive summary before numbers and detailed analysis", () => {
     render(<ReportDetail viewModel={viewModel} />);
     const executiveSummary = screen.getByRole("region", {
-      name: "Seu serviço dá lucro?",
+      name: "Comece por aqui",
     });
     const numbers = screen.getByRole("complementary", { name: "Seus números" });
     const analysis = screen.getByRole("region", {
@@ -237,6 +237,17 @@ describe("ReportDetail", () => {
         exact: false,
       }).length,
     ).toBeGreaterThan(0);
+  });
+
+  it.each([
+    ["Product", productViewModel],
+    ["Production", productionViewModel],
+  ])("removes the outgoing-sales card from %s reports", (_, model) => {
+    render(<ReportDetail viewModel={model} />);
+
+    expect(
+      screen.queryByRole("heading", { name: "O que sai de cada venda" }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps report chrome unchanged for a legacy snapshot", () => {

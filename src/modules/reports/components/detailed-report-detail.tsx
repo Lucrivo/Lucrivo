@@ -96,8 +96,8 @@ function DetailedReportDetail({
               Como chegamos a esse resultado
             </h2>
             <p className="text-muted-foreground max-w-2xl text-sm leading-6">
-              Veja os preços mínimos por item, o que sai das vendas, o resultado
-              do mês e o faturamento necessário.
+              Veja os preços mínimos por item, o resultado do mês e o
+              faturamento necessário.
             </p>
           </div>
           {viewModel.sections.map((section) => (

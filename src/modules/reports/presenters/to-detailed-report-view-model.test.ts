@@ -56,16 +56,18 @@ describe("toDetailedReportViewModel", () => {
     });
 
     expect(model.executiveSummary.headline).toBe("Seus produtos dão lucro?");
+    expect(model.executiveSummary.answers[0]?.answer).toBe(
+      "Sim, está. Com base nas informações, seu lucro no mês foi de R$ 460,00.",
+    );
     expect(model.numbers.map((number) => number.label)).toEqual([
-      "Quanto entrou com as vendas",
+      "Quanto entraria neste cenário",
       "Custos do mês",
-      "Resultado do mês",
+      "Resultado do mês estimado",
       "Quanto sobra a cada R$ 100",
       "Quanto precisa vender para cobrir os gastos",
     ]);
     expect(model.sections.map((section) => section.key)).toEqual([
       "break_even",
-      "hidden_cost",
       "margin_diagnosis",
       "sales_goal",
     ]);

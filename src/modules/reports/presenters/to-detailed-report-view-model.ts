@@ -12,6 +12,7 @@ import type {
   ReportDiscountSimulationBase,
 } from "../types";
 import { getReportLanguageProfile } from "./report-language";
+import { toComfortableReportAnswers } from "./to-comfortable-report-answers";
 import type {
   ReportExecutiveSummaryViewModel,
   ReportNumberViewModel,
@@ -179,7 +180,7 @@ function toDetailedReportViewModel({
   const numbers: ReportNumberViewModel[] = [
     number(
       "revenue",
-      "Quanto entrou com as vendas",
+      "Quanto entraria neste cenário",
       optionalCurrency(snapshot.results.monthlyGrossRevenueCents),
     ),
     number(
@@ -189,7 +190,7 @@ function toDetailedReportViewModel({
     ),
     number(
       "result",
-      "Resultado do mês",
+      "Resultado do mês estimado",
       optionalCurrency(snapshot.results.monthlyResultCents),
     ),
     number(
@@ -299,12 +300,15 @@ function toDetailedReportViewModel({
         toneLabel: language.toneLabels[snapshot.executiveSummary.verdict.tone],
       },
       facts: snapshot.executiveSummary.facts,
+      answers: toComfortableReportAnswers(snapshot.executiveSummary.answers),
     },
     numbers,
-    sections: snapshot.sections.map((section) => ({
-      ...section,
-      toneLabel: language.toneLabels[section.tone],
-    })),
+    sections: snapshot.sections
+      .filter(({ key }) => key !== "hidden_cost")
+      .map((section) => ({
+        ...section,
+        toneLabel: language.toneLabels[section.tone],
+      })),
     comparison,
     items,
     secondaryGuidance: snapshot.guidance
