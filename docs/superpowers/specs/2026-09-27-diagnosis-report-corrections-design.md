@@ -2,7 +2,7 @@
 
 **Data:** 2026-09-27
 
-**Status:** Aprovado em conversa; aguardando revisão do documento
+**Status:** Aprovado
 
 **Documentos relacionados:**
 
@@ -78,10 +78,10 @@ Para Produto digital, cada item solicitará:
 - preço de venda.
 
 Produto digital não exibirá embalagem. Internamente, o campo já usado para o
-custo direto continuará sendo normalizado para zero quando estiver vazio. Um
-campo técnico de embalagem poderá permanecer com zero no contrato para manter
-a compatibilidade estrutural, mas não participará do formulário nem do custo
-do cenário digital.
+custo direto continuará sendo normalizado para zero quando estiver vazio. O
+campo técnico de embalagem permanecerá com zero no contrato para manter a
+compatibilidade estrutural, mas não participará do formulário nem do custo do
+cenário digital.
 
 Adicionar itens manterá o cenário do diagnóstico. O schema recusará uma lista
 em que um item tenha tipo diferente dos demais.
