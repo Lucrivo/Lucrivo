@@ -279,6 +279,12 @@ function toNormalizedServiceNumbers(
 
   return [
     {
+      key: "sales",
+      label: "Quantidade de serviços por mês",
+      value: monthly === null ? "Indisponível" : `${monthly} ${unit}`,
+      supportingText: supporting,
+    },
+    {
       key: "price",
       label: "Preço atual",
       value: formatCurrency(snapshot.results.currentPriceCents),
@@ -298,12 +304,6 @@ function toNormalizedServiceNumbers(
           ? "Indisponível"
           : formatCurrency(snapshot.results.realMarginBasisPoints),
       help: serviceMarginHelp,
-    },
-    {
-      key: "sales",
-      label: "Quantidade de serviços por mês",
-      value: monthly === null ? "Indisponível" : `${monthly} ${unit}`,
-      supportingText: supporting,
     },
   ];
 }
@@ -341,6 +341,15 @@ function toCurrentProductNumbers(
   const monthly = snapshot.results.monthlySalesGoal;
   return [
     {
+      key: "sales",
+      label: "Vendas necessárias no mês",
+      value: monthly === null ? "Indisponível" : `${monthly} vendas`,
+      supportingText:
+        monthly === null || snapshot.results.weeklySalesGoal === null
+          ? undefined
+          : `${snapshot.results.weeklySalesGoal} por semana e ${snapshot.results.dailySalesGoal ?? 0} por dia.`,
+    },
+    {
       key: "price",
       label: "Preço atual",
       value: formatCurrency(snapshot.results.currentPriceCents),
@@ -377,15 +386,6 @@ function toCurrentProductNumbers(
       ),
       ...(partial ? { help: unknownVolumeHelp } : {}),
     },
-    {
-      key: "sales",
-      label: "Vendas necessárias no mês",
-      value: monthly === null ? "Indisponível" : `${monthly} vendas`,
-      supportingText:
-        monthly === null || snapshot.results.weeklySalesGoal === null
-          ? undefined
-          : `${snapshot.results.weeklySalesGoal} por semana e ${snapshot.results.dailySalesGoal ?? 0} por dia.`,
-    },
   ];
 }
 
@@ -395,6 +395,15 @@ function toCurrentProductionNumbers(
   const partial = snapshot.results.priceReferencesPartial;
   const monthly = snapshot.results.monthlySalesGoal;
   return [
+    {
+      key: "sales",
+      label: "Vendas necessárias no mês",
+      value: monthly === null ? "Indisponível" : `${monthly} unidades`,
+      supportingText:
+        monthly === null || snapshot.results.weeklySalesGoal === null
+          ? undefined
+          : `${snapshot.results.weeklySalesGoal} por semana e ${snapshot.results.dailySalesGoal ?? 0} por dia.`,
+    },
     {
       key: "price",
       label: "Preço atual",
@@ -427,15 +436,6 @@ function toCurrentProductionNumbers(
         "Ainda não calculado",
       ),
       ...(partial ? { help: unknownVolumeHelp } : {}),
-    },
-    {
-      key: "sales",
-      label: "Vendas necessárias no mês",
-      value: monthly === null ? "Indisponível" : `${monthly} unidades`,
-      supportingText:
-        monthly === null || snapshot.results.weeklySalesGoal === null
-          ? undefined
-          : `${snapshot.results.weeklySalesGoal} por semana e ${snapshot.results.dailySalesGoal ?? 0} por dia.`,
     },
   ];
 }

@@ -152,10 +152,10 @@ describe("toReportViewModel", () => {
     expect(
       viewModel.numbers.map(({ label, value }) => ({ label, value })),
     ).toEqual([
+      { label: "Quantidade de serviços por mês", value: "82 horas" },
       { label: "Preço atual", value: "R$ 80,00" },
       { label: "Menor preço sem prejuízo", value: "R$ 50,21" },
       { label: "Quanto sobra a cada R$ 100", value: "R$ 34,26" },
-      { label: "Quantidade de serviços por mês", value: "82 horas" },
     ]);
     expect(
       viewModel.numbers.filter(({ help }) => help).length,
@@ -182,13 +182,13 @@ describe("toReportViewModel", () => {
       },
     });
 
-    expect(viewModel.numbers[0]?.help).toMatchObject({
+    expect(viewModel.numbers[1]?.help).toMatchObject({
       title: "Por que mostramos o valor por hora?",
     });
-    expect(viewModel.numbers[0]?.help?.description).toContain(
+    expect(viewModel.numbers[1]?.help?.description).toContain(
       "R$ 10.392,00 por mês",
     );
-    expect(viewModel.numbers[0]?.help?.description).toContain(
+    expect(viewModel.numbers[1]?.help?.description).toContain(
       "R$ 80,00 por hora",
     );
   });
@@ -275,11 +275,11 @@ describe("toReportViewModel", () => {
     expect(
       viewModel.numbers.map(({ label, value }) => ({ label, value })),
     ).toEqual([
+      { label: "Vendas necessárias no mês", value: "72 vendas" },
       { label: "Preço atual", value: "R$ 100,00" },
       { label: "Menor preço sem prejuízo", value: "R$ 86,96" },
       { label: "Quanto sobra a cada R$ 100", value: "12%" },
       { label: "Resultado do mês", value: "R$ 1.200,00" },
-      { label: "Vendas necessárias no mês", value: "72 vendas" },
     ]);
   });
 
@@ -292,6 +292,7 @@ describe("toReportViewModel", () => {
     expect(
       viewModel.numbers.map(({ label, value }) => ({ label, value })),
     ).toEqual([
+      { label: "Vendas necessárias no mês", value: "72 vendas" },
       { label: "Preço atual", value: "R$ 100,00" },
       {
         label: "Menor preço antes dos gastos mensais",
@@ -302,7 +303,6 @@ describe("toReportViewModel", () => {
         value: "Ainda não calculado",
       },
       { label: "Resultado do mês", value: "Ainda não calculado" },
-      { label: "Vendas necessárias no mês", value: "72 vendas" },
     ]);
   });
 
@@ -320,11 +320,11 @@ describe("toReportViewModel", () => {
     expect(
       viewModel.numbers.map(({ label, value }) => ({ label, value })),
     ).toEqual([
+      { label: "Vendas necessárias no mês", value: "72 unidades" },
       { label: "Preço atual", value: "R$ 100,00" },
       { label: "Menor preço sem prejuízo", value: "R$ 86,96" },
       { label: "Quanto sobra a cada R$ 100", value: "12%" },
       { label: "Resultado do mês", value: "R$ 1.200,00" },
-      { label: "Vendas necessárias no mês", value: "72 unidades" },
     ]);
     expect(viewModel.discountSimulationContext).toEqual({
       category: "production",
@@ -341,6 +341,7 @@ describe("toReportViewModel", () => {
     expect(
       viewModel.numbers.map(({ label, value }) => ({ label, value })),
     ).toEqual([
+      { label: "Vendas necessárias no mês", value: "72 unidades" },
       { label: "Preço atual", value: "R$ 100,00" },
       {
         label: "Menor preço antes dos gastos mensais",
@@ -351,7 +352,6 @@ describe("toReportViewModel", () => {
         value: "Ainda não calculado",
       },
       { label: "Resultado do mês", value: "Ainda não calculado" },
-      { label: "Vendas necessárias no mês", value: "72 unidades" },
     ]);
   });
 

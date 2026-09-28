@@ -155,10 +155,17 @@ describe("ReportDetail", () => {
       name: "Comece por aqui",
     });
     const numbers = screen.getByRole("complementary", { name: "Seus números" });
+    const featured = numbers.querySelector<HTMLElement>(
+      '[data-slot="featured-report-number"]',
+    );
     const analysis = screen.getByRole("region", {
       name: "Como chegamos a esse resultado",
     });
 
+    expect(featured).not.toBeNull();
+    expect(
+      within(featured!).getByText("Quantidade de serviços por mês"),
+    ).toBeVisible();
     expect(
       executiveSummary.compareDocumentPosition(numbers) &
         Node.DOCUMENT_POSITION_FOLLOWING,

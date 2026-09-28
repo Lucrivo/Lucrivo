@@ -116,6 +116,20 @@ describe("DetailedReportDetail", () => {
     expect(screen.getByText("Meus preços pagam os gastos?")).toBeVisible();
     expect(screen.getByText("O que preciso fazer agora?")).toBeVisible();
     expect(screen.getByRole("heading", { name: "Seus números" })).toBeVisible();
+    const numbers = screen.getByRole("complementary", { name: "Seus números" });
+    const featured = numbers.querySelector<HTMLElement>(
+      '[data-slot="featured-report-number"]',
+    );
+    const executiveSummary = screen.getByRole("region", {
+      name: "Comece por aqui",
+    });
+    expect(featured).not.toBeNull();
+    expect(
+      within(featured!).getByText("Unidades necessárias no mês"),
+    ).toBeVisible();
+    expect(
+      within(executiveSummary).queryByText("Unidades necessárias no mês"),
+    ).not.toBeInTheDocument();
     const itemsHeading = screen.getByRole("heading", {
       name: "Item por item",
     });
@@ -204,7 +218,12 @@ describe("DetailedReportDetail", () => {
     expect(
       screen.getAllByText(/volume mensal de Bolo de festa/i),
     ).not.toHaveLength(0);
-    expect(screen.queryByText(/^Indisponível$/)).not.toBeInTheDocument();
+    expect(screen.getByText(/^Indisponível$/)).toBeVisible();
+    expect(
+      screen.getByText(
+        "Informe as vendas mensais de todos os itens para calcular.",
+      ),
+    ).toBeVisible();
     expect(screen.getAllByText("Ainda não calculado")).not.toHaveLength(0);
     expect(screen.getByText(/Sobra por unidade/i)).toBeVisible();
 
