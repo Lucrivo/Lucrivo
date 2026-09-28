@@ -50,6 +50,11 @@ describe("Product diagnosis steps", () => {
     await user.click(detailed);
     expect(detailed).toBeEnabled();
     expect(onModeChange).toHaveBeenLastCalledWith("detailed");
+    expect(
+      screen.getByText(
+        "Analise produtos para revenda ou digitais, seus custos e o resultado geral.",
+      ),
+    ).toBeVisible();
     expect(screen.queryByText(/\bmix\b/i)).not.toBeInTheDocument();
   });
 

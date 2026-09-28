@@ -40,7 +40,7 @@ diagnóstico.
 
 ## Operating Context
 
-O usuário autenticado inicia um diagnóstico e escolhe entre três contextos de
+O usuário autenticado inicia um diagnóstico e escolhe entre quatro contextos de
 negócio:
 
 - produto adquirido para revenda;
@@ -48,32 +48,40 @@ negócio:
 - produção própria de uma unidade;
 - prestação de serviço cobrada por hora, minuto ou atendimento.
 
-Produto e Produção oferecem as modalidades rápida e detalhada. A modalidade
-detalhada compara vários itens; em Produção, aceita custo resumido ou ficha
-técnica com ingredientes, rendimento, perda, embalagem, mão de obra direta e
-outros custos variáveis. Serviço permanece no fluxo rápido.
+Produto e Produção oferecem as modalidades rápida e detalhada. Em Produto, a
+modalidade detalhada escolhe uma única vez entre revenda e digital e aplica o
+cenário a todos os itens; Digital usa apenas o gasto direto por venda e mantém a
+embalagem oculta e igual a zero. Em Produção, novos itens começam pelo custo
+resumido, com a ficha técnica completa disponível como alternativa. Serviço
+permanece no fluxo rápido.
 
 Os fluxos coletam preço, custos e demais dados pertinentes à categoria,
 apresentam uma revisão antes da confirmação e geram um relatório privado. O
 relatório rápido responde se há lucro, compara o preço atual com referências
-financeiras, identifica a principal correção, apresenta metas aplicáveis e
-permite simular descontos. O detalhado consolida o mix e também mostra a
-contribuição e as referências de cada item.
+financeiras, identifica a principal correção, destaca a quantidade necessária de
+vendas e permite simular descontos. O detalhado consolida o mix, mostra a
+contribuição e as referências de cada item e estima a quantidade necessária
+mantendo a proporção informada entre os itens. Essa estimativa fica indisponível,
+com motivo explícito, quando faltam volumes, o volume total é zero ou a
+contribuição mensal total não é positiva.
 
 Os diagnósticos confirmados podem ser reabertos na biblioteca privada de
 relatórios. Relatórios gerados durante uma assinatura continuam disponíveis
 depois do fim do acesso. Clientes com plano pago podem editar os dados com uma
 prévia calculada em tempo real e escolher entre substituir o relatório atual ou
-salvar uma nova cópia. A substituição preserva o identificador e a data de
-criação do relatório; a exclusão explícita é lógica e o remove da biblioteca.
-Snapshots legados continuam sendo lidos com as regras da versão em que foram
-criados.
+salvar uma nova cópia. A substituição é atômica: preserva o identificador e a
+data de criação, incrementa a versão uma vez e remove integralmente o registro
+temporário usado na validação. A exclusão explícita é lógica e o remove da
+biblioteca. Snapshots legados continuam sendo lidos com as regras da versão em
+que foram criados.
 
 ## Capabilities and Constraints
 
 - Cadastro, autenticação, recuperação e atualização de senha.
 - Diagnóstico rápido para revenda, produto digital, produção própria e serviços.
-- Diagnóstico detalhado para revenda e produção própria, com múltiplos itens e
+- Diagnóstico detalhado para revenda, produto digital e produção própria, com
+  um cenário uniforme por análise e múltiplos itens.
+- Produção detalhada inicia pelo custo total por unidade e permite optar pela
   ficha técnica completa para itens fabricados.
 - Cálculos financeiros determinísticos separados por categoria de negócio.
 - Relatórios privados com resumo executivo, números principais, explicações e
@@ -82,15 +90,18 @@ criados.
 - Edição de relatórios compatíveis para assinantes pagos, com substituição ou
   salvamento de uma nova cópia.
 - Exclusão lógica de relatórios pelo proprietário.
+- Remoções de itens e ingredientes preenchidos exigem confirmação; ações
+  indisponíveis explicam o motivo e diálogos devolvem o foco ao acionador.
 - Valores monetários apresentados em real brasileiro (`BRL`) e conteúdo de
   interface em português brasileiro.
 - Faixa interna de atenção abaixo de R$ 20 a cada R$ 100 para produto e
   produção; ela não é uma meta universal nem gera preço recomendado. Serviço
   mantém suas próprias regras versionadas.
 - Os resultados dependem dos dados fornecidos pelo usuário. Volume mensal vazio
-  significa dado desconhecido: o relatório fica parcial, sem resultado mensal,
-  e a meta mensal aparece apenas como referência. Zero significa um mês
-  conhecido sem vendas; volume positivo permite a análise mensal completa.
+  significa dado desconhecido: o relatório fica parcial, sem resultado mensal e
+  sem uma quantidade proporcional de vendas. Zero significa um mês conhecido sem
+  vendas; se o volume total for zero ou a contribuição mensal não for positiva,
+  a meta também permanece indisponível com uma explicação.
 - O diagnóstico detalhado analisa financeiramente um mix; não controla estoque
   físico. Compartilhamento público e comparação histórica não fazem parte da
   experiência atual.

@@ -21,7 +21,7 @@ const analysisModes = [
     value: "detailed",
     label: "Diagnóstico detalhado",
     detail:
-      "Analise um ou mais produtos para revenda, seus custos e o resultado geral.",
+      "Analise produtos para revenda ou digitais, seus custos e o resultado geral.",
     icon: ScanSearchIcon,
   },
 ] satisfies ReadonlyArray<{

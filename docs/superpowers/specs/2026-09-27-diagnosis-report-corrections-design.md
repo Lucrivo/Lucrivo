@@ -352,7 +352,7 @@ do escopo.
 
 ## 12. Critérios de aceite
 
-- A pessoa consegue criar e consultar um detalhado inteiramente Digital.
+- A pessoa consegue criar, consultar e editar um detalhado inteiramente Digital.
 - Produção abre em `Custo total por unidade`.
 - A quantidade necessária recebe destaque e não promete precisão quando o
   detalhado não possui dados suficientes.
