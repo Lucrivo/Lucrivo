@@ -47,13 +47,12 @@ function calculateTechnicalSheetCost(
 }
 
 function calculateVariableUnitCost(item: DetailedDiagnosisItem): number {
-  if (item.kind === "resale") {
-    return item.purchaseUnitCostCents + item.packagingUnitCostCents;
-  }
+  if (item.kind === "digital") return item.purchaseUnitCostCents;
 
-  if (item.costMode === "summarized") {
-    return item.productionUnitCostCents;
-  }
+  if (item.kind === "resale")
+    return item.purchaseUnitCostCents + item.packagingUnitCostCents;
+
+  if (item.costMode === "summarized") return item.productionUnitCostCents;
 
   return calculateTechnicalSheetCost(item);
 }

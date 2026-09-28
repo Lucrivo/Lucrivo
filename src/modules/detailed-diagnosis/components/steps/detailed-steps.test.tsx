@@ -136,7 +136,18 @@ describe("category-specific detailed costs", () => {
   it("renders both Production modes without discarding technical-sheet fields", async () => {
     const user = userEvent.setup();
     const dispatch = vi.fn();
-    const state = productionState();
+    const initial = productionState();
+    const initialItem = initial.values.items[0];
+    if (initialItem.kind !== "manufacturing")
+      throw new Error("unexpected item");
+    const state = {
+      ...initial,
+      pendingIngredientNameId: initialItem.ingredients[0].id,
+      values: {
+        ...initial.values,
+        items: [{ ...initialItem, costMode: "technical_sheet" as const }],
+      },
+    };
     const { rerender } = render(
       <DetailedProductionCostsStep state={state} dispatch={dispatch} />,
     );
@@ -211,6 +222,7 @@ describe("category-specific detailed costs", () => {
         items: [
           {
             ...item,
+            costMode: "technical_sheet" as const,
             ingredients: [
               ...item.ingredients,
               {

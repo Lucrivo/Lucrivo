@@ -222,6 +222,7 @@ describe("DetailedDiagnosisWizard", () => {
             ...item,
             name: "Bolo",
             unitSalePrice: "100",
+            costMode: "technical_sheet",
             ingredients: [
               {
                 ...item.ingredients[0],

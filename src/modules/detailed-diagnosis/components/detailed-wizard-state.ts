@@ -164,7 +164,7 @@ function blankProductionItem(
     id,
     name: "",
     kind: "manufacturing",
-    costMode: "technical_sheet",
+    costMode: "summarized",
     unitSalePrice: "",
     monthlySalesVolume: "",
     productionUnitCost: "",
@@ -210,7 +210,10 @@ function createInitialDetailedWizardState(
     },
     fieldErrors: {},
     pendingIngredientNameId:
-      item.kind === "manufacturing" ? item.ingredients[0]?.id : null,
+      item.kind === "manufacturing" &&
+      item.costMode === "technical_sheet"
+        ? (item.ingredients[0]?.id ?? null)
+        : null,
     pendingRemovalItemId: null,
     status: "editing",
     submitError: null,
@@ -324,8 +327,14 @@ function detailedWizardReducer(
           ? { ...item, costMode: action.costMode }
           : item,
       );
+      const productionItem = updated.values.items[index];
       return {
         ...updated,
+        pendingIngredientNameId:
+          productionItem.kind === "manufacturing" &&
+          action.costMode === "technical_sheet"
+            ? (productionItem.ingredients[0]?.id ?? null)
+            : null,
         fieldErrors: withoutError(
           updated.fieldErrors,
           `items.${index}.costMode`,
@@ -478,7 +487,10 @@ function detailedWizardReducer(
         activeItemId: item.id,
         values: { ...state.values, items: [...state.values.items, item] },
         pendingIngredientNameId:
-          item.kind === "manufacturing" ? item.ingredients[0]?.id : null,
+          item.kind === "manufacturing" &&
+          item.costMode === "technical_sheet"
+            ? (item.ingredients[0]?.id ?? null)
+            : null,
         pendingRemovalItemId: null,
         submitError: null,
       };

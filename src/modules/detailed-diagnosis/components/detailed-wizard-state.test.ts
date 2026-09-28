@@ -65,7 +65,7 @@ describe("createInitialDetailedWizardState", () => {
     ]);
   });
 
-  it("starts Production in technical-sheet mode with one ingredient", () => {
+  it("starts Production in summarized mode with one retained ingredient", () => {
     const state = productionState();
 
     expect(state.values.items).toEqual([
@@ -73,7 +73,7 @@ describe("createInitialDetailedWizardState", () => {
         id: "item-1",
         name: "",
         kind: "manufacturing",
-        costMode: "technical_sheet",
+        costMode: "summarized",
         unitSalePrice: "",
         monthlySalesVolume: "",
         productionUnitCost: "",
@@ -93,7 +93,7 @@ describe("createInitialDetailedWizardState", () => {
         ],
       },
     ]);
-    expect(state.pendingIngredientNameId).toBe("ingredient-1");
+    expect(state.pendingIngredientNameId).toBeNull();
   });
 });
 
@@ -150,6 +150,21 @@ describe("detailedWizardReducer", () => {
       name: "",
       kind: "resale",
     });
+  });
+
+  it("adds Production items in summarized mode without opening ingredient naming", () => {
+    const state = detailedWizardReducer(productionState(), {
+      type: "addItem",
+      createId: ids("item-2", "ingredient-2"),
+    });
+
+    expect(state.values.items[1]).toMatchObject({
+      id: "item-2",
+      kind: "manufacturing",
+      costMode: "summarized",
+      ingredients: [expect.objectContaining({ id: "ingredient-2" })],
+    });
+    expect(state.pendingIngredientNameId).toBeNull();
   });
 
   it("edits an existing item without changing any sibling", () => {
@@ -309,8 +324,27 @@ describe("detailedWizardReducer", () => {
     ]);
   });
 
-  it("preserves inactive Production cost values when switching modes", () => {
+  it("keeps an editable ingredient and preserves inactive Production cost values", () => {
     let state = productionState();
+    expect(
+      (state.values.items[0] as DetailedProductionItemInput).costMode,
+    ).toBe("summarized");
+
+    state = detailedWizardReducer(state, {
+      type: "setCostMode",
+      itemId: "item-1",
+      costMode: "technical_sheet",
+    });
+    let item = state.values.items[0] as DetailedProductionItemInput;
+    expect(item.ingredients).toHaveLength(1);
+    expect(item.ingredients[0]).toMatchObject({
+      id: "ingredient-1",
+      quantity: "",
+      unit: "",
+      unitCost: "",
+    });
+    expect(state.pendingIngredientNameId).toBe("ingredient-1");
+
     state = detailedWizardReducer(state, {
       type: "changeItemField",
       itemId: "item-1",
@@ -329,13 +363,15 @@ describe("detailedWizardReducer", () => {
       itemId: "item-1",
       costMode: "summarized",
     });
+    expect(state.pendingIngredientNameId).toBeNull();
+
     state = detailedWizardReducer(state, {
       type: "setCostMode",
       itemId: "item-1",
       costMode: "technical_sheet",
     });
 
-    const item = state.values.items[0] as DetailedProductionItemInput;
+    item = state.values.items[0] as DetailedProductionItemInput;
     expect(item.productionUnitCost).toBe("12,00");
     expect(item.ingredients[0].name).toBe("Farinha");
   });

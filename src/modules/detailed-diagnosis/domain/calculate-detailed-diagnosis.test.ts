@@ -48,6 +48,27 @@ describe("calculateDetailedDiagnosis", () => {
     ).toMatchObject({ finalMarginBasisPoints: 1000, verdict: "tight_margin" });
   });
 
+  it("aggregates digital direct cost without hidden packaging", () => {
+    const result = calculateDetailedDiagnosis(
+      command({
+        fixedMonthlyExpensesCents: 0,
+        items: [
+          {
+            ...firstItem,
+            kind: "digital",
+            purchaseUnitCostCents: 300,
+            packagingUnitCostCents: 900,
+          },
+        ],
+      }),
+    );
+
+    expect(result).toMatchObject({
+      monthlyVariableCostCents: 300,
+      monthlyContributionCents: 700,
+    });
+  });
+
   it("keeps item economics but hides every mix-dependent result when partial", () => {
     const result = calculateDetailedDiagnosis(
       command({

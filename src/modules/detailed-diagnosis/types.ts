@@ -1,3 +1,5 @@
+import type { ProductKind } from "@/modules/quick-diagnosis/types";
+
 type DetailedDiagnosisCategory = "product" | "production";
 type DetailedProductionCostMode = "summarized" | "technical_sheet";
 
@@ -17,7 +19,7 @@ type DetailedItemBaseInput = {
 };
 
 type DetailedProductItemInput = DetailedItemBaseInput & {
-  kind: "resale";
+  kind: ProductKind;
   purchaseUnitCost: string;
   packagingUnitCost: string;
 };
@@ -63,7 +65,7 @@ type DetailedItemBase = {
 };
 
 type DetailedProductItem = DetailedItemBase & {
-  kind: "resale";
+  kind: ProductKind;
   purchaseUnitCostCents: number;
   packagingUnitCostCents: number;
 };

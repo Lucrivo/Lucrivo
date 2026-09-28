@@ -83,6 +83,33 @@ describe("detailedDiagnosisSchema", () => {
     });
   });
 
+  it.each([
+    ["", 0],
+    ["0", 0],
+    ["12,34", 1234],
+  ])(
+    "normalizes digital direct cost %j and always zeroes hidden packaging",
+    (purchaseUnitCost, purchaseUnitCostCents) => {
+      const parsed = detailedDiagnosisSchema.parse({
+        ...validProductInput,
+        items: [
+          {
+            ...product,
+            kind: "digital",
+            purchaseUnitCost,
+            packagingUnitCost: "9,99",
+          },
+        ],
+      });
+
+      expect(parsed.items[0]).toMatchObject({
+        kind: "digital",
+        purchaseUnitCostCents,
+        packagingUnitCostCents: 0,
+      });
+    },
+  );
+
   it("preserves explicit zero volume", () => {
     const parsed = detailedDiagnosisSchema.parse({
       ...validProductInput,
@@ -213,6 +240,33 @@ describe("detailedDiagnosisSchema", () => {
       monthlySalesVolume: 200,
       productionUnitCostCents: 875,
     });
+  });
+
+  it("rejects mixed Product kinds and category/kind mismatches", () => {
+    const secondProduct = {
+      ...product,
+      id: "55555555-5555-4555-8555-555555555555",
+      kind: "digital" as const,
+    };
+
+    expect(
+      detailedDiagnosisSchema.safeParse({
+        ...validProductInput,
+        items: [product, secondProduct],
+      }).success,
+    ).toBe(false);
+    expect(
+      detailedDiagnosisSchema.safeParse({
+        ...validProductInput,
+        items: [production],
+      }).success,
+    ).toBe(false);
+    expect(
+      detailedDiagnosisSchema.safeParse({
+        ...validTechnicalSheetInput,
+        items: [product],
+      }).success,
+    ).toBe(false);
   });
 
   it.each([

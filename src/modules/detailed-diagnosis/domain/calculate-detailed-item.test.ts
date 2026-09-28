@@ -23,6 +23,15 @@ const resaleItem: DetailedProductItem = {
   packagingUnitCostCents: 100,
 };
 
+const digitalItem: DetailedProductItem = {
+  ...resaleItem,
+  id: "55555555-5555-4555-8555-555555555555",
+  name: "Curso",
+  kind: "digital",
+  purchaseUnitCostCents: 275,
+  packagingUnitCostCents: 999,
+};
+
 const summarizedItem: DetailedSummarizedProductionItem = {
   id: "22222222-2222-4222-8222-222222222222",
   position: 0,
@@ -72,6 +81,15 @@ describe("calculateDetailedItem", () => {
       monthlyContributionCents: 46000,
       breakEvenUnitPriceCents: 1223,
       directLoss: false,
+    });
+  });
+
+  it("uses only direct cost for digital and still adds resale packaging", () => {
+    expect(calculateDetailedItem(digitalItem, rates)).toMatchObject({
+      variableUnitCostCents: 275,
+    });
+    expect(calculateDetailedItem(resaleItem, rates)).toMatchObject({
+      variableUnitCostCents: 1100,
     });
   });
 
