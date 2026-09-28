@@ -2,7 +2,7 @@
 
 **Data:** 2026-09-28
 
-**Status:** Aguardando revisão
+**Status:** Aprovado para implementação
 
 **Documentos relacionados:**
 
@@ -128,7 +128,7 @@ Os motores atuais já calculam corretamente o rateio quando `Q > 0`. A mudança
 principal será impedir que o preço baseado somente no custo direto seja
 apresentado como menor preço quando o volume estiver vazio ou for zero.
 
-Para os relatórios novos:
+Após a correção:
 
 - `fixedAllocationCents`, `totalUnitCostCents`, `unitProfitCents`,
   `minimumPriceCents` e `realMarginBasisPoints` serão nulos sem volume
@@ -160,7 +160,7 @@ Quando a capacidade mensal for válida:
 - a quantidade necessária continuará mostrando quantas horas ou atendimentos
   pagam as contas e a retirada mensal.
 
-O preço-alvo interno de 15% será removido da versão nova. Serviço não usará
+O preço-alvo interno de 15% será removido do contrato atual. Serviço não usará
 15% nem qualquer outra porcentagem para classificar a margem.
 
 Quando não houver capacidade válida, preço completo e margem ficarão
@@ -195,7 +195,7 @@ os itens e subtraindo `F` uma única vez.
 
 ### 6.2 Dados por item
 
-A versão nova do resultado de cada item acrescentará:
+O resultado atual de cada item acrescentará:
 
 ```ts
 type DetailedItemFullCostResult = {
@@ -235,7 +235,7 @@ automaticamente e não mudará a resposta original da pessoa.
 
 ## 7. Margem sem meta universal
 
-As versões novas não terão `targetMarginBasisPoints`,
+Os contratos corrigidos não terão `targetMarginBasisPoints`,
 `attentionBandBasisPoints` nem `targetPriceCents` como políticas ou resultados
 ativos de margem.
 
@@ -268,9 +268,10 @@ Comparações factuais entre itens do próprio negócio podem continuar, desde q
 não transformem uma diferença relativa em recomendação universal. Exemplo:
 `Este item deixa menos por venda do que os outros itens informados.`
 
-As versões novas não emitirão prioridade `margin`. O campo técnico de
-prioridade será mantido para compatibilidade de persistência, mas a interface
-não apresentará uma única “alavanca” escolhida por uma faixa percentual.
+Os motores corrigidos não emitirão prioridade `margin`. O campo técnico de
+prioridade poderá continuar aceito no banco para reduzir o alcance da
+migração, mas a interface não apresentará uma única “alavanca” escolhida por
+uma faixa percentual.
 Orientações serão derivadas de fatos objetivos:
 
 - contribuição não positiva: rever preço ou custo antes de buscar volume;
@@ -384,44 +385,46 @@ acolhedora:
 
 Serviço continuará usando o custo completo derivado da rotina de trabalho.
 
-Relatórios legados manterão seus contratos, mas a implementação do simulador
-separará explicitamente o modo legado do modo objetivo atual.
+O simulador passará a usar apenas o contrato objetivo corrigido. Não será
+criado um modo legado paralelo.
 
 ## 11. Versões e compatibilidade
 
-A mudança altera significado, estrutura e conteúdo dos resultados. Por isso,
-as versões atuais serão incrementadas:
+Como ainda não existem usuários nem dados de produção, a correção será feita
+no contrato atual, sem criar uma família paralela de versões.
 
-| Relatório | Nova versão de schema | Nova versão de cálculo | Nova versão de conteúdo |
-| --------- | --------------------: | ---------------------: | ----------------------: |
-| Serviço   |                     5 |                      4 |                       6 |
-| Produto   |                     4 |                      4 |                       5 |
-| Produção  |                     4 |                      4 |                       5 |
-| Detalhado |                     2 |                      2 |                       2 |
+- Os números atuais de versão de schema, cálculo e conteúdo serão mantidos.
+- Os schemas, builders, apresentadores e motores atuais serão corrigidos no
+  lugar.
+- Não serão criados adaptadores, conversores, backfills ou caminhos de leitura
+  para snapshots anteriores à correção.
+- Fixtures, seeds e dados locais poderão ser atualizados ou recriados para o
+  contrato corrigido.
+- Snapshots locais produzidos pelo comportamento antigo não têm garantia de
+  leitura depois da mudança.
 
-Os schemas anteriores continuarão aceitos para leitura. Relatórios já salvos
-não serão atualizados em massa nem terão seus snapshots reescritos
-silenciosamente.
-
-Quando um relatório da versão imediatamente anterior for editado, seus inputs
-serão convertidos em um comando atual e o relatório substituído receberá o
-snapshot novo. O histórico que não for editado continuará imutável.
-
-As superfícies que listam relatórios antigos podem manter seus números
-persistidos, mas novos textos compartilhados não devem apresentar faixas de
-margem como recomendação atual.
+Essa escolha reduz a complexidade temporária e mantém o código mais fácil de
+alterar enquanto o produto ainda não entrou em produção. Antes da primeira
+liberação com dados reais, a estratégia de versionamento e compatibilidade
+deverá ser revista.
 
 ## 12. Persistência no Supabase
 
 A persistência continuará validando o snapshot contra os parâmetros
 normalizados recebidos; o cliente não será a fonte de verdade isolada.
 
-Serão criados contratos públicos versionados para as versões novas:
+Os RPCs públicos atuais serão mantidos para evitar uma camada descartável de
+compatibilidade:
 
-- `create_service_diagnosis_report_v5`;
-- `create_product_diagnosis_report_v4`;
-- `create_production_diagnosis_report_v4`;
-- `create_detailed_diagnosis_report_v2`.
+- `create_service_diagnosis_report_v4`;
+- `create_product_diagnosis_report_v3`;
+- `create_production_diagnosis_report_v3`;
+- `create_detailed_diagnosis_report`.
+
+Suas assinaturas serão preservadas. No RPC detalhado, os novos resultados por
+item viajarão dentro de `p_items`, que já é um argumento JSON. As funções
+serão substituídas por uma migração nova; migrações históricas não serão
+editadas.
 
 Os wrappers públicos permanecerão `security invoker`. As implementações
 privadas que precisam coordenar escrita continuarão com `security definer`,
@@ -429,9 +432,9 @@ privadas que precisam coordenar escrita continuarão com `security definer`,
 `PUBLIC` não receberá execução implícita.
 
 A constraint de veredito em `public.diagnoses` passará a aceitar
-`positive_result` sem remover valores legados. A prioridade `margin` também
-continuará permitida apenas para compatibilidade histórica, embora não seja
-emitida por relatórios novos.
+`positive_result`. Valores antigos poderão continuar aceitos no banco quando
+removê-los não trouxer benefício direto à correção, mas não serão emitidos
+pelos motores atuais. A prioridade `margin` seguirá a mesma regra.
 
 `public.detailed_diagnosis_items` receberá colunas anuláveis para o novo
 resultado completo por item:
@@ -442,12 +445,10 @@ resultado completo por item:
 - `real_margin_basis_points`.
 
 As constraints garantirão valores não negativos para rateio e custo total e
-coerência entre campos disponíveis e indisponíveis. Linhas antigas poderão
-permanecer nulas nesses campos.
+coerência entre campos disponíveis e indisponíveis.
 
 O RPC detalhado, a substituição staged e a cópia de filhos passarão a validar
-e copiar as novas colunas. As assinaturas antigas continuarão disponíveis para
-compatibilidade, mas a aplicação usará apenas os contratos novos.
+e copiar as novas colunas. Não serão mantidas assinaturas antigas em paralelo.
 
 A migração será criada pelo fluxo imperativo do projeto, sem editar migrações
 históricas. Antes da aplicação, o alvo deve ser confirmado como local. Depois,
@@ -542,7 +543,7 @@ margem real = indisponível
 
 ### 16.2 Conteúdo e componentes
 
-- Nenhum relatório novo mostra `margem adequada`, `margem apertada`, `boa
+- Nenhum relatório corrigido mostra `margem adequada`, `margem apertada`, `boa
 folga`, `pouca folga`, `acima da meta` ou preço-alvo.
 - Contribuição e lucro não usam o mesmo rótulo.
 - Valores indisponíveis explicam por que não foram calculados.
@@ -550,18 +551,18 @@ folga`, `pouca folga`, `acima da meta` ou preço-alvo.
   quando pró-labore estiver ativado.
 - O simulador usa apenas estados objetivos e fica indisponível sem custo
   completo.
-- Prévia, detalhe, biblioteca e edição usam a linguagem coerente com a versão.
+- Prévia, detalhe, biblioteca e edição usam a mesma linguagem corrigida.
 - Leitores de tela recebem rótulos completos; cor não é a única indicação de
   resultado positivo, equilíbrio ou prejuízo.
 
 ### 16.3 Banco
 
-- RPCs novos aceitam somente as versões e formas novas esperadas.
+- RPCs atuais aceitam somente a forma corrigida esperada.
 - Snapshot, argumentos do RPC e linhas normalizadas precisam corresponder.
 - `positive_result` é aceito; valores desconhecidos continuam rejeitados.
 - Colunas completas do item detalhado respeitam nulabilidade e limites.
 - Substituição de relatório copia os novos campos e remove o staged.
-- Funções antigas continuam com os mesmos privilégios e comportamento.
+- As funções substituídas preservam os privilégios e proteções necessários.
 - Propriedade, acesso pago, idempotência por submissão e versão otimista
   permanecem protegidos.
 - Tipos gerados do banco são atualizados depois da migração local.
@@ -569,13 +570,13 @@ folga`, `pouca folga`, `acima da meta` ou preço-alvo.
 ### 16.4 Verificação final
 
 - testes Vitest direcionados dos quatro motores;
-- testes de schemas e snapshots antigos e novos;
+- testes dos schemas e snapshots atuais corrigidos;
 - testes de apresentadores, cards e simulador;
 - testes dos adaptadores e prévia do editor;
 - testes pgTAP dos quatro contratos e do ciclo de substituição;
 - suíte completa, typecheck, lint e formatação;
-- inspeção visual em desktop e celular dos estados completo, sem volume,
-  equilíbrio e prejuízo.
+- nenhuma verificação com Playwright, navegador automatizado ou ferramenta
+  equivalente faz parte deste trabalho.
 
 ## 17. Fora de escopo
 
@@ -584,7 +585,7 @@ folga`, `pouca folga`, `acima da meta` ou preço-alvo.
 - Criar um campo de meta de margem.
 - Preencher automaticamente o volume informado pela pessoa.
 - Supor uma combinação de itens quando o mix de vendas é desconhecido.
-- Reescrever em massa relatórios históricos.
+- Preservar, converter ou reescrever snapshots produzidos antes da correção.
 - Transformar pró-labore em lucro; ele continua sendo parte do valor mensal que
   o negócio precisa pagar.
 
@@ -603,5 +604,4 @@ folga`, `pouca folga`, `acima da meta` ou preço-alvo.
   seus dados disponíveis.
 - A linguagem principal é humana, acolhedora e compreensível sem conhecimento
   contábil.
-- Relatórios históricos continuam legíveis e relatórios editados passam para
-  a versão nova.
+- Fixtures, seeds e dados locais usam somente o contrato atual corrigido.
