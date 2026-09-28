@@ -11,6 +11,7 @@ import { DetailedItemNameStep } from "./detailed-item-name-step";
 import { DetailedItemVolumeStep } from "./detailed-item-volume-step";
 import { DetailedOwnerCompensationStep } from "./detailed-owner-compensation-step";
 import { DetailedProductCostsStep } from "./detailed-product-costs-step";
+import { DetailedProductKindStep } from "./detailed-product-kind-step";
 import { DetailedProductionCostsStep } from "./detailed-production-costs-step";
 import { DetailedReviewStep } from "./detailed-review-step";
 
@@ -119,6 +120,51 @@ describe("detailed common steps", () => {
 });
 
 describe("category-specific detailed costs", () => {
+  it("renders the shared Product scenario control", async () => {
+    const user = userEvent.setup();
+    const dispatch = vi.fn();
+    render(
+      <DetailedProductKindStep state={productState()} dispatch={dispatch} />,
+    );
+
+    expect(
+      screen.getByRole("radiogroup", { name: "Tipo de produto" }),
+    ).toBeVisible();
+    await user.click(screen.getByRole("radio", { name: "Produto digital" }));
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "setProductKind",
+      value: "digital",
+    });
+  });
+
+  it("uses digital direct-cost wording without supplier or packaging", () => {
+    const initial = productState();
+    const item = initial.values.items[0] as DetailedProductItemInput;
+    const state = {
+      ...initial,
+      productKind: "digital" as const,
+      values: {
+        ...initial.values,
+        items: [{ ...item, kind: "digital" as const, packagingUnitCost: "0" }],
+      },
+    };
+    const { rerender } = render(
+      <DetailedProductCostsStep state={state} dispatch={vi.fn()} />,
+    );
+
+    expect(
+      screen.getByLabelText("Existe algum gasto a cada venda?"),
+    ).toBeEnabled();
+    expect(screen.queryByText(/fornecedor/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/embalagem/i)).not.toBeInTheDocument();
+
+    rerender(<DetailedItemCompleteStep state={state} dispatch={vi.fn()} />);
+    expect(screen.getByText("Custo direto por venda")).toBeVisible();
+    expect(
+      screen.queryByText(/ficha técnica|fabricação/i),
+    ).not.toBeInTheDocument();
+  });
+
   it("keeps Product focused on shared resale cost and sale price", () => {
     const state = productState();
     render(<DetailedProductCostsStep state={state} dispatch={vi.fn()} />);

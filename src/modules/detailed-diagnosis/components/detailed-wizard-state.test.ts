@@ -28,6 +28,11 @@ function productionState() {
 function phasesFrom(initial: ReturnType<typeof productState>) {
   const phases = [initial.phase];
   let state = initial;
+  if (state.phase === "productKind")
+    state = detailedWizardReducer(state, {
+      type: "setProductKind",
+      value: "resale",
+    });
   while (state.phase !== "review") {
     state = detailedWizardReducer(state, { type: "next" });
     phases.push(state.phase);
@@ -36,11 +41,13 @@ function phasesFrom(initial: ReturnType<typeof productState>) {
 }
 
 describe("createInitialDetailedWizardState", () => {
-  it("starts Product with one resale item in the first-item journey", () => {
+  it("starts Product at the shared scenario choice", () => {
     const state = productState();
 
     expect(state).toMatchObject({
-      phase: "itemName",
+      phase: "productKind",
+      productKind: "",
+      productKindError: null,
       itemJourney: "first",
       activeItemId: "item-1",
       status: "editing",
@@ -68,6 +75,11 @@ describe("createInitialDetailedWizardState", () => {
   it("starts Production in summarized mode with one retained ingredient", () => {
     const state = productionState();
 
+    expect(state).toMatchObject({
+      phase: "itemName",
+      productKind: "",
+      productKindError: null,
+    });
     expect(state.values.items).toEqual([
       {
         id: "item-1",
@@ -98,6 +110,58 @@ describe("createInitialDetailedWizardState", () => {
 });
 
 describe("detailedWizardReducer", () => {
+  it("requires one Product kind, applies it to every item, and reuses it", () => {
+    const initial = productState();
+    const invalid = detailedWizardReducer(initial, { type: "next" });
+
+    expect(invalid).toMatchObject({
+      phase: "productKind",
+      productKindError: "Escolha o tipo de produto.",
+    });
+
+    const withTwoItems = {
+      ...invalid,
+      values: {
+        ...invalid.values,
+        items: [
+          invalid.values.items[0],
+          {
+            ...invalid.values.items[0],
+            id: "item-existing",
+            packagingUnitCost: "9,99",
+          },
+        ],
+      },
+    };
+    let state = detailedWizardReducer(withTwoItems, {
+      type: "setProductKind",
+      value: "digital",
+    });
+
+    expect(state.productKindError).toBeNull();
+    expect(state.productKind).toBe("digital");
+    expect(state.values.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: "digital", packagingUnitCost: "0" }),
+      ]),
+    );
+    expect(state.values.items.every((item) => item.kind === "digital")).toBe(
+      true,
+    );
+
+    state = detailedWizardReducer(state, { type: "next" });
+    expect(state.phase).toBe("itemName");
+    const back = detailedWizardReducer(state, { type: "back" });
+    expect(back.phase).toBe("productKind");
+
+    const additional = detailedWizardReducer(state, {
+      type: "addItem",
+      createId: ids("item-2"),
+    });
+    expect(additional.phase).toBe("itemName");
+    expect(additional.values.items.at(-1)).toMatchObject({ kind: "digital" });
+  });
+
   it("clears only the changed general and active-item field errors", () => {
     const state = {
       ...productState(),
@@ -378,6 +442,7 @@ describe("detailedWizardReducer", () => {
 
   it("uses the aligned first, additional, and editing journeys", () => {
     expect(phasesFrom(productState())).toEqual([
+      "productKind",
       "itemName",
       "itemValues",
       "fixedExpenses",

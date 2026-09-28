@@ -78,13 +78,19 @@ function DetailedItemCompleteStep({ state, dispatch }: DetailedStepProps) {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground">Forma de custo</dt>
+                    <dt className="text-muted-foreground">
+                      {item.kind === "digital"
+                        ? "Custo direto por venda"
+                        : "Forma de custo"}
+                    </dt>
                     <dd className="font-medium">
-                      {item.kind === "resale"
-                        ? "Produto para revenda"
-                        : item.costMode === "technical_sheet"
-                          ? "Ficha técnica completa"
-                          : "Custo total por unidade"}
+                      {item.kind === "digital"
+                        ? `R$ ${item.purchaseUnitCost || "0"}`
+                        : item.kind === "resale"
+                          ? "Produto para revenda"
+                          : item.costMode === "technical_sheet"
+                            ? "Ficha técnica completa"
+                            : "Custo total por unidade"}
                     </dd>
                   </div>
                 </dl>

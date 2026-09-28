@@ -1,8 +1,6 @@
 import { StepField } from "@/modules/quick-diagnosis/components/shared/step-field";
-import {
-  ResalePurchaseCostField,
-  UnitSalePriceField,
-} from "@/modules/quick-diagnosis/components/shared/unit-value-fields";
+import { ProductDirectCostField } from "@/modules/quick-diagnosis/components/shared/product-fields";
+import { UnitSalePriceField } from "@/modules/quick-diagnosis/components/shared/unit-value-fields";
 
 import type { DetailedStepProps } from "./types";
 
@@ -11,12 +9,13 @@ function DetailedProductCostsStep({ state, dispatch }: DetailedStepProps) {
     (item) => item.id === state.activeItemId,
   );
   const item = state.values.items[itemIndex];
-  if (!item || item.kind !== "resale") return null;
+  if (!item || item.kind === "manufacturing") return null;
 
   return (
     <div className="grid gap-5">
       <div className="grid gap-5 sm:grid-cols-2">
-        <ResalePurchaseCostField
+        <ProductDirectCostField
+          kind={item.kind}
           field={`items.${itemIndex}.purchaseUnitCost`}
           value={item.purchaseUnitCost}
           errors={state.fieldErrors}
@@ -42,21 +41,23 @@ function DetailedProductCostsStep({ state, dispatch }: DetailedStepProps) {
             })
           }
         />
-        <StepField
-          field={`items.${itemIndex}.packagingUnitCost`}
-          label="Embalagem por unidade"
-          value={item.packagingUnitCost}
-          errors={state.fieldErrors}
-          onChange={(_field, value) =>
-            dispatch({
-              type: "changeItemField",
-              itemId: item.id,
-              field: "packagingUnitCost",
-              value,
-            })
-          }
-          prefix="R$"
-        />
+        {item.kind === "resale" ? (
+          <StepField
+            field={`items.${itemIndex}.packagingUnitCost`}
+            label="Embalagem por unidade"
+            value={item.packagingUnitCost}
+            errors={state.fieldErrors}
+            onChange={(_field, value) =>
+              dispatch({
+                type: "changeItemField",
+                itemId: item.id,
+                field: "packagingUnitCost",
+                value,
+              })
+            }
+            prefix="R$"
+          />
+        ) : null}
       </div>
     </div>
   );

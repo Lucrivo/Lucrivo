@@ -22,6 +22,7 @@ import { DetailedItemNameStep } from "./steps/detailed-item-name-step";
 import { DetailedItemVolumeStep } from "./steps/detailed-item-volume-step";
 import { DetailedOwnerCompensationStep } from "./steps/detailed-owner-compensation-step";
 import { DetailedProductCostsStep } from "./steps/detailed-product-costs-step";
+import { DetailedProductKindStep } from "./steps/detailed-product-kind-step";
 import { DetailedProductionCostsStep } from "./steps/detailed-production-costs-step";
 import { DetailedReviewStep } from "./steps/detailed-review-step";
 
@@ -38,6 +39,7 @@ type DetailedDiagnosisWizardProps = {
 };
 
 const phaseProgress: Record<DetailedWizardPhase, number> = {
+  productKind: 3,
   itemName: 3,
   itemValues: 4,
   fixedExpenses: 5,
@@ -59,6 +61,8 @@ function itemLabel(state: DetailedWizardState): string {
 function stepTitle(state: DetailedWizardState): string {
   const itemNumber = Math.max(activeItemIndex(state), 0) + 1;
   switch (state.phase) {
+    case "productKind":
+      return "Que tipo de produto você vende?";
     case "itemName":
       return `${itemLabel(state)} ${itemNumber} · nome`;
     case "itemValues":
@@ -81,14 +85,18 @@ function stepTitle(state: DetailedWizardState): string {
 function pathsForCurrentPhase(state: DetailedWizardState): string[] {
   const index = activeItemIndex(state);
   switch (state.phase) {
+    case "productKind":
+      return [];
     case "itemName":
       return [`items.${index}.name`];
     case "itemValues": {
       const item = state.values.items[index];
-      if (item?.kind === "resale") {
+      if (item && item.kind !== "manufacturing") {
         return [
           `items.${index}.purchaseUnitCost`,
-          `items.${index}.packagingUnitCost`,
+          ...(item.kind === "resale"
+            ? [`items.${index}.packagingUnitCost`]
+            : []),
           `items.${index}.unitSalePrice`,
         ];
       }
@@ -141,6 +149,8 @@ function DetailedDiagnosisWizard({
 
   function renderStep() {
     switch (state.phase) {
+      case "productKind":
+        return <DetailedProductKindStep {...stepProps} />;
       case "itemName":
         return <DetailedItemNameStep {...stepProps} />;
       case "itemValues":
@@ -172,7 +182,12 @@ function DetailedDiagnosisWizard({
   }
 
   function goBack() {
-    if (state.phase === "itemName" && state.itemJourney === "first") {
+    if (
+      state.phase === "productKind" ||
+      (state.phase === "itemName" &&
+        state.itemJourney === "first" &&
+        state.values.category === "production")
+    ) {
       onBackToMode();
       return;
     }
@@ -222,10 +237,15 @@ function DetailedDiagnosisWizard({
       ? undefined
       : continueToNextStep;
 
+  const isProduct = state.values.category === "product";
+  const stepNumber =
+    phaseProgress[state.phase] +
+    (isProduct && state.phase !== "productKind" ? 1 : 0);
+
   return (
     <WizardShell
-      stepNumber={phaseProgress[state.phase]}
-      totalSteps={10}
+      stepNumber={stepNumber}
+      totalSteps={isProduct ? 11 : 10}
       title={stepTitle(state)}
       onBack={goBack}
       onContinue={onContinue}
