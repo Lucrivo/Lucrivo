@@ -12,20 +12,25 @@ O cálculo é determinístico. A interface coleta as entradas, o servidor valida
 
 Depois de escolher o que deseja analisar, o usuário seleciona uma modalidade:
 
-- **Produto → Diagnóstico detalhado:** cria itens de revenda;
-- **Produção → Diagnóstico detalhado:** cria itens fabricados e inicia a ficha técnica completa;
+- **Produto → Diagnóstico detalhado:** escolhe uma única vez entre itens de
+  revenda e produtos digitais;
+- **Produção → Diagnóstico detalhado:** cria itens fabricados começando pelo custo
+  total por unidade, com ficha técnica completa como alternativa;
 - **Serviço:** não exibe a modalidade detalhada.
 
-Uma análise não mistura itens de revenda e fabricação. A categoria escolhida vale para todos os itens do relatório.
+Uma análise usa um único cenário em todos os itens. Produto não mistura Revenda e
+Digital; Produção usa exclusivamente itens fabricados. A escolha é preservada ao
+voltar entre as etapas e ao adicionar novos itens.
 
 ## 3. Jornada implementada
 
-Depois da escolha de categoria e modalidade, o fluxo detalhado segue a mesma
-sequência de perguntas do diagnóstico rápido. O primeiro item é iniciado pelo
-nome; os demais dados aparecem em passos curtos e os itens adicionais reutilizam
-somente os passos próprios do item.
+Depois da escolha de categoria e modalidade, Produto escolhe Revenda ou Digital
+antes do primeiro item. Em seguida, o fluxo detalhado usa perguntas curtas; os
+itens adicionais reutilizam somente os passos próprios do item e mantêm o cenário
+escolhido.
 
 ```text
+0. Produto: escolher Revenda ou Digital uma vez para todo o diagnóstico
 1. nome do item
 2. preço e custos do item
 3. gastos mensais do negócio
@@ -33,7 +38,7 @@ somente os passos próprios do item.
 5. valor recebido pelo trabalho do dono
 6. impostos e cartão/plataforma
 7. revisar os itens
-   +--> adicionar, editar ou remover
+   +--> adicionar, editar ou solicitar remoção
    +--> itens adicionais repetem nome, preço/custos e vendas mensais
 8. revisar e gerar o diagnóstico
 ```
@@ -92,6 +97,8 @@ O sistema nunca preenche ou altera automaticamente o volume. A meta de equilíbr
 
 ## 6. Custos de Produto
 
+### 6.1 Revenda
+
 Para um item de revenda, o usuário informa:
 
 - custo de compra por unidade;
@@ -103,9 +110,22 @@ Campos opcionais vazios são normalizados para zero.
 custo variável unitário = custo de compra + embalagem
 ```
 
+### 6.2 Produto digital
+
+Para um item digital, o usuário informa o gasto direto a cada venda, como taxa de
+plataforma, licença ou entrega digital. O campo é opcional e vazio é normalizado
+para zero. Embalagem não aparece na interface e permanece igual a zero no
+contrato persistido; campos de fabricação também não são aceitos.
+
+```text
+custo variável unitário = gasto direto por venda
+```
+
 ## 7. Custos de Produção
 
-Cada produção usa uma das duas formas de custo.
+Cada produção usa uma das duas formas de custo. Um item novo — inclusive um
+item adicional — começa em **Custo total por unidade**; a escolha por ficha
+técnica continua disponível e relatórios salvos preservam o modo registrado.
 
 ### 7.1 Custo resumido
 
@@ -155,7 +175,10 @@ Depois de preencher custos, o usuário revisa os itens cadastrados. Pode:
 - confirmar ou cancelar a remoção em um diálogo;
 - avançar para a revisão final.
 
-Sempre deve existir ao menos um item. A remoção do único item fica desabilitada. Ingredientes seguem a mesma regra: uma ficha técnica mantém ao menos uma linha.
+Sempre deve existir ao menos um item. A remoção do único item fica desabilitada
+e um tooltip explica o motivo. Ingredientes seguem a mesma regra: uma ficha
+técnica mantém ao menos uma linha. Remover um item ou ingrediente preenchido
+exige confirmação; cancelar preserva os dados e devolve o foco ao acionador.
 
 Um novo ingrediente começa pela definição do nome, sugerido como
 `Ingrediente N`. Depois da confirmação, esse nome vira o título editável do
@@ -224,6 +247,24 @@ Se qualquer volume estiver vazio, o relatório é **parcial**:
 
 Volume zero não torna o relatório parcial. Ele representa um mês conhecido sem vendas.
 
+### 10.1 Quantidade necessária de vendas
+
+Quando todos os volumes são conhecidos e a contribuição mensal total é positiva,
+o relatório estima quantas unidades cobrem os gastos mantendo a proporção atual
+entre os itens:
+
+```text
+quantidade necessária = teto(gasto mensal efetivo × volume total
+  ÷ contribuição mensal total)
+```
+
+A referência informa que preserva a mesma proporção de vendas. Ela fica visível,
+mas indisponível e acompanhada do motivo, quando falta o volume de algum item, o
+volume total é zero ou a contribuição mensal total é zero ou negativa. O sistema
+não inventa uma quantidade nem converte volume desconhecido em zero. Quando
+disponível, as referências semanal e diária usam o divisor 4,33 e seis dias de
+operação por semana.
+
 ## 11. Veredito, prioridade e orientações
 
 O motor classifica o cenário com um veredito e uma prioridade entre custo, dados, preço, margem e volume. A ordem protege o negócio:
@@ -259,19 +300,32 @@ Ao confirmar, o servidor executa na ordem:
 
 O registro principal, os itens, os ingredientes e o snapshot são gravados na mesma transação. Se uma parte falhar, nada é salvo. Repetir o mesmo identificador de submissão retorna o mesmo relatório, evitando duplicação.
 
-O snapshot detalhado atual usa as versões `1/1/1` de schema, cálculo e conteúdo. Clientes com plano pago podem editar relatórios compatíveis diretamente no detalhe e acompanhar uma prévia determinística em tempo real. Ao salvar, podem substituir o mesmo registro ou criar um novo relatório. A substituição preserva o identificador e a data de criação, grava o novo snapshot e incrementa a versão de concorrência; ela não mantém uma versão anterior oculta. A exclusão explícita é lógica.
+O snapshot detalhado atual usa as versões `1/1/1` de schema, cálculo e conteúdo.
+Clientes com plano pago podem editar relatórios compatíveis diretamente no
+detalhe e acompanhar uma prévia determinística em tempo real. O editor preserva
+o cenário salvo, inclusive Digital, e usa seus campos e textos específicos.
+
+Ao salvar, a pessoa pode substituir o mesmo registro ou criar um novo relatório.
+A substituição validada por staging ocorre em uma única transação: preserva o
+identificador e a data de criação, incrementa a versão uma vez, copia snapshot e
+linhas normalizadas e remove integralmente a árvore temporária. Ela não mantém
+uma versão anterior oculta. A exclusão explícita é lógica.
 
 No editor, todos os itens começam recolhidos. Mais de um item pode ser aberto ao
 mesmo tempo, um item recém-adicionado abre automaticamente e uma tentativa de
-salvar dados inválidos abre e leva o foco ao primeiro item com pendência.
+salvar dados inválidos abre e leva o foco ao primeiro item com pendência. O card
+fechado mantém nome, preço de venda, custo direto e situação em regiões
+explícitas. Remover item ou ingrediente exige confirmação, e cancelar preserva o
+rascunho.
 
 Relatórios legados permanecem somente para leitura e seus snapshots não são recalculados com regras futuras. Um relatório gerado durante um período de assinatura continua acessível ao proprietário depois que esse período termina.
 
 ## 13. Biblioteca e detalhe do relatório
 
 Na biblioteca, um diagnóstico detalhado usa o título **Análise de produtos** ou
-**Análise de produções** e mostra categoria, cenário, veredito e a quantidade de
-itens analisados. Quando disponíveis, também apresenta resultado mensal e
+**Análise de produções** e mostra categoria, cenário — incluindo **Produto
+digital** —, veredito e a quantidade de itens analisados. Quando disponíveis,
+também apresenta resultado mensal e
 margem final. Relatórios parciais usam o veredito **Falta informar as vendas** e
 não exibem um total mensal inventado. O conjunto não possui um único “preço
 atual”.
@@ -298,7 +352,7 @@ Em relatórios completos, a comparação é ordenada pela contribuição mensal.
 Esta entrega não inclui:
 
 - controle físico de estoque;
-- mistura de revenda e produção no mesmo diagnóstico;
+- mistura de Revenda, Digital ou Produção dentro do mesmo diagnóstico;
 - diagnóstico detalhado de Serviço;
 - interpretação ou controles de IA;
 - geração de PDF;

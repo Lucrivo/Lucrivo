@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { calculateDetailedDiagnosis } from "@/modules/detailed-diagnosis/domain/calculate-detailed-diagnosis";
+import type { DetailedDiagnosisCommand } from "@/modules/detailed-diagnosis/types";
+
 import {
   parseCurrentProductReportSnapshot,
   parseProductReportSnapshot,
@@ -625,7 +628,7 @@ const validDetailedProductSnapshot = {
         id: "11111111-1111-4111-8111-111111111111",
         position: 0,
         name: "Caneca",
-        kind: "resale",
+        kind: "resale" as const,
         unitSalePriceCents: 1000,
         monthlySalesVolume: 1,
         purchaseUnitCostCents: 500,
@@ -669,6 +672,33 @@ const validDetailedProductSnapshot = {
   guidance: [],
 };
 
+const validDetailedDigitalSnapshot = {
+  ...validDetailedProductSnapshot,
+  scenario: "digital",
+  inputs: {
+    ...validDetailedProductSnapshot.inputs,
+    items: validDetailedProductSnapshot.inputs.items.map((item) => ({
+      ...item,
+      kind: "digital" as const,
+      packagingUnitCostCents: 0,
+    })),
+  },
+};
+
+function detailedDigitalSnapshotWithItems(
+  items: DetailedDiagnosisCommand["items"],
+) {
+  const inputs = {
+    ...validDetailedDigitalSnapshot.inputs,
+    items,
+  } as DetailedDiagnosisCommand;
+  return {
+    ...validDetailedDigitalSnapshot,
+    inputs,
+    results: calculateDetailedDiagnosis(inputs),
+  };
+}
+
 describe("category-versioned report snapshots", () => {
   it("parses the detailed V1 contract without shadowing quick snapshots", () => {
     const parsed = parseReportSnapshot(validDetailedProductSnapshot);
@@ -678,6 +708,64 @@ describe("category-versioned report snapshots", () => {
     expect(
       isDetailedReportSnapshot(parseReportSnapshot(validProductSnapshot)),
     ).toBe(false);
+  });
+
+  it("extends detailed V1 to a coherent Digital scenario", () => {
+    expect(parseReportSnapshot(validDetailedProductSnapshot)).toEqual(
+      validDetailedProductSnapshot,
+    );
+    expect(parseReportSnapshot(validDetailedDigitalSnapshot)).toEqual(
+      validDetailedDigitalSnapshot,
+    );
+  });
+
+  it("rejects mismatched, mixed, manufacturing, and packaged Digital items", () => {
+    const digitalItem = validDetailedDigitalSnapshot.inputs.items[0];
+    if (!digitalItem) throw new Error("expected Digital item");
+    const resaleItem = validDetailedProductSnapshot.inputs.items[0];
+    if (!resaleItem) throw new Error("expected resale item");
+
+    expect(() =>
+      parseReportSnapshot({
+        ...validDetailedDigitalSnapshot,
+        scenario: "resale",
+      }),
+    ).toThrow();
+    expect(() =>
+      parseReportSnapshot(
+        detailedDigitalSnapshotWithItems([
+          digitalItem,
+          {
+            ...resaleItem,
+            id: "22222222-2222-4222-8222-222222222222",
+            position: 1,
+          },
+        ]),
+      ),
+    ).toThrow();
+    expect(() =>
+      parseReportSnapshot(
+        detailedDigitalSnapshotWithItems([
+          {
+            id: digitalItem.id,
+            position: 0,
+            name: "Curso",
+            kind: "manufacturing",
+            costMode: "summarized",
+            unitSalePriceCents: 1000,
+            monthlySalesVolume: 1,
+            productionUnitCostCents: 500,
+          },
+        ]),
+      ),
+    ).toThrow();
+    expect(() =>
+      parseReportSnapshot(
+        detailedDigitalSnapshotWithItems([
+          { ...digitalItem, packagingUnitCostCents: 1 },
+        ]),
+      ),
+    ).toThrow();
   });
 
   it.each([

@@ -23,6 +23,7 @@ import {
   getReportLanguageProfile,
   type ReportLanguageProfile,
 } from "./report-language";
+import { toComfortableReportAnswers } from "./to-comfortable-report-answers";
 import { isDetailedReportSnapshot } from "../schemas/report-snapshot.schema";
 
 type ReportNumberViewModel = {
@@ -270,6 +271,7 @@ function toNormalizedServiceNumbers(
   const monthly = snapshot.results.monthlySalesGoal;
   const weekly = snapshot.results.weeklySalesGoal;
   const daily = snapshot.results.dailySalesGoal;
+  const priceHelp = normalizationHelp(snapshot);
   const supporting =
     weekly === null
       ? undefined
@@ -277,9 +279,16 @@ function toNormalizedServiceNumbers(
 
   return [
     {
+      key: "sales",
+      label: "Quantidade de serviços por mês",
+      value: monthly === null ? "Indisponível" : `${monthly} ${unit}`,
+      supportingText: supporting,
+    },
+    {
       key: "price",
       label: "Preço atual",
       value: formatCurrency(snapshot.results.currentPriceCents),
+      ...(priceHelp ? { help: priceHelp } : {}),
     },
     {
       key: "minimum",
@@ -295,12 +304,6 @@ function toNormalizedServiceNumbers(
           ? "Indisponível"
           : formatCurrency(snapshot.results.realMarginBasisPoints),
       help: serviceMarginHelp,
-    },
-    {
-      key: "sales",
-      label: "Quantidade de serviços por mês",
-      value: monthly === null ? "Indisponível" : `${monthly} ${unit}`,
-      supportingText: supporting,
     },
   ];
 }
@@ -338,6 +341,15 @@ function toCurrentProductNumbers(
   const monthly = snapshot.results.monthlySalesGoal;
   return [
     {
+      key: "sales",
+      label: "Vendas necessárias no mês",
+      value: monthly === null ? "Indisponível" : `${monthly} vendas`,
+      supportingText:
+        monthly === null || snapshot.results.weeklySalesGoal === null
+          ? undefined
+          : `${snapshot.results.weeklySalesGoal} por semana e ${snapshot.results.dailySalesGoal ?? 0} por dia.`,
+    },
+    {
       key: "price",
       label: "Preço atual",
       value: formatCurrency(snapshot.results.currentPriceCents),
@@ -374,15 +386,6 @@ function toCurrentProductNumbers(
       ),
       ...(partial ? { help: unknownVolumeHelp } : {}),
     },
-    {
-      key: "sales",
-      label: "Vendas necessárias no mês",
-      value: monthly === null ? "Indisponível" : `${monthly} vendas`,
-      supportingText:
-        monthly === null || snapshot.results.weeklySalesGoal === null
-          ? undefined
-          : `${snapshot.results.weeklySalesGoal} por semana e ${snapshot.results.dailySalesGoal ?? 0} por dia.`,
-    },
   ];
 }
 
@@ -392,6 +395,15 @@ function toCurrentProductionNumbers(
   const partial = snapshot.results.priceReferencesPartial;
   const monthly = snapshot.results.monthlySalesGoal;
   return [
+    {
+      key: "sales",
+      label: "Vendas necessárias no mês",
+      value: monthly === null ? "Indisponível" : `${monthly} unidades`,
+      supportingText:
+        monthly === null || snapshot.results.weeklySalesGoal === null
+          ? undefined
+          : `${snapshot.results.weeklySalesGoal} por semana e ${snapshot.results.dailySalesGoal ?? 0} por dia.`,
+    },
     {
       key: "price",
       label: "Preço atual",
@@ -424,15 +436,6 @@ function toCurrentProductionNumbers(
         "Ainda não calculado",
       ),
       ...(partial ? { help: unknownVolumeHelp } : {}),
-    },
-    {
-      key: "sales",
-      label: "Vendas necessárias no mês",
-      value: monthly === null ? "Indisponível" : `${monthly} unidades`,
-      supportingText:
-        monthly === null || snapshot.results.weeklySalesGoal === null
-          ? undefined
-          : `${snapshot.results.weeklySalesGoal} por semana e ${snapshot.results.dailySalesGoal ?? 0} por dia.`,
     },
   ];
 }
@@ -619,17 +622,16 @@ function toReportViewModel({
         ...snapshot.executiveSummary.verdict,
         toneLabel: language.toneLabels[snapshot.executiveSummary.verdict.tone],
       },
-      facts: snapshot.executiveSummary.facts.map((fact) =>
-        normalizedService && fact.key === "price"
-          ? { ...fact, help: normalizationHelp(snapshot) }
-          : fact,
-      ),
+      facts: snapshot.executiveSummary.facts,
+      answers: toComfortableReportAnswers(snapshot.executiveSummary.answers),
     },
     numbers,
-    sections: snapshot.sections.map((section) => ({
-      ...section,
-      toneLabel: language.toneLabels[section.tone],
-    })),
+    sections: snapshot.sections
+      .filter(({ key }) => key !== "hidden_cost")
+      .map((section) => ({
+        ...section,
+        toneLabel: language.toneLabels[section.tone],
+      })),
     discountSimulationBase: snapshot.discountSimulationBase,
     discountSimulationContext: {
       category: snapshot.category,

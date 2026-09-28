@@ -40,6 +40,16 @@ const productCommand: DetailedDiagnosisCommand = {
   ],
 };
 
+const digitalCommand: DetailedDiagnosisCommand = {
+  ...productCommand,
+  submissionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+  items: productCommand.items.map((item) =>
+    item.kind === "manufacturing"
+      ? item
+      : { ...item, kind: "digital" as const, packagingUnitCostCents: 0 },
+  ),
+};
+
 const productionCommand: DetailedDiagnosisCommand = {
   ...productCommand,
   submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
@@ -97,12 +107,29 @@ describe("DetailedReportDetail", () => {
     expect(screen.getByText("Revenda")).toBeVisible();
     expect(screen.queryByText("Diagnóstico detalhado")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Seus produtos dão lucro?" }),
+      screen.getByRole("heading", { name: "Comece por aqui" }),
     ).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { name: "Seus produtos dão lucro?" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("Estou ganhando dinheiro?")).toBeVisible();
     expect(screen.getByText("Meus preços pagam os gastos?")).toBeVisible();
     expect(screen.getByText("O que preciso fazer agora?")).toBeVisible();
     expect(screen.getByRole("heading", { name: "Seus números" })).toBeVisible();
+    const numbers = screen.getByRole("complementary", { name: "Seus números" });
+    const featured = numbers.querySelector<HTMLElement>(
+      '[data-slot="featured-report-number"]',
+    );
+    const executiveSummary = screen.getByRole("region", {
+      name: "Comece por aqui",
+    });
+    expect(featured).not.toBeNull();
+    expect(
+      within(featured!).getByText("Unidades necessárias no mês"),
+    ).toBeVisible();
+    expect(
+      within(executiveSummary).queryByText("Unidades necessárias no mês"),
+    ).not.toBeInTheDocument();
     const itemsHeading = screen.getByRole("heading", {
       name: "Item por item",
     });
@@ -115,15 +142,15 @@ describe("DetailedReportDetail", () => {
       }),
     ).toBeVisible();
     expect(
-      screen.getByRole("heading", { name: "O que sai das vendas" }),
-    ).toBeVisible();
+      screen.queryByRole("heading", { name: "O que sai das vendas" }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Quanto sobra no mês" }),
     ).toBeVisible();
     expect(
       screen.getByRole("heading", { name: "Quanto você precisa vender" }),
     ).toBeVisible();
-    expect(screen.getByText("Quanto entrou com as vendas")).toBeVisible();
+    expect(screen.getByText("Quanto entraria neste cenário")).toBeVisible();
     expect(screen.getByText("Custos do mês")).toBeVisible();
     expect(itemsHeading.compareDocumentPosition(comparisonHeading)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
@@ -157,6 +184,22 @@ describe("DetailedReportDetail", () => {
     expect(screen.queryByText(/\bmix\b/i)).not.toBeInTheDocument();
   });
 
+  it("renders Digital identity without physical-product terminology", () => {
+    render(
+      <DetailedReportDetail
+        id={170}
+        createdAt="2026-09-17T15:00:00.000Z"
+        snapshot={snapshotFor(digitalCommand)}
+      />,
+    );
+
+    expect(screen.getByText("Produto digital")).toBeVisible();
+    expect(screen.queryByText(/fornecedor|embalagem/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/ficha técnica|fabricação/i),
+    ).not.toBeInTheDocument();
+  });
+
   it("presents a partial Production mix neutrally with technical-sheet details", async () => {
     const user = userEvent.setup();
     render(
@@ -167,11 +210,20 @@ describe("DetailedReportDetail", () => {
       />,
     );
 
-    expect(screen.getByText("Falta informar as vendas")).toBeVisible();
+    expect(
+      within(screen.getByRole("region", { name: "Comece por aqui" })).getByText(
+        "Informação",
+      ),
+    ).toBeVisible();
     expect(
       screen.getAllByText(/volume mensal de Bolo de festa/i),
     ).not.toHaveLength(0);
-    expect(screen.queryByText(/^Indisponível$/)).not.toBeInTheDocument();
+    expect(screen.getByText(/^Indisponível$/)).toBeVisible();
+    expect(
+      screen.getByText(
+        "Informe as vendas mensais de todos os itens para calcular.",
+      ),
+    ).toBeVisible();
     expect(screen.getAllByText("Ainda não calculado")).not.toHaveLength(0);
     expect(screen.getByText(/Sobra por unidade/i)).toBeVisible();
 

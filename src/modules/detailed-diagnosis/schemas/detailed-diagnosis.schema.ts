@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { scaledInteger } from "@/modules/quick-diagnosis/schemas/decimal-input";
+import { productKinds } from "@/modules/quick-diagnosis/types";
 
 import type {
   DetailedDiagnosisCommand,
@@ -104,7 +105,7 @@ const detailedItemBaseShape = {
 
 const detailedProductItemInputSchema = z.strictObject({
   ...detailedItemBaseShape,
-  kind: z.literal("resale"),
+  kind: z.enum(productKinds),
   purchaseUnitCost: optionalMoneyStringSchema,
   packagingUnitCost: optionalMoneyStringSchema,
 });
@@ -186,6 +187,20 @@ const rawDetailedDiagnosisSchema = z
       }
     }
 
+    if (input.category === "product") {
+      const productKindsInInput = new Set(
+        input.items
+          .filter((item) => item.kind !== "manufacturing")
+          .map((item) => item.kind),
+      );
+      if (productKindsInInput.size > 1)
+        context.addIssue({
+          code: "custom",
+          path: ["items"],
+          message: "Todos os itens precisam usar o mesmo tipo de produto.",
+        });
+    }
+
     const itemIds = new Set<string>();
     input.items.forEach((item, itemIndex) => {
       if (itemIds.has(item.id))
@@ -196,9 +211,11 @@ const rawDetailedDiagnosisSchema = z
         });
       itemIds.add(item.id);
 
-      const expectedKind =
-        input.category === "product" ? "resale" : "manufacturing";
-      if (item.kind !== expectedKind)
+      const matchesCategory =
+        input.category === "product"
+          ? item.kind !== "manufacturing"
+          : item.kind === "manufacturing";
+      if (!matchesCategory)
         context.addIssue({
           code: "custom",
           path: ["items", itemIndex, "kind"],
@@ -269,12 +286,15 @@ function normalizeItem(
         : scaledInteger(item.monthlySalesVolume, 0),
   };
 
-  if (item.kind === "resale")
+  if (item.kind !== "manufacturing")
     return {
       ...common,
-      kind: "resale",
+      kind: item.kind,
       purchaseUnitCostCents: parseOptionalScaled(item.purchaseUnitCost, 2),
-      packagingUnitCostCents: parseOptionalScaled(item.packagingUnitCost, 2),
+      packagingUnitCostCents:
+        item.kind === "digital"
+          ? 0
+          : parseOptionalScaled(item.packagingUnitCost, 2),
     };
 
   if (item.costMode === "summarized")

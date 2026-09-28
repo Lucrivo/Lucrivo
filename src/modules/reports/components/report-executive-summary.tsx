@@ -6,7 +6,6 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { PlainLanguageHelp } from "@/components/shared/plain-language-help";
 import { cn } from "@/lib/utils";
 
 import type { ReportExecutiveSummaryViewModel } from "../presenters/to-report-view-model";
@@ -18,28 +17,24 @@ const tonePresentation = {
     badge: "info" as const,
     border: "border-info/30",
     surface: "bg-info/4",
-    verdictSurface: "bg-info/5",
   },
   positive: {
     icon: CircleCheckIcon,
     badge: "success" as const,
     border: "border-success/30",
     surface: "bg-success/4",
-    verdictSurface: "bg-success/5",
   },
   warning: {
     icon: TriangleAlertIcon,
     badge: "warning" as const,
     border: "border-warning/35",
     surface: "bg-warning/5",
-    verdictSurface: "bg-warning/6",
   },
   critical: {
     icon: OctagonAlertIcon,
     badge: "destructive" as const,
     border: "border-destructive/30",
     surface: "bg-destructive/4",
-    verdictSurface: "bg-destructive/5",
   },
 } satisfies Record<
   ReportTone,
@@ -48,7 +43,6 @@ const tonePresentation = {
     badge: "info" | "success" | "warning" | "destructive";
     border: string;
     surface: string;
-    verdictSurface: string;
   }
 >;
 
@@ -66,108 +60,57 @@ function ReportExecutiveSummary({
     <section
       aria-labelledby="executive-summary-title"
       className={cn(
-        "relative overflow-hidden rounded-3xl border shadow-sm",
+        "overflow-hidden rounded-3xl border shadow-sm",
         presentation.border,
         presentation.surface,
       )}
     >
-      <div
-        aria-hidden="true"
-        className="bg-primary/6 pointer-events-none absolute -top-32 -right-16 size-72 rounded-full blur-3xl"
-      />
-      <header className="relative grid gap-2 px-5 pt-6 sm:px-8 sm:pt-8">
-        <h2
-          id="executive-summary-title"
-          className="text-2xl leading-tight font-semibold tracking-tight sm:text-3xl"
-        >
-          {summary.headline}
-        </h2>
-        <p className="text-muted-foreground max-w-3xl leading-6">
-          {summary.introduction}
-        </p>
-      </header>
-
-      <div className="relative grid gap-4 p-5 sm:p-8">
-        <div
-          aria-label={`Veredito: ${summary.verdict.label}`}
-          className={cn(
-            "border-border/70 grid gap-5 rounded-2xl border p-4 shadow-xs sm:p-5",
-            presentation.verdictSurface,
-          )}
-        >
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="grid max-w-3xl gap-2">
-              <h3 className="text-xl font-semibold">{summary.verdict.label}</h3>
-              <p className="text-foreground/86 leading-6">
-                {summary.verdict.body}
-              </p>
-            </div>
-            <Badge variant={presentation.badge}>
-              <VerdictIcon aria-hidden="true" />
-              {summary.verdict.toneLabel}
-            </Badge>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            {summary.facts.map((fact) => (
-              <dl
-                key={fact.key}
-                className="border-border/70 bg-background/75 grid gap-2 rounded-xl border p-3.5"
-              >
-                <div className="flex items-end justify-between gap-3">
-                  <dt className="text-muted-foreground grid gap-1 text-xs font-medium">
-                    <span>{fact.currentLabel}</span>
-                    {fact.help ? <PlainLanguageHelp {...fact.help} /> : null}
-                  </dt>
-                  <dd className="min-w-0 text-right font-semibold break-words tabular-nums">
-                    {fact.currentValue}
-                  </dd>
-                </div>
-                <div className="border-border/60 flex items-end justify-between gap-3 border-t pt-2">
-                  <dt className="text-muted-foreground text-xs font-medium">
-                    {fact.referenceLabel}
-                  </dt>
-                  <dd className="min-w-0 text-right font-semibold break-words tabular-nums">
-                    {fact.referenceValue}
-                  </dd>
-                </div>
-              </dl>
-            ))}
-          </div>
-        </div>
-
-        <div className="border-primary/20 bg-primary/7 grid gap-2 rounded-2xl border p-4 sm:p-5">
-          <p className="text-primary text-xs font-semibold tracking-[0.14em] uppercase">
+      <header className="border-border/70 grid gap-4 border-b px-5 py-5 sm:px-8 sm:py-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2
+            id="executive-summary-title"
+            className="text-lg leading-tight font-semibold"
+          >
             {priorityEyebrow}
-          </p>
-          <h3 className="text-lg font-semibold">{summary.priority.label}</h3>
-          <p className="text-foreground/86 leading-6">
+          </h2>
+          <Badge variant={presentation.badge}>
+            <VerdictIcon aria-hidden="true" />
+            {summary.verdict.toneLabel}
+          </Badge>
+        </div>
+        <div className="grid max-w-3xl gap-1.5">
+          <h3 className="text-xl leading-tight font-semibold">
+            {summary.priority.label}
+          </h3>
+          <p className="text-foreground/86 text-base leading-7">
             {summary.priority.body}
           </p>
         </div>
+      </header>
 
-        <ol className="border-border/70 bg-background/75 divide-border divide-y rounded-2xl border px-4 shadow-xs sm:px-5">
-          {summary.answers.map((answer, index) => (
-            <li
-              key={answer.key}
-              className="grid grid-cols-[2rem_1fr] gap-3 py-4"
+      <ol className="bg-background/65 divide-border divide-y px-5 sm:px-8">
+        {summary.answers.map((answer, index) => (
+          <li
+            key={answer.key}
+            className="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-4 py-5 sm:py-6"
+          >
+            <span
+              aria-hidden="true"
+              className="bg-primary/10 text-primary grid size-9 place-items-center rounded-xl text-base font-semibold"
             >
-              <span
-                aria-hidden="true"
-                className="bg-primary/10 text-primary grid size-8 place-items-center rounded-lg font-semibold"
-              >
-                {index + 1}
-              </span>
-              <div className="grid gap-1">
-                <h3 className="text-muted-foreground text-sm font-medium">
-                  {answer.question}
-                </h3>
-                <p className="leading-6 font-semibold">{answer.answer}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </div>
+              {index + 1}
+            </span>
+            <div className="grid max-w-4xl gap-1.5">
+              <h3 className="text-base leading-6 font-semibold">
+                {answer.question}
+              </h3>
+              <p className="text-foreground/86 text-base leading-7">
+                {answer.answer}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ol>
     </section>
   );
 }

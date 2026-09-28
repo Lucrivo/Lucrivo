@@ -274,4 +274,42 @@ describe("ReportEditor", () => {
     ).toBeVisible();
     expect(screen.getByLabelText("Preço de venda (R$)")).toHaveValue("30");
   });
+  it("preserves a detailed item until its removal is confirmed", async () => {
+    const user = userEvent.setup();
+    const editableSnapshot = allEditableSnapshots()[3]!;
+    const editableDraft = toEditableReportDraft(
+      editableSnapshot,
+      () => submissionId,
+    )!;
+    render(
+      <ReportEditor
+        diagnosisId={41}
+        version={2}
+        initialDraft={editableDraft}
+        initialSnapshot={editableSnapshot}
+        onCancel={vi.fn()}
+        onPlanRequired={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Adicionar item" }));
+    const remove = screen.getByRole("button", { name: "Remover Item 2" });
+    await user.click(remove);
+    expect(
+      screen.getByRole("button", { name: "Abrir Item 2", hidden: true }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(
+      screen.getByRole("button", { name: "Abrir Item 2" }),
+    ).toBeInTheDocument();
+
+    await user.click(remove);
+    await user.click(screen.getByRole("button", { name: "Remover item" }));
+    expect(
+      screen.queryByRole("button", { name: "Abrir Item 2" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Abrir Produto A" }),
+    ).toBeInTheDocument();
+  });
 });

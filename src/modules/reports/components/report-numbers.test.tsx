@@ -36,6 +36,47 @@ describe("ReportNumbers", () => {
     ).toEqual(numbers.map(({ value }) => value));
   });
 
+  it("features a leading sales goal while keeping the other values in the regular list", () => {
+    render(
+      <ReportNumbers
+        numbers={[
+          {
+            key: "sales",
+            label: "Unidades necessárias no mês",
+            value: "72 unidades",
+            supportingText: "17 por semana e 3 por dia.",
+          },
+          ...numbers.slice(0, 2),
+        ]}
+        title="Seus números"
+        description="Valores calculados com o que você informou."
+      />,
+    );
+
+    const rail = screen.getByRole("complementary", { name: "Seus números" });
+    const featured = rail.querySelector<HTMLElement>(
+      '[data-slot="featured-report-number"]',
+    );
+    const regular = rail.querySelector<HTMLElement>(
+      '[data-slot="report-number-list"]',
+    );
+
+    expect(featured).not.toBeNull();
+    expect(regular).not.toBeNull();
+    expect(
+      within(featured!).getByText("Unidades necessárias no mês"),
+    ).toBeVisible();
+    expect(within(featured!).getByText("72 unidades")).toBeVisible();
+    expect(
+      Array.from(regular!.querySelectorAll("dt")).map(
+        (term) => term.textContent,
+      ),
+    ).toEqual(["Preço atual", "Margem real"]);
+    expect(rail.querySelectorAll("dl")).toHaveLength(2);
+    expect(rail.querySelectorAll("dt")).toHaveLength(3);
+    expect(rail.querySelectorAll("dd")).toHaveLength(3);
+  });
+
   it("explains only the two calculated terms and restores focus", async () => {
     const user = userEvent.setup();
     const explainedNumbers = numbers.map((number) =>

@@ -92,6 +92,27 @@ function snapshots(): ReportSnapshot[] {
     ],
   });
 
+  const digitalDetailedCommand = detailedDiagnosisSchema.parse({
+    submissionId,
+    category: "product",
+    fixedMonthlyExpenses: "800",
+    proLaboreIncluded: false,
+    proLabore: "",
+    taxRate: "6",
+    cardFeeRate: "3.5",
+    items: [
+      {
+        id: "33333333-3333-4333-8333-333333333333",
+        kind: "digital",
+        name: "Curso",
+        unitSalePrice: "30",
+        monthlySalesVolume: "12",
+        purchaseUnitCost: "12.50",
+        packagingUnitCost: "9.99",
+      },
+    ],
+  });
+
   return [
     buildServiceReportSnapshot(
       serviceCommand,
@@ -108,6 +129,10 @@ function snapshots(): ReportSnapshot[] {
     buildDetailedReportSnapshot(
       detailedCommand,
       calculateDetailedDiagnosis(detailedCommand),
+    ),
+    buildDetailedReportSnapshot(
+      digitalDetailedCommand,
+      calculateDetailedDiagnosis(digitalDetailedCommand),
     ),
   ];
 }
@@ -142,6 +167,32 @@ describe("toEditableReportDraft", () => {
       },
     });
     expect(detailedDraft?.values).not.toHaveProperty("promotionMargin");
+  });
+
+  it("round-trips a Digital detailed snapshot without packaging", () => {
+    const digitalDetailed = snapshots()[4];
+    if (!digitalDetailed) throw new Error("expected Digital detailed snapshot");
+    const draft = toEditableReportDraft(digitalDetailed, () => submissionId);
+
+    expect(draft).toMatchObject({
+      kind: "detailed",
+      values: {
+        items: [
+          {
+            kind: "digital",
+            purchaseUnitCost: "12.5",
+            packagingUnitCost: "0",
+          },
+        ],
+      },
+    });
+    if (!draft || draft.kind !== "detailed")
+      throw new Error("expected detailed draft");
+    expect(detailedDiagnosisSchema.parse(draft.values).items[0]).toMatchObject({
+      kind: "digital",
+      purchaseUnitCostCents: 1250,
+      packagingUnitCostCents: 0,
+    });
   });
 
   it("keeps legacy snapshots readable but not editable", () => {

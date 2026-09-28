@@ -1,5 +1,4 @@
 import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import type { NormalizedServiceDiagnosisCommand } from "@/modules/quick-diagnosis/types";
@@ -46,7 +45,7 @@ const viewModel = toReportViewModel({
 });
 
 describe("ReportExecutiveSummary", () => {
-  it("renders the persisted verdict, correction, and three ordered answers", () => {
+  it("starts with the priority and keeps three ordered answers", () => {
     render(
       <ReportExecutiveSummary
         summary={viewModel.executiveSummary}
@@ -54,21 +53,23 @@ describe("ReportExecutiveSummary", () => {
       />,
     );
     const summary = screen.getByRole("region", {
-      name: "Seu serviço dá lucro?",
+      name: "Comece por aqui",
     });
 
     expect(
       within(summary).getByRole("heading", {
         level: 2,
-        name: "Seu serviço dá lucro?",
+        name: "Comece por aqui",
       }),
     ).toBeInTheDocument();
-    expect(within(summary).getAllByText("Boa folga")).toHaveLength(2);
     expect(within(summary).getByText("Bom resultado")).toBeInTheDocument();
-    expect(within(summary).getByText("Comece por aqui")).toBeInTheDocument();
     expect(
       within(summary).getByText("Quantidade de serviços"),
     ).toBeInTheDocument();
+    expect(
+      within(summary).queryByText("Seu serviço dá lucro?"),
+    ).not.toBeInTheDocument();
+    expect(within(summary).queryByText("Preço atual")).not.toBeInTheDocument();
 
     const answers = within(summary).getAllByRole("listitem");
     expect(answers).toHaveLength(3);
@@ -98,8 +99,7 @@ describe("ReportExecutiveSummary", () => {
     expect(screen.getByText(toneLabel)).toBeInTheDocument();
   });
 
-  it("opens the price conversion explanation and restores focus", async () => {
-    const user = userEvent.setup();
+  it("does not repeat the values already shown in Your numbers", () => {
     render(
       <ReportExecutiveSummary
         summary={viewModel.executiveSummary}
@@ -107,14 +107,9 @@ describe("ReportExecutiveSummary", () => {
       />,
     );
 
-    const trigger = screen.getByRole("button", {
-      name: "Entenda a conversão",
-    });
-    await user.click(trigger);
+    expect(screen.queryByText("Preço atual")).not.toBeInTheDocument();
     expect(
-      screen.getByText("Por que mostramos o valor por hora?"),
-    ).toBeInTheDocument();
-    await user.keyboard("{Escape}");
-    expect(trigger).toHaveFocus();
+      screen.queryByText("Quanto sobra a cada R$ 100"),
+    ).not.toBeInTheDocument();
   });
 });

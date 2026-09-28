@@ -170,12 +170,15 @@ function toEditableReportDraft(
               : String(item.monthlySalesVolume),
         };
 
-        if (item.kind === "resale")
+        if (item.kind !== "manufacturing")
           return {
             ...common,
-            kind: "resale" as const,
+            kind: item.kind,
             purchaseUnitCost: centsToInput(item.purchaseUnitCostCents),
-            packagingUnitCost: centsToInput(item.packagingUnitCostCents),
+            packagingUnitCost:
+              item.kind === "digital"
+                ? "0"
+                : centsToInput(item.packagingUnitCostCents),
           };
 
         if (item.costMode === "summarized")

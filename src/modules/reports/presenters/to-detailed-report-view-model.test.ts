@@ -56,16 +56,26 @@ describe("toDetailedReportViewModel", () => {
     });
 
     expect(model.executiveSummary.headline).toBe("Seus produtos dão lucro?");
+    expect(model.executiveSummary.answers[0]?.answer).toBe(
+      "Sim, está. Com base nas informações, seu lucro no mês foi de R$ 460,00.",
+    );
+    expect(model.numbers[0]).toEqual({
+      key: "sales",
+      label: "Unidades necessárias no mês",
+      value: "4 unidades",
+      supportingText:
+        "Estimativa mantendo a mesma proporção de vendas entre os itens. 1 por semana e 1 por dia.",
+    });
     expect(model.numbers.map((number) => number.label)).toEqual([
-      "Quanto entrou com as vendas",
+      "Unidades necessárias no mês",
+      "Quanto entraria neste cenário",
       "Custos do mês",
-      "Resultado do mês",
+      "Resultado do mês estimado",
       "Quanto sobra a cada R$ 100",
       "Quanto precisa vender para cobrir os gastos",
     ]);
     expect(model.sections.map((section) => section.key)).toEqual([
       "break_even",
-      "hidden_cost",
       "margin_diagnosis",
       "sales_goal",
     ]);
@@ -92,9 +102,36 @@ describe("toDetailedReportViewModel", () => {
     });
 
     expect(model.executiveSummary.verdict.label).toMatch(/Falta informar/i);
-    expect(model.numbers[0]).toMatchObject({
+    expect(model.numbers[0]).toEqual({
+      key: "sales",
+      label: "Unidades necessárias no mês",
+      value: "Indisponível",
+      supportingText:
+        "Informe as vendas mensais de todos os itens para calcular.",
+    });
+    expect(model.numbers[1]).toMatchObject({
       value: "Ainda não calculado",
       supportingText: "Informe as vendas mensais para calcular.",
+    });
+  });
+
+  it("keeps the sales goal first when total volume is zero", () => {
+    const command = {
+      ...baseCommand,
+      items: [{ ...baseCommand.items[0]!, monthlySalesVolume: 0 }],
+    };
+    const model = toDetailedReportViewModel({
+      id: 171,
+      createdAt: "2026-09-17T15:00:00.000Z",
+      snapshot: snapshotFor(command),
+    });
+
+    expect(model.numbers[0]).toEqual({
+      key: "sales",
+      label: "Unidades necessárias no mês",
+      value: "Indisponível",
+      supportingText:
+        "Informe uma quantidade vendida maior que zero para calcular.",
     });
   });
 
@@ -116,6 +153,13 @@ describe("toDetailedReportViewModel", () => {
     });
 
     expect(model.executiveSummary.verdict.tone).toBe("critical");
+    expect(model.numbers[0]).toEqual({
+      key: "sales",
+      label: "Unidades necessárias no mês",
+      value: "Indisponível",
+      supportingText:
+        "As vendas informadas não deixam valor suficiente para calcular uma meta.",
+    });
     expect(model.executiveSummary.priority.body).toMatch(/preços e os gastos/i);
     expect(model.items[0]).toMatchObject({
       statusLabel: "Perda por venda",

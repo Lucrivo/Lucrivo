@@ -69,4 +69,55 @@ describe("IngredientCard", () => {
     await user.click(screen.getByRole("button", { name: "Salvar nome" }));
     expect(onChange).toHaveBeenCalledWith("name", "Farinha fina");
   });
+  it("confirms removal and explains why the last ingredient cannot be removed", async () => {
+    const user = userEvent.setup();
+    const onRemove = vi.fn();
+    const { rerender } = render(
+      <IngredientCard
+        ingredient={ingredient}
+        basePath="items.0.ingredients.0"
+        errors={{}}
+        canRemove
+        onChange={vi.fn()}
+        onRemove={onRemove}
+      />,
+    );
+
+    const trigger = screen.getByRole("button", { name: "Remover Farinha" });
+    await user.click(trigger);
+    expect(onRemove).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("alertdialog", { name: "Remover Farinha?" }),
+    ).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(onRemove).not.toHaveBeenCalled();
+
+    await user.click(trigger);
+    await user.click(
+      screen.getByRole("button", { name: "Remover ingrediente" }),
+    );
+    expect(onRemove).toHaveBeenCalledOnce();
+
+    rerender(
+      <IngredientCard
+        ingredient={ingredient}
+        basePath="items.0.ingredients.0"
+        errors={{}}
+        canRemove={false}
+        onChange={vi.fn()}
+        onRemove={onRemove}
+      />,
+    );
+    const disabledTrigger = screen.getByRole("button", {
+      name: "Remover Farinha",
+    });
+    expect(disabledTrigger).toBeDisabled();
+    const wrapper = screen.getByRole("group", {
+      name: "Remover Farinha. Mantenha pelo menos um ingrediente.",
+    });
+    await user.hover(wrapper);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      "Mantenha pelo menos um ingrediente.",
+    );
+  });
 });

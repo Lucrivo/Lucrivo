@@ -10,8 +10,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  ConfirmRemovalButton,
+  removalButtonClassName,
+} from "@/components/shared/confirm-removal-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import type { DetailedStepProps } from "./types";
 
@@ -55,18 +65,49 @@ function DetailedItemCompleteStep({ state, dispatch }: DetailedStepProps) {
                     <PencilIcon aria-hidden="true" />
                     Editar
                   </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-lg"
-                    aria-label={`Remover ${name}`}
-                    disabled={state.values.items.length === 1}
-                    onClick={() =>
-                      dispatch({ type: "requestRemoveItem", itemId: item.id })
-                    }
-                  >
-                    <Trash2Icon aria-hidden="true" />
-                  </Button>
+                  {state.values.items.length === 1 ? (
+                    <ConfirmRemovalButton
+                      ariaLabel={"Remover " + name}
+                      tooltip="Remover item"
+                      disabled
+                      disabledReason="Mantenha pelo menos um item no diagnóstico."
+                      title={"Remover " + name + "?"}
+                      description={
+                        "Os valores preenchidos para " +
+                        name +
+                        " serão removidos do diagnóstico."
+                      }
+                      confirmLabel="Remover item"
+                      onConfirm={() => undefined}
+                    />
+                  ) : (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-lg"
+                              aria-label={"Remover " + name}
+                              className={removalButtonClassName}
+                              onClick={() =>
+                                dispatch({
+                                  type: "requestRemoveItem",
+                                  itemId: item.id,
+                                })
+                              }
+                            />
+                          }
+                        >
+                          <Trash2Icon aria-hidden="true" />
+                        </TooltipTrigger>
+                        <TooltipContent role="tooltip">
+                          Remover item
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
@@ -78,13 +119,20 @@ function DetailedItemCompleteStep({ state, dispatch }: DetailedStepProps) {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground">Forma de custo</dt>
+                    <dt className="text-muted-foreground">
+                      {item.kind === "digital"
+                        ? "Custo direto por venda"
+                        : "Forma de custo"}
+                    </dt>
                     <dd className="font-medium">
-                      {item.kind === "resale"
-                        ? "Produto para revenda"
-                        : item.costMode === "technical_sheet"
-                          ? "Ficha técnica completa"
-                          : "Custo total por unidade"}
+                      {item.kind === "digital"
+                        ? `R$ ${item.purchaseUnitCost || "0"}`
+                        : item.kind === "resale"
+                          ? "Produto para revenda"
+                          : item.kind === "manufacturing" &&
+                              item.costMode === "technical_sheet"
+                            ? "Ficha técnica completa"
+                            : "Custo total por unidade"}
                     </dd>
                   </div>
                 </dl>
@@ -119,7 +167,11 @@ function DetailedItemCompleteStep({ state, dispatch }: DetailedStepProps) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover este item?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {pendingItem
+                ? "Remover " + pendingItem.name + "?"
+                : "Remover item?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               Os valores preenchidos para {pendingItem?.name || "este item"}{" "}
               serão removidos do diagnóstico.

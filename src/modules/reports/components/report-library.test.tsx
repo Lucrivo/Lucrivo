@@ -195,6 +195,18 @@ describe("ReportListCard", () => {
     expect(screen.getByText("Diagnóstico salvo")).toBeInTheDocument();
   });
 
+  it("uses the saved Digital identity for a detailed Product report", () => {
+    render(
+      <ReportListCard report={{ ...detailedReport, scenario: "digital" }} />,
+    );
+
+    const card = screen.getByRole("article", {
+      name: "Análise de produtos — Produto digital",
+    });
+    expect(within(card).getByText("Produto digital")).toBeVisible();
+    expect(within(card).queryByText("Revenda")).not.toBeInTheDocument();
+  });
+
   it("presents a complete Detailed report with the current unit identity", () => {
     render(<ReportListCard report={detailedReport} />);
 

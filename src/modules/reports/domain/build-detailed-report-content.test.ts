@@ -93,6 +93,25 @@ describe("buildDetailedReportContent", () => {
     expect(JSON.stringify(content)).not.toContain("R$ 500,00");
   });
 
+  it("keeps Digital content free of physical-product terminology", () => {
+    const digitalCommand: DetailedDiagnosisCommand = {
+      ...command,
+      items: command.items.map((item) =>
+        item.kind === "manufacturing"
+          ? item
+          : { ...item, kind: "digital" as const, packagingUnitCostCents: 0 },
+      ),
+    };
+    const content = buildDetailedReportContent(
+      digitalCommand,
+      calculateDetailedDiagnosis(digitalCommand),
+    );
+
+    expect(JSON.stringify(content)).not.toMatch(
+      /fornecedor|embalagem|ficha técnica|fabricação/i,
+    );
+  });
+
   it("uses the plural Production headline", () => {
     const productionCommand: DetailedDiagnosisCommand = {
       ...command,

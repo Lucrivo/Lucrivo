@@ -309,11 +309,24 @@ describe("QuickDiagnosisWizard category orchestration", () => {
 
     expect(
       screen.getByRole("heading", {
+        name: "Que tipo de produto você vende?",
+      }),
+    ).toHaveFocus();
+    expect(screen.getByText("3 de 11")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("radio", { name: "Produto digital" }));
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    expect(
+      screen.getByRole("heading", {
         name: "Produto 1 · nome",
       }),
     ).toHaveFocus();
-    expect(screen.getByText("3 de 10")).toBeInTheDocument();
+    expect(screen.getByText("4 de 11")).toBeInTheDocument();
 
+    await user.click(screen.getByRole("button", { name: "Voltar" }));
+    expect(
+      screen.getByRole("radio", { name: "Produto digital" }),
+    ).toBeChecked();
     await user.click(screen.getByRole("button", { name: "Voltar" }));
     expect(
       screen.getByRole("radio", { name: "Diagnóstico detalhado" }),

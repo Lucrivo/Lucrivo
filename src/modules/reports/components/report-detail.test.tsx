@@ -152,13 +152,20 @@ describe("ReportDetail", () => {
   it("renders the executive summary before numbers and detailed analysis", () => {
     render(<ReportDetail viewModel={viewModel} />);
     const executiveSummary = screen.getByRole("region", {
-      name: "Seu serviço dá lucro?",
+      name: "Comece por aqui",
     });
     const numbers = screen.getByRole("complementary", { name: "Seus números" });
+    const featured = numbers.querySelector<HTMLElement>(
+      '[data-slot="featured-report-number"]',
+    );
     const analysis = screen.getByRole("region", {
       name: "Como chegamos a esse resultado",
     });
 
+    expect(featured).not.toBeNull();
+    expect(
+      within(featured!).getByText("Quantidade de serviços por mês"),
+    ).toBeVisible();
     expect(
       executiveSummary.compareDocumentPosition(numbers) &
         Node.DOCUMENT_POSITION_FOLLOWING,
@@ -237,6 +244,17 @@ describe("ReportDetail", () => {
         exact: false,
       }).length,
     ).toBeGreaterThan(0);
+  });
+
+  it.each([
+    ["Product", productViewModel],
+    ["Production", productionViewModel],
+  ])("removes the outgoing-sales card from %s reports", (_, model) => {
+    render(<ReportDetail viewModel={model} />);
+
+    expect(
+      screen.queryByRole("heading", { name: "O que sai de cada venda" }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps report chrome unchanged for a legacy snapshot", () => {

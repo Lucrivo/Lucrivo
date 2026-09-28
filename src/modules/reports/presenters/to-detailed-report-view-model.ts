@@ -7,11 +7,13 @@ import {
   formatReportDate,
   formatReportScenario,
 } from "../formatters";
+import { calculateDetailedSalesGoal } from "../domain/calculate-detailed-sales-goal";
 import type {
   CurrentDetailedReportSnapshot,
   ReportDiscountSimulationBase,
 } from "../types";
 import { getReportLanguageProfile } from "./report-language";
+import { toComfortableReportAnswers } from "./to-comfortable-report-answers";
 import type {
   ReportExecutiveSummaryViewModel,
   ReportNumberViewModel,
@@ -162,6 +164,11 @@ function toDetailedReportViewModel({
   const reason = unavailableReason(snapshot);
   const totalFeeBasisPoints =
     snapshot.inputs.taxRateBasisPoints + snapshot.inputs.cardFeeRateBasisPoints;
+  const salesGoal = calculateDetailedSalesGoal(
+    snapshot.inputs,
+    snapshot.results,
+    snapshot.policy,
+  );
 
   const number = (
     key: ReportNumberViewModel["key"],
@@ -176,10 +183,25 @@ function toDetailedReportViewModel({
     ...(help ? { help } : {}),
   });
 
+  const salesNumber: ReportNumberViewModel = salesGoal.available
+    ? {
+        key: "sales",
+        label: "Unidades necessárias no mês",
+        value: `${formatIntegerVolume(salesGoal.monthly)} unidades`,
+        supportingText: `Estimativa mantendo a mesma proporção de vendas entre os itens. ${formatIntegerVolume(salesGoal.weekly)} por semana e ${formatIntegerVolume(salesGoal.daily)} por dia.`,
+      }
+    : {
+        key: "sales",
+        label: "Unidades necessárias no mês",
+        value: "Indisponível",
+        supportingText: salesGoal.reason,
+      };
+
   const numbers: ReportNumberViewModel[] = [
+    salesNumber,
     number(
       "revenue",
-      "Quanto entrou com as vendas",
+      "Quanto entraria neste cenário",
       optionalCurrency(snapshot.results.monthlyGrossRevenueCents),
     ),
     number(
@@ -189,7 +211,7 @@ function toDetailedReportViewModel({
     ),
     number(
       "result",
-      "Resultado do mês",
+      "Resultado do mês estimado",
       optionalCurrency(snapshot.results.monthlyResultCents),
     ),
     number(
@@ -299,12 +321,15 @@ function toDetailedReportViewModel({
         toneLabel: language.toneLabels[snapshot.executiveSummary.verdict.tone],
       },
       facts: snapshot.executiveSummary.facts,
+      answers: toComfortableReportAnswers(snapshot.executiveSummary.answers),
     },
     numbers,
-    sections: snapshot.sections.map((section) => ({
-      ...section,
-      toneLabel: language.toneLabels[section.tone],
-    })),
+    sections: snapshot.sections
+      .filter(({ key }) => key !== "hidden_cost")
+      .map((section) => ({
+        ...section,
+        toneLabel: language.toneLabels[section.tone],
+      })),
     comparison,
     items,
     secondaryGuidance: snapshot.guidance

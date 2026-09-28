@@ -59,13 +59,31 @@ describe("DetailedDiagnosisWizard", () => {
     return { createDiagnosis, createId, onBackToMode };
   }
 
-  it("validates each phase and returns to the selected modality", async () => {
+  it("validates Product kind, preserves it through navigation, and returns to mode", async () => {
     const { onBackToMode } = renderWizard();
     const user = userEvent.setup();
 
-    expect(screen.getByText("3 de 10")).toBeInTheDocument();
+    expect(screen.getByText("3 de 11")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    expect(screen.getByRole("alert")).toHaveTextContent("Informe um nome");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Escolha o tipo de produto.",
+    );
+
+    await user.click(screen.getByRole("radio", { name: "Produto digital" }));
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    expect(screen.getByText("4 de 11")).toBeInTheDocument();
+    await user.type(screen.getByLabelText("Nome do produto"), "Curso");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    expect(
+      screen.getByLabelText("Existe algum gasto a cada venda?"),
+    ).toBeEnabled();
+    expect(screen.queryByText(/fornecedor|embalagem/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Voltar" }));
+    await user.click(screen.getByRole("button", { name: "Voltar" }));
+    expect(
+      screen.getByRole("radio", { name: "Produto digital" }),
+    ).toBeChecked();
 
     await user.click(screen.getByRole("button", { name: "Voltar" }));
     expect(onBackToMode).toHaveBeenCalledOnce();
@@ -84,6 +102,10 @@ describe("DetailedDiagnosisWizard", () => {
     renderWizard({ createDiagnosis });
     const user = userEvent.setup();
 
+    await user.click(
+      screen.getByRole("radio", { name: "Produto para revenda" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(screen.getByLabelText("Nome do produto"), "Camiseta");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     await user.type(
@@ -159,6 +181,7 @@ describe("DetailedDiagnosisWizard", () => {
     const state: DetailedWizardState = {
       ...initial,
       phase: "review",
+      productKind: "resale",
       values: {
         ...initial.values,
         fixedMonthlyExpenses: "1000",
@@ -222,6 +245,7 @@ describe("DetailedDiagnosisWizard", () => {
             ...item,
             name: "Bolo",
             unitSalePrice: "100",
+            costMode: "technical_sheet",
             ingredients: [
               {
                 ...item.ingredients[0],
@@ -269,6 +293,7 @@ describe("DetailedDiagnosisWizard", () => {
     const state: DetailedWizardState = {
       ...initial,
       phase: "itemComplete",
+      productKind: "resale",
       values: {
         ...initial.values,
         fixedMonthlyExpenses: "1000",
@@ -338,6 +363,7 @@ describe("DetailedDiagnosisWizard", () => {
     });
     const user = userEvent.setup();
 
+    expect(screen.getByText("3 de 10")).toBeInTheDocument();
     await user.type(screen.getByLabelText("Nome da produção"), "Bolo");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(

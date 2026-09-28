@@ -1,3 +1,8 @@
+import {
+  productKinds,
+  type ProductKind,
+} from "@/modules/quick-diagnosis/types";
+
 import type {
   DetailedDiagnosisCategory,
   DetailedDiagnosisFieldErrors,
@@ -9,6 +14,7 @@ import type {
 } from "../types";
 
 type DetailedWizardPhase =
+  | "productKind"
   | "itemName"
   | "itemValues"
   | "fixedExpenses"
@@ -23,6 +29,8 @@ type DetailedSubmitError = "unauthorized" | "limit_reached" | "create_failed";
 
 type DetailedWizardState = {
   phase: DetailedWizardPhase;
+  productKind: ProductKind | "";
+  productKindError: string | null;
   itemJourney: DetailedItemJourney;
   activeItemId: string;
   values: DetailedDiagnosisInput;
@@ -55,6 +63,7 @@ type DetailedItemTextField =
 type DetailedIngredientTextField = "name" | "quantity" | "unit" | "unitCost";
 
 type DetailedWizardAction =
+  | { type: "setProductKind"; value: ProductKind }
   | {
       type: "changeGeneralField";
       field: DetailedGeneralField;
@@ -103,6 +112,7 @@ type DetailedWizardAction =
   | { type: "reset"; createId: () => string };
 
 function nextDetailedPhase(state: DetailedWizardState): DetailedWizardPhase {
+  if (state.phase === "productKind") return "itemName";
   if (state.phase === "itemName") return "itemValues";
   if (state.phase === "itemValues")
     return state.itemJourney === "first" ? "fixedExpenses" : "itemVolume";
@@ -118,7 +128,11 @@ function nextDetailedPhase(state: DetailedWizardState): DetailedWizardPhase {
 function previousDetailedPhase(
   state: DetailedWizardState,
 ): DetailedWizardPhase {
-  if (state.phase === "itemName") return "itemComplete";
+  if (state.phase === "productKind") return "productKind";
+  if (state.phase === "itemName")
+    return state.itemJourney === "first" && state.values.category === "product"
+      ? "productKind"
+      : "itemComplete";
   if (state.phase === "itemValues") return "itemName";
   if (state.phase === "fixedExpenses") return "itemValues";
   if (state.phase === "itemVolume")
@@ -144,11 +158,14 @@ function blankIngredient(
   };
 }
 
-function blankProductItem(id: string): DetailedProductItemInput {
+function blankProductItem(
+  id: string,
+  kind: ProductKind,
+): DetailedProductItemInput {
   return {
     id,
     name: "",
-    kind: "resale",
+    kind,
     unitSalePrice: "",
     monthlySalesVolume: "",
     purchaseUnitCost: "",
@@ -164,7 +181,7 @@ function blankProductionItem(
     id,
     name: "",
     kind: "manufacturing",
-    costMode: "technical_sheet",
+    costMode: "summarized",
     unitSalePrice: "",
     monthlySalesVolume: "",
     productionUnitCost: "",
@@ -179,11 +196,12 @@ function blankProductionItem(
 
 function createBlankItem(
   category: DetailedDiagnosisCategory,
+  productKind: ProductKind | "",
   createId: () => string,
 ) {
   const itemId = createId();
   return category === "product"
-    ? blankProductItem(itemId)
+    ? blankProductItem(itemId, productKind || "resale")
     : blankProductionItem(itemId, createId());
 }
 
@@ -192,10 +210,12 @@ function createInitialDetailedWizardState(
   createId: () => string,
 ): DetailedWizardState {
   const submissionId = createId();
-  const item = createBlankItem(category, createId);
+  const item = createBlankItem(category, "", createId);
 
   return {
-    phase: "itemName",
+    phase: category === "product" ? "productKind" : "itemName",
+    productKind: "",
+    productKindError: null,
     itemJourney: "first",
     activeItemId: item.id,
     values: {
@@ -210,7 +230,9 @@ function createInitialDetailedWizardState(
     },
     fieldErrors: {},
     pendingIngredientNameId:
-      item.kind === "manufacturing" ? item.ingredients[0]?.id : null,
+      item.kind === "manufacturing" && item.costMode === "technical_sheet"
+        ? (item.ingredients[0]?.id ?? null)
+        : null,
     pendingRemovalItemId: null,
     status: "editing",
     submitError: null,
@@ -292,6 +314,34 @@ function detailedWizardReducer(
   action: DetailedWizardAction,
 ): DetailedWizardState {
   switch (action.type) {
+    case "setProductKind": {
+      if (
+        state.values.category !== "product" ||
+        !productKinds.includes(action.value)
+      )
+        return state;
+
+      return {
+        ...state,
+        productKind: action.value,
+        productKindError: null,
+        values: {
+          ...state.values,
+          items: state.values.items.map((item) =>
+            item.kind === "manufacturing"
+              ? item
+              : {
+                  ...item,
+                  kind: action.value,
+                  packagingUnitCost:
+                    action.value === "digital" ? "0" : item.packagingUnitCost,
+                },
+          ),
+        },
+        submitError: null,
+      };
+    }
+
     case "changeGeneralField":
       return {
         ...state,
@@ -324,8 +374,14 @@ function detailedWizardReducer(
           ? { ...item, costMode: action.costMode }
           : item,
       );
+      const productionItem = updated.values.items[index];
       return {
         ...updated,
+        pendingIngredientNameId:
+          productionItem.kind === "manufacturing" &&
+          action.costMode === "technical_sheet"
+            ? (productionItem.ingredients[0]?.id ?? null)
+            : null,
         fieldErrors: withoutError(
           updated.fieldErrors,
           `items.${index}.costMode`,
@@ -470,7 +526,11 @@ function detailedWizardReducer(
     }
 
     case "addItem": {
-      const item = createBlankItem(state.values.category, action.createId);
+      const item = createBlankItem(
+        state.values.category,
+        state.productKind,
+        action.createId,
+      );
       return {
         ...state,
         phase: "itemName",
@@ -478,7 +538,9 @@ function detailedWizardReducer(
         activeItemId: item.id,
         values: { ...state.values, items: [...state.values.items, item] },
         pendingIngredientNameId:
-          item.kind === "manufacturing" ? item.ingredients[0]?.id : null,
+          item.kind === "manufacturing" && item.costMode === "technical_sheet"
+            ? (item.ingredients[0]?.id ?? null)
+            : null,
         pendingRemovalItemId: null,
         submitError: null,
       };
@@ -532,7 +594,16 @@ function detailedWizardReducer(
     }
 
     case "next": {
-      return { ...state, phase: nextDetailedPhase(state) };
+      if (state.phase === "productKind" && state.productKind === "")
+        return {
+          ...state,
+          productKindError: "Escolha o tipo de produto.",
+        };
+      return {
+        ...state,
+        phase: nextDetailedPhase(state),
+        productKindError: null,
+      };
     }
 
     case "back": {
