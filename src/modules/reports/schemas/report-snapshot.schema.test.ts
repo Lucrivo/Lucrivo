@@ -628,7 +628,7 @@ const validDetailedProductSnapshot = {
         id: "11111111-1111-4111-8111-111111111111",
         position: 0,
         name: "Caneca",
-        kind: "resale",
+        kind: "resale" as const,
         unitSalePriceCents: 1000,
         monthlySalesVolume: 1,
         purchaseUnitCostCents: 500,
@@ -679,7 +679,7 @@ const validDetailedDigitalSnapshot = {
     ...validDetailedProductSnapshot.inputs,
     items: validDetailedProductSnapshot.inputs.items.map((item) => ({
       ...item,
-      kind: "digital",
+      kind: "digital" as const,
       packagingUnitCostCents: 0,
     })),
   },

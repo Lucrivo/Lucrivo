@@ -1,16 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { PlusIcon, Trash2Icon } from "lucide-react";
+import { PlusIcon } from "lucide-react";
 
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { ConfirmRemovalButton } from "@/components/shared/confirm-removal-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { IngredientCard } from "@/modules/detailed-diagnosis/components/ingredients/ingredient-card";
 import { IngredientNameEntry } from "@/modules/detailed-diagnosis/components/ingredients/ingredient-name-entry";
 import type {
@@ -62,51 +69,74 @@ function DetailedEditorItem({
       className="border-border bg-card overflow-hidden rounded-xl border shadow-xs"
     >
       <div className="flex items-start gap-1 p-2 sm:items-center sm:gap-2">
-        <AccordionTrigger
-          aria-label={`Abrir ${summary.name}`}
-          className="min-h-14 min-w-0 px-2 hover:no-underline sm:px-3"
-        >
-          <span className="grid min-w-0 flex-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:gap-4">
-            <span className="grid min-w-0 gap-1">
-              <span className="truncate text-base font-semibold">
-                {summary.name}
-              </span>
-              <span className="flex flex-wrap items-center gap-2 sm:hidden">
-                <span className="text-muted-foreground font-normal">
-                  Venda {summary.priceLabel} · Custo {summary.costLabel}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <AccordionTrigger
+                  aria-label={"Abrir " + summary.name}
+                  className="min-h-14 min-w-0 px-2 hover:no-underline sm:px-3"
+                />
+              }
+            >
+              <span
+                data-slot="detailed-editor-item-summary"
+                className="grid min-w-0 flex-1 gap-2 sm:grid-cols-[minmax(10rem,1fr)_auto_auto_auto] sm:items-center sm:gap-4"
+              >
+                <span
+                  data-slot="detailed-editor-item-name"
+                  className="truncate text-base font-semibold"
+                >
+                  {summary.name}
                 </span>
-                <Badge variant={badgeVariant}>
-                  {summary.pendingCount > 0
-                    ? `${summary.pendingCount} pendência${summary.pendingCount > 1 ? "s" : ""}`
-                    : summary.status.label}
-                </Badge>
+                <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 sm:contents">
+                  <span
+                    data-slot="detailed-editor-item-sale"
+                    className="text-muted-foreground font-normal whitespace-nowrap"
+                  >
+                    Venda{" "}
+                    <strong className="text-foreground">
+                      {summary.priceLabel}
+                    </strong>
+                  </span>
+                  <span
+                    data-slot="detailed-editor-item-cost"
+                    className="text-muted-foreground font-normal whitespace-nowrap"
+                  >
+                    Custo{" "}
+                    <strong className="text-foreground">
+                      {summary.costLabel}
+                    </strong>
+                  </span>
+                </span>
+                <span data-slot="detailed-editor-item-status">
+                  <Badge variant={badgeVariant}>
+                    {summary.pendingCount > 0
+                      ? summary.pendingCount +
+                        " pendência" +
+                        (summary.pendingCount > 1 ? "s" : "")
+                      : summary.status.label}
+                  </Badge>
+                </span>
               </span>
-            </span>
-            <span className="text-muted-foreground hidden font-normal sm:block">
-              Venda{" "}
-              <strong className="text-foreground">{summary.priceLabel}</strong>
-            </span>
-            <span className="text-muted-foreground hidden font-normal sm:block">
-              Custo{" "}
-              <strong className="text-foreground">{summary.costLabel}</strong>
-            </span>
-            <Badge variant={badgeVariant} className="hidden sm:inline-flex">
-              {summary.pendingCount > 0
-                ? `${summary.pendingCount} pendência${summary.pendingCount > 1 ? "s" : ""}`
-                : summary.status.label}
-            </Badge>
-          </span>
-        </AccordionTrigger>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-lg"
-          aria-label={`Remover ${summary.name}`}
+            </TooltipTrigger>
+            <TooltipContent role="tooltip">{summary.name}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <ConfirmRemovalButton
+          ariaLabel={"Remover " + summary.name}
+          tooltip="Remover item"
           disabled={!canRemove}
-          onClick={onRemove}
-        >
-          <Trash2Icon aria-hidden="true" />
-        </Button>
+          disabledReason="Mantenha pelo menos um item no diagnóstico."
+          title={"Remover " + summary.name + "?"}
+          description={
+            "Os valores preenchidos para " +
+            summary.name +
+            " serão removidos deste diagnóstico."
+          }
+          confirmLabel="Remover item"
+          onConfirm={onRemove}
+        />
       </div>
       <AccordionContent className="border-border grid gap-5 border-t px-4 pt-5 pb-5 sm:px-5">
         <div className="grid gap-4 md:grid-cols-3">

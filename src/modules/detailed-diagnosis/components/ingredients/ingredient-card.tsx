@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PencilIcon, Trash2Icon } from "lucide-react";
+import { PencilIcon } from "lucide-react";
 
 import {
   Accordion,
@@ -7,6 +7,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { ConfirmRemovalButton } from "@/components/shared/confirm-removal-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,16 +94,20 @@ function IngredientCard({
           >
             <PencilIcon aria-hidden="true" />
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-lg"
-            aria-label={`Remover ${ingredient.name}`}
+          <ConfirmRemovalButton
+            ariaLabel={"Remover " + ingredient.name}
+            tooltip="Remover ingrediente"
             disabled={!canRemove}
-            onClick={onRemove}
-          >
-            <Trash2Icon aria-hidden="true" />
-          </Button>
+            disabledReason="Mantenha pelo menos um ingrediente."
+            title={"Remover " + ingredient.name + "?"}
+            description={
+              "Os valores preenchidos para " +
+              ingredient.name +
+              " serão removidos desta ficha técnica."
+            }
+            confirmLabel="Remover ingrediente"
+            onConfirm={onRemove}
+          />
         </div>
         {renaming ? (
           <form

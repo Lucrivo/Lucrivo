@@ -295,6 +295,25 @@ describe("category-specific detailed costs", () => {
     });
 
     await user.click(screen.getByRole("button", { name: "Remover Açúcar" }));
+    expect(dispatch).not.toHaveBeenCalledWith({
+      type: "removeIngredient",
+      itemId: "item-1",
+      ingredientId: "ingredient-2",
+    });
+    expect(
+      screen.getByRole("alertdialog", { name: "Remover Açúcar?" }),
+    ).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(dispatch).not.toHaveBeenCalledWith({
+      type: "removeIngredient",
+      itemId: "item-1",
+      ingredientId: "ingredient-2",
+    });
+
+    await user.click(screen.getByRole("button", { name: "Remover Açúcar" }));
+    await user.click(
+      screen.getByRole("button", { name: "Remover ingrediente" }),
+    );
     expect(dispatch).toHaveBeenCalledWith({
       type: "removeIngredient",
       itemId: "item-1",
@@ -345,6 +364,16 @@ describe("detailed item completion and review", () => {
     expect(
       screen.getByRole("button", { name: "Revisar diagnóstico" }),
     ).toBeEnabled();
+
+    rerender(
+      <DetailedItemCompleteStep
+        state={{ ...withTwo, pendingRemovalItemId: "item-1" }}
+        dispatch={dispatch}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(dispatch).toHaveBeenCalledWith({ type: "cancelRemoveItem" });
+    expect(dispatch).not.toHaveBeenCalledWith({ type: "confirmRemoveItem" });
 
     rerender(
       <DetailedItemCompleteStep

@@ -261,5 +261,142 @@ describe("DetailedReportEditorFields", () => {
     expect(
       screen.getByLabelText("Quanto custa produzir uma unidade?"),
     ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Remover Bolo" })).toBeDisabled();
+    expect(
+      screen.getByRole("group", {
+        name: "Remover Bolo. Mantenha pelo menos um item no diagnóstico.",
+      }),
+    ).toBeInTheDocument();
+  });
+  it("uses explicit summary slots and exposes a long name in a tooltip", async () => {
+    const user = userEvent.setup();
+    const { draft } = fixture();
+    const item = draft.values.items[0]!;
+    const longName =
+      "Produto artesanal com um nome muito longo para o espaço disponível";
+    render(
+      <Accordion multiple>
+        <DetailedEditorItem
+          item={{ ...item, name: longName }}
+          index={0}
+          errors={{}}
+          summary={{
+            name: longName,
+            priceLabel: "R$ 30,00",
+            costLabel: "R$ 12,50",
+            status: { label: "Deixa valor por venda", tone: "positive" },
+            pendingCount: 0,
+          }}
+          canRemove
+          onChange={() => undefined}
+          onRemove={() => undefined}
+        />
+      </Accordion>,
+    );
+
+    const trigger = screen.getByRole("button", { name: "Abrir " + longName });
+    const slots = [
+      "detailed-editor-item-name",
+      "detailed-editor-item-sale",
+      "detailed-editor-item-cost",
+      "detailed-editor-item-status",
+    ];
+    expect(
+      Array.from(trigger.querySelectorAll("[data-slot]")).map((element) =>
+        element.getAttribute("data-slot"),
+      ),
+    ).toEqual(expect.arrayContaining(slots));
+    for (const slot of slots) {
+      expect(
+        trigger.querySelector('[data-slot="' + slot + '"]'),
+      ).not.toBeNull();
+    }
+    const name = trigger.querySelector<HTMLElement>(
+      '[data-slot="detailed-editor-item-name"]',
+    );
+    expect(name).toHaveClass("truncate");
+    expect(
+      trigger.contains(
+        screen.getByRole("button", { name: "Remover " + longName }),
+      ),
+    ).toBe(false);
+
+    await user.hover(trigger);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(longName);
+  });
+
+  it("preserves ingredients until removal is confirmed", async () => {
+    const user = userEvent.setup();
+    const initialItem: DetailedProductionItemInput = {
+      id: "44444444-4444-4444-8444-444444444444",
+      kind: "manufacturing",
+      name: "Bolo",
+      unitSalePrice: "50",
+      monthlySalesVolume: "10",
+      costMode: "technical_sheet",
+      productionUnitCost: "",
+      recipeYield: "10",
+      lossRate: "0",
+      packagingUnitCost: "1",
+      directLaborUnitCost: "2",
+      otherVariableUnitCost: "0",
+      ingredients: [
+        {
+          id: "ingredient-1",
+          name: "Farinha",
+          quantity: "1",
+          unit: "kg",
+          unitCost: "6",
+        },
+        {
+          id: "ingredient-2",
+          name: "Açúcar",
+          quantity: "1",
+          unit: "kg",
+          unitCost: "4",
+        },
+      ],
+    };
+
+    function ProductionItemHarness() {
+      const [item, setItem] = useState(initialItem);
+      return (
+        <Accordion multiple defaultValue={[item.id]}>
+          <DetailedEditorItem
+            item={item}
+            index={0}
+            errors={{}}
+            summary={{
+              name: "Bolo",
+              priceLabel: "R$ 50,00",
+              costLabel: "R$ 13,00",
+              status: { label: "Deixa valor por venda", tone: "positive" },
+              pendingCount: 0,
+            }}
+            canRemove={false}
+            onChange={(field, value) =>
+              setItem((current) => ({ ...current, [field]: value }))
+            }
+            onRemove={() => undefined}
+          />
+        </Accordion>
+      );
+    }
+
+    render(<ProductionItemHarness />);
+    const remove = screen.getByRole("button", { name: "Remover Farinha" });
+    await user.click(remove);
+    expect(screen.getByText("Farinha")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(screen.getByText("Farinha")).toBeVisible();
+
+    await user.click(remove);
+    await user.click(
+      screen.getByRole("button", { name: "Remover ingrediente" }),
+    );
+    expect(
+      screen.queryByRole("button", { name: "Remover Farinha" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Açúcar")).toBeVisible();
   });
 });

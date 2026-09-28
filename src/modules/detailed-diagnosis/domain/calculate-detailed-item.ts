@@ -47,14 +47,16 @@ function calculateTechnicalSheetCost(
 }
 
 function calculateVariableUnitCost(item: DetailedDiagnosisItem): number {
-  if (item.kind === "digital") return item.purchaseUnitCostCents;
-
-  if (item.kind === "resale")
-    return item.purchaseUnitCostCents + item.packagingUnitCostCents;
-
-  if (item.costMode === "summarized") return item.productionUnitCostCents;
-
-  return calculateTechnicalSheetCost(item);
+  switch (item.kind) {
+    case "digital":
+      return item.purchaseUnitCostCents;
+    case "resale":
+      return item.purchaseUnitCostCents + item.packagingUnitCostCents;
+    case "manufacturing":
+      return item.costMode === "summarized"
+        ? item.productionUnitCostCents
+        : calculateTechnicalSheetCost(item);
+  }
 }
 
 function calculatePriceFloor(
