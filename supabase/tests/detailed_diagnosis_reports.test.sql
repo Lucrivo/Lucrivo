@@ -484,6 +484,141 @@ as $$
   );
 $$;
 
+create function pg_temp.digital_items()
+returns jsonb
+language sql
+immutable
+as $$
+  select jsonb_build_array(
+    jsonb_build_object(
+      'id', '77777777-7777-4777-8777-777777777777',
+      'position', 0,
+      'name', 'Curso digital',
+      'kind', 'digital',
+      'unitSalePriceCents', 1000,
+      'monthlySalesVolume', 10,
+      'purchaseUnitCostCents', 400,
+      'packagingUnitCostCents', 0,
+      'variableUnitCostCents', 400,
+      'feeAmountCents', 80,
+      'netUnitRevenueCents', 920,
+      'unitContributionCents', 520,
+      'contributionMarginBasisPoints', 5200,
+      'monthlyGrossRevenueCents', 10000,
+      'monthlyContributionCents', 5200,
+      'breakEvenUnitPriceCents', 500,
+      'directLoss', false
+    )
+  );
+$$;
+
+create function pg_temp.product_snapshot(
+  p_submission_id uuid,
+  p_items jsonb,
+  p_scenario text
+)
+returns jsonb
+language sql
+immutable
+as $$
+  with base as (
+    select pg_temp.detailed_snapshot() as snapshot
+  )
+  select snapshot || jsonb_build_object(
+    'scenario', p_scenario,
+    'inputs', (snapshot -> 'inputs') || jsonb_build_object(
+      'submissionId', p_submission_id::text,
+      'items', (
+        select jsonb_agg(
+          item - array[
+            'variableUnitCostCents', 'feeAmountCents',
+            'netUnitRevenueCents', 'unitContributionCents',
+            'contributionMarginBasisPoints', 'monthlyGrossRevenueCents',
+            'monthlyContributionCents', 'breakEvenUnitPriceCents',
+            'directLoss'
+          ]
+          order by (item ->> 'position')::integer
+        )
+        from jsonb_array_elements(p_items) as item
+      )
+    ),
+    'results', (snapshot -> 'results') || jsonb_build_object(
+      'items', (
+        select jsonb_agg(
+          jsonb_build_object(
+            'itemId', item ->> 'id',
+            'variableUnitCostCents', item -> 'variableUnitCostCents',
+            'feeAmountCents', item -> 'feeAmountCents',
+            'netUnitRevenueCents', item -> 'netUnitRevenueCents',
+            'unitContributionCents', item -> 'unitContributionCents',
+            'contributionMarginBasisPoints',
+              item -> 'contributionMarginBasisPoints',
+            'monthlyGrossRevenueCents', item -> 'monthlyGrossRevenueCents',
+            'monthlyContributionCents', item -> 'monthlyContributionCents',
+            'breakEvenUnitPriceCents', item -> 'breakEvenUnitPriceCents',
+            'directLoss', item -> 'directLoss'
+          )
+          order by (item ->> 'position')::integer
+        )
+        from jsonb_array_elements(p_items) as item
+      )
+    )
+  )
+  from base;
+$$;
+
+create function pg_temp.digital_snapshot(p_submission_id uuid)
+returns jsonb
+language sql
+immutable
+as $$
+  with base as (
+    select pg_temp.product_snapshot(
+      p_submission_id,
+      pg_temp.digital_items(),
+      'digital'
+    ) as snapshot
+  )
+  select snapshot || jsonb_build_object(
+    'results', (snapshot -> 'results') || jsonb_build_object(
+      'monthlyGrossRevenueCents', 10000,
+      'monthlyFeeAmountCents', 800,
+      'monthlyVariableCostCents', 4000,
+      'monthlyNetRevenueCents', 9200,
+      'monthlyCostCents', 4100,
+      'monthlyContributionCents', 5200,
+      'monthlyResultCents', 5100,
+      'mixContributionMarginBasisPoints', 5200,
+      'finalMarginBasisPoints', 5100,
+      'breakEvenRevenueCents', 193
+    )
+  )
+  from base;
+$$;
+
+create function pg_temp.replacement_items()
+returns jsonb
+language sql
+immutable
+as $$
+  select jsonb_set(
+    pg_temp.detailed_items(),
+    '{0,name}',
+    to_jsonb('Caneca editada'::text)
+  );
+$$;
+
+create function pg_temp.mixed_product_items()
+returns jsonb
+language sql
+immutable
+as $$
+  select jsonb_build_array(
+    pg_temp.digital_items() -> 0,
+    pg_temp.detailed_items() -> 1
+  );
+$$;
+
 create function pg_temp.production_items()
 returns jsonb
 language sql
@@ -714,6 +849,252 @@ select results_eq(
     20000::bigint, 8300::bigint, 2::integer, false
   ) $$,
   'the registry stores a detailed mix summary with no single price'
+);
+
+select lives_ok(
+  $$ select pg_temp.create_detailed_report(
+    '71000000-0000-4000-8000-000000000120'
+  ) $$,
+  'a paid user can create the original detailed report for replacement'
+);
+select set_config(
+  'test.detailed_target_id',
+  (
+    select id::text
+    from public.diagnoses
+    where submission_id = '71000000-0000-4000-8000-000000000120'
+  ),
+  true
+);
+select set_config(
+  'test.detailed_target_created_at',
+  (
+    select created_at::text
+    from public.diagnoses
+    where id = current_setting('test.detailed_target_id')::bigint
+  ),
+  true
+);
+select set_config(
+  'test.detailed_target_version',
+  (
+    select version::text
+    from public.diagnoses
+    where id = current_setting('test.detailed_target_id')::bigint
+  ),
+  true
+);
+select lives_ok(
+  $$ select public.replace_detailed_diagnosis_report_v1(
+    current_setting('test.detailed_target_id')::bigint,
+    current_setting('test.detailed_target_version')::integer,
+    '71000000-0000-4000-8000-000000000121',
+    'product'::public.business_category,
+    100,
+    false,
+    0,
+    600,
+    200,
+    pg_temp.replacement_items(),
+    1::smallint,
+    1::smallint,
+    1::smallint,
+    20000,
+    8300,
+    4150,
+    'adequate_margin',
+    'volume',
+    2,
+    false,
+    pg_temp.product_snapshot(
+      '71000000-0000-4000-8000-000000000121',
+      pg_temp.replacement_items(),
+      'resale'
+    )
+  ) $$,
+  'a staged detailed report replaces the target atomically'
+);
+select set_config(
+  'test.detailed_staged_id',
+  (current_setting('test.detailed_target_id')::bigint + 1)::text,
+  true
+);
+select is(
+  (
+    select id::text
+    from public.diagnoses
+    where submission_id = '71000000-0000-4000-8000-000000000121'
+  ),
+  current_setting('test.detailed_target_id'),
+  'detailed replacement preserves the original diagnosis ID'
+);
+select is(
+  (
+    select created_at::text
+    from public.diagnoses
+    where id = current_setting('test.detailed_target_id')::bigint
+  ),
+  current_setting('test.detailed_target_created_at'),
+  'detailed replacement preserves the original creation timestamp'
+);
+select is(
+  (
+    select version
+    from public.diagnoses
+    where id = current_setting('test.detailed_target_id')::bigint
+  ),
+  current_setting('test.detailed_target_version')::integer + 1,
+  'detailed replacement increments the target version exactly once'
+);
+select is(
+  (
+    select report_snapshot #>> '{inputs,items,0,name}'
+    from public.diagnoses
+    where id = current_setting('test.detailed_target_id')::bigint
+  ),
+  'Caneca editada',
+  'detailed replacement copies the staged snapshot onto the target'
+);
+select results_eq(
+  $$
+    select position, name
+    from public.detailed_diagnosis_items
+    where diagnosis_id = current_setting('test.detailed_target_id')::bigint
+    order by position
+  $$,
+  $$ values (0, 'Caneca editada'::text), (1, 'Caderno'::text) $$,
+  'detailed replacement copies the staged normalized children'
+);
+select results_eq(
+  $$
+    select sum(row_count)::bigint
+    from (
+      select count(*)::bigint as row_count
+      from public.diagnoses
+      where id = current_setting('test.detailed_staged_id')::bigint
+      union all
+      select count(*)::bigint
+      from public.detailed_diagnoses
+      where diagnosis_id = current_setting('test.detailed_staged_id')::bigint
+      union all
+      select count(*)::bigint
+      from public.detailed_diagnosis_items
+      where diagnosis_id = current_setting('test.detailed_staged_id')::bigint
+      union all
+      select count(*)::bigint
+      from public.detailed_diagnosis_ingredients
+      where diagnosis_id = current_setting('test.detailed_staged_id')::bigint
+    ) as staged_tree
+  $$,
+  array[0::bigint],
+  'detailed replacement removes the staged diagnosis tree'
+);
+
+select lives_ok(
+  $$ select public.create_detailed_diagnosis_report(
+    '71000000-0000-4000-8000-000000000130',
+    'product'::public.business_category,
+    100,
+    false,
+    0,
+    600,
+    200,
+    pg_temp.digital_items(),
+    1::smallint,
+    1::smallint,
+    1::smallint,
+    10000,
+    5100,
+    5100,
+    'adequate_margin',
+    'volume',
+    1,
+    false,
+    pg_temp.digital_snapshot(
+      '71000000-0000-4000-8000-000000000130'
+    )
+  ) $$,
+  'a paid user can persist a detailed Digital report'
+);
+select results_eq(
+  $$
+    select scenario, report_snapshot ->> 'scenario'
+    from public.diagnoses
+    where submission_id = '71000000-0000-4000-8000-000000000130'
+  $$,
+  $$ values ('digital'::text, 'digital'::text) $$,
+  'Digital persists as the registry and snapshot scenario'
+);
+select results_eq(
+  $$
+    select kind, purchase_unit_cost_cents, packaging_unit_cost_cents
+    from public.detailed_diagnosis_items
+    where submission_id = '71000000-0000-4000-8000-000000000130'
+  $$,
+  $$ values ('digital'::text, 400::bigint, 0::bigint) $$,
+  'Digital items persist their direct cost and zero packaging'
+);
+select throws_ok(
+  $$ select public.create_detailed_diagnosis_report(
+    '71000000-0000-4000-8000-000000000131',
+    'product'::public.business_category,
+    100,
+    false,
+    0,
+    600,
+    200,
+    pg_temp.mixed_product_items(),
+    1::smallint,
+    1::smallint,
+    1::smallint,
+    20000,
+    8300,
+    4150,
+    'adequate_margin',
+    'volume',
+    2,
+    false,
+    pg_temp.product_snapshot(
+      '71000000-0000-4000-8000-000000000131',
+      pg_temp.mixed_product_items(),
+      'digital'
+    )
+  ) $$,
+  '22023',
+  'invalid detailed report payload',
+  'a mixed resale and Digital Product payload is rejected'
+);
+select throws_ok(
+  $$ select public.create_detailed_diagnosis_report(
+    '71000000-0000-4000-8000-000000000132',
+    'product'::public.business_category,
+    100,
+    false,
+    0,
+    600,
+    200,
+    pg_temp.digital_items(),
+    1::smallint,
+    1::smallint,
+    1::smallint,
+    10000,
+    5100,
+    5100,
+    'adequate_margin',
+    'volume',
+    1,
+    false,
+    jsonb_set(
+      pg_temp.digital_snapshot(
+        '71000000-0000-4000-8000-000000000132'
+      ),
+      '{scenario}',
+      to_jsonb('resale'::text)
+    )
+  ) $$,
+  '22023',
+  'invalid detailed report payload',
+  'a Digital payload with a mismatched snapshot scenario is rejected'
 );
 
 select lives_ok(
