@@ -21,39 +21,37 @@ import { buildProductionExecutiveSummary } from "./build-production-executive-su
 function minimumPriceSection(
   calculation: ProductionReportCalculation,
 ): ReportSection {
-  const minimum = calculation.minimumPriceCents;
-  if (minimum === null)
+  if (calculation.minimumPriceCents === null) {
     return {
       key: "break_even",
-      title: "Seu menor preço sem prejuízo",
-      body: "As porcentagens informadas não permitem calcular este valor.",
-      emphasisLabel: null,
-      emphasisValue: null,
+      title: "Menor preço para não ficar no prejuízo",
+      body:
+        calculation.monthlySalesVolumeUsed === null ||
+        calculation.monthlySalesVolumeUsed === 0
+          ? "Para calcular o custo completo e o menor preço, precisamos de uma quantidade maior que zero para dividir os gastos do mês."
+          : "As cobranças informadas não permitem calcular este valor.",
+      emphasisLabel: "Menor preço completo",
+      emphasisValue: "Ainda não calculado",
       tone: "neutral",
     };
-  if (calculation.priceReferencesPartial)
-    return {
-      key: "break_even",
-      title: "Seu menor preço sem prejuízo",
-      body: "Este valor evita prejuízo direto na venda e considera o custo de fabricação. Os gastos mensais dependem da quantidade mostrada abaixo.",
-      emphasisLabel: "Menor preço antes dos gastos mensais",
-      emphasisValue: formatCurrency(minimum),
-      tone: calculation.currentPriceCents >= minimum ? "positive" : "critical",
-    };
+  }
   return {
     key: "break_even",
-    title: "Seu menor preço sem prejuízo",
-    body: "Este preço paga o custo de fabricação, as cobranças da venda e a parte dos gastos mensais por unidade.",
-    emphasisLabel: "Menor preço sem prejuízo",
-    emphasisValue: formatCurrency(minimum),
-    tone: calculation.currentPriceCents >= minimum ? "positive" : "critical",
+    title: "Menor preço para não ficar no prejuízo",
+    body: `Considerando as ${formatIntegerVolume(calculation.monthlySalesVolumeUsed ?? 0)} unidades informadas, cada unidade recebe ${formatCurrency(calculation.fixedAllocationCents ?? 0)} dos gastos do mês.`,
+    emphasisLabel: "Menor preço para não ficar no prejuízo",
+    emphasisValue: formatCurrency(calculation.minimumPriceCents),
+    tone:
+      calculation.currentPriceCents >= calculation.minimumPriceCents
+        ? "positive"
+        : "critical",
   };
 }
 
-function compositionText(command: ProductionDiagnosisCommand) {
+function compositionText(command: ProductionDiagnosisCommand): string {
   if (!command.costCompositionEnabled)
-    return `O custo de fabricação informado é ${formatCurrency(command.productionUnitCostCents)} por unidade.`;
-  return `O custo de fabricação reúne materiais (${formatCurrency(command.materialUnitCostCents ?? 0)}), embalagem (${formatCurrency(command.packagingUnitCostCents ?? 0)}), seu trabalho por unidade (${formatCurrency(command.directLaborUnitCostCents ?? 0)}) e outros gastos por unidade (${formatCurrency(command.otherVariableUnitCostCents ?? 0)}).`;
+    return `Quanto esta unidade custa: ${formatCurrency(command.productionUnitCostCents)}.`;
+  return `Quanto esta unidade custa: ${formatCurrency(command.productionUnitCostCents)}, somando materiais (${formatCurrency(command.materialUnitCostCents ?? 0)}), embalagem (${formatCurrency(command.packagingUnitCostCents ?? 0)}), trabalho por unidade (${formatCurrency(command.directLaborUnitCostCents ?? 0)}) e outros valores (${formatCurrency(command.otherVariableUnitCostCents ?? 0)}).`;
 }
 
 function saleSection(
@@ -61,98 +59,85 @@ function saleSection(
   calculation: ProductionReportCalculation,
 ): ReportSection {
   const composition = compositionText(command);
-  if (
-    calculation.monthlySalesVolumeUsed === null ||
-    calculation.monthlySalesVolumeUsed === 0
-  )
+  if (calculation.totalUnitCostCents === null) {
     return {
       key: "hidden_cost",
-      title: "O que sai de cada venda",
-      body: `${composition} Impostos e cartão retiram ${formatCurrency(calculation.feeAmountCents)}. Uma futura unidade vendida deixa ${formatCurrency(calculation.unitContributionCents)} para pagar os gastos mensais.`,
-      emphasisLabel: "Valor deixado por uma unidade vendida",
+      title: "O que cada venda deixa para o mês",
+      body: `${composition} Impostos e cartão retiram ${formatCurrency(calculation.feeAmountCents)}.`,
+      emphasisLabel: "Valor deixado por venda",
       emphasisValue: formatCurrency(calculation.unitContributionCents),
       tone: calculation.unitContributionCents > 0 ? "neutral" : "critical",
     };
+  }
   return {
     key: "hidden_cost",
-    title: "O que sai de cada venda",
-    body: `${composition} Impostos e cartão retiram ${formatCurrency(calculation.feeAmountCents)}, e cada unidade vendida recebe ${formatCurrency(calculation.fixedAllocationCents ?? 0)} dos gastos mensais.`,
-    emphasisLabel: "Resultado por unidade vendida",
+    title: "Custo e resultado por unidade",
+    body: `${composition} Parte dos gastos do mês: ${formatCurrency(calculation.fixedAllocationCents ?? 0)}. Custo completo por unidade: ${formatCurrency(calculation.totalUnitCostCents)}. Valor deixado por venda: ${formatCurrency(calculation.unitContributionCents)}.`,
+    emphasisLabel: "Quanto sobra por venda",
     emphasisValue: formatCurrency(calculation.unitProfitCents ?? 0),
-    tone: (calculation.unitProfitCents ?? 0) > 0 ? "positive" : "critical",
+    tone: (calculation.unitProfitCents ?? 0) >= 0 ? "positive" : "critical",
   };
 }
 
 function monthlySection(
   calculation: ProductionReportCalculation,
 ): ReportSection {
-  const monthlyResultCents = calculation.monthlyResultCents;
-  const monthlyNetRevenueCents = calculation.monthlyNetRevenueCents;
-  if (monthlyResultCents === null || monthlyNetRevenueCents === null)
+  if (calculation.monthlyResultCents === null) {
     return {
       key: "margin_diagnosis",
-      title: "Quanto sobra no mês",
-      body: "O resultado mensal ainda não foi calculado porque a quantidade vendida não foi informada.",
-      emphasisLabel: "Resultado mensal",
+      title: "Resultado do mês",
+      body: "O resultado do mês depende de uma quantidade informada.",
+      emphasisLabel: "Quanto sobra a cada R$ 100",
       emphasisValue: "Ainda não calculado",
-      tone: calculation.unitContributionCents <= 0 ? "critical" : "neutral",
+      tone: "neutral",
     };
-  const label = {
-    direct_loss: "Prejuízo por venda",
-    operational_loss: "Prejuízo no mês",
-    no_sales: "Sem vendas no mês",
-    break_even: "No limite",
-    tight_margin: "Margem apertada",
-    adequate_margin: "Lucro",
-    incomplete_volume: "Sem vendas no mês",
-    above_target: "Lucro",
-  }[calculation.verdict];
-  const margin =
-    calculation.realMarginBasisPoints === null
-      ? "Sem vendas para calcular"
-      : formatBasisPoints(calculation.realMarginBasisPoints);
+  }
   return {
     key: "margin_diagnosis",
-    title: "Quanto sobra no mês",
-    body: `O resultado considera ${formatCurrency(monthlyNetRevenueCents)} recebidos pelas unidades vendidas depois de impostos e cartão, menos a fabricação e os gastos mensais. Quanto sobra a cada R$ 100: ${margin}.`,
-    emphasisLabel: label,
-    emphasisValue: formatCurrency(monthlyResultCents),
+    title: "Resultado do mês",
+    body: `Quanto sobra a cada R$ 100: ${calculation.realMarginBasisPoints === null ? "Ainda não calculado" : formatBasisPoints(calculation.realMarginBasisPoints)}.`,
+    emphasisLabel:
+      calculation.verdict === "positive_result"
+        ? "Resultado positivo"
+        : calculation.verdict === "break_even"
+          ? "Ponto de equilíbrio"
+          : "Resultado do mês",
+    emphasisValue: formatCurrency(calculation.monthlyResultCents),
     tone:
-      monthlyResultCents > 0
-        ? calculation.verdict === "tight_margin"
-          ? "warning"
-          : "positive"
-        : monthlyResultCents < 0
+      calculation.monthlyResultCents > 0
+        ? "positive"
+        : calculation.monthlyResultCents < 0
           ? "critical"
           : "neutral",
   };
 }
 
-function salesSection(calculation: ProductionReportCalculation): ReportSection {
-  if (calculation.monthlySalesGoal === null)
+function salesSection(
+  command: ProductionDiagnosisCommand,
+  calculation: ProductionReportCalculation,
+): ReportSection {
+  if (calculation.monthlySalesGoal === null) {
     return {
       key: "sales_goal",
-      title: "Quanto você precisa vender",
-      body: "Cada unidade vendida precisa deixar um valor positivo antes que uma quantidade possa pagar os gastos mensais.",
-      emphasisLabel: null,
-      emphasisValue: null,
+      title: "Quantas vendas pagam o mês",
+      body: "No preço atual, uma nova venda ainda não deixa valor para pagar os gastos do mês.",
+      emphasisLabel: "Quantidade necessária",
+      emphasisValue: "Ainda não calculado",
       tone: "critical",
     };
-  if (calculation.monthlySalesVolumeUsed === null)
-    return {
-      key: "sales_goal",
-      title: "Quanto você precisa vender",
-      body: `Como você ainda não informou quanto vende, esta meta é apenas uma referência. Se ela parecer fora da realidade, revise preço, custos e gastos mensais antes de tomar uma decisão. A referência mensal é ${formatIntegerVolume(calculation.monthlySalesGoal)} unidades.`,
-      emphasisLabel: "Unidades vendidas necessárias no mês",
-      emphasisValue: `${formatIntegerVolume(calculation.monthlySalesGoal)} unidades`,
-      tone: "neutral",
-    };
+  }
+  const withdrawal = command.proLaboreIncluded
+    ? " e separar o valor informado para você"
+    : "";
+  const unknown = calculation.monthlySalesVolumeUsed === null;
   return {
     key: "sales_goal",
-    title: "Quanto você precisa vender",
-    body: `Para pagar os gastos mensais, a referência é ${formatIntegerVolume(calculation.monthlySalesGoal)} unidades vendidas no mês, ${formatIntegerVolume(calculation.weeklySalesGoal ?? 0)} por semana e ${formatIntegerVolume(calculation.dailySalesGoal ?? 0)} por dia, considerando 6 dias por semana.`,
-    emphasisLabel: "Unidades vendidas necessárias no mês",
-    emphasisValue: `${formatIntegerVolume(calculation.monthlySalesGoal)} unidades`,
+    title: "Quantas vendas pagam o mês",
+    body: unknown
+      ? `Como você ainda não informou quantas vendas faz, não dividimos os gastos do mês por uma quantidade estimada. No preço atual, você precisa de cerca de ${formatIntegerVolume(calculation.monthlySalesGoal)} vendas para pagar esses gastos${withdrawal}.`
+      : `No preço atual, cerca de ${formatIntegerVolume(calculation.monthlySalesGoal)} vendas pagam os gastos do mês${withdrawal}.`,
+    emphasisLabel: "Vendas necessárias no mês",
+    emphasisValue: `${formatIntegerVolume(calculation.monthlySalesGoal)} vendas`,
     tone: "neutral",
   };
 }
@@ -160,19 +145,17 @@ function salesSection(calculation: ProductionReportCalculation): ReportSection {
 function discountSection(
   calculation: ProductionReportCalculation,
 ): ReportSection {
+  const available = calculation.minimumPriceCents !== null;
   return {
     key: "discount_simulator",
     title: "Como um desconto muda o resultado",
-    body: calculation.priceReferencesPartial
-      ? "Esta simulação ainda não inclui os gastos mensais, porque nenhuma venda foi informada."
-      : "Veja como o desconto altera o valor deixado por unidade vendida e o resultado esperado.",
-    emphasisLabel:
-      calculation.breakEvenDiscountPercent === null
-        ? null
-        : "Desconto matemático antes da perda",
+    body: available
+      ? "Veja como o desconto muda quanto sobra por venda."
+      : "Para calcular um desconto seguro, primeiro precisamos de uma quantidade para dividir os gastos do mês.",
+    emphasisLabel: available ? "Limite antes do prejuízo" : "Simulação",
     emphasisValue:
       calculation.breakEvenDiscountPercent === null
-        ? null
+        ? "Ainda não calculado"
         : `${calculation.breakEvenDiscountPercent}%`,
     tone: "neutral",
   };
@@ -182,19 +165,18 @@ function buildProductionReportSnapshot(
   command: ProductionDiagnosisCommand,
   calculation: ProductionReportCalculation,
 ): CurrentProductionReportSnapshot {
-  const snapshot = {
+  return parseCurrentProductionReportSnapshot({
     schemaVersion: PRODUCTION_REPORT_SCHEMA_VERSION,
     calculationVersion: PRODUCTION_CALCULATION_VERSION,
     contentVersion: PRODUCTION_CONTENT_VERSION,
-    category: "production" as const,
-    scenario: "manufacturing" as const,
-    currency: "BRL" as const,
-    unit: "unit" as const,
+    category: "production",
+    scenario: "manufacturing",
+    currency: "BRL",
+    unit: "unit",
     policy: {
-      attentionBandBasisPoints: 2000 as const,
-      weeklyDivisorHundredths: 433 as const,
-      operatingDaysPerWeek: 6 as const,
-      maximumDiscountPercent: 50 as const,
+      weeklyDivisorHundredths: 433,
+      operatingDaysPerWeek: 6,
+      maximumDiscountPercent: 50,
       proLaboreIncluded: command.proLaboreIncluded,
     },
     inputs: {
@@ -218,20 +200,16 @@ function buildProductionReportSnapshot(
       minimumPriceSection(calculation),
       saleSection(command, calculation),
       monthlySection(calculation),
-      salesSection(calculation),
+      salesSection(command, calculation),
       discountSection(calculation),
     ],
     discountSimulationBase: {
       originalPriceCents: calculation.currentPriceCents,
-      unitCostCents:
-        calculation.totalUnitCostCents ?? calculation.productionUnitCostCents,
+      unitCostCents: calculation.totalUnitCostCents,
       totalFeeBasisPoints: calculation.totalFeeBasisPoints,
-      attentionBandBasisPoints: 2000 as const,
       minimumPriceCents: calculation.minimumPriceCents,
-      partial: calculation.priceReferencesPartial,
     },
-  };
-  return parseCurrentProductionReportSnapshot(snapshot);
+  });
 }
 
 export { buildProductionReportSnapshot };

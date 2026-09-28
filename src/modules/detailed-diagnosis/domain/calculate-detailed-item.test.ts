@@ -2,14 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import type {
   DetailedProductItem,
-  DetailedSummarizedProductionItem,
   DetailedTechnicalSheetProductionItem,
 } from "../types";
 import { calculateDetailedItem } from "./calculate-detailed-item";
 
 const rates = {
-  taxRateBasisPoints: 600,
-  cardFeeRateBasisPoints: 400,
+  taxRateBasisPoints: 500,
+  cardFeeRateBasisPoints: 200,
 };
 
 const resaleItem: DetailedProductItem = {
@@ -17,30 +16,10 @@ const resaleItem: DetailedProductItem = {
   position: 0,
   name: "Caneca",
   kind: "resale",
-  unitSalePriceCents: 2500,
-  monthlySalesVolume: 40,
-  purchaseUnitCostCents: 1000,
-  packagingUnitCostCents: 100,
-};
-
-const digitalItem: DetailedProductItem = {
-  ...resaleItem,
-  id: "55555555-5555-4555-8555-555555555555",
-  name: "Curso",
-  kind: "digital",
-  purchaseUnitCostCents: 275,
-  packagingUnitCostCents: 999,
-};
-
-const summarizedItem: DetailedSummarizedProductionItem = {
-  id: "22222222-2222-4222-8222-222222222222",
-  position: 0,
-  name: "Bolo resumido",
-  kind: "manufacturing",
-  costMode: "summarized",
-  unitSalePriceCents: 1500,
+  unitSalePriceCents: 5_500,
   monthlySalesVolume: 200,
-  productionUnitCostCents: 600,
+  purchaseUnitCostCents: 1_500,
+  packagingUnitCostCents: 100,
 };
 
 const technicalSheetItem: DetailedTechnicalSheetProductionItem = {
@@ -49,10 +28,10 @@ const technicalSheetItem: DetailedTechnicalSheetProductionItem = {
   name: "Bolo com ficha",
   kind: "manufacturing",
   costMode: "technical_sheet",
-  unitSalePriceCents: 1500,
+  unitSalePriceCents: 1_500,
   monthlySalesVolume: 200,
   recipeYield: 30,
-  lossRateBasisPoints: 1000,
+  lossRateBasisPoints: 1_000,
   packagingUnitCostCents: 100,
   directLaborUnitCostCents: 0,
   otherVariableUnitCostCents: 0,
@@ -69,178 +48,77 @@ const technicalSheetItem: DetailedTechnicalSheetProductionItem = {
 };
 
 describe("calculateDetailedItem", () => {
-  it("calculates resale item economics", () => {
-    expect(calculateDetailedItem(resaleItem, rates)).toEqual({
-      itemId: resaleItem.id,
-      variableUnitCostCents: 1100,
-      feeAmountCents: 250,
-      netUnitRevenueCents: 2250,
-      unitContributionCents: 1150,
-      contributionMarginBasisPoints: 4600,
-      monthlyGrossRevenueCents: 100000,
-      monthlyContributionCents: 46000,
-      breakEvenUnitPriceCents: 1223,
-      directLoss: false,
+  it("calculates the approved full-cost resale example", () => {
+    expect(calculateDetailedItem(resaleItem, rates, 2_000)).toMatchObject({
+      variableUnitCostCents: 1_600,
+      feeAmountCents: 385,
+      netUnitRevenueCents: 5_115,
+      unitContributionCents: 3_515,
+      fixedAllocationCents: 2_000,
+      totalUnitCostCents: 3_600,
+      unitProfitCents: 1_515,
+      realMarginBasisPoints: 2_755,
+      breakEvenUnitPriceCents: 3_871,
     });
   });
 
-  it("uses only direct cost for digital and still adds resale packaging", () => {
-    expect(calculateDetailedItem(digitalItem, rates)).toMatchObject({
-      variableUnitCostCents: 275,
-    });
-    expect(calculateDetailedItem(resaleItem, rates)).toMatchObject({
-      variableUnitCostCents: 1100,
-    });
-  });
-
-  it("uses only the informed unit cost in summarized production", () => {
-    expect(calculateDetailedItem(summarizedItem, rates)).toMatchObject({
-      variableUnitCostCents: 600,
-      feeAmountCents: 150,
-      netUnitRevenueCents: 1350,
-      unitContributionCents: 750,
-      contributionMarginBasisPoints: 5000,
-      monthlyGrossRevenueCents: 300000,
-      monthlyContributionCents: 150000,
-      breakEvenUnitPriceCents: 667,
-      directLoss: false,
-    });
-  });
-
-  it("calculates the documented technical-sheet example", () => {
-    expect(calculateDetailedItem(technicalSheetItem, rates)).toEqual({
-      itemId: technicalSheetItem.id,
-      variableUnitCostCents: 544,
-      feeAmountCents: 150,
-      netUnitRevenueCents: 1350,
-      unitContributionCents: 806,
-      contributionMarginBasisPoints: 5373,
-      monthlyGrossRevenueCents: 300000,
-      monthlyContributionCents: 161200,
-      breakEvenUnitPriceCents: 605,
-      directLoss: false,
-    });
-  });
-
-  it("adds labor and other variable costs only to technical-sheet production", () => {
-    const result = calculateDetailedItem(
-      {
-        ...technicalSheetItem,
-        directLaborUnitCostCents: 75,
-        otherVariableUnitCostCents: 25,
-      },
-      rates,
-    );
-
-    expect(result.variableUnitCostCents).toBe(644);
-    expect(result.unitContributionCents).toBe(706);
-  });
-
-  it("calculates 0.5 kg at R$ 5.0000 per kg exactly", () => {
-    const result = calculateDetailedItem(
-      {
-        ...technicalSheetItem,
-        recipeYield: 1,
-        lossRateBasisPoints: 0,
-        packagingUnitCostCents: 0,
-        ingredients: [
-          {
-            ...technicalSheetItem.ingredients[0],
-            quantityMillionths: 500_000,
-            unitCostTenThousandths: 50_000,
-          },
-        ],
-      },
-      rates,
-    );
-
-    expect(result.variableUnitCostCents).toBe(250);
-  });
-
-  it("rounds a half-cent ingredient unit cost to one cent", () => {
-    const result = calculateDetailedItem(
-      {
-        ...technicalSheetItem,
-        recipeYield: 1,
-        lossRateBasisPoints: 0,
-        packagingUnitCostCents: 0,
-        ingredients: [
-          {
-            ...technicalSheetItem.ingredients[0],
-            quantityMillionths: 1_000,
-            unitCostTenThousandths: 50_000,
-          },
-        ],
-      },
-      rates,
-    );
-
-    expect(result.variableUnitCostCents).toBe(1);
-  });
-
-  it("handles a 99.99% loss rate using integer arithmetic", () => {
-    const result = calculateDetailedItem(
-      {
-        ...technicalSheetItem,
-        recipeYield: 1,
-        lossRateBasisPoints: 9999,
-        packagingUnitCostCents: 0,
-        ingredients: [
-          {
-            ...technicalSheetItem.ingredients[0],
-            quantityMillionths: 1_000_000,
-            unitCostTenThousandths: 10_000,
-          },
-        ],
-      },
-      rates,
-    );
-
-    expect(result.variableUnitCostCents).toBe(1_000_000);
-  });
-
-  it("returns no price floor when its denominator is not positive", () => {
-    expect(
-      calculateDetailedItem(resaleItem, {
-        taxRateBasisPoints: 6000,
-        cardFeeRateBasisPoints: 4000,
-      }),
-    ).toMatchObject({
-      netUnitRevenueCents: 0,
+  it("keeps contribution but no complete-cost fields without allocation", () => {
+    expect(calculateDetailedItem(resaleItem, rates, null)).toMatchObject({
+      variableUnitCostCents: 1_600,
+      unitContributionCents: 3_515,
+      fixedAllocationCents: null,
+      totalUnitCostCents: null,
+      unitProfitCents: null,
+      realMarginBasisPoints: null,
       breakEvenUnitPriceCents: null,
     });
   });
 
   it("keeps unknown monthly totals null and explicit zero totals at zero", () => {
     expect(
-      calculateDetailedItem({ ...resaleItem, monthlySalesVolume: null }, rates),
+      calculateDetailedItem(
+        { ...resaleItem, monthlySalesVolume: null },
+        rates,
+        null,
+      ),
     ).toMatchObject({
       monthlyGrossRevenueCents: null,
       monthlyContributionCents: null,
     });
     expect(
-      calculateDetailedItem({ ...resaleItem, monthlySalesVolume: 0 }, rates),
+      calculateDetailedItem(
+        { ...resaleItem, monthlySalesVolume: 0 },
+        rates,
+        null,
+      ),
     ).toMatchObject({
       monthlyGrossRevenueCents: 0,
       monthlyContributionCents: 0,
     });
   });
 
-  it("flags negative unit contribution as a direct loss", () => {
+  it("calculates technical-sheet costs with integer arithmetic", () => {
+    expect(
+      calculateDetailedItem(technicalSheetItem, rates, null),
+    ).toMatchObject({
+      variableUnitCostCents: 544,
+      feeAmountCents: 105,
+      netUnitRevenueCents: 1_395,
+      unitContributionCents: 851,
+    });
+  });
+
+  it("returns no full price floor when fees consume the whole price", () => {
     expect(
       calculateDetailedItem(
-        {
-          ...resaleItem,
-          unitSalePriceCents: 1000,
-          purchaseUnitCostCents: 1000,
-          packagingUnitCostCents: 1,
-        },
-        rates,
+        resaleItem,
+        { taxRateBasisPoints: 6_000, cardFeeRateBasisPoints: 4_000 },
+        2_000,
       ),
     ).toMatchObject({
-      unitContributionCents: -101,
-      contributionMarginBasisPoints: -1010,
-      directLoss: true,
+      netUnitRevenueCents: 0,
+      totalUnitCostCents: 3_600,
+      breakEvenUnitPriceCents: null,
     });
   });
 });

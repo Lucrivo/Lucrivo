@@ -1,5 +1,4 @@
 import { seedUuid } from "./ids";
-import { allAdminReportTemplates } from "./historical-report-scenarios";
 import type {
   DemoSeedCatalog,
   SeedAdminUserEvent,
@@ -101,7 +100,7 @@ function buildUsers(): { admin: SeedUser; clients: SeedUser[] } {
     isAdmin: true,
     accountState: "active",
     accessSource: "paid",
-    reportCount: 36,
+    reportCount: 29,
     createdBucket: "month-5",
     lastSignInOffsetDays: 0,
   };
@@ -133,7 +132,7 @@ function buildReports(
   admin: SeedUser,
   clients: SeedUser[],
 ): SeedAssignedReport[] {
-  const reports: SeedAssignedReport[] = allAdminReportTemplates.map(
+  const reports: SeedAssignedReport[] = currentReportTemplates.map(
     (template, reportOrdinal) => ({
       ownerId: admin.id,
       ownerOrdinal: admin.ordinal,

@@ -5,10 +5,15 @@ import type {
   ProductReportPriority,
   ProductReportVerdict,
 } from "../types";
-import { ceilDivide, multiplyDivideRound, roundDivide } from "./integer-math";
+import { ceilDivide, roundDivide } from "./integer-math";
+import {
+  calculateAllocatedUnitEconomics,
+  calculateDirectUnitEconomics,
+  calculateFixedAllocation,
+  calculateMonthlySalesGoal,
+} from "./unit-economics";
 
 const RATE_SCALE = 10_000;
-const PRODUCT_ATTENTION_BAND_BPS = 2_000;
 const WEEKLY_DIVISOR_HUNDREDTHS = 433;
 const PRODUCT_OPERATING_DAYS_PER_WEEK = 6;
 
@@ -32,65 +37,47 @@ function classifyProductMargin(input: {
     return { verdict: "operational_loss", priority: "price" };
   }
   if (input.monthlyResultCents === 0) {
-    return { verdict: "break_even", priority: "margin" };
+    return { verdict: "break_even", priority: "volume" };
   }
-  if (
-    input.realMarginBasisPoints !== null &&
-    input.realMarginBasisPoints < PRODUCT_ATTENTION_BAND_BPS
-  ) {
-    return { verdict: "tight_margin", priority: "margin" };
-  }
-  return { verdict: "adequate_margin", priority: "volume" };
+
+  return { verdict: "positive_result", priority: "volume" };
 }
 
 function calculateProductReport(
   command: ProductDiagnosisCommand,
 ): ProductReportCalculation {
+  const effectiveProLaboreCents = command.proLaboreIncluded
+    ? command.proLaboreCents
+    : 0;
   const effectiveFixedCostCents = roundDivide(
-    BigInt(command.fixedMonthlyExpensesCents) + BigInt(command.proLaboreCents),
+    BigInt(command.fixedMonthlyExpensesCents) + BigInt(effectiveProLaboreCents),
     BigInt(1),
   );
   const totalFeeBasisPoints = roundDivide(
     BigInt(command.taxRateBasisPoints) + BigInt(command.cardFeeRateBasisPoints),
     BigInt(1),
   );
-  const netRateBasisPoints = RATE_SCALE - totalFeeBasisPoints;
   const monthlySalesVolumeUsed = command.monthlySalesVolume;
   const hasKnownVolume = monthlySalesVolumeUsed !== null;
-  const feeAmountCents = multiplyDivideRound(
-    command.unitSalePriceCents,
+  const direct = calculateDirectUnitEconomics({
+    currentPriceCents: command.unitSalePriceCents,
+    directUnitCostCents: command.purchaseUnitCostCents,
     totalFeeBasisPoints,
-    RATE_SCALE,
+  });
+  const fixedAllocationCents = calculateFixedAllocation(
+    effectiveFixedCostCents,
+    monthlySalesVolumeUsed,
   );
-  const netRevenueCents = roundDivide(
-    BigInt(command.unitSalePriceCents) - BigInt(feeAmountCents),
-    BigInt(1),
-  );
-  const unitContributionCents = roundDivide(
-    BigInt(netRevenueCents) - BigInt(command.purchaseUnitCostCents),
-    BigInt(1),
-  );
-  const fixedAllocationCents =
-    monthlySalesVolumeUsed === null || monthlySalesVolumeUsed === 0
-      ? null
-      : ceilDivide(
-          BigInt(effectiveFixedCostCents),
-          BigInt(monthlySalesVolumeUsed),
-        );
-  const totalUnitCostCents =
+  const allocated =
     fixedAllocationCents === null
       ? null
-      : roundDivide(
-          BigInt(command.purchaseUnitCostCents) + BigInt(fixedAllocationCents),
-          BigInt(1),
-        );
-  const unitProfitCents =
-    totalUnitCostCents === null
-      ? null
-      : roundDivide(
-          BigInt(netRevenueCents) - BigInt(totalUnitCostCents),
-          BigInt(1),
-        );
+      : calculateAllocatedUnitEconomics({
+          ...direct,
+          currentPriceCents: command.unitSalePriceCents,
+          directUnitCostCents: command.purchaseUnitCostCents,
+          totalFeeBasisPoints,
+          fixedAllocationCents,
+        });
   const monthlyGrossRevenueCents = hasKnownVolume
     ? roundDivide(
         BigInt(command.unitSalePriceCents) * BigInt(monthlySalesVolumeUsed),
@@ -99,13 +86,13 @@ function calculateProductReport(
     : null;
   const monthlyNetRevenueCents = hasKnownVolume
     ? roundDivide(
-        BigInt(netRevenueCents) * BigInt(monthlySalesVolumeUsed),
+        BigInt(direct.netRevenueCents) * BigInt(monthlySalesVolumeUsed),
         BigInt(1),
       )
     : null;
   const monthlyResultCents = hasKnownVolume
     ? roundDivide(
-        BigInt(unitContributionCents) * BigInt(monthlySalesVolumeUsed) -
+        BigInt(direct.unitContributionCents) * BigInt(monthlySalesVolumeUsed) -
           BigInt(effectiveFixedCostCents),
         BigInt(1),
       )
@@ -119,22 +106,10 @@ function calculateProductReport(
           BigInt(monthlyGrossRevenueCents),
         )
       : null;
-  const referenceCostCents =
-    totalUnitCostCents ?? command.purchaseUnitCostCents;
-  const minimumPriceCents =
-    netRateBasisPoints > 0
-      ? ceilDivide(
-          BigInt(referenceCostCents) * BigInt(RATE_SCALE),
-          BigInt(netRateBasisPoints),
-        )
-      : null;
-  const monthlySalesGoal =
-    unitContributionCents > 0
-      ? ceilDivide(
-          BigInt(effectiveFixedCostCents),
-          BigInt(unitContributionCents),
-        )
-      : null;
+  const monthlySalesGoal = calculateMonthlySalesGoal(
+    effectiveFixedCostCents,
+    direct.unitContributionCents,
+  );
   const weeklySalesGoal =
     !hasKnownVolume || monthlySalesGoal === null
       ? null
@@ -149,6 +124,7 @@ function calculateProductReport(
           BigInt(weeklySalesGoal),
           BigInt(PRODUCT_OPERATING_DAYS_PER_WEEK),
         );
+  const minimumPriceCents = allocated?.minimumPriceCents ?? null;
   const breakEvenDiscountPercent =
     minimumPriceCents === null || command.unitSalePriceCents <= 0
       ? null
@@ -161,7 +137,7 @@ function calculateProductReport(
           ),
         );
   const { verdict, priority } = classifyProductMargin({
-    unitContributionCents,
+    unitContributionCents: direct.unitContributionCents,
     monthlySalesVolumeUsed,
     effectiveFixedCostCents,
     monthlyResultCents,
@@ -172,19 +148,18 @@ function calculateProductReport(
     effectiveFixedCostCents,
     purchaseUnitCostCents: command.purchaseUnitCostCents,
     fixedAllocationCents,
-    totalUnitCostCents,
+    totalUnitCostCents: allocated?.totalUnitCostCents ?? null,
     currentPriceCents: command.unitSalePriceCents,
-    feeAmountCents,
-    netRevenueCents,
-    unitContributionCents,
-    unitProfitCents,
+    feeAmountCents: direct.feeAmountCents,
+    netRevenueCents: direct.netRevenueCents,
+    unitContributionCents: direct.unitContributionCents,
+    unitProfitCents: allocated?.unitProfitCents ?? null,
     monthlySalesVolumeUsed,
     monthlyGrossRevenueCents,
     monthlyNetRevenueCents,
     monthlyResultCents,
     realMarginBasisPoints,
     minimumPriceCents,
-    priceReferencesPartial: command.monthlySalesVolume === null,
     monthlySalesGoal,
     weeklySalesGoal,
     dailySalesGoal,
@@ -196,7 +171,6 @@ function calculateProductReport(
 }
 
 export {
-  PRODUCT_ATTENTION_BAND_BPS,
   PRODUCT_OPERATING_DAYS_PER_WEEK,
   calculateProductReport,
   classifyProductMargin,

@@ -27,27 +27,7 @@ const productCommand: DetailedDiagnosisCommand = {
       purchaseUnitCostCents: 2_000,
       packagingUnitCostCents: 200,
     },
-    {
-      id: "22222222-2222-4222-8222-222222222222",
-      position: 1,
-      name: "Camiseta em perda",
-      kind: "resale",
-      unitSalePriceCents: 3_000,
-      monthlySalesVolume: 5,
-      purchaseUnitCostCents: 3_500,
-      packagingUnitCostCents: 100,
-    },
   ],
-};
-
-const digitalCommand: DetailedDiagnosisCommand = {
-  ...productCommand,
-  submissionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
-  items: productCommand.items.map((item) =>
-    item.kind === "manufacturing"
-      ? item
-      : { ...item, kind: "digital" as const, packagingUnitCostCents: 0 },
-  ),
 };
 
 const productionCommand: DetailedDiagnosisCommand = {
@@ -90,8 +70,7 @@ function snapshotFor(command: DetailedDiagnosisCommand) {
 }
 
 describe("DetailedReportDetail", () => {
-  it("presents quick insights before item details and opens the first item", async () => {
-    const user = userEvent.setup();
+  it("shows complete item values and monthly-result comparison", () => {
     render(
       <DetailedReportDetail
         id={168}
@@ -103,104 +82,26 @@ describe("DetailedReportDetail", () => {
     expect(
       screen.getByRole("heading", { name: "Resultado dos seus produtos" }),
     ).toBeVisible();
-    expect(screen.getByText("Produtos")).toBeVisible();
-    expect(screen.getByText("Revenda")).toBeVisible();
-    expect(screen.queryByText("Diagnóstico detalhado")).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Comece por aqui" }),
-    ).toBeVisible();
-    expect(
-      screen.queryByRole("heading", { name: "Seus produtos dão lucro?" }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByText("Estou ganhando dinheiro?")).toBeVisible();
-    expect(screen.getByText("Meus preços pagam os gastos?")).toBeVisible();
-    expect(screen.getByText("O que preciso fazer agora?")).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Seus números" })).toBeVisible();
-    const numbers = screen.getByRole("complementary", { name: "Seus números" });
-    const featured = numbers.querySelector<HTMLElement>(
-      '[data-slot="featured-report-number"]',
-    );
-    const executiveSummary = screen.getByRole("region", {
-      name: "Comece por aqui",
-    });
-    expect(featured).not.toBeNull();
-    expect(
-      within(featured!).getByText("Unidades necessárias no mês"),
-    ).toBeVisible();
-    expect(
-      within(executiveSummary).queryByText("Unidades necessárias no mês"),
-    ).not.toBeInTheDocument();
-    const itemsHeading = screen.getByRole("heading", {
-      name: "Item por item",
-    });
-    const comparisonHeading = screen.getByRole("heading", {
-      name: "Quais itens ajudam ou prejudicam o resultado?",
-    });
-    expect(
-      screen.getByRole("heading", {
-        name: "Seus menores preços sem prejuízo",
-      }),
-    ).toBeVisible();
-    expect(
-      screen.queryByRole("heading", { name: "O que sai das vendas" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Quanto sobra no mês" }),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("heading", { name: "Quanto você precisa vender" }),
-    ).toBeVisible();
-    expect(screen.getByText("Quanto entraria neste cenário")).toBeVisible();
-    expect(screen.getByText("Custos do mês")).toBeVisible();
-    expect(itemsHeading.compareDocumentPosition(comparisonHeading)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    );
-    expect(screen.queryByText(/^Indisponível$/)).not.toBeInTheDocument();
-
-    const firstTrigger = screen.getByRole("button", {
+    const trigger = screen.getByRole("button", {
       name: "Abrir detalhes de Caneca",
     });
-    const lossTrigger = screen.getByRole("button", {
-      name: "Abrir detalhes de Camiseta em perda",
-    });
-    expect(firstTrigger).toHaveAttribute("aria-expanded", "true");
-    expect(lossTrigger).toHaveAttribute("aria-expanded", "false");
-    const firstItem = firstTrigger.closest<HTMLElement>(
-      '[data-slot="accordion-item"]',
-    );
-    expect(firstItem).not.toBeNull();
-    expect(within(firstItem!).getByTestId("discount-simulator")).toBeVisible();
-    expect(firstItem).toHaveTextContent(
-      "Os gastos mensais permanecem no resultado geral.",
-    );
-    await user.click(lossTrigger);
+    const item = trigger.closest<HTMLElement>('[data-slot="accordion-item"]');
+    expect(item).not.toBeNull();
+    expect(within(item!).getByText("Parte dos gastos do mês")).toBeVisible();
+    expect(within(item!).getByText("Custo completo por unidade")).toBeVisible();
+    expect(within(item!).getByText("Quanto sobra por venda")).toBeVisible();
     expect(
-      screen.getAllByText("Menor preço sem prejuízo na venda"),
-    ).not.toHaveLength(0);
-    expect(screen.getByText(/não cobre o custo do item/i)).toBeVisible();
+      screen.getByRole("heading", {
+        name: "Como cada item participa do resultado?",
+      }),
+    ).toBeVisible();
+    expect(screen.getByText("Resultado estimado do item")).toBeVisible();
     expect(
-      screen.getByRole("link", { name: "Voltar aos relatórios" }),
-    ).toHaveAttribute("href", "/reports");
-    expect(screen.queryByText(/\bmix\b/i)).not.toBeInTheDocument();
+      screen.getByText(/Resultado estimado de cada item no mês/i),
+    ).toBeVisible();
   });
 
-  it("renders Digital identity without physical-product terminology", () => {
-    render(
-      <DetailedReportDetail
-        id={170}
-        createdAt="2026-09-17T15:00:00.000Z"
-        snapshot={snapshotFor(digitalCommand)}
-      />,
-    );
-
-    expect(screen.getByText("Produto digital")).toBeVisible();
-    expect(screen.queryByText(/fornecedor|embalagem/i)).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(/ficha técnica|fabricação/i),
-    ).not.toBeInTheDocument();
-  });
-
-  it("presents a partial Production mix neutrally with technical-sheet details", async () => {
+  it("shows a single-item goal but keeps complete costs and discount unavailable", async () => {
     const user = userEvent.setup();
     render(
       <DetailedReportDetail
@@ -210,46 +111,51 @@ describe("DetailedReportDetail", () => {
       />,
     );
 
-    expect(
-      within(screen.getByRole("region", { name: "Comece por aqui" })).getByText(
-        "Informação",
-      ),
-    ).toBeVisible();
-    expect(
-      screen.getAllByText(/volume mensal de Bolo de festa/i),
-    ).not.toHaveLength(0);
-    expect(screen.getByText(/^Indisponível$/)).toBeVisible();
-    expect(
-      screen.getByText(
-        "Informe as vendas mensais de todos os itens para calcular.",
-      ),
-    ).toBeVisible();
-    expect(screen.getAllByText("Ainda não calculado")).not.toHaveLength(0);
-    expect(screen.getByText(/Sobra por unidade/i)).toBeVisible();
+    const numbers = screen.getByRole("complementary", { name: "Seus números" });
+    const featured = numbers.querySelector<HTMLElement>(
+      '[data-slot="featured-report-number"]',
+    );
+    expect(featured).not.toBeNull();
+    expect(within(featured!).getByText(/unidades$/)).toBeVisible();
+    expect(featured).not.toHaveTextContent(/semana|dia/);
 
     const trigger = screen.getByRole("button", {
       name: "Abrir detalhes de Bolo de festa",
     });
-    expect(trigger).toHaveAttribute("aria-expanded", "true");
     const item = trigger.closest<HTMLElement>('[data-slot="accordion-item"]');
     expect(item).not.toBeNull();
     expect(
-      within(item!).getByText("Vendas mensais ainda não informadas"),
-    ).toBeVisible();
+      within(item!).getAllByText("Ainda não calculado").length,
+    ).toBeGreaterThanOrEqual(5);
     expect(
-      within(item!).getAllByText("Entenda este valor").length,
+      within(item!).getAllByText(
+        "Informe uma quantidade para dividir os gastos do mês.",
+      ).length,
     ).toBeGreaterThan(0);
+    expect(
+      within(item!).getByRole("slider", { name: "Desconto simulado" }),
+    ).toBeDisabled();
     await user.click(
       within(item!).getByText("Ver memória de cálculo da produção"),
     );
     expect(within(item!).getByText("Ficha técnica completa")).toBeVisible();
     expect(within(item!).getByText(/Farinha/)).toBeVisible();
-    expect(
-      screen.queryByText(/inteligência artificial/i),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /ia/i }),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText(/\bmix\b/i)).not.toBeInTheDocument();
+  });
+
+  it("labels direct contribution without calling it profit when volume is absent", () => {
+    render(
+      <DetailedReportDetail
+        id={170}
+        createdAt="2026-09-17T15:00:00.000Z"
+        snapshot={snapshotFor(productionCommand)}
+      />,
+    );
+
+    const comparison = screen.getByRole("region", {
+      name: "Como cada item participa do resultado?",
+    });
+    expect(comparison).toHaveTextContent("Valor deixado por venda");
+    expect(comparison).toHaveTextContent("Ajuda a pagar os gastos do mês");
+    expect(comparison).not.toHaveTextContent(/lucro por unidade/i);
   });
 });

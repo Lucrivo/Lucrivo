@@ -1,25 +1,24 @@
 import { describe, expect, it } from "vitest";
 
 import type { ProductionDiagnosisCommand } from "@/modules/quick-diagnosis/types";
-
 import { parseProductionReportSnapshot } from "../schemas/production-report-snapshot.schema";
 import { buildProductionReportSnapshot } from "./build-production-report-snapshot";
 import { calculateProductionReport } from "./calculate-production-report";
 
 const command: ProductionDiagnosisCommand = {
   submissionId: "550e8400-e29b-41d4-a716-446655440000",
-  costCompositionEnabled: true,
-  productionUnitCostCents: 5000,
-  materialUnitCostCents: 3000,
-  packagingUnitCostCents: 500,
-  directLaborUnitCostCents: 1000,
-  otherVariableUnitCostCents: 500,
-  unitSalePriceCents: 10000,
-  fixedMonthlyExpensesCents: 100000,
-  monthlySalesVolume: 100,
+  costCompositionEnabled: false,
+  productionUnitCostCents: 1_600,
+  materialUnitCostCents: null,
+  packagingUnitCostCents: null,
+  directLaborUnitCostCents: null,
+  otherVariableUnitCostCents: null,
+  unitSalePriceCents: 5_500,
+  fixedMonthlyExpensesCents: 300_000,
+  monthlySalesVolume: 200,
   proLaboreIncluded: true,
-  proLaboreCents: 200000,
-  taxRateBasisPoints: 600,
+  proLaboreCents: 100_000,
+  taxRateBasisPoints: 500,
   cardFeeRateBasisPoints: 200,
 };
 
@@ -28,109 +27,67 @@ function build(input: ProductionDiagnosisCommand) {
 }
 
 describe("buildProductionReportSnapshot", () => {
-  it("builds and parses the Production 3/3/4 contract", () => {
+  it("builds the corrected Production 3/3/4 contract with full-cost language", () => {
     const snapshot = build(command);
-    expect(snapshot).toEqual(
-      expect.objectContaining({
-        schemaVersion: 3,
-        calculationVersion: 3,
-        contentVersion: 4,
-        scenario: "manufacturing",
-      }),
-    );
-    expect(snapshot.results).toEqual(
-      expect.objectContaining({
-        monthlySalesVolumeUsed: 100,
-        monthlyResultCents: 120000,
-        totalFeeBasisPoints: 800,
-      }),
-    );
-    expect(snapshot.results).not.toHaveProperty("targetPriceCents");
+    const content = JSON.stringify(snapshot);
+
+    expect(snapshot).toMatchObject({
+      schemaVersion: 3,
+      calculationVersion: 3,
+      contentVersion: 4,
+      results: {
+        minimumPriceCents: 3_871,
+        unitProfitCents: 1_515,
+        realMarginBasisPoints: 2_755,
+        verdict: "positive_result",
+      },
+      discountSimulationBase: {
+        unitCostCents: 3_600,
+        minimumPriceCents: 3_871,
+      },
+    });
+    expect(content).toContain("Quanto esta unidade custa");
+    expect(content).toContain("Parte dos gastos do mês");
+    expect(content).toContain("Custo completo por unidade");
+    expect(content).toContain("Quanto sobra por venda");
     expect(parseProductionReportSnapshot(snapshot)).toEqual(snapshot);
   });
 
-  it.each([
-    [{ unitSalePriceCents: 5000, monthlySalesVolume: null }, "direct_loss"],
-    [{ monthlySalesVolume: null }, "incomplete_volume"],
-    [
-      {
-        monthlySalesVolume: null,
-        fixedMonthlyExpensesCents: 0,
-        proLaboreIncluded: false,
-        proLaboreCents: 0,
-      },
-      "incomplete_volume",
-    ],
-    [{ monthlySalesVolume: 10 }, "operational_loss"],
-    [{ fixedMonthlyExpensesCents: 220000 }, "break_even"],
-    [{}, "tight_margin"],
-    [
-      {
-        fixedMonthlyExpensesCents: 0,
-        proLaboreIncluded: false,
-        proLaboreCents: 0,
-      },
-      "adequate_margin",
-    ],
-  ] as const)("builds manufacturing content for %s", (overrides, verdict) => {
-    const snapshot = build({ ...command, ...overrides });
-    expect(snapshot.results.verdict).toBe(verdict);
-    expect(snapshot.sections.map(({ title }) => title)).toEqual([
-      "Seu menor preço sem prejuízo",
-      "O que sai de cada venda",
-      "Quanto sobra no mês",
-      "Quanto você precisa vender",
-      "Como um desconto muda o resultado",
-    ]);
-    const content = JSON.stringify({
-      executiveSummary: snapshot.executiveSummary,
-      sections: snapshot.sections,
+  it("shows only the monthly quantity when volume is unknown", () => {
+    const snapshot = build({ ...command, monthlySalesVolume: null });
+    const content = JSON.stringify(snapshot);
+
+    expect(snapshot.results).toMatchObject({
+      minimumPriceCents: null,
+      totalUnitCostCents: null,
+      unitProfitCents: null,
+      realMarginBasisPoints: null,
+      monthlySalesGoal: 114,
     });
-    expect(content).toContain("custo de fabricação");
-    expect(content).toContain("unidades vendidas");
-    expect(content).not.toMatch(
-      /custo de compra|fornecedor|produto digital|unidades produzidas por mês/i,
-    );
-    if (
-      "monthlySalesVolume" in overrides &&
-      overrides.monthlySalesVolume === null &&
-      verdict !== "direct_loss"
-    ) {
-      expect(
-        snapshot.sections.find(({ key }) => key === "margin_diagnosis"),
-      ).toMatchObject({
-        emphasisLabel: "Resultado mensal",
-        emphasisValue: "Ainda não calculado",
-        tone: "neutral",
-      });
-      const salesGoal = snapshot.sections.find(
-        ({ key }) => key === "sales_goal",
-      );
-      expect(salesGoal?.body).toContain("esta meta é apenas uma referência");
-      expect(salesGoal?.body).not.toMatch(/por semana|por dia/);
-    }
-    expect(content).not.toMatch(
-      /ponto de equilíbrio|pró-labore|alíquota|rateio|receita líquida|margem de contribuição|preço-alvo|custo operacional|meta de 20%|margem ideal/i,
-    );
+    expect(snapshot.discountSimulationBase.unitCostCents).toBeNull();
+    expect(content).toContain("não dividimos os gastos do mês");
+    expect(content).not.toMatch(/por semana|por dia/);
   });
 
-  it("describes composed manufacturing cost in plain language", () => {
-    const content = JSON.stringify(build(command).sections[1]);
+  it("keeps composed manufacturing costs in plain language", () => {
+    const content = JSON.stringify(
+      build({
+        ...command,
+        costCompositionEnabled: true,
+        materialUnitCostCents: 1_000,
+        packagingUnitCostCents: 200,
+        directLaborUnitCostCents: 300,
+        otherVariableUnitCostCents: 100,
+      }),
+    );
     expect(content).toMatch(
-      /materiais|embalagem|seu trabalho por unidade|outros gastos por unidade/,
+      /materiais|embalagem|trabalho por unidade|outros valores/,
     );
-    expect(content).not.toMatch(/mão de obra direta|pró-labore/i);
   });
 
-  it("accepts the summarized current contract", () => {
-    const summarized = build({
-      ...command,
-      costCompositionEnabled: false,
-      materialUnitCostCents: null,
-      packagingUnitCostCents: null,
-      directLaborUnitCostCents: null,
-      otherVariableUnitCostCents: null,
-    });
-    expect(parseProductionReportSnapshot(summarized)).toEqual(summarized);
+  it("contains no target-based or margin-quality language", () => {
+    expect(JSON.stringify(build(command))).not.toMatch(
+      /margem adequada|margem apertada|acima da meta|boa folga|pouca folga|meta de 15%|meta de 20%|preço-alvo/i,
+    );
   });
 });

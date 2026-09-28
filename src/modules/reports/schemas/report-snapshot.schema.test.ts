@@ -1,26 +1,70 @@
 import { describe, expect, it } from "vitest";
 
 import { calculateDetailedDiagnosis } from "@/modules/detailed-diagnosis/domain/calculate-detailed-diagnosis";
-import type { DetailedDiagnosisCommand } from "@/modules/detailed-diagnosis/types";
+import { calculateProductReport } from "@/modules/reports/domain/calculate-product-report";
+import { calculateProductionReport } from "@/modules/reports/domain/calculate-production-report";
+import { calculateServiceReport } from "@/modules/reports/domain/calculate-service-report";
 
-import {
-  parseCurrentProductReportSnapshot,
-  parseProductReportSnapshot,
-} from "./product-report-snapshot.schema";
-import {
-  parseCurrentProductionReportSnapshot,
-  parseProductionReportSnapshot,
-} from "./production-report-snapshot.schema";
-import {
-  isDetailedReportSnapshot,
-  parseReportSnapshot,
-} from "./report-snapshot.schema";
-import {
-  parseCurrentServiceReportSnapshot,
-  parseServiceReportSnapshot,
-} from "./service-report-snapshot.schema";
+import { parseDetailedReportSnapshot } from "./detailed-report-snapshot.schema";
+import { parseProductReportSnapshot } from "./product-report-snapshot.schema";
+import { parseProductionReportSnapshot } from "./production-report-snapshot.schema";
+import { parseReportSnapshot } from "./report-snapshot.schema";
+import { parseServiceReportSnapshot } from "./service-report-snapshot.schema";
 
-const sectionKeys = [
+const answers = [
+  {
+    key: "profitability",
+    question: "Estou ganhando dinheiro?",
+    answer: "O resultado foi calculado com os valores informados.",
+  },
+  {
+    key: "price_sufficiency",
+    question: "O preço paga os valores considerados?",
+    answer: "Veja o menor preço calculado quando há quantidade.",
+  },
+  {
+    key: "immediate_action",
+    question: "O que fazer agora?",
+    answer: "Use os números objetivos para decidir.",
+  },
+] as const;
+
+function executiveSummary(factKeys: readonly ("margin" | "price")[]) {
+  return {
+    headline: "Resultado do diagnóstico",
+    introduction: "Veja os números calculados com as informações enviadas.",
+    verdict: {
+      label: "Resultado positivo",
+      body: "O resultado estimado do mês ficou positivo.",
+      tone: "positive" as const,
+    },
+    facts: factKeys.map((key) => ({
+      key,
+      currentLabel: key === "margin" ? "Quanto sobra" : "Preço atual",
+      currentValue: key === "margin" ? "R$ 27,55" : "R$ 55,00",
+      referenceLabel: "Sem referência",
+      referenceValue: "Não se aplica",
+    })),
+    priority: {
+      label: "Quantidade",
+      body: "A quantidade informada foi usada no cálculo.",
+    },
+    answers: [...answers],
+  };
+}
+
+function sections(keys: readonly string[]) {
+  return keys.map((key, index) => ({
+    key,
+    title: `Seção ${index + 1}`,
+    body: "Informação objetiva do diagnóstico.",
+    emphasisLabel: null,
+    emphasisValue: null,
+    tone: "neutral" as const,
+  }));
+}
+
+const quickSectionKeys = [
   "break_even",
   "hidden_cost",
   "margin_diagnosis",
@@ -28,578 +72,173 @@ const sectionKeys = [
   "discount_simulator",
 ] as const;
 
-const executiveSummary = {
-  headline: "A verdade por trás do preço.",
-  introduction: "Veja os números essenciais e a prioridade do diagnóstico.",
-  verdict: {
-    label: "Margem apertada",
-    body: "A operação está abaixo da meta.",
-    tone: "warning",
-  },
-  facts: [
-    {
-      key: "margin",
-      currentLabel: "Margem atual",
-      currentValue: "12%",
-      referenceLabel: "Meta",
-      referenceValue: "20%",
-    },
-    {
-      key: "price",
-      currentLabel: "Preço atual",
-      currentValue: "R$ 100,00",
-      referenceLabel: "Preço-alvo",
-      referenceValue: "R$ 111,12",
-    },
-  ],
-  priority: {
-    label: "Margem",
-    body: "Aproxime preço e custo da meta.",
-  },
-  answers: [
-    {
-      key: "profitability",
-      question: "Estou ganhando dinheiro?",
-      answer: "Sim, há lucro por unidade.",
-    },
-    {
-      key: "price_sufficiency",
-      question: "Estou cobrando o preço certo?",
-      answer: "O preço ainda está abaixo da meta.",
-    },
-    {
-      key: "immediate_action",
-      question: "O que preciso fazer agora?",
-      answer: "Revise preço e custos.",
-    },
-  ],
+const serviceInputs = {
+  desiredMonthlyIncomeCents: 400_000,
+  fixedMonthlyExpensesCents: 200_000,
+  workHoursPeriod: "day" as const,
+  workPeriodMinutes: 480,
+  monthlyWorkMinutes: 10_392,
+  weeklyWorkDays: 5,
+  hourlyRateCents: 0,
+  minuteRateCents: 0,
+  appointmentRateCents: 8_000,
+  appointmentDurationMinutes: 50,
+  materialUnitCostCents: 1_000,
+  taxRateBasisPoints: 600,
+  cardFeeRateBasisPoints: 200,
 };
-
-const sections = sectionKeys.map((key, index) => ({
-  key,
-  title: `Seção ${index + 1}`,
-  body: `Conteúdo da seção ${index + 1}.`,
-  emphasisLabel: index === 0 ? "Preço mínimo" : null,
-  emphasisValue: index === 0 ? "R$ 86,96" : null,
-  tone: index === 0 ? "positive" : "neutral",
-}));
-
+const serviceResults = calculateServiceReport({
+  submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  pricingMethod: "appointment",
+  ...serviceInputs,
+});
 const validServiceSnapshot = {
-  schemaVersion: 2,
-  calculationVersion: 1,
-  contentVersion: 2,
+  schemaVersion: 4,
+  calculationVersion: 3,
+  contentVersion: 5,
   category: "service",
   scenario: "appointment",
   currency: "BRL",
   unit: "appointment",
   policy: {
-    targetMarginBasisPoints: 1500,
     weeklyDivisorHundredths: 433,
     maximumDiscountPercent: 50,
     proLaboreIncluded: true,
   },
-  inputs: {
-    desiredMonthlyIncomeCents: 400000,
-    fixedMonthlyExpensesCents: 200000,
-    monthlyWorkMinutes: 6000,
-    weeklyWorkDays: 5,
-    hourlyRateCents: 0,
-    minuteRateCents: 0,
-    appointmentRateCents: 8000,
-    appointmentDurationMinutes: 50,
-    taxRateBasisPoints: 600,
-    cardFeeRateBasisPoints: 200,
-  },
-  results: {
-    monthlyCostCents: 600000,
-    hourCostCents: 6000,
-    unitCostCents: 5000,
-    currentPriceCents: 8000,
-    netRevenueCents: 7360,
-    unitProfitCents: 2360,
-    realMarginBasisPoints: 2950,
-    minimumPriceCents: 5435,
-    targetPriceCents: 6494,
-    monthlySalesGoal: 93,
-    weeklySalesGoal: 22,
-    dailySalesGoal: 5,
-    breakEvenDiscountPercent: 32,
-    verdict: "above_target",
-    priority: "volume",
-  },
-  executiveSummary: {
-    ...executiveSummary,
-    verdict: {
-      label: "Acima da meta",
-      body: "O preço supera a meta de 15%.",
-      tone: "positive",
-    },
-    facts: executiveSummary.facts.map((fact) =>
-      fact.key === "margin"
-        ? { ...fact, currentValue: "29,5%", referenceValue: "15%" }
-        : {
-            ...fact,
-            currentValue: "R$ 80,00",
-            referenceValue: "R$ 64,94",
-          },
-    ),
-  },
-  sections,
-  discountSimulationBase: {
-    originalPriceCents: 8000,
-    unitCostCents: 5000,
-    totalFeeBasisPoints: 800,
-    targetMarginBasisPoints: 1500,
-    minimumPriceCents: 5435,
-  },
-};
-
-const validServiceV3Snapshot = {
-  ...validServiceSnapshot,
-  schemaVersion: 3,
-  calculationVersion: 2,
-  contentVersion: 3,
-  inputs: {
-    ...validServiceSnapshot.inputs,
-    workHoursPeriod: "month",
-    workPeriodMinutes: 6000,
-    materialUnitCostCents: 1000,
-  },
-  results: {
-    ...validServiceSnapshot.results,
-    structureUnitCostCents: 5000,
-    materialUnitCostCents: 1000,
-    unitCostCents: 6000,
-    unitContributionCents: 6360,
-    unitProfitCents: 1360,
-    realMarginBasisPoints: 1700,
-    minimumPriceCents: 6522,
-    targetPriceCents: 7793,
-    monthlySalesGoal: 95,
-    weeklySalesGoal: 22,
-    dailySalesGoal: 5,
-    breakEvenDiscountPercent: 18,
-    verdict: "adequate_margin",
-  },
-  discountSimulationBase: {
-    ...validServiceSnapshot.discountSimulationBase,
-    unitCostCents: 6000,
-    minimumPriceCents: 6522,
-  },
-};
-
-const validProductSnapshot = {
-  schemaVersion: 1,
-  calculationVersion: 1,
-  contentVersion: 1,
-  category: "product",
-  scenario: "resale",
-  currency: "BRL",
-  unit: "unit",
-  policy: {
-    targetMarginBasisPoints: 2000,
-    weeklyDivisorHundredths: 433,
-    operatingDaysPerWeek: 6,
-    maximumDiscountPercent: 50,
-    proLaboreIncluded: true,
-  },
-  inputs: {
-    purchaseUnitCostCents: 5000,
-    unitSalePriceCents: 10000,
-    fixedMonthlyExpensesCents: 100000,
-    monthlySalesVolume: 100,
-    proLaboreIncluded: true,
-    proLaboreCents: 200000,
-    taxRateBasisPoints: 600,
-    cardFeeRateBasisPoints: 200,
-  },
-  results: {
-    effectiveFixedCostCents: 300000,
-    purchaseUnitCostCents: 5000,
-    fixedAllocationCents: 3000,
-    totalUnitCostCents: 8000,
-    currentPriceCents: 10000,
-    netRevenueCents: 9200,
-    unitContributionCents: 4200,
-    unitProfitCents: 1200,
-    realMarginBasisPoints: 1200,
-    minimumPriceCents: 8696,
-    targetPriceCents: 11112,
-    priceReferencesPartial: false,
-    monthlySalesGoal: 72,
-    weeklySalesGoal: 17,
-    dailySalesGoal: 3,
-    breakEvenDiscountPercent: 13,
-    verdict: "tight_margin",
-    priority: "margin",
-  },
-  executiveSummary,
-  sections,
-  discountSimulationBase: {
-    originalPriceCents: 10000,
-    unitCostCents: 8000,
-    totalFeeBasisPoints: 800,
-    targetMarginBasisPoints: 2000,
-    minimumPriceCents: 8696,
-    partial: false,
-  },
-};
-
-const partialProductSnapshot = {
-  ...validProductSnapshot,
-  inputs: {
-    ...validProductSnapshot.inputs,
-    monthlySalesVolume: null,
-  },
-  results: {
-    ...validProductSnapshot.results,
-    fixedAllocationCents: null,
-    totalUnitCostCents: null,
-    unitProfitCents: null,
-    realMarginBasisPoints: null,
-    minimumPriceCents: 5435,
-    targetPriceCents: 6945,
-    priceReferencesPartial: true,
-    breakEvenDiscountPercent: 46,
-    verdict: "incomplete_volume",
-    priority: "data",
-  },
-  discountSimulationBase: {
-    ...validProductSnapshot.discountSimulationBase,
-    unitCostCents: 5000,
-    minimumPriceCents: 5435,
-    partial: true,
-  },
-};
-
-const validProductionSnapshot = {
-  schemaVersion: 1,
-  calculationVersion: 1,
-  contentVersion: 1,
-  category: "production",
-  scenario: "manufacturing",
-  currency: "BRL",
-  unit: "unit",
-  policy: {
-    targetMarginBasisPoints: 2000,
-    weeklyDivisorHundredths: 433,
-    operatingDaysPerWeek: 6,
-    maximumDiscountPercent: 50,
-    proLaboreIncluded: true,
-  },
-  inputs: {
-    costCompositionEnabled: true,
-    productionUnitCostCents: 5000,
-    materialUnitCostCents: 3000,
-    packagingUnitCostCents: 500,
-    directLaborUnitCostCents: 1000,
-    otherVariableUnitCostCents: 500,
-    unitSalePriceCents: 10000,
-    fixedMonthlyExpensesCents: 100000,
-    monthlySalesVolume: 100,
-    proLaboreIncluded: true,
-    proLaboreCents: 200000,
-    taxRateBasisPoints: 600,
-    cardFeeRateBasisPoints: 200,
-  },
-  results: {
-    effectiveFixedCostCents: 300000,
-    productionUnitCostCents: 5000,
-    fixedAllocationCents: 3000,
-    totalUnitCostCents: 8000,
-    currentPriceCents: 10000,
-    netRevenueCents: 9200,
-    unitContributionCents: 4200,
-    unitProfitCents: 1200,
-    realMarginBasisPoints: 1200,
-    minimumPriceCents: 8696,
-    targetPriceCents: 11112,
-    priceReferencesPartial: false,
-    monthlySalesGoal: 72,
-    weeklySalesGoal: 17,
-    dailySalesGoal: 3,
-    breakEvenDiscountPercent: 13,
-    verdict: "tight_margin",
-    priority: "margin",
-  },
-  executiveSummary,
-  sections,
-  discountSimulationBase: {
-    originalPriceCents: 10000,
-    unitCostCents: 8000,
-    totalFeeBasisPoints: 800,
-    targetMarginBasisPoints: 2000,
-    minimumPriceCents: 8696,
-    partial: false,
-  },
-};
-
-const partialProductionSnapshot = {
-  ...validProductionSnapshot,
-  policy: {
-    ...validProductionSnapshot.policy,
-    proLaboreIncluded: false,
-  },
-  inputs: {
-    ...validProductionSnapshot.inputs,
-    costCompositionEnabled: false,
-    materialUnitCostCents: null,
-    packagingUnitCostCents: null,
-    directLaborUnitCostCents: null,
-    otherVariableUnitCostCents: null,
-    monthlySalesVolume: null,
-    proLaboreIncluded: false,
-    proLaboreCents: 0,
-  },
-  results: {
-    ...validProductionSnapshot.results,
-    effectiveFixedCostCents: 100000,
-    fixedAllocationCents: null,
-    totalUnitCostCents: null,
-    unitProfitCents: null,
-    realMarginBasisPoints: null,
-    minimumPriceCents: 5435,
-    targetPriceCents: 6945,
-    priceReferencesPartial: true,
-    monthlySalesGoal: 24,
-    weeklySalesGoal: 6,
-    dailySalesGoal: 1,
-    breakEvenDiscountPercent: 46,
-    verdict: "incomplete_volume",
-    priority: "data",
-  },
-  discountSimulationBase: {
-    ...validProductionSnapshot.discountSimulationBase,
-    unitCostCents: 5000,
-    minimumPriceCents: 5435,
-    partial: true,
-  },
-};
-
-const validProductV2Snapshot = {
-  ...validProductSnapshot,
-  contentVersion: 2,
-};
-
-const validProductV3Snapshot = {
-  schemaVersion: 2,
-  calculationVersion: 2,
-  contentVersion: 3,
-  category: "product",
-  scenario: "resale",
-  currency: "BRL",
-  unit: "unit",
-  policy: {
-    attentionBandBasisPoints: 2000,
-    weeklyDivisorHundredths: 433,
-    operatingDaysPerWeek: 6,
-    maximumDiscountPercent: 50,
-    proLaboreIncluded: true,
-  },
-  inputs: {
-    productKind: "resale",
-    purchaseUnitCostCents: 5000,
-    unitSalePriceCents: 10000,
-    fixedMonthlyExpensesCents: 100000,
-    monthlySalesVolume: 100,
-    proLaboreIncluded: true,
-    proLaboreCents: 200000,
-    taxRateBasisPoints: 600,
-    cardFeeRateBasisPoints: 200,
-  },
-  results: {
-    effectiveFixedCostCents: 300000,
-    purchaseUnitCostCents: 5000,
-    fixedAllocationCents: 3000,
-    totalUnitCostCents: 8000,
-    currentPriceCents: 10000,
-    feeAmountCents: 800,
-    netRevenueCents: 9200,
-    unitContributionCents: 4200,
-    unitProfitCents: 1200,
-    monthlySalesVolumeUsed: 100,
-    monthlyGrossRevenueCents: 1000000,
-    monthlyNetRevenueCents: 920000,
-    monthlyResultCents: 120000,
-    realMarginBasisPoints: 1200,
-    minimumPriceCents: 8696,
-    priceReferencesPartial: false,
-    monthlySalesGoal: 72,
-    weeklySalesGoal: 17,
-    dailySalesGoal: 3,
-    breakEvenDiscountPercent: 13,
-    totalFeeBasisPoints: 800,
-    verdict: "tight_margin",
-    priority: "margin",
-  },
-  executiveSummary,
-  sections,
-  discountSimulationBase: {
-    originalPriceCents: 10000,
-    unitCostCents: 8000,
-    totalFeeBasisPoints: 800,
-    attentionBandBasisPoints: 2000,
-    minimumPriceCents: 8696,
-    partial: false,
-  },
-};
-
-const validProductionV2Snapshot = {
-  ...validProductionSnapshot,
-  contentVersion: 2,
-};
-
-const validProductionV3Snapshot = {
-  schemaVersion: 2,
-  calculationVersion: 2,
-  contentVersion: 3,
-  category: "production",
-  scenario: "manufacturing",
-  currency: "BRL",
-  unit: "unit",
-  policy: {
-    attentionBandBasisPoints: 2000,
-    weeklyDivisorHundredths: 433,
-    operatingDaysPerWeek: 6,
-    maximumDiscountPercent: 50,
-    proLaboreIncluded: true,
-  },
-  inputs: { ...validProductionSnapshot.inputs },
-  results: {
-    effectiveFixedCostCents: 300000,
-    productionUnitCostCents: 5000,
-    fixedAllocationCents: 3000,
-    totalUnitCostCents: 8000,
-    currentPriceCents: 10000,
-    feeAmountCents: 800,
-    netRevenueCents: 9200,
-    unitContributionCents: 4200,
-    unitProfitCents: 1200,
-    monthlySalesVolumeUsed: 100,
-    monthlyGrossRevenueCents: 1000000,
-    monthlyNetRevenueCents: 920000,
-    monthlyResultCents: 120000,
-    realMarginBasisPoints: 1200,
-    minimumPriceCents: 8696,
-    priceReferencesPartial: false,
-    monthlySalesGoal: 72,
-    weeklySalesGoal: 17,
-    dailySalesGoal: 3,
-    breakEvenDiscountPercent: 13,
-    totalFeeBasisPoints: 800,
-    verdict: "tight_margin",
-    priority: "margin",
-  },
-  executiveSummary,
-  sections,
-  discountSimulationBase: {
-    originalPriceCents: 10000,
-    unitCostCents: 8000,
-    totalFeeBasisPoints: 800,
-    attentionBandBasisPoints: 2000,
-    minimumPriceCents: 8696,
-    partial: false,
-  },
-};
-
-const validProductV4Snapshot = {
-  ...validProductV3Snapshot,
-  schemaVersion: 3,
-  calculationVersion: 3,
-  contentVersion: 4,
-  inputs: {
-    ...validProductV3Snapshot.inputs,
-    monthlySalesVolume: null,
-  },
-  results: {
-    ...validProductV3Snapshot.results,
-    fixedAllocationCents: null,
-    totalUnitCostCents: null,
-    unitProfitCents: null,
-    monthlySalesVolumeUsed: null,
-    monthlyGrossRevenueCents: null,
-    monthlyNetRevenueCents: null,
-    monthlyResultCents: null,
-    realMarginBasisPoints: null,
-    priceReferencesPartial: true,
-    weeklySalesGoal: null,
-    dailySalesGoal: null,
-    verdict: "incomplete_volume",
-    priority: "data",
-  },
-  discountSimulationBase: {
-    ...validProductV3Snapshot.discountSimulationBase,
-    unitCostCents: 5000,
-    partial: true,
-  },
-};
-
-const validProductionV4Snapshot = {
-  ...validProductionV3Snapshot,
-  schemaVersion: 3,
-  calculationVersion: 3,
-  contentVersion: 4,
-  inputs: {
-    ...validProductionV3Snapshot.inputs,
-    monthlySalesVolume: null,
-  },
-  results: {
-    ...validProductionV3Snapshot.results,
-    fixedAllocationCents: null,
-    totalUnitCostCents: null,
-    unitProfitCents: null,
-    monthlySalesVolumeUsed: null,
-    monthlyGrossRevenueCents: null,
-    monthlyNetRevenueCents: null,
-    monthlyResultCents: null,
-    realMarginBasisPoints: null,
-    priceReferencesPartial: true,
-    weeklySalesGoal: null,
-    dailySalesGoal: null,
-    verdict: "incomplete_volume",
-    priority: "data",
-  },
-  discountSimulationBase: {
-    ...validProductionV3Snapshot.discountSimulationBase,
-    unitCostCents: 5000,
-    partial: true,
-  },
-};
-
-const validServiceV4Snapshot = {
-  ...validServiceV3Snapshot,
-  contentVersion: 4,
-};
-
-const validServiceV5Snapshot = {
-  ...validServiceV4Snapshot,
-  schemaVersion: 4,
-  calculationVersion: 3,
-  contentVersion: 5,
+  inputs: serviceInputs,
   source: {
     pricingMethod: "appointment",
-    currentPriceCents: 8000,
+    currentPriceCents: 8_000,
     materialCostUnit: "appointment",
-    materialCostCents: 1000,
+    materialCostCents: 1_000,
     dailyWorkMinutes: 480,
     appointmentDurationMinutes: 50,
   },
-  inputs: {
-    ...validServiceV4Snapshot.inputs,
-    workHoursPeriod: "day",
-    workPeriodMinutes: 480,
-    monthlyWorkMinutes: 10392,
+  results: serviceResults,
+  executiveSummary: executiveSummary(["price", "margin"]),
+  sections: sections([
+    "break_even",
+    "margin_diagnosis",
+    "sales_goal",
+    "discount_simulator",
+  ]),
+  discountSimulationBase: {
+    originalPriceCents: serviceResults.currentPriceCents,
+    unitCostCents: serviceResults.unitCostCents,
+    totalFeeBasisPoints: serviceResults.totalFeeBasisPoints,
+    minimumPriceCents: serviceResults.minimumPriceCents,
   },
-  executiveSummary: {
-    ...validServiceV4Snapshot.executiveSummary,
-    facts: [...validServiceV4Snapshot.executiveSummary.facts].reverse(),
-  },
-  sections: validServiceV4Snapshot.sections.filter(
-    ({ key }) => key !== "hidden_cost",
-  ),
 };
 
-const validDetailedProductSnapshot = {
+const productInputs = {
+  productKind: "resale" as const,
+  purchaseUnitCostCents: 1_600,
+  unitSalePriceCents: 5_500,
+  fixedMonthlyExpensesCents: 300_000,
+  monthlySalesVolume: 200,
+  proLaboreIncluded: true,
+  proLaboreCents: 100_000,
+  taxRateBasisPoints: 500,
+  cardFeeRateBasisPoints: 200,
+};
+const productResults = calculateProductReport({
+  submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  ...productInputs,
+});
+const validProductSnapshot = {
+  schemaVersion: 3,
+  calculationVersion: 3,
+  contentVersion: 4,
+  category: "product",
+  scenario: "resale",
+  currency: "BRL",
+  unit: "unit",
+  policy: {
+    weeklyDivisorHundredths: 433,
+    operatingDaysPerWeek: 6,
+    maximumDiscountPercent: 50,
+    proLaboreIncluded: true,
+  },
+  inputs: productInputs,
+  results: productResults,
+  executiveSummary: executiveSummary(["margin", "price"]),
+  sections: sections(quickSectionKeys),
+  discountSimulationBase: {
+    originalPriceCents: productResults.currentPriceCents,
+    unitCostCents: productResults.totalUnitCostCents,
+    totalFeeBasisPoints: productResults.totalFeeBasisPoints,
+    minimumPriceCents: productResults.minimumPriceCents,
+  },
+};
+
+const productionInputs = {
+  costCompositionEnabled: true,
+  productionUnitCostCents: 1_600,
+  materialUnitCostCents: 1_000,
+  packagingUnitCostCents: 200,
+  directLaborUnitCostCents: 300,
+  otherVariableUnitCostCents: 100,
+  unitSalePriceCents: 5_500,
+  fixedMonthlyExpensesCents: 300_000,
+  monthlySalesVolume: null,
+  proLaboreIncluded: false,
+  proLaboreCents: 999_999,
+  taxRateBasisPoints: 500,
+  cardFeeRateBasisPoints: 200,
+};
+const productionResults = calculateProductionReport({
+  submissionId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+  ...productionInputs,
+});
+const validProductionSnapshot = {
+  schemaVersion: 3,
+  calculationVersion: 3,
+  contentVersion: 4,
+  category: "production",
+  scenario: "manufacturing",
+  currency: "BRL",
+  unit: "unit",
+  policy: {
+    weeklyDivisorHundredths: 433,
+    operatingDaysPerWeek: 6,
+    maximumDiscountPercent: 50,
+    proLaboreIncluded: false,
+  },
+  inputs: productionInputs,
+  results: productionResults,
+  executiveSummary: executiveSummary(["margin", "price"]),
+  sections: sections(quickSectionKeys),
+  discountSimulationBase: {
+    originalPriceCents: productionResults.currentPriceCents,
+    unitCostCents: null,
+    totalFeeBasisPoints: productionResults.totalFeeBasisPoints,
+    minimumPriceCents: null,
+  },
+};
+
+const detailedInputs = {
+  submissionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+  category: "product" as const,
+  fixedMonthlyExpensesCents: 300_000,
+  proLaboreIncluded: true,
+  proLaboreCents: 100_000,
+  taxRateBasisPoints: 500,
+  cardFeeRateBasisPoints: 200,
+  items: [
+    {
+      id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+      position: 0,
+      name: "Caneca",
+      kind: "resale" as const,
+      unitSalePriceCents: 5_500,
+      monthlySalesVolume: 200,
+      purchaseUnitCostCents: 1_500,
+      packagingUnitCostCents: 100,
+    },
+  ],
+};
+const detailedResults = calculateDetailedDiagnosis(detailedInputs);
+const validDetailedSnapshot = {
   schemaVersion: 1,
   calculationVersion: 1,
   contentVersion: 1,
@@ -609,699 +248,130 @@ const validDetailedProductSnapshot = {
   currency: "BRL",
   unit: "mix",
   policy: {
-    attentionBandBasisPoints: 2000,
-    concentrationThresholdBasisPoints: 4500,
+    concentrationThresholdBasisPoints: 4_500,
     weeklyDivisorHundredths: 433,
     operatingDaysPerWeek: 6,
-    proLaboreIncluded: false,
+    proLaboreIncluded: true,
   },
-  inputs: {
-    submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-    category: "product",
-    fixedMonthlyExpensesCents: 200,
-    proLaboreIncluded: false,
-    proLaboreCents: 0,
-    taxRateBasisPoints: 0,
-    cardFeeRateBasisPoints: 0,
-    items: [
-      {
-        id: "11111111-1111-4111-8111-111111111111",
-        position: 0,
-        name: "Caneca",
-        kind: "resale" as const,
-        unitSalePriceCents: 1000,
-        monthlySalesVolume: 1,
-        purchaseUnitCostCents: 500,
-        packagingUnitCostCents: 0,
-      },
-    ],
-  },
-  results: {
-    effectiveFixedCostCents: 200,
-    isPartial: false,
-    missingVolumeItemIds: [],
-    items: [
-      {
-        itemId: "11111111-1111-4111-8111-111111111111",
-        variableUnitCostCents: 500,
-        feeAmountCents: 0,
-        netUnitRevenueCents: 1000,
-        unitContributionCents: 500,
-        contributionMarginBasisPoints: 5000,
-        monthlyGrossRevenueCents: 1000,
-        monthlyContributionCents: 500,
-        breakEvenUnitPriceCents: 500,
-        directLoss: false,
-      },
-    ],
-    monthlyGrossRevenueCents: 1000,
-    monthlyFeeAmountCents: 0,
-    monthlyVariableCostCents: 500,
-    monthlyNetRevenueCents: 1000,
-    monthlyCostCents: 700,
-    monthlyContributionCents: 500,
-    monthlyResultCents: 300,
-    mixContributionMarginBasisPoints: 5000,
-    finalMarginBasisPoints: 3000,
-    breakEvenRevenueCents: 400,
-    verdict: "adequate_margin",
-    priority: "volume",
-  },
-  executiveSummary,
-  sections: sections.slice(0, 4),
+  inputs: detailedInputs,
+  results: detailedResults,
+  executiveSummary: executiveSummary(["margin", "price"]),
+  sections: sections([
+    "break_even",
+    "hidden_cost",
+    "margin_diagnosis",
+    "sales_goal",
+  ]),
   guidance: [],
 };
 
-const validDetailedDigitalSnapshot = {
-  ...validDetailedProductSnapshot,
-  scenario: "digital",
-  inputs: {
-    ...validDetailedProductSnapshot.inputs,
-    items: validDetailedProductSnapshot.inputs.items.map((item) => ({
-      ...item,
-      kind: "digital" as const,
-      packagingUnitCostCents: 0,
-    })),
-  },
-};
+describe("current report snapshot schemas", () => {
+  it("accepts exactly the four corrected current contracts", () => {
+    expect(parseServiceReportSnapshot(validServiceSnapshot)).toBeTruthy();
+    expect(parseProductReportSnapshot(validProductSnapshot)).toBeTruthy();
+    expect(parseProductionReportSnapshot(validProductionSnapshot)).toBeTruthy();
+    expect(parseDetailedReportSnapshot(validDetailedSnapshot)).toBeTruthy();
 
-function detailedDigitalSnapshotWithItems(
-  items: DetailedDiagnosisCommand["items"],
-) {
-  const inputs = {
-    ...validDetailedDigitalSnapshot.inputs,
-    items,
-  } as DetailedDiagnosisCommand;
-  return {
-    ...validDetailedDigitalSnapshot,
-    inputs,
-    results: calculateDetailedDiagnosis(inputs),
-  };
-}
-
-describe("category-versioned report snapshots", () => {
-  it("parses the detailed V1 contract without shadowing quick snapshots", () => {
-    const parsed = parseReportSnapshot(validDetailedProductSnapshot);
-
-    expect(parsed).toEqual(validDetailedProductSnapshot);
-    expect(isDetailedReportSnapshot(parsed)).toBe(true);
-    expect(
-      isDetailedReportSnapshot(parseReportSnapshot(validProductSnapshot)),
-    ).toBe(false);
-  });
-
-  it("extends detailed V1 to a coherent Digital scenario", () => {
-    expect(parseReportSnapshot(validDetailedProductSnapshot)).toEqual(
-      validDetailedProductSnapshot,
-    );
-    expect(parseReportSnapshot(validDetailedDigitalSnapshot)).toEqual(
-      validDetailedDigitalSnapshot,
-    );
-  });
-
-  it("rejects mismatched, mixed, manufacturing, and packaged Digital items", () => {
-    const digitalItem = validDetailedDigitalSnapshot.inputs.items[0];
-    if (!digitalItem) throw new Error("expected Digital item");
-    const resaleItem = validDetailedProductSnapshot.inputs.items[0];
-    if (!resaleItem) throw new Error("expected resale item");
-
-    expect(() =>
-      parseReportSnapshot({
-        ...validDetailedDigitalSnapshot,
-        scenario: "resale",
-      }),
-    ).toThrow();
-    expect(() =>
-      parseReportSnapshot(
-        detailedDigitalSnapshotWithItems([
-          digitalItem,
-          {
-            ...resaleItem,
-            id: "22222222-2222-4222-8222-222222222222",
-            position: 1,
-          },
-        ]),
-      ),
-    ).toThrow();
-    expect(() =>
-      parseReportSnapshot(
-        detailedDigitalSnapshotWithItems([
-          {
-            id: digitalItem.id,
-            position: 0,
-            name: "Curso",
-            kind: "manufacturing",
-            costMode: "summarized",
-            unitSalePriceCents: 1000,
-            monthlySalesVolume: 1,
-            productionUnitCostCents: 500,
-          },
-        ]),
-      ),
-    ).toThrow();
-    expect(() =>
-      parseReportSnapshot(
-        detailedDigitalSnapshotWithItems([
-          { ...digitalItem, packagingUnitCostCents: 1 },
-        ]),
-      ),
-    ).toThrow();
-  });
-
-  it.each([
-    {
-      ...validDetailedProductSnapshot,
-      category: "production",
-    },
-    {
-      ...validDetailedProductSnapshot,
-      inputs: {
-        ...validDetailedProductSnapshot.inputs,
-        items: [
-          {
-            ...validDetailedProductSnapshot.inputs.items[0],
-            position: 1,
-          },
-        ],
-      },
-    },
-    {
-      ...validDetailedProductSnapshot,
-      results: {
-        ...validDetailedProductSnapshot.results,
-        isPartial: true,
-      },
-    },
-    {
-      ...validDetailedProductSnapshot,
-      results: {
-        ...validDetailedProductSnapshot.results,
-        monthlyGrossRevenueCents: 999,
-      },
-    },
-  ])("rejects an incoherent detailed V1 contract %#", (snapshot) => {
-    expect(() => parseReportSnapshot(snapshot)).toThrow();
-  });
-
-  it("preserves the complete Service V2 shape", () => {
-    expect(parseServiceReportSnapshot(validServiceSnapshot)).toEqual(
+    for (const snapshot of [
       validServiceSnapshot,
-    );
-    expect(parseReportSnapshot(validServiceSnapshot).category).toBe("service");
-  });
-
-  it("parses the complete Service V3 shape", () => {
-    expect(parseServiceReportSnapshot(validServiceV3Snapshot)).toEqual(
-      validServiceV3Snapshot,
-    );
-    expect(parseReportSnapshot(validServiceV3Snapshot)).toEqual(
-      validServiceV3Snapshot,
-    );
-  });
-
-  it("parses V5 as current without dropping V2, V3, or V4", () => {
-    expect(parseCurrentServiceReportSnapshot(validServiceV5Snapshot)).toEqual(
-      validServiceV5Snapshot,
-    );
-    expect(parseServiceReportSnapshot(validServiceV4Snapshot)).toEqual(
-      validServiceV4Snapshot,
-    );
-    expect(parseReportSnapshot(validServiceV5Snapshot)).toEqual(
-      validServiceV5Snapshot,
-    );
-  });
-
-  it("rejects removed or incorrectly ordered V5 content", () => {
-    expect(() =>
-      parseCurrentServiceReportSnapshot({
-        ...validServiceV5Snapshot,
-        sections: validServiceV4Snapshot.sections,
-      }),
-    ).toThrow();
-    expect(() =>
-      parseCurrentServiceReportSnapshot({
-        ...validServiceV5Snapshot,
-        executiveSummary: {
-          ...validServiceV5Snapshot.executiveSummary,
-          facts: [...validServiceV5Snapshot.executiveSummary.facts].reverse(),
-        },
-      }),
-    ).toThrow();
-  });
-
-  it("rejects incoherent V5 source and canonical values", () => {
-    expect(() =>
-      parseCurrentServiceReportSnapshot({
-        ...validServiceV5Snapshot,
-        source: {
-          ...validServiceV5Snapshot.source,
-          currentPriceCents: 9000,
-        },
-      }),
-    ).toThrow();
-  });
-
-  it.each([
-    { ...validServiceV3Snapshot, schemaVersion: 4 },
-    { ...validServiceV3Snapshot, calculationVersion: 1 },
-    {
-      ...validServiceV3Snapshot,
-      inputs: {
-        desiredMonthlyIncomeCents: 400000,
-        fixedMonthlyExpensesCents: 200000,
-        workHoursPeriod: "month",
-        workPeriodMinutes: 6000,
-        monthlyWorkMinutes: 6000,
-        weeklyWorkDays: 5,
-        hourlyRateCents: 0,
-        minuteRateCents: 0,
-        appointmentRateCents: 8000,
-        appointmentDurationMinutes: 50,
-        taxRateBasisPoints: 600,
-        cardFeeRateBasisPoints: 200,
-      },
-    },
-  ])("rejects an invalid Service V3 contract %#", (snapshot) => {
-    expect(() => parseReportSnapshot(snapshot)).toThrow();
-  });
-
-  it("parses a complete Product V1 snapshot", () => {
-    expect(parseProductReportSnapshot(validProductSnapshot)).toEqual(
       validProductSnapshot,
-    );
-    expect(parseReportSnapshot(validProductSnapshot).category).toBe("product");
-  });
-
-  it("parses a partial Product V1 snapshot", () => {
-    expect(parseReportSnapshot(partialProductSnapshot)).toEqual(
-      partialProductSnapshot,
-    );
-  });
-
-  it("parses the current Product content version without dropping V1/V2", () => {
-    expect(parseCurrentProductReportSnapshot(validProductV4Snapshot)).toEqual(
-      validProductV4Snapshot,
-    );
-    expect(parseProductReportSnapshot(validProductV2Snapshot)).toEqual(
-      validProductV2Snapshot,
-    );
-    expect(parseReportSnapshot(validProductV3Snapshot)).toEqual(
-      validProductV3Snapshot,
-    );
-    expect(parseReportSnapshot(validProductV4Snapshot)).toEqual(
-      validProductV4Snapshot,
-    );
-  });
-
-  it("accepts Digital Product V3 and rejects incoherent current contracts", () => {
-    const digital = {
-      ...validProductV3Snapshot,
-      scenario: "digital",
-      inputs: { ...validProductV3Snapshot.inputs, productKind: "digital" },
-    };
-    expect(parseProductReportSnapshot(digital)).toEqual(digital);
-    for (const invalid of [
-      { ...validProductV3Snapshot, scenario: "digital" },
-      { ...validProductV3Snapshot, calculationVersion: 1 },
-      {
-        ...validProductV3Snapshot,
-        results: {
-          ...validProductV3Snapshot.results,
-          monthlySalesVolumeUsed: 0,
-        },
-      },
-      {
-        ...validProductV3Snapshot,
-        results: { ...validProductV3Snapshot.results, targetPriceCents: 11112 },
-      },
-      {
-        ...validProductV3Snapshot,
-        results: { ...validProductV3Snapshot.results, verdict: "above_target" },
-      },
-    ])
-      expect(() => parseProductReportSnapshot(invalid)).toThrow();
-  });
-
-  it("parses a complete composed Production V1 snapshot", () => {
-    expect(parseProductionReportSnapshot(validProductionSnapshot)).toEqual(
       validProductionSnapshot,
-    );
-    expect(parseReportSnapshot(validProductionSnapshot).category).toBe(
-      "production",
-    );
+      validDetailedSnapshot,
+    ]) {
+      expect(parseReportSnapshot(snapshot)).toBeTruthy();
+    }
   });
 
-  it("parses a summarized partial Production V1 snapshot", () => {
-    expect(parseReportSnapshot(partialProductionSnapshot)).toEqual(
-      partialProductionSnapshot,
-    );
-  });
+  it("accepts positive_result across all four report families", () => {
+    expect(serviceResults.verdict).toBe("positive_result");
+    expect(productResults.verdict).toBe("positive_result");
+    expect(detailedResults.verdict).toBe("positive_result");
 
-  it("parses the current Production content version without dropping V1/V2", () => {
+    const positiveProductionInputs = {
+      ...productionInputs,
+      monthlySalesVolume: 200,
+      proLaboreIncluded: true,
+      proLaboreCents: 100_000,
+    };
+    const positiveResults = calculateProductionReport({
+      submissionId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      ...positiveProductionInputs,
+    });
     expect(
-      parseCurrentProductionReportSnapshot(validProductionV4Snapshot),
-    ).toEqual(validProductionV4Snapshot);
-    expect(parseProductionReportSnapshot(validProductionV2Snapshot)).toEqual(
-      validProductionV2Snapshot,
-    );
-    expect(parseReportSnapshot(validProductionV3Snapshot)).toEqual(
-      validProductionV3Snapshot,
-    );
-    expect(parseReportSnapshot(validProductionV4Snapshot)).toEqual(
-      validProductionV4Snapshot,
-    );
-  });
-
-  it("rejects incoherent Production V3 contracts", () => {
-    for (const invalid of [
-      {
-        ...validProductionV3Snapshot,
-        results: {
-          ...validProductionV3Snapshot.results,
-          monthlySalesVolumeUsed: 0,
-        },
-      },
-      {
-        ...validProductionV3Snapshot,
-        results: {
-          ...validProductionV3Snapshot.results,
-          targetPriceCents: 11112,
-        },
-      },
-      {
-        ...validProductionV3Snapshot,
-        results: {
-          ...validProductionV3Snapshot.results,
-          verdict: "incomplete_volume",
-        },
-      },
-      {
-        ...validProductionV3Snapshot,
-        inputs: {
-          ...validProductionV3Snapshot.inputs,
-          materialUnitCostCents: 3001,
-        },
-      },
-    ])
-      expect(() => parseProductionReportSnapshot(invalid)).toThrow();
-  });
-
-  it.each([
-    { ...validProductV2Snapshot, contentVersion: 3 },
-    { ...validProductionV2Snapshot, contentVersion: 3 },
-    { ...validServiceV4Snapshot, contentVersion: 5 },
-    {
-      ...validServiceSnapshot,
-      contentVersion: 4,
-    },
-  ])("rejects an unsupported content-version tuple %#", (snapshot) => {
-    expect(() => parseReportSnapshot(snapshot)).toThrow();
-  });
-
-  it.each([
-    { ...validProductSnapshot, schemaVersion: 2 },
-    { ...validProductSnapshot, scenario: "hour" },
-    { ...validProductSnapshot, unknownField: true },
-    { ...validServiceSnapshot, schemaVersion: 1 },
-    { ...validServiceSnapshot, category: "unknown" },
-  ])("rejects unsupported or unknown top-level contract %#", (snapshot) => {
-    expect(() => parseReportSnapshot(snapshot)).toThrow();
-  });
-
-  it("rejects noninteger money", () => {
-    expect(() =>
-      parseReportSnapshot({
-        ...validProductSnapshot,
-        results: {
-          ...validProductSnapshot.results,
-          currentPriceCents: 10000.5,
-        },
-      }),
-    ).toThrow();
-  });
-
-  it("rejects Product-only verdicts inside Service V2", () => {
-    expect(() =>
-      parseReportSnapshot({
-        ...validServiceSnapshot,
-        results: {
-          ...validServiceSnapshot.results,
-          verdict: "direct_loss",
-        },
-      }),
-    ).toThrow();
-  });
-
-  it("rejects complete fields inside a partial Product report", () => {
-    expect(() =>
-      parseReportSnapshot({
-        ...partialProductSnapshot,
-        results: {
-          ...partialProductSnapshot.results,
-          unitProfitCents: 0,
-        },
-      }),
-    ).toThrow();
-  });
-
-  it("rejects mismatched Product partial flags", () => {
-    expect(() =>
-      parseReportSnapshot({
-        ...partialProductSnapshot,
-        discountSimulationBase: {
-          ...partialProductSnapshot.discountSimulationBase,
-          partial: false,
-        },
-      }),
-    ).toThrow();
-  });
-
-  it.each(["sections", "facts", "answers"] as const)(
-    "rejects reordered or duplicated Product %s",
-    (field) => {
-      const snapshot = structuredClone(validProductSnapshot);
-
-      if (field === "sections") {
-        snapshot.sections[1] = {
-          ...snapshot.sections[1],
-          key: "break_even",
-        };
-      } else {
-        snapshot.executiveSummary[field] = [
-          snapshot.executiveSummary[field][1],
-          snapshot.executiveSummary[field][0],
-          ...snapshot.executiveSummary[field].slice(2),
-        ] as never;
-      }
-
-      expect(() => parseReportSnapshot(snapshot)).toThrow();
-    },
-  );
-
-  it("rejects compensation and Product scalar inconsistencies", () => {
-    expect(() =>
-      parseReportSnapshot({
-        ...validProductSnapshot,
-        inputs: {
-          ...validProductSnapshot.inputs,
-          proLaboreIncluded: false,
-        },
-      }),
-    ).toThrow();
-
-    expect(() =>
-      parseReportSnapshot({
-        ...validProductSnapshot,
-        results: {
-          ...validProductSnapshot.results,
-          currentPriceCents: 10001,
-        },
-      }),
-    ).toThrow();
-  });
-
-  it("rejects a mismatched Product simulator base", () => {
-    expect(() =>
-      parseReportSnapshot({
-        ...validProductSnapshot,
-        discountSimulationBase: {
-          ...validProductSnapshot.discountSimulationBase,
-          unitCostCents: 5000,
-        },
-      }),
-    ).toThrow();
-  });
-
-  it.each([
-    { ...validProductionSnapshot, schemaVersion: 2 },
-    { ...validProductionSnapshot, scenario: "resale" },
-    { ...validProductionSnapshot, category: "product" },
-    { ...validProductionSnapshot, unit: "hour" },
-    { ...validProductionSnapshot, unknownField: true },
-  ])("rejects unsupported Production top-level contract %#", (snapshot) => {
-    expect(() => parseReportSnapshot(snapshot)).toThrow();
-  });
-
-  it("rejects a Product snapshot relabeled as Production", () => {
-    expect(() =>
-      parseReportSnapshot({
-        ...validProductSnapshot,
-        category: "production",
-        scenario: "manufacturing",
-      }),
-    ).toThrow();
-  });
-
-  it("rejects noninteger Production money", () => {
-    expect(() =>
-      parseReportSnapshot({
-        ...validProductionSnapshot,
-        results: {
-          ...validProductionSnapshot.results,
-          currentPriceCents: 10000.5,
-        },
-      }),
-    ).toThrow();
-  });
-
-  it("rejects summarized Production with any component", () => {
-    expect(() =>
-      parseReportSnapshot({
-        ...partialProductionSnapshot,
-        inputs: {
-          ...partialProductionSnapshot.inputs,
-          materialUnitCostCents: 5000,
-        },
-      }),
-    ).toThrow();
-  });
-
-  it.each([{ materialUnitCostCents: null }, { packagingUnitCostCents: -1 }])(
-    "rejects invalid composed Production component %#",
-    (component) => {
-      expect(() =>
-        parseReportSnapshot({
-          ...validProductionSnapshot,
-          inputs: {
-            ...validProductionSnapshot.inputs,
-            ...component,
-          },
-        }),
-      ).toThrow();
-    },
-  );
-
-  it("rejects a mismatched composed Production total", () => {
-    expect(() =>
-      parseReportSnapshot({
-        ...validProductionSnapshot,
-        inputs: {
-          ...validProductionSnapshot.inputs,
-          otherVariableUnitCostCents: 501,
-        },
-      }),
-    ).toThrow();
-  });
-
-  it("rejects Production compensation inconsistencies", () => {
-    expect(() =>
-      parseReportSnapshot({
-        ...validProductionSnapshot,
-        inputs: {
-          ...validProductionSnapshot.inputs,
-          proLaboreIncluded: false,
-        },
-      }),
-    ).toThrow();
-
-    expect(() =>
-      parseReportSnapshot({
+      parseProductionReportSnapshot({
         ...validProductionSnapshot,
         policy: {
           ...validProductionSnapshot.policy,
-          proLaboreIncluded: false,
+          proLaboreIncluded: true,
+        },
+        inputs: positiveProductionInputs,
+        results: positiveResults,
+        discountSimulationBase: {
+          originalPriceCents: positiveResults.currentPriceCents,
+          unitCostCents: positiveResults.totalUnitCostCents,
+          totalFeeBasisPoints: positiveResults.totalFeeBasisPoints,
+          minimumPriceCents: positiveResults.minimumPriceCents,
         },
       }),
-    ).toThrow();
+    ).toBeTruthy();
   });
 
-  it("rejects Production result cost and price mismatches", () => {
+  it("rejects target, attention, partial-floor, and historical fields", () => {
     expect(() =>
-      parseReportSnapshot({
-        ...validProductionSnapshot,
-        results: {
-          ...validProductionSnapshot.results,
-          productionUnitCostCents: 5001,
+      parseProductReportSnapshot({
+        ...validProductSnapshot,
+        policy: {
+          ...validProductSnapshot.policy,
+          attentionBandBasisPoints: 2_000,
         },
       }),
     ).toThrow();
-
     expect(() =>
-      parseReportSnapshot({
-        ...validProductionSnapshot,
-        results: {
-          ...validProductionSnapshot.results,
-          currentPriceCents: 10001,
-        },
+      parseServiceReportSnapshot({
+        ...validServiceSnapshot,
+        results: { ...serviceResults, targetPriceCents: 9_999 },
       }),
     ).toThrow();
-  });
-
-  it("rejects incomplete Production fields when volume is present", () => {
     expect(() =>
-      parseReportSnapshot({
-        ...validProductionSnapshot,
-        results: {
-          ...validProductionSnapshot.results,
-          unitProfitCents: null,
-        },
-      }),
-    ).toThrow();
-  });
-
-  it("rejects complete Production fields when volume is absent", () => {
-    expect(() =>
-      parseReportSnapshot({
-        ...partialProductionSnapshot,
-        results: {
-          ...partialProductionSnapshot.results,
-          realMarginBasisPoints: 0,
-        },
-      }),
-    ).toThrow();
-  });
-
-  it("rejects a mismatched Production simulator base", () => {
-    expect(() =>
-      parseReportSnapshot({
+      parseProductionReportSnapshot({
         ...validProductionSnapshot,
         discountSimulationBase: {
           ...validProductionSnapshot.discountSimulationBase,
-          unitCostCents: 5000,
+          partial: true,
+          unitCostCents: 1_600,
+          minimumPriceCents: 1_721,
         },
+      }),
+    ).toThrow();
+    expect(() =>
+      parseProductReportSnapshot({ ...validProductSnapshot, schemaVersion: 2 }),
+    ).toThrow();
+  });
+
+  it("rejects results that do not match normalized inputs", () => {
+    expect(() =>
+      parseProductReportSnapshot({
+        ...validProductSnapshot,
+        results: { ...productResults, monthlyResultCents: 1 },
       }),
     ).toThrow();
   });
 
-  it.each(["sections", "facts", "answers"] as const)(
-    "rejects reordered or duplicated Production %s",
-    (field) => {
-      const snapshot = structuredClone(validProductionSnapshot);
+  it("requires unavailable discount values when positive volume is missing", () => {
+    expect(productionResults.totalUnitCostCents).toBeNull();
+    expect(validProductionSnapshot.discountSimulationBase).toMatchObject({
+      unitCostCents: null,
+      minimumPriceCents: null,
+    });
+    expect(parseProductionReportSnapshot(validProductionSnapshot)).toBeTruthy();
+  });
 
-      if (field === "sections") {
-        snapshot.sections[1] = {
-          ...snapshot.sections[1],
-          key: "break_even",
-        };
-      } else {
-        snapshot.executiveSummary[field] = [
-          snapshot.executiveSummary[field][1],
-          snapshot.executiveSummary[field][0],
-          ...snapshot.executiveSummary[field].slice(2),
-        ] as never;
-      }
-
-      expect(() => parseReportSnapshot(snapshot)).toThrow();
-    },
-  );
+  it("keeps the four nullable detailed full-cost item fields", () => {
+    expect(detailedResults.items[0]).toMatchObject({
+      fixedAllocationCents: 2_000,
+      totalUnitCostCents: 3_600,
+      unitProfitCents: 1_515,
+      realMarginBasisPoints: 2_755,
+    });
+  });
 });

@@ -2,140 +2,74 @@ import { describe, expect, it } from "vitest";
 
 import { calculateDetailedDiagnosis } from "@/modules/detailed-diagnosis/domain/calculate-detailed-diagnosis";
 import type { DetailedDiagnosisCommand } from "@/modules/detailed-diagnosis/types";
-
 import { buildDetailedReportContent } from "./build-detailed-report-content";
 
 const command: DetailedDiagnosisCommand = {
   submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   category: "product",
-  fixedMonthlyExpensesCents: 1_000,
-  proLaboreIncluded: false,
-  proLaboreCents: 0,
+  fixedMonthlyExpensesCents: 300_000,
+  proLaboreIncluded: true,
+  proLaboreCents: 100_000,
   taxRateBasisPoints: 500,
-  cardFeeRateBasisPoints: 300,
+  cardFeeRateBasisPoints: 200,
   items: [
     {
       id: "11111111-1111-4111-8111-111111111111",
       position: 0,
       name: "Caneca",
       kind: "resale",
-      unitSalePriceCents: 5_000,
-      monthlySalesVolume: 10,
-      purchaseUnitCostCents: 2_000,
-      packagingUnitCostCents: 200,
-    },
-    {
-      id: "22222222-2222-4222-8222-222222222222",
-      position: 1,
-      name: "Caderno",
-      kind: "resale",
-      unitSalePriceCents: 3_000,
-      monthlySalesVolume: 5,
-      purchaseUnitCostCents: 1_000,
+      unitSalePriceCents: 5_500,
+      monthlySalesVolume: 200,
+      purchaseUnitCostCents: 1_500,
       packagingUnitCostCents: 100,
     },
   ],
 };
 
 describe("buildDetailedReportContent", () => {
-  it("builds the quick hierarchy for a complete multi-item report", () => {
-    const calculation = calculateDetailedDiagnosis(command);
-    const content = buildDetailedReportContent(command, calculation);
-
-    expect(content.executiveSummary).toMatchObject({
-      headline: "Seus produtos dão lucro?",
-      answers: [
-        { key: "profitability", question: "Estou ganhando dinheiro?" },
-        {
-          key: "price_sufficiency",
-          question: "Meus preços pagam os gastos?",
-        },
-        { key: "immediate_action", question: "O que preciso fazer agora?" },
-      ],
-    });
-    expect(content.sections.map((section) => section.key)).toEqual([
-      "break_even",
-      "hidden_cost",
-      "margin_diagnosis",
-      "sales_goal",
-    ]);
-    expect(content.sections.map((section) => section.title)).toEqual([
-      "Seus menores preços sem prejuízo",
-      "O que sai das vendas",
-      "Quanto sobra no mês",
-      "Quanto você precisa vender",
-    ]);
-    expect(content.executiveSummary.facts[1]).toMatchObject({
-      currentLabel: "Faturamento atual",
-      referenceLabel: "Quanto precisa vender para cobrir os gastos",
-    });
-  });
-
-  it("keeps partial business totals unknown and explains the missing volume", () => {
-    const partialCommand: DetailedDiagnosisCommand = {
-      ...command,
-      items: [
-        command.items[0],
-        { ...command.items[1], monthlySalesVolume: null },
-      ],
-    };
-    const calculation = calculateDetailedDiagnosis(partialCommand);
-    const content = buildDetailedReportContent(partialCommand, calculation);
-
-    expect(content.executiveSummary.facts).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ currentValue: "Ainda não calculado" }),
-      ]),
+  it("uses complete item prices and objective positive-result copy", () => {
+    const content = buildDetailedReportContent(
+      command,
+      calculateDetailedDiagnosis(command),
     );
-    expect(
-      content.sections.find(({ key }) => key === "margin_diagnosis")?.body,
-    ).toMatch(/falta informar as vendas/i);
-    expect(JSON.stringify(content)).not.toContain("R$ 500,00");
+    expect(content.executiveSummary.verdict.label).toBe("Resultado positivo");
+    expect(JSON.stringify(content)).toContain(
+      "Cada valor inclui o custo direto, a parte dos gastos do mês",
+    );
+    expect(JSON.stringify(content)).toContain("Quanto sobra a cada R$ 100");
   });
 
-  it("keeps Digital content free of physical-product terminology", () => {
-    const digitalCommand: DetailedDiagnosisCommand = {
+  it("shows one unknown item's monthly quantity without a weekly split", () => {
+    const partial = {
       ...command,
-      items: command.items.map((item) =>
-        item.kind === "manufacturing"
-          ? item
-          : { ...item, kind: "digital" as const, packagingUnitCostCents: 0 },
-      ),
+      items: [{ ...command.items[0], monthlySalesVolume: null }],
     };
     const content = buildDetailedReportContent(
-      digitalCommand,
-      calculateDetailedDiagnosis(digitalCommand),
+      partial,
+      calculateDetailedDiagnosis(partial),
     );
-
-    expect(JSON.stringify(content)).not.toMatch(
-      /fornecedor|embalagem|ficha técnica|fabricação/i,
-    );
+    const sales = content.sections.find(({ key }) => key === "sales_goal");
+    expect(sales?.body).toContain("Como há um único item");
+    expect(sales?.body).not.toMatch(/por semana|por dia/);
   });
 
-  it("uses the plural Production headline", () => {
-    const productionCommand: DetailedDiagnosisCommand = {
+  it("explains why a multi-item partial quantity is unavailable", () => {
+    const partial = {
       ...command,
-      category: "production",
-      items: command.items.map((item) => ({
-        id: item.id,
-        position: item.position,
-        name: item.name,
-        kind: "manufacturing" as const,
-        costMode: "summarized" as const,
-        unitSalePriceCents: item.unitSalePriceCents,
-        monthlySalesVolume: item.monthlySalesVolume,
-        productionUnitCostCents:
-          item.kind === "resale"
-            ? item.purchaseUnitCostCents + item.packagingUnitCostCents
-            : 0,
-      })),
+      items: [
+        { ...command.items[0], monthlySalesVolume: 10 },
+        {
+          ...command.items[0],
+          id: "22222222-2222-4222-8222-222222222222",
+          position: 1,
+          monthlySalesVolume: null,
+        },
+      ],
     };
-
-    expect(
-      buildDetailedReportContent(
-        productionCommand,
-        calculateDetailedDiagnosis(productionCommand),
-      ).executiveSummary.headline,
-    ).toBe("Suas produções dão lucro?");
+    const content = buildDetailedReportContent(
+      partial,
+      calculateDetailedDiagnosis(partial),
+    );
+    expect(JSON.stringify(content)).toContain("inventar uma proporção");
   });
 });

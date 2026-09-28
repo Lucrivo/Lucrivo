@@ -82,7 +82,7 @@ function verifyLocalSeed(): void {
     };
     if (
       result.users !== 97 ||
-      result.reports !== 295 ||
+      result.reports !== 288 ||
       result.sentinel !== 1
     ) {
       throw new Error(
@@ -90,7 +90,7 @@ function verifyLocalSeed(): void {
       );
     }
     console.log(
-      "Local demo seed verified: 97 users, 295 reports, sentinel preserved.",
+      "Local demo seed verified: 97 users, 288 reports, sentinel preserved.",
     );
   } finally {
     run(cleanup!);

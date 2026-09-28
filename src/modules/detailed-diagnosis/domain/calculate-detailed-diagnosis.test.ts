@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import type { DetailedDiagnosisCommand, DetailedProductItem } from "../types";
 import {
-  DETAILED_ATTENTION_BAND_BASIS_POINTS,
   calculateDetailedDiagnosis,
+  classifyDetailedDiagnosis,
 } from "./calculate-detailed-diagnosis";
 
 const firstItem: DetailedProductItem = {
@@ -11,10 +11,10 @@ const firstItem: DetailedProductItem = {
   position: 0,
   name: "Caneca",
   kind: "resale",
-  unitSalePriceCents: 1000,
-  monthlySalesVolume: 1,
-  purchaseUnitCostCents: 500,
-  packagingUnitCostCents: 0,
+  unitSalePriceCents: 5_500,
+  monthlySalesVolume: 100,
+  purchaseUnitCostCents: 1_500,
+  packagingUnitCostCents: 100,
 };
 
 const secondItem: DetailedProductItem = {
@@ -30,46 +30,42 @@ function command(
   return {
     submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
     category: "product",
-    fixedMonthlyExpensesCents: 200,
-    proLaboreIncluded: false,
-    proLaboreCents: 0,
-    taxRateBasisPoints: 0,
-    cardFeeRateBasisPoints: 0,
-    items: [firstItem],
+    fixedMonthlyExpensesCents: 300_000,
+    proLaboreIncluded: true,
+    proLaboreCents: 100_000,
+    taxRateBasisPoints: 500,
+    cardFeeRateBasisPoints: 200,
+    items: [firstItem, secondItem],
     ...overrides,
   };
 }
 
 describe("calculateDetailedDiagnosis", () => {
-  it("keeps the internal attention band at 20%", () => {
-    expect(DETAILED_ATTENTION_BAND_BASIS_POINTS).toBe(2_000);
-    expect(
-      calculateDetailedDiagnosis(command({ fixedMonthlyExpensesCents: 400 })),
-    ).toMatchObject({ finalMarginBasisPoints: 1000, verdict: "tight_margin" });
-  });
+  it("shares one fixed allocation across every known unit and subtracts fixed cost once", () => {
+    const result = calculateDetailedDiagnosis(command());
 
-  it("aggregates digital direct cost without hidden packaging", () => {
-    const result = calculateDetailedDiagnosis(
-      command({
-        fixedMonthlyExpensesCents: 0,
-        items: [
-          {
-            ...firstItem,
-            kind: "digital",
-            purchaseUnitCostCents: 300,
-            packagingUnitCostCents: 900,
-          },
-        ],
-      }),
-    );
-
+    expect(result.items).toHaveLength(2);
+    expect(result.items[0]).toMatchObject({
+      fixedAllocationCents: 2_000,
+      totalUnitCostCents: 3_600,
+      unitProfitCents: 1_515,
+      realMarginBasisPoints: 2_755,
+    });
+    expect(result.items[1]).toMatchObject({
+      fixedAllocationCents: 2_000,
+      totalUnitCostCents: 3_600,
+      unitProfitCents: 1_515,
+      realMarginBasisPoints: 2_755,
+    });
     expect(result).toMatchObject({
-      monthlyVariableCostCents: 300,
-      monthlyContributionCents: 700,
+      monthlyContributionCents: 703_000,
+      monthlyResultCents: 303_000,
+      verdict: "positive_result",
+      priority: "volume",
     });
   });
 
-  it("keeps item economics but hides every mix-dependent result when partial", () => {
+  it("makes every item complete-cost field unavailable when any volume is missing", () => {
     const result = calculateDetailedDiagnosis(
       command({
         items: [firstItem, { ...secondItem, monthlySalesVolume: null }],
@@ -77,53 +73,25 @@ describe("calculateDetailedDiagnosis", () => {
     );
 
     expect(result).toMatchObject({
-      effectiveFixedCostCents: 200,
       isPartial: true,
-      missingVolumeItemIds: [secondItem.id],
-      monthlyGrossRevenueCents: null,
-      monthlyFeeAmountCents: null,
-      monthlyVariableCostCents: null,
-      monthlyNetRevenueCents: null,
-      monthlyCostCents: null,
-      monthlyContributionCents: null,
       monthlyResultCents: null,
-      mixContributionMarginBasisPoints: null,
-      finalMarginBasisPoints: null,
-      breakEvenRevenueCents: null,
       verdict: "incomplete_volume",
       priority: "data",
     });
-    expect(result.items).toHaveLength(2);
-    expect(result.items[0].unitContributionCents).toBe(500);
-    expect(result.items[1].unitContributionCents).toBe(500);
+    for (const item of result.items) {
+      expect(item).toMatchObject({
+        fixedAllocationCents: null,
+        totalUnitCostCents: null,
+        unitProfitCents: null,
+        realMarginBasisPoints: null,
+        breakEvenUnitPriceCents: null,
+      });
+    }
   });
 
-  it("keeps direct loss as the priority even when the mix is partial", () => {
+  it("treats known total volume zero as a no-sales month without allocation", () => {
     const result = calculateDetailedDiagnosis(
       command({
-        items: [
-          {
-            ...firstItem,
-            purchaseUnitCostCents: 1000,
-            monthlySalesVolume: null,
-          },
-        ],
-      }),
-    );
-
-    expect(result).toMatchObject({
-      isPartial: true,
-      verdict: "direct_loss",
-      priority: "cost",
-    });
-  });
-
-  it("treats all explicit zero volumes as a known no-sales month", () => {
-    const result = calculateDetailedDiagnosis(
-      command({
-        fixedMonthlyExpensesCents: 300,
-        proLaboreIncluded: true,
-        proLaboreCents: 200,
         items: [
           { ...firstItem, monthlySalesVolume: 0 },
           { ...secondItem, monthlySalesVolume: 0 },
@@ -132,78 +100,47 @@ describe("calculateDetailedDiagnosis", () => {
     );
 
     expect(result).toMatchObject({
-      effectiveFixedCostCents: 500,
-      isPartial: false,
-      monthlyGrossRevenueCents: 0,
-      monthlyFeeAmountCents: 0,
-      monthlyVariableCostCents: 0,
-      monthlyNetRevenueCents: 0,
-      monthlyCostCents: 500,
-      monthlyContributionCents: 0,
-      monthlyResultCents: -500,
-      mixContributionMarginBasisPoints: null,
+      monthlyResultCents: -400_000,
       finalMarginBasisPoints: null,
-      breakEvenRevenueCents: null,
       verdict: "no_sales",
-      priority: "volume",
     });
+    expect(
+      result.items.every((item) => item.fixedAllocationCents === null),
+    ).toBe(true);
   });
 
-  it.each([
-    [600, "operational_loss", "price"],
-    [500, "break_even", "margin"],
-    [400, "tight_margin", "margin"],
-    [200, "adequate_margin", "volume"],
-  ] as const)(
-    "classifies fixed cost %i as %s",
-    (fixedMonthlyExpensesCents, verdict, priority) => {
-      const result = calculateDetailedDiagnosis(
-        command({ fixedMonthlyExpensesCents }),
-      );
+  it("ignores residual pro-labore when disabled", () => {
+    expect(
+      calculateDetailedDiagnosis(
+        command({ proLaboreIncluded: false, proLaboreCents: 999_999 }),
+      ).effectiveFixedCostCents,
+    ).toBe(300_000);
+  });
 
-      expect(result).toMatchObject({ verdict, priority });
+  it.each([100, 1_000, 3_000])(
+    "classifies a positive result at %s basis points objectively",
+    (finalMarginBasisPoints) => {
+      expect(
+        classifyDetailedDiagnosis({
+          hasDirectLoss: false,
+          isPartial: false,
+          monthlyGrossRevenueCents: 100,
+          monthlyResultCents: 1,
+          finalMarginBasisPoints,
+        }),
+      ).toEqual({ verdict: "positive_result", priority: "volume" });
     },
   );
 
-  it("sums a complete mix and calculates margins and break-even revenue", () => {
-    const result = calculateDetailedDiagnosis(
-      command({
-        fixedMonthlyExpensesCents: 500,
-        items: [
-          { ...firstItem, monthlySalesVolume: 2 },
-          { ...secondItem, monthlySalesVolume: 3 },
-        ],
+  it("classifies break-even without margin priority", () => {
+    expect(
+      classifyDetailedDiagnosis({
+        hasDirectLoss: false,
+        isPartial: false,
+        monthlyGrossRevenueCents: 100,
+        monthlyResultCents: 0,
+        finalMarginBasisPoints: 0,
       }),
-    );
-
-    expect(result).toMatchObject({
-      monthlyGrossRevenueCents: 5000,
-      monthlyFeeAmountCents: 0,
-      monthlyVariableCostCents: 2500,
-      monthlyNetRevenueCents: 5000,
-      monthlyCostCents: 3000,
-      monthlyContributionCents: 2500,
-      monthlyResultCents: 2000,
-      mixContributionMarginBasisPoints: 5000,
-      finalMarginBasisPoints: 4000,
-      breakEvenRevenueCents: 1000,
-      verdict: "adequate_margin",
-    });
-  });
-
-  it("returns no break-even revenue for a non-positive mix contribution", () => {
-    const result = calculateDetailedDiagnosis(
-      command({
-        items: [
-          {
-            ...firstItem,
-            purchaseUnitCostCents: 1000,
-          },
-        ],
-      }),
-    );
-
-    expect(result.breakEvenRevenueCents).toBeNull();
-    expect(result.verdict).toBe("direct_loss");
+    ).toEqual({ verdict: "break_even", priority: "volume" });
   });
 });

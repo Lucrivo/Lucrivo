@@ -71,15 +71,7 @@ const verdictPresentation: Record<
     badge: "warning",
     icon: CircleAlertIcon,
   },
-  tight_margin: {
-    badge: "warning",
-    icon: CircleAlertIcon,
-  },
-  adequate_margin: {
-    badge: "success",
-    icon: CircleCheckIcon,
-  },
-  above_target: {
+  positive_result: {
     badge: "success",
     icon: CircleCheckIcon,
   },

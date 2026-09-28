@@ -16,16 +16,13 @@ function DetailedItemBreakdown({
   return (
     <section aria-labelledby="item-comparison-title" className="grid gap-3">
       <div className="grid gap-1 px-1">
-        <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
-          Comparação
-        </p>
         <h2 id="item-comparison-title" className="text-2xl">
-          Quais itens ajudam ou prejudicam o resultado?
+          Como cada item participa do resultado?
         </h2>
         <p className="text-muted-foreground text-sm leading-6">
           {contextLabel === "por unidade"
-            ? "Sobra por unidade. Complete as vendas mensais para comparar o impacto no mês."
-            : "Resultado no mês, considerando quanto cada item vendeu."}
+            ? "Valor deixado por venda para ajudar a pagar os gastos do mês. Informe as quantidades para comparar o resultado mensal."
+            : "Resultado estimado de cada item no mês, considerando a quantidade informada e sua parte dos gastos mensais."}
         </p>
       </div>
       <Card className="border-border/70 shadow-sm">
@@ -33,10 +30,12 @@ function DetailedItemBreakdown({
         <CardContent>
           <ul className="grid gap-5">
             {comparison.map((entry) => (
-              <li key={entry.id} className="grid gap-2">
+              <li key={entry.id} className="grid min-w-0 gap-2">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-sm">
-                  <span className="font-medium">{entry.name}</span>
-                  <span className="tabular-nums">
+                  <span className="overflow-wrap-anywhere min-w-0 font-medium">
+                    {entry.name}
+                  </span>
+                  <span className="break-words tabular-nums">
                     {entry.amountLabel} {entry.contextLabel}
                   </span>
                 </div>

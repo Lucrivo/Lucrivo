@@ -11,15 +11,15 @@ import {
 const baseCommand: ServiceDiagnosisCommand = {
   submissionId: "550e8400-e29b-41d4-a716-446655440000",
   pricingMethod: "appointment",
-  desiredMonthlyIncomeCents: 400000,
-  fixedMonthlyExpensesCents: 200000,
+  desiredMonthlyIncomeCents: 400_000,
+  fixedMonthlyExpensesCents: 200_000,
   workHoursPeriod: "month",
-  workPeriodMinutes: 6000,
-  monthlyWorkMinutes: 6000,
+  workPeriodMinutes: 6_000,
+  monthlyWorkMinutes: 6_000,
   weeklyWorkDays: 5,
   hourlyRateCents: 0,
   minuteRateCents: 0,
-  appointmentRateCents: 8000,
+  appointmentRateCents: 8_000,
   appointmentDurationMinutes: 50,
   materialUnitCostCents: 0,
   taxRateBasisPoints: 600,
@@ -27,179 +27,85 @@ const baseCommand: ServiceDiagnosisCommand = {
 };
 
 describe("calculateServiceReport", () => {
-  it.each([
-    {
-      name: "appointment",
-      command: baseCommand,
-      expected: {
-        unit: "appointment",
-        hourCostCents: 6000,
-        unitCostCents: 5000,
-        currentPriceCents: 8000,
-        netRevenueCents: 7360,
-        unitProfitCents: 2360,
-        realMarginBasisPoints: 2950,
-        minimumPriceCents: 5435,
-        targetPriceCents: 6494,
-        monthlySalesGoal: 82,
-        weeklySalesGoal: 19,
-        dailySalesGoal: 4,
-        verdict: "above_target",
-        priority: "volume",
-      },
-    },
-    {
-      name: "hour",
-      command: {
-        ...baseCommand,
-        pricingMethod: "hour" as const,
-        hourlyRateCents: 8000,
-        appointmentRateCents: 0,
-        appointmentDurationMinutes: 0,
-      },
-      expected: {
-        unit: "hour",
-        hourCostCents: 6000,
-        unitCostCents: 6000,
-        currentPriceCents: 8000,
-        netRevenueCents: 7360,
-        unitProfitCents: 1360,
-        realMarginBasisPoints: 1700,
-        minimumPriceCents: 6522,
-        targetPriceCents: 7793,
-        monthlySalesGoal: 82,
-        weeklySalesGoal: 19,
-        dailySalesGoal: 4,
-        verdict: "adequate_margin",
-        priority: "volume",
-      },
-    },
-    {
-      name: "minute",
-      command: {
-        ...baseCommand,
-        pricingMethod: "minute" as const,
-        minuteRateCents: 250,
-        appointmentRateCents: 0,
-        appointmentDurationMinutes: 40,
-      },
-      expected: {
-        unit: "appointment",
-        hourCostCents: 6000,
-        unitCostCents: 4000,
-        currentPriceCents: 10000,
-        netRevenueCents: 9200,
-        unitProfitCents: 5200,
-        realMarginBasisPoints: 5200,
-        minimumPriceCents: 4348,
-        targetPriceCents: 5195,
-        monthlySalesGoal: 66,
-        weeklySalesGoal: 16,
-        dailySalesGoal: 4,
-        verdict: "above_target",
-        priority: "volume",
-      },
-    },
-  ])("calculates the $name scenario exactly", ({ command, expected }) => {
-    expect(calculateServiceReport(command)).toEqual(
-      expect.objectContaining(expected),
-    );
+  it("calculates full service cost without a target price", () => {
+    const result = calculateServiceReport(baseCommand);
+
+    expect(result).toEqual({
+      unit: "appointment",
+      totalFeeBasisPoints: 800,
+      monthlyWorkMinutes: 6_000,
+      monthlyCostCents: 600_000,
+      hourCostCents: 6_000,
+      structureUnitCostCents: 5_000,
+      materialUnitCostCents: 0,
+      unitCostCents: 5_000,
+      currentPriceCents: 8_000,
+      netRevenueCents: 7_360,
+      unitContributionCents: 7_360,
+      unitProfitCents: 2_360,
+      realMarginBasisPoints: 2_950,
+      minimumPriceCents: 5_435,
+      monthlySalesGoal: 82,
+      weeklySalesGoal: 19,
+      dailySalesGoal: 4,
+      breakEvenDiscountPercent: 32,
+      verdict: "positive_result",
+      priority: "volume",
+    });
+    expect(result).not.toHaveProperty("targetPriceCents");
   });
 
-  it("returns unavailable capacity-dependent references for zero capacity", () => {
+  it("keeps capacity-dependent values unavailable when work capacity is missing", () => {
     expect(
       calculateServiceReport({ ...baseCommand, monthlyWorkMinutes: 0 }),
-    ).toEqual(
-      expect.objectContaining({
-        hourCostCents: null,
-        unitCostCents: null,
-        unitProfitCents: null,
-        realMarginBasisPoints: null,
-        minimumPriceCents: null,
-        targetPriceCents: null,
-      }),
-    );
+    ).toMatchObject({
+      hourCostCents: null,
+      structureUnitCostCents: null,
+      unitCostCents: null,
+      unitProfitCents: null,
+      realMarginBasisPoints: null,
+      minimumPriceCents: null,
+      breakEvenDiscountPercent: null,
+    });
   });
 
-  it("returns unavailable price references when combined fees reach 100%", () => {
+  it("keeps missing price and direct loss objective", () => {
+    expect(
+      calculateServiceReport({ ...baseCommand, appointmentRateCents: 0 }),
+    ).toMatchObject({ verdict: "missing_price", priority: "price" });
     expect(
       calculateServiceReport({
         ...baseCommand,
-        taxRateBasisPoints: 8000,
-        cardFeeRateBasisPoints: 2000,
+        appointmentRateCents: 1_000,
+        materialUnitCostCents: 1_000,
       }),
-    ).toEqual(
-      expect.objectContaining({
-        netRevenueCents: 0,
-        minimumPriceCents: null,
-        targetPriceCents: null,
-        monthlySalesGoal: null,
-        weeklySalesGoal: null,
-        dailySalesGoal: null,
-      }),
-    );
+    ).toMatchObject({ verdict: "direct_loss", priority: "cost" });
   });
 
-  it("adds material directly and bases the sales goal on contribution", () => {
+  it("classifies a negative full result as operational loss", () => {
+    expect(
+      calculateServiceReport({ ...baseCommand, appointmentRateCents: 4_000 }),
+    ).toMatchObject({
+      unitProfitCents: -1_320,
+      verdict: "operational_loss",
+      priority: "price",
+    });
+  });
+
+  it("classifies exact full-cost break-even without margin priority", () => {
     expect(
       calculateServiceReport({
         ...baseCommand,
-        materialUnitCostCents: 1000,
+        appointmentRateCents: 5_000,
+        taxRateBasisPoints: 0,
+        cardFeeRateBasisPoints: 0,
       }),
-    ).toEqual(
-      expect.objectContaining({
-        hourCostCents: 6000,
-        structureUnitCostCents: 5000,
-        materialUnitCostCents: 1000,
-        unitCostCents: 6000,
-        currentPriceCents: 8000,
-        netRevenueCents: 7360,
-        unitContributionCents: 6360,
-        unitProfitCents: 1360,
-        realMarginBasisPoints: 1700,
-        minimumPriceCents: 6522,
-        targetPriceCents: 7793,
-        monthlySalesGoal: 95,
-        weeklySalesGoal: 22,
-        dailySalesGoal: 5,
-        verdict: "adequate_margin",
-        priority: "volume",
-      }),
-    );
-  });
-
-  it("classifies non-positive contribution as a direct loss", () => {
-    expect(
-      calculateServiceReport({
-        ...baseCommand,
-        appointmentRateCents: 1000,
-        materialUnitCostCents: 1000,
-      }),
-    ).toEqual(
-      expect.objectContaining({
-        unitContributionCents: -80,
-        monthlySalesGoal: null,
-        weeklySalesGoal: null,
-        dailySalesGoal: null,
-        verdict: "direct_loss",
-        priority: "cost",
-      }),
-    );
-  });
-
-  it("prioritizes price but preserves the contribution-based goal", () => {
-    expect(
-      calculateServiceReport({ ...baseCommand, appointmentRateCents: 4000 }),
-    ).toEqual(
-      expect.objectContaining({
-        unitProfitCents: -1320,
-        verdict: "operational_loss",
-        priority: "price",
-        monthlySalesGoal: 164,
-        weeklySalesGoal: 38,
-        dailySalesGoal: 8,
-      }),
-    );
+    ).toMatchObject({
+      unitProfitCents: 0,
+      realMarginBasisPoints: 0,
+      verdict: "break_even",
+      priority: "volume",
+    });
   });
 });
 
@@ -207,27 +113,15 @@ describe("classifyServiceMargin", () => {
   it.each([
     [0, null, null, "missing_price"],
     [100, 0, null, "direct_loss"],
-    [100, 1, 0, "operational_loss"],
-    [100, 1, 1449, "tight_margin"],
-    [100, 1, 1450, "tight_margin"],
-    [100, 1, 1500, "adequate_margin"],
-    [100, 1, 1800, "adequate_margin"],
-    [100, 1, 1801, "above_target"],
+    [100, 1, -1, "operational_loss"],
+    [100, 1, 0, "break_even"],
+    [100, 1, 100, "positive_result"],
+    [100, 1, 1_000, "positive_result"],
+    [100, 1, 3_000, "positive_result"],
   ] as const)(
     "classifies price %s, contribution %s, and margin %s as %s",
-    (
-      currentPriceCents,
-      unitContributionCents,
-      realMarginBasisPoints,
-      expected,
-    ) => {
-      expect(
-        classifyServiceMargin(
-          currentPriceCents,
-          unitContributionCents,
-          realMarginBasisPoints,
-        ),
-      ).toBe(expected);
+    (price, contribution, margin, expected) => {
+      expect(classifyServiceMargin(price, contribution, margin)).toBe(expected);
     },
   );
 });
@@ -237,9 +131,8 @@ describe("selectServicePriority", () => {
     ["missing_price", "price"],
     ["direct_loss", "cost"],
     ["operational_loss", "price"],
-    ["tight_margin", "margin"],
-    ["adequate_margin", "volume"],
-    ["above_target", "volume"],
+    ["break_even", "volume"],
+    ["positive_result", "volume"],
   ] as const)("maps %s to %s", (verdict, expected) => {
     expect(selectServicePriority(verdict)).toBe(expected);
   });

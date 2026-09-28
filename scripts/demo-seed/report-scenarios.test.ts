@@ -2,42 +2,28 @@ import { describe, expect, it } from "vitest";
 
 import { buildSeedReportIds, currentReportTemplates } from "./report-scenarios";
 
-const expected = [
-  ["service", "quick", "missing_price"],
-  ["service", "quick", "direct_loss"],
-  ["service", "quick", "operational_loss"],
-  ["service", "quick", "tight_margin"],
-  ["service", "quick", "adequate_margin"],
-  ["service", "quick", "above_target"],
-  ["product", "quick", "direct_loss"],
-  ["product", "quick", "incomplete_volume"],
-  ["product", "quick", "no_sales"],
-  ["product", "quick", "operational_loss"],
-  ["product", "quick", "break_even"],
-  ["product", "quick", "tight_margin"],
-  ["product", "quick", "adequate_margin"],
-  ["production", "quick", "direct_loss"],
-  ["production", "quick", "incomplete_volume"],
-  ["production", "quick", "no_sales"],
-  ["production", "quick", "operational_loss"],
-  ["production", "quick", "break_even"],
-  ["production", "quick", "tight_margin"],
-  ["production", "quick", "adequate_margin"],
-  ["product", "detailed", "direct_loss"],
-  ["product", "detailed", "incomplete_volume"],
-  ["product", "detailed", "no_sales"],
-  ["product", "detailed", "operational_loss"],
-  ["product", "detailed", "break_even"],
-  ["product", "detailed", "tight_margin"],
-  ["product", "detailed", "adequate_margin"],
-  ["production", "detailed", "direct_loss"],
-  ["production", "detailed", "incomplete_volume"],
-  ["production", "detailed", "no_sales"],
-  ["production", "detailed", "operational_loss"],
-  ["production", "detailed", "break_even"],
-  ["production", "detailed", "tight_margin"],
-  ["production", "detailed", "adequate_margin"],
+const objectiveVerdicts = [
+  "direct_loss",
+  "incomplete_volume",
+  "no_sales",
+  "operational_loss",
+  "break_even",
+  "positive_result",
 ] as const;
+
+const expected = [
+  ...[
+    "missing_price",
+    "direct_loss",
+    "operational_loss",
+    "break_even",
+    "positive_result",
+  ].map((verdict) => ["service", "quick", verdict]),
+  ...objectiveVerdicts.map((verdict) => ["product", "quick", verdict]),
+  ...objectiveVerdicts.map((verdict) => ["production", "quick", verdict]),
+  ...objectiveVerdicts.map((verdict) => ["product", "detailed", verdict]),
+  ...objectiveVerdicts.map((verdict) => ["production", "detailed", verdict]),
+];
 
 function argumentValue(
   report: ReturnType<(typeof currentReportTemplates)[number]["materialize"]>,
@@ -47,7 +33,7 @@ function argumentValue(
 }
 
 describe("current report scenario catalog", () => {
-  it("contains the exact 34-family/verdict matrix", () => {
+  it("contains the exact 29 objective category/verdict combinations", () => {
     expect(
       currentReportTemplates.map((item) => [
         item.category,
@@ -56,7 +42,7 @@ describe("current report scenario catalog", () => {
       ]),
     ).toEqual(expected);
     expect(new Set(currentReportTemplates.map((item) => item.key)).size).toBe(
-      34,
+      29,
     );
   });
 
@@ -73,12 +59,16 @@ describe("current report scenario catalog", () => {
       expect(report.submissionId).toBe(
         buildSeedReportIds(0, index).submissionId,
       );
-      expect(argumentValue(report, "p_report_snapshot")).toBeTruthy();
+      const snapshot = argumentValue(report, "p_report_snapshot");
+      expect(snapshot).toBeTruthy();
+      expect(JSON.stringify(snapshot)).not.toMatch(
+        /targetMarginBasisPoints|attentionBandBasisPoints|targetPriceCents|priceReferencesPartial/,
+      );
     });
-    expect(new Set(reports.map((report) => report.submissionId)).size).toBe(34);
+    expect(new Set(reports.map((report) => report.submissionId)).size).toBe(29);
   });
 
-  it("uses the planned detailed item counts and covers every guidance key", () => {
+  it("uses the planned detailed item counts", () => {
     const detailed = currentReportTemplates
       .filter((template) => template.analysisMode === "detailed")
       .map((template, index) =>
@@ -88,34 +78,15 @@ describe("current report scenario catalog", () => {
       (report) =>
         argumentValue(report, "p_report_snapshot") as {
           inputs: { items: unknown[] };
-          guidance: Array<{ key: string }>;
         },
     );
 
     expect(
-      snapshots.slice(0, 7).map((snapshot) => snapshot.inputs.items.length),
-    ).toEqual([1, 2, 3, 5, 8, 10, 12]);
+      snapshots.slice(0, 6).map((snapshot) => snapshot.inputs.items.length),
+    ).toEqual([1, 2, 3, 5, 8, 10]);
     expect(
-      snapshots.slice(7).map((snapshot) => snapshot.inputs.items.length),
-    ).toEqual([12, 10, 8, 5, 3, 2, 1]);
-    expect(
-      [
-        ...new Set(
-          snapshots.flatMap((snapshot) =>
-            snapshot.guidance.map(({ key }) => key),
-          ),
-        ),
-      ].sort(),
-    ).toEqual(
-      [
-        "missing_volume",
-        "direct_loss",
-        "concentration",
-        "best_unit_contribution",
-        "high_volume_low_margin",
-        "business_result",
-      ].sort(),
-    );
+      snapshots.slice(6).map((snapshot) => snapshot.inputs.items.length),
+    ).toEqual([10, 8, 5, 3, 2, 1]);
   });
 
   it("includes summarized, technical-sheet, and mixed Production reports", () => {

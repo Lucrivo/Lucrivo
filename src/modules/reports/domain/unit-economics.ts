@@ -1,8 +1,4 @@
-import {
-  ceilDivide,
-  multiplyDivideRound,
-  roundDivide,
-} from "./integer-math";
+import { ceilDivide, multiplyDivideRound, roundDivide } from "./integer-math";
 
 type DirectUnitEconomics = {
   feeAmountCents: number;

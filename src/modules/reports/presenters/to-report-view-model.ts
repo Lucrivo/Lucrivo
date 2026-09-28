@@ -1,3 +1,5 @@
+import type { PlainLanguageHelpContent } from "@/components/shared/plain-language-help";
+
 import {
   formatBasisPoints,
   formatCurrency,
@@ -5,26 +7,20 @@ import {
   formatReportScenario,
   formatReportUnit,
 } from "../formatters";
-import type { PlainLanguageHelpContent } from "@/components/shared/plain-language-help";
+import { isDetailedReportSnapshot } from "../schemas/report-snapshot.schema";
 import type {
   ProductReportSnapshot,
-  ProductReportSnapshotV3,
-  ProductReportSnapshotV4,
   ProductionReportSnapshot,
-  ProductionReportSnapshotV3,
-  ProductionReportSnapshotV4,
   QuickReportSnapshot,
   ReportDiscountSimulationBase,
   ReportSnapshot,
   ServiceReportSnapshot,
-  ServiceReportSnapshotV5,
 } from "../types";
 import {
   getReportLanguageProfile,
   type ReportLanguageProfile,
 } from "./report-language";
 import { toComfortableReportAnswers } from "./to-comfortable-report-answers";
-import { isDetailedReportSnapshot } from "../schemas/report-snapshot.schema";
 
 type ReportNumberViewModel = {
   key:
@@ -32,7 +28,6 @@ type ReportNumberViewModel = {
     | "margin"
     | "profit"
     | "minimum"
-    | "target"
     | "sales"
     | "revenue"
     | "costs"
@@ -43,14 +38,6 @@ type ReportNumberViewModel = {
   supportingText?: string;
   help?: PlainLanguageHelpContent;
 };
-type LegacyProductSnapshot = Exclude<
-  ProductReportSnapshot,
-  ProductReportSnapshotV3 | ProductReportSnapshotV4
->;
-type LegacyProductionSnapshot = Exclude<
-  ProductionReportSnapshot,
-  ProductionReportSnapshotV3 | ProductionReportSnapshotV4
->;
 
 type ReportExecutiveSummaryViewModel = Omit<
   QuickReportSnapshot["executiveSummary"],
@@ -86,7 +73,6 @@ type ReportViewModel = {
   discountSimulationBase: ReportDiscountSimulationBase;
   discountSimulationContext: {
     category: QuickReportSnapshot["category"];
-    mode: "legacy_target" | "service_attention" | "unit_attention";
   };
 };
 
@@ -94,148 +80,54 @@ const marginHelp = {
   triggerLabel: "Entenda este valor",
   title: "Quanto sobra a cada R$ 100",
   description:
-    "Mostra quanto fica no negócio depois de pagar os gastos usados neste cálculo.",
-  technicalTerm: "margem",
+    "Mostra quanto fica depois de pagar todos os valores considerados neste diagnóstico.",
+  technicalTerm: "margem real",
 } as const satisfies PlainLanguageHelpContent;
 
-const serviceMarginHelp = {
-  triggerLabel: "Entenda esta faixa",
-  title: "Quanto sobra a cada R$ 100",
-  description:
-    "Abaixo de R$ 15 a cada R$ 100 é uma faixa de atenção: o preço paga os gastos, mas deixa pouca folga. Não é uma recomendação igual para todos os negócios.",
-} as const satisfies PlainLanguageHelpContent;
-
-const serviceMinimumPriceHelp = {
+const minimumPriceHelp = {
   triggerLabel: "Como calculamos?",
-  title: "Menor preço sem prejuízo",
+  title: "Menor preço para não ficar no prejuízo",
   description:
-    "Este valor inclui os gastos mensais, quanto você quer receber, os materiais e as taxas que informou.",
-} as const satisfies PlainLanguageHelpContent;
-
-const attentionBandHelp = {
-  triggerLabel: "Entenda esta faixa",
-  title: "Quanto sobra a cada R$ 100",
-  description:
-    "Abaixo de R$ 20 a cada R$ 100 é uma faixa de atenção do Lucrivo. Ela não é uma recomendação igual para todos os negócios.",
+    "Inclui o custo da unidade, as cobranças da venda e a parte dos gastos mensais quando existe uma quantidade informada.",
 } as const satisfies PlainLanguageHelpContent;
 
 const unknownVolumeHelp = {
   triggerLabel: "Por que está indisponível?",
-  title: "Resultado mensal ainda não calculado",
+  title: "Falta uma quantidade para completar o cálculo",
   description:
-    "A quantidade vendida não foi informada. Por isso, o resultado mensal permanece indisponível e a meta mensal aparece apenas como referência.",
+    "Informe uma quantidade maior que zero para dividir os gastos do mês e calcular o custo completo, o menor preço e o resultado.",
 } as const satisfies PlainLanguageHelpContent;
 
 const digitalCostHelp = {
   triggerLabel: "Entenda este custo",
-  title: "Custo por venda",
+  title: "Quanto esta unidade custa",
   description:
-    "Um produto digital pode não ter custo direto. Quando existe, este valor considera a cobrança informada para cada venda.",
-} as const satisfies PlainLanguageHelpContent;
-
-function currentMinimumPriceHelp(
-  category: "product" | "production",
-  scenario: "resale" | "digital" | "manufacturing",
-  partial: boolean,
-): PlainLanguageHelpContent {
-  const directCost =
-    scenario === "digital"
-      ? "custo por venda"
-      : category === "production"
-        ? "custo de fabricação"
-        : "custo de compra";
-  return {
-    triggerLabel: "Como calculamos?",
-    title: partial
-      ? "Menor preço antes dos gastos mensais"
-      : "Menor preço sem prejuízo",
-    description: partial
-      ? `Este valor inclui o ${directCost} e as cobranças da venda. Os gastos mensais ficam de fora até existir uma quantidade vendida.`
-      : `Este valor inclui o ${directCost}, as cobranças da venda e a parte dos gastos mensais por unidade.`,
-  };
-}
-
-const targetPriceHelp = {
-  triggerLabel: "Como calculamos?",
-  title: "Preço para alcançar a meta",
-  description:
-    "É o preço calculado com seus gastos, taxas e a meta definida neste diagnóstico.",
-  technicalTerm: "preço-alvo",
-} as const satisfies PlainLanguageHelpContent;
-
-const partialTargetPriceHelp = {
-  ...targetPriceHelp,
-  description:
-    "É o preço calculado com seus gastos, taxas e a meta definida neste diagnóstico. Como você não informou as vendas do mês, os gastos mensais ainda não entram neste valor.",
+    "Um produto digital pode não ter custo direto. Quando existe, consideramos o valor informado para cada venda.",
 } as const satisfies PlainLanguageHelpContent;
 
 function optionalCurrency(
   value: number | null,
-  unavailable = "Indisponível",
+  unavailable = "Ainda não calculado",
 ): string {
   return value === null ? unavailable : formatCurrency(value);
 }
 
 function optionalPercentage(
   value: number | null,
-  unavailable = "Indisponível",
+  unavailable = "Ainda não calculado",
 ): string {
   return value === null ? unavailable : formatBasisPoints(value);
 }
 
-function toServiceNumbers(
-  snapshot: ServiceReportSnapshot,
-  plainLanguage: boolean,
-): ReportNumberViewModel[] {
-  const unitLabel = formatReportUnit(snapshot.unit);
-
-  return [
-    {
-      key: "price",
-      label: "Preço atual",
-      value: formatCurrency(snapshot.results.currentPriceCents),
-    },
-    {
-      key: "margin",
-      label: plainLanguage ? "Quanto sobra a cada R$ 100" : "Margem real",
-      value: optionalPercentage(snapshot.results.realMarginBasisPoints),
-      ...(plainLanguage ? { help: marginHelp } : {}),
-    },
-    {
-      key: "profit",
-      label: plainLanguage
-        ? `Quanto sobra por ${unitLabel}`
-        : `Lucro por ${unitLabel}`,
-      value: optionalCurrency(snapshot.results.unitProfitCents),
-    },
-    {
-      key: "minimum",
-      label: plainLanguage ? "Menor preço sem prejuízo" : "Preço mínimo",
-      value: optionalCurrency(snapshot.results.minimumPriceCents),
-    },
-    {
-      key: "target",
-      label: plainLanguage
-        ? "Preço para alcançar a meta (15%)"
-        : "Preço-alvo (15%)",
-      value: optionalCurrency(snapshot.results.targetPriceCents),
-      ...(plainLanguage ? { help: targetPriceHelp } : {}),
-    },
-  ];
+function salesSupportingText(
+  weekly: number | null,
+  daily: number | null,
+): string | undefined {
+  if (weekly === null) return undefined;
+  return `${weekly} por semana${daily === null ? "" : ` e ${daily} por dia`}.`;
 }
 
-function isNormalizedServiceSnapshot(
-  snapshot: ReportSnapshot,
-): snapshot is ServiceReportSnapshotV5 {
-  return (
-    snapshot.category === "service" &&
-    snapshot.schemaVersion === 4 &&
-    snapshot.calculationVersion === 3 &&
-    snapshot.contentVersion === 5
-  );
-}
-
-function sourcePriceLabel(snapshot: ServiceReportSnapshotV5): string {
+function sourcePriceLabel(snapshot: ServiceReportSnapshot): string {
   const labels = {
     minute: "minuto",
     hour: "hora",
@@ -248,7 +140,7 @@ function sourcePriceLabel(snapshot: ServiceReportSnapshotV5): string {
 }
 
 function normalizationHelp(
-  snapshot: ServiceReportSnapshotV5,
+  snapshot: ServiceReportSnapshot,
 ): PlainLanguageHelpContent | undefined {
   if (
     snapshot.source.pricingMethod === "hour" ||
@@ -256,7 +148,6 @@ function normalizationHelp(
   ) {
     return undefined;
   }
-
   return {
     triggerLabel: "Entenda a conversão",
     title: "Por que mostramos o valor por hora?",
@@ -264,25 +155,24 @@ function normalizationHelp(
   };
 }
 
-function toNormalizedServiceNumbers(
-  snapshot: ServiceReportSnapshotV5,
+function toServiceNumbers(
+  snapshot: ServiceReportSnapshot,
 ): ReportNumberViewModel[] {
-  const unit = snapshot.unit === "hour" ? "horas" : "atendimentos";
-  const monthly = snapshot.results.monthlySalesGoal;
-  const weekly = snapshot.results.weeklySalesGoal;
-  const daily = snapshot.results.dailySalesGoal;
+  const plural = snapshot.unit === "hour" ? "horas" : "atendimentos";
+  const singular = formatReportUnit(snapshot.unit);
   const priceHelp = normalizationHelp(snapshot);
-  const supporting =
-    weekly === null
-      ? undefined
-      : `${weekly} por semana${daily === null ? "" : ` e ${daily} por dia de trabalho`}.`;
-
   return [
     {
       key: "sales",
       label: "Quantidade de serviços por mês",
-      value: monthly === null ? "Indisponível" : `${monthly} ${unit}`,
-      supportingText: supporting,
+      value:
+        snapshot.results.monthlySalesGoal === null
+          ? "Ainda não calculado"
+          : `${snapshot.results.monthlySalesGoal} ${plural}`,
+      supportingText: salesSupportingText(
+        snapshot.results.weeklySalesGoal,
+        snapshot.results.dailySalesGoal,
+      ),
     },
     {
       key: "price",
@@ -292,274 +182,92 @@ function toNormalizedServiceNumbers(
     },
     {
       key: "minimum",
-      label: "Menor preço sem prejuízo",
+      label: "Menor preço para não ficar no prejuízo",
       value: optionalCurrency(snapshot.results.minimumPriceCents),
-      help: serviceMinimumPriceHelp,
+      help: minimumPriceHelp,
+    },
+    {
+      key: "profit",
+      label: `Quanto sobra por ${singular}`,
+      value: optionalCurrency(snapshot.results.unitProfitCents),
     },
     {
       key: "margin",
       label: "Quanto sobra a cada R$ 100",
-      value:
-        snapshot.results.realMarginBasisPoints === null
-          ? "Indisponível"
-          : formatCurrency(snapshot.results.realMarginBasisPoints),
-      help: serviceMarginHelp,
+      value: optionalPercentage(snapshot.results.realMarginBasisPoints),
+      help: marginHelp,
     },
   ];
 }
 
-function isCurrentProductSnapshot(
-  snapshot: ProductReportSnapshot,
-): snapshot is ProductReportSnapshotV3 | ProductReportSnapshotV4 {
-  return (
-    (snapshot.schemaVersion === 2 &&
-      snapshot.calculationVersion === 2 &&
-      snapshot.contentVersion === 3) ||
-    (snapshot.schemaVersion === 3 &&
-      snapshot.calculationVersion === 3 &&
-      snapshot.contentVersion === 4)
-  );
-}
-
-function isCurrentProductionSnapshot(
-  snapshot: ProductionReportSnapshot,
-): snapshot is ProductionReportSnapshotV3 | ProductionReportSnapshotV4 {
-  return (
-    (snapshot.schemaVersion === 2 &&
-      snapshot.calculationVersion === 2 &&
-      snapshot.contentVersion === 3) ||
-    (snapshot.schemaVersion === 3 &&
-      snapshot.calculationVersion === 3 &&
-      snapshot.contentVersion === 4)
-  );
-}
-
-function toCurrentProductNumbers(
-  snapshot: ProductReportSnapshotV3 | ProductReportSnapshotV4,
+function toUnitNumbers(
+  snapshot: ProductReportSnapshot | ProductionReportSnapshot,
 ): ReportNumberViewModel[] {
-  const partial = snapshot.results.priceReferencesPartial;
-  const monthly = snapshot.results.monthlySalesGoal;
-  return [
+  const isProduct = snapshot.category === "product";
+  const volumeMissing =
+    snapshot.results.monthlySalesVolumeUsed === null ||
+    snapshot.results.monthlySalesVolumeUsed === 0;
+  const unitWord = isProduct ? "vendas" : "unidades";
+  const numbers: ReportNumberViewModel[] = [
     {
       key: "sales",
       label: "Vendas necessárias no mês",
-      value: monthly === null ? "Indisponível" : `${monthly} vendas`,
-      supportingText:
-        monthly === null || snapshot.results.weeklySalesGoal === null
-          ? undefined
-          : `${snapshot.results.weeklySalesGoal} por semana e ${snapshot.results.dailySalesGoal ?? 0} por dia.`,
+      value:
+        snapshot.results.monthlySalesGoal === null
+          ? "Ainda não calculado"
+          : `${snapshot.results.monthlySalesGoal} ${unitWord}`,
+      supportingText: salesSupportingText(
+        snapshot.results.weeklySalesGoal,
+        snapshot.results.dailySalesGoal,
+      ),
     },
     {
       key: "price",
       label: "Preço atual",
       value: formatCurrency(snapshot.results.currentPriceCents),
-      ...(snapshot.scenario === "digital" &&
+      ...(isProduct &&
+      snapshot.scenario === "digital" &&
       snapshot.results.purchaseUnitCostCents === 0
         ? { help: digitalCostHelp }
         : {}),
     },
     {
       key: "minimum",
-      label: partial
-        ? "Menor preço antes dos gastos mensais"
-        : "Menor preço sem prejuízo",
+      label: "Menor preço para não ficar no prejuízo",
       value: optionalCurrency(snapshot.results.minimumPriceCents),
-      help: currentMinimumPriceHelp("product", snapshot.scenario, partial),
-    },
-    {
-      key: "margin",
-      label: "Quanto sobra a cada R$ 100",
-      value: optionalPercentage(
-        snapshot.results.realMarginBasisPoints,
-        snapshot.results.monthlySalesVolumeUsed === null
-          ? "Ainda não calculado"
-          : "Sem vendas para calcular",
-      ),
-      help: attentionBandHelp,
-    },
-    {
-      key: "profit",
-      label: "Resultado do mês",
-      value: optionalCurrency(
-        snapshot.results.monthlyResultCents,
-        "Ainda não calculado",
-      ),
-      ...(partial ? { help: unknownVolumeHelp } : {}),
-    },
-  ];
-}
-
-function toCurrentProductionNumbers(
-  snapshot: ProductionReportSnapshotV3 | ProductionReportSnapshotV4,
-): ReportNumberViewModel[] {
-  const partial = snapshot.results.priceReferencesPartial;
-  const monthly = snapshot.results.monthlySalesGoal;
-  return [
-    {
-      key: "sales",
-      label: "Vendas necessárias no mês",
-      value: monthly === null ? "Indisponível" : `${monthly} unidades`,
       supportingText:
-        monthly === null || snapshot.results.weeklySalesGoal === null
-          ? undefined
-          : `${snapshot.results.weeklySalesGoal} por semana e ${snapshot.results.dailySalesGoal ?? 0} por dia.`,
-    },
-    {
-      key: "price",
-      label: "Preço atual",
-      value: formatCurrency(snapshot.results.currentPriceCents),
-    },
-    {
-      key: "minimum",
-      label: partial
-        ? "Menor preço antes dos gastos mensais"
-        : "Menor preço sem prejuízo",
-      value: optionalCurrency(snapshot.results.minimumPriceCents),
-      help: currentMinimumPriceHelp("production", "manufacturing", partial),
+        snapshot.results.minimumPriceCents === null && volumeMissing
+          ? "Informe uma quantidade maior que zero para dividir os gastos do mês."
+          : undefined,
+      help:
+        snapshot.results.minimumPriceCents === null && volumeMissing
+          ? unknownVolumeHelp
+          : minimumPriceHelp,
     },
     {
       key: "margin",
       label: "Quanto sobra a cada R$ 100",
-      value: optionalPercentage(
-        snapshot.results.realMarginBasisPoints,
-        snapshot.results.monthlySalesVolumeUsed === null
-          ? "Ainda não calculado"
-          : "Sem vendas para calcular",
-      ),
-      help: attentionBandHelp,
+      value: optionalPercentage(snapshot.results.realMarginBasisPoints),
+      supportingText:
+        snapshot.results.realMarginBasisPoints === null && volumeMissing
+          ? "Informe uma quantidade maior que zero para calcular."
+          : undefined,
+      help: marginHelp,
     },
     {
       key: "profit",
       label: "Resultado do mês",
-      value: optionalCurrency(
-        snapshot.results.monthlyResultCents,
-        "Ainda não calculado",
-      ),
-      ...(partial ? { help: unknownVolumeHelp } : {}),
-    },
-  ];
-}
-
-function toProductNumbers(
-  snapshot: LegacyProductSnapshot,
-  plainLanguage: boolean,
-): ReportNumberViewModel[] {
-  const partial = snapshot.results.priceReferencesPartial;
-
-  return [
-    {
-      key: "price",
-      label: "Preço atual",
-      value: formatCurrency(snapshot.results.currentPriceCents),
-    },
-    {
-      key: "margin",
-      label: plainLanguage ? "Quanto sobra a cada R$ 100" : "Margem real",
-      value: optionalPercentage(snapshot.results.realMarginBasisPoints),
-      ...(plainLanguage ? { help: marginHelp } : {}),
-    },
-    {
-      key: "profit",
-      label: plainLanguage
-        ? partial
-          ? "Quanto sobra antes dos gastos mensais"
-          : "Quanto sobra por unidade"
-        : partial
-          ? "Contribuição por unidade"
-          : "Lucro por unidade",
-      value: optionalCurrency(
-        partial
-          ? snapshot.results.unitContributionCents
-          : snapshot.results.unitProfitCents,
-      ),
-    },
-    {
-      key: "minimum",
-      label: plainLanguage
-        ? partial
-          ? "Menor preço antes dos gastos mensais"
-          : "Menor preço sem prejuízo"
-        : partial
-          ? "Preço mínimo (sem rateio fixo)"
-          : "Preço mínimo",
-      value: optionalCurrency(snapshot.results.minimumPriceCents),
-    },
-    {
-      key: "target",
-      label: plainLanguage
-        ? partial
-          ? "Preço para a meta, sem gastos mensais"
-          : "Preço para alcançar a meta (20%)"
-        : partial
-          ? "Preço-alvo (sem rateio fixo)"
-          : "Preço-alvo (20%)",
-      value: optionalCurrency(snapshot.results.targetPriceCents),
-      ...(plainLanguage
-        ? { help: partial ? partialTargetPriceHelp : targetPriceHelp }
+      value: optionalCurrency(snapshot.results.monthlyResultCents),
+      supportingText:
+        snapshot.results.monthlyResultCents === null
+          ? "Informe uma quantidade para calcular o resultado do mês."
+          : undefined,
+      ...(snapshot.results.monthlyResultCents === null
+        ? { help: unknownVolumeHelp }
         : {}),
     },
   ];
-}
-
-function toProductionNumbers(
-  snapshot: LegacyProductionSnapshot,
-  plainLanguage: boolean,
-): ReportNumberViewModel[] {
-  const partial = snapshot.results.priceReferencesPartial;
-
-  return [
-    {
-      key: "price",
-      label: "Preço atual",
-      value: formatCurrency(snapshot.results.currentPriceCents),
-    },
-    {
-      key: "margin",
-      label: plainLanguage ? "Quanto sobra a cada R$ 100" : "Margem real",
-      value: optionalPercentage(snapshot.results.realMarginBasisPoints),
-      ...(plainLanguage ? { help: marginHelp } : {}),
-    },
-    {
-      key: "profit",
-      label: plainLanguage
-        ? partial
-          ? "Quanto sobra antes dos gastos mensais"
-          : "Quanto sobra por unidade"
-        : partial
-          ? "Contribuição por unidade"
-          : "Lucro por unidade",
-      value: optionalCurrency(
-        partial
-          ? snapshot.results.unitContributionCents
-          : snapshot.results.unitProfitCents,
-      ),
-    },
-    {
-      key: "minimum",
-      label: plainLanguage
-        ? partial
-          ? "Menor preço antes dos gastos mensais"
-          : "Menor preço sem prejuízo"
-        : partial
-          ? "Preço mínimo (sem rateio fixo)"
-          : "Preço mínimo",
-      value: optionalCurrency(snapshot.results.minimumPriceCents),
-    },
-    {
-      key: "target",
-      label: plainLanguage
-        ? partial
-          ? "Preço para a meta, sem gastos mensais"
-          : "Preço para alcançar a meta (20%)"
-        : partial
-          ? "Preço-alvo (sem rateio fixo)"
-          : "Preço-alvo (20%)",
-      value: optionalCurrency(snapshot.results.targetPriceCents),
-      ...(plainLanguage
-        ? { help: partial ? partialTargetPriceHelp : targetPriceHelp }
-        : {}),
-    },
-  ];
+  return numbers;
 }
 
 function toReportViewModel({
@@ -575,46 +283,29 @@ function toReportViewModel({
     throw new Error("detailed_report_requires_dedicated_presenter");
   }
 
-  const unitLabel = formatReportUnit(snapshot.unit);
-  const language = getReportLanguageProfile(snapshot);
-  const normalizedService = isNormalizedServiceSnapshot(snapshot);
-  let title: string;
-  let categoryLabel: string;
-  let numbers: ReportNumberViewModel[];
-
-  switch (snapshot.category) {
-    case "service":
-      title = "Diagnóstico de Serviço";
-      categoryLabel = "Serviço";
-      numbers = normalizedService
-        ? toNormalizedServiceNumbers(snapshot)
-        : toServiceNumbers(snapshot, language.isPlainLanguage);
-      break;
-    case "product":
-      title = "Diagnóstico de Produto";
-      categoryLabel = "Produto";
-      numbers = isCurrentProductSnapshot(snapshot)
-        ? toCurrentProductNumbers(snapshot)
-        : toProductNumbers(snapshot, language.isPlainLanguage);
-      break;
-    case "production":
-      title = "Diagnóstico de Produção";
-      categoryLabel = "Produção";
-      numbers = isCurrentProductionSnapshot(snapshot)
-        ? toCurrentProductionNumbers(snapshot)
-        : toProductionNumbers(snapshot, language.isPlainLanguage);
-      break;
-  }
+  const language = getReportLanguageProfile();
+  const identityByCategory = {
+    service: { title: "Diagnóstico de Serviço", categoryLabel: "Serviço" },
+    product: { title: "Diagnóstico de Produto", categoryLabel: "Produto" },
+    production: {
+      title: "Diagnóstico de Produção",
+      categoryLabel: "Produção",
+    },
+  } as const;
+  const identity = identityByCategory[snapshot.category];
+  const numbers =
+    snapshot.category === "service"
+      ? toServiceNumbers(snapshot)
+      : toUnitNumbers(snapshot);
 
   return {
     language,
     identity: {
       id,
-      title,
-      categoryLabel,
+      ...identity,
       scenarioLabel: formatReportScenario(snapshot.scenario),
       createdAtLabel: formatReportDate(createdAt),
-      unitLabel,
+      unitLabel: formatReportUnit(snapshot.unit),
     },
     executiveSummary: {
       ...snapshot.executiveSummary,
@@ -633,17 +324,7 @@ function toReportViewModel({
         toneLabel: language.toneLabels[section.tone],
       })),
     discountSimulationBase: snapshot.discountSimulationBase,
-    discountSimulationContext: {
-      category: snapshot.category,
-      mode: normalizedService
-        ? "service_attention"
-        : (snapshot.category === "product" &&
-              isCurrentProductSnapshot(snapshot)) ||
-            (snapshot.category === "production" &&
-              isCurrentProductionSnapshot(snapshot))
-          ? "unit_attention"
-          : "legacy_target",
-    },
+    discountSimulationContext: { category: snapshot.category },
   };
 }
 

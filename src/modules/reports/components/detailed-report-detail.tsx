@@ -112,8 +112,9 @@ function DetailedReportDetail({
             Item por item
           </h2>
           <p className="text-muted-foreground max-w-3xl text-sm leading-6">
-            Veja como cada item participa do resultado. Os gastos mensais
-            permanecem no resultado geral e não entram no simulador individual.
+            Veja o custo completo, quanto sobra e como cada venda ajuda a pagar
+            o mês. O simulador usa todos esses valores quando a quantidade foi
+            informada.
           </p>
         </div>
         <Accordion

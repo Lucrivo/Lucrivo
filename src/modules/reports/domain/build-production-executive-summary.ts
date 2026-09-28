@@ -7,42 +7,32 @@ import type {
 const verdictContent = {
   direct_loss: {
     label: "Prejuízo por venda",
-    body: "Cada unidade vendida deixa um valor negativo antes mesmo dos gastos mensais.",
+    body: "Cada unidade vendida deixa um valor negativo antes dos gastos mensais.",
     tone: "critical",
-  },
-  operational_loss: {
-    label: "Prejuízo no mês",
-    body: "O resultado do mês ficou negativo com as unidades vendidas e os gastos informados.",
-    tone: "critical",
-  },
-  no_sales: {
-    label: "Sem vendas no mês",
-    body: "O mês foi calculado sem unidades vendidas; os gastos mensais continuam considerados.",
-    tone: "neutral",
-  },
-  break_even: {
-    label: "No limite",
-    body: "As unidades vendidas pagam exatamente os gastos informados, sem deixar sobra.",
-    tone: "warning",
-  },
-  tight_margin: {
-    label: "Margem apertada",
-    body: "O mês terminou positivo, mas com pouca folga para imprevistos.",
-    tone: "warning",
-  },
-  adequate_margin: {
-    label: "Lucro",
-    body: "O mês terminou positivo com as unidades vendidas e os gastos informados.",
-    tone: "positive",
   },
   incomplete_volume: {
     label: "Falta informar as vendas",
-    body: "O resultado mensal ainda não foi calculado porque o volume não foi informado.",
+    body: "A quantidade do mês ainda não foi informada.",
     tone: "neutral",
   },
-  above_target: {
-    label: "Lucro",
-    body: "O mês terminou positivo.",
+  no_sales: {
+    label: "Sem vendas no mês",
+    body: "O mês informado teve volume zero e manteve os gastos mensais.",
+    tone: "neutral",
+  },
+  operational_loss: {
+    label: "Prejuízo no mês",
+    body: "O resultado estimado do mês ficou negativo.",
+    tone: "critical",
+  },
+  break_even: {
+    label: "Ponto de equilíbrio",
+    body: "As vendas pagam exatamente os valores considerados, sem sobra.",
+    tone: "neutral",
+  },
+  positive_result: {
+    label: "Resultado positivo",
+    body: "O resultado estimado do mês ficou positivo.",
     tone: "positive",
   },
 } as const;
@@ -51,104 +41,82 @@ function buildProductionExecutiveSummary(
   calculation: ProductionReportCalculation,
 ): ReportExecutiveSummary {
   const unknownVolume = calculation.monthlySalesVolumeUsed === null;
-  const noVolume = calculation.monthlySalesVolumeUsed === 0;
-  const noAllocatedVolume = unknownVolume || noVolume;
-  const monthlyResultCents = calculation.monthlyResultCents;
+  const monthlyResult = calculation.monthlyResultCents;
   const action = {
     direct_loss:
-      "Revise o preço, as cobranças da venda ou o custo de fabricação antes de vender mais.",
-    operational_loss: noVolume
-      ? "Comece pelas unidades que precisam ser vendidas para pagar os gastos mensais."
-      : "Revise primeiro o preço e os gastos do mês.",
-    no_sales:
-      "Use a quantidade necessária abaixo como primeira referência de vendas.",
-    break_even: "Busque uma pequena folga no preço, nos gastos ou nas vendas.",
-    tight_margin: "Proteja a pouca folga revendo preço e gastos.",
-    adequate_margin: "Acompanhe o resultado e preserve as condições atuais.",
+      "Revise o preço, as cobranças da venda ou o custo de fabricação antes de buscar mais vendas.",
     incomplete_volume:
-      "Informe as unidades vendidas para completar o resultado mensal.",
-    above_target: "Acompanhe o resultado.",
+      "Use a quantidade mensal calculada no preço atual e informe seu volume quando souber.",
+    no_sales:
+      "Use a quantidade mensal calculada como referência para o próximo mês.",
+    operational_loss:
+      "Compare o menor preço com o preço atual e a quantidade necessária.",
+    break_even:
+      "Acompanhe preço, gastos e quantidade para decidir a próxima mudança.",
+    positive_result:
+      "Acompanhe o valor e a porcentagem que sobram com as informações atuais.",
   }[calculation.verdict];
-  const profitability =
-    monthlyResultCents === null
-      ? `Ainda não é possível calcular o resultado do mês. Informe quantas unidades foram vendidas; cada unidade deixa ${formatCurrency(calculation.unitContributionCents)} para pagar os gastos mensais.`
-      : noVolume
-        ? monthlyResultCents < 0
-          ? `Não neste mês — sem unidades vendidas, o resultado foi ${formatCurrency(monthlyResultCents)}. Uma futura unidade vendida deixa ${formatCurrency(calculation.unitContributionCents)} para pagar os gastos mensais.`
-          : `Ainda não houve unidades vendidas no mês. Uma futura unidade vendida deixa ${formatCurrency(calculation.unitContributionCents)} para pagar os gastos mensais.`
-        : monthlyResultCents > 0
-          ? `Sim — o resultado do mês foi ${formatCurrency(monthlyResultCents)}.`
-          : monthlyResultCents === 0
-            ? "Ainda não — as vendas pagaram exatamente os gastos do mês."
-            : `Não — o resultado do mês foi ${formatCurrency(monthlyResultCents)}.`;
-  const priceAnswer =
-    calculation.minimumPriceCents === null
-      ? "Ainda não é possível calcular um menor preço com as porcentagens informadas."
-      : noAllocatedVolume
-        ? `O menor preço de ${formatCurrency(calculation.minimumPriceCents)} evita prejuízo direto e considera o custo de fabricação. Os gastos mensais dependem da quantidade mostrada abaixo.`
-        : calculation.currentPriceCents >= calculation.minimumPriceCents
-          ? `Sim — o preço atual está acima do menor preço de ${formatCurrency(calculation.minimumPriceCents)} que paga os gastos informados.`
-          : `Não — o preço precisa ser pelo menos ${formatCurrency(calculation.minimumPriceCents)} para pagar os gastos informados.`;
-  const priority =
-    calculation.priority === "cost"
-      ? { label: "Custo de fabricação", body: action }
-      : calculation.priority === "data"
-        ? { label: "Dados de vendas", body: action }
-        : calculation.priority === "price"
-          ? { label: "Preço e gastos", body: action }
-          : calculation.priority === "margin"
-            ? { label: "Folga do resultado", body: action }
-            : { label: "Unidades vendidas", body: action };
+  const priorityLabel = {
+    cost: "Custo de fabricação",
+    data: "Quantidade vendida",
+    price: "Preço e gastos",
+    margin: "Resultado",
+    volume: "Unidades vendidas",
+  }[calculation.priority];
 
   return {
-    headline: "Sua produção dá lucro?",
+    headline: "Resultado das suas unidades produzidas",
     introduction:
-      "Veja o resultado do mês, as unidades vendidas, o custo de fabricação, o menor preço e o primeiro ponto que merece atenção.",
+      "Veja quanto cada unidade deixa para o mês e, quando há quantidade, quanto sobra depois de todos os valores considerados.",
     verdict: verdictContent[calculation.verdict],
     facts: [
       {
         key: "margin",
         currentLabel: "Resultado do mês",
         currentValue:
-          monthlyResultCents === null
+          monthlyResult === null
             ? "Ainda não calculado"
-            : formatCurrency(monthlyResultCents),
+            : formatCurrency(monthlyResult),
         referenceLabel: "Quanto sobra a cada R$ 100",
         referenceValue:
           calculation.realMarginBasisPoints === null
-            ? unknownVolume
-              ? "Ainda não calculado"
-              : "Sem vendas para calcular"
+            ? "Ainda não calculado"
             : formatBasisPoints(calculation.realMarginBasisPoints),
       },
       {
         key: "price",
         currentLabel: "Preço atual",
         currentValue: formatCurrency(calculation.currentPriceCents),
-        referenceLabel: noAllocatedVolume
-          ? "Menor preço antes dos gastos mensais"
-          : "Menor preço sem prejuízo",
+        referenceLabel: "Menor preço para não ficar no prejuízo",
         referenceValue:
           calculation.minimumPriceCents === null
-            ? "Indisponível"
+            ? "Ainda não calculado"
             : formatCurrency(calculation.minimumPriceCents),
       },
     ],
-    priority,
+    priority: { label: priorityLabel, body: action },
     answers: [
       {
         key: "profitability",
-        question: "Estou ganhando dinheiro?",
-        answer: profitability,
+        question: "Quanto sobra com os valores informados?",
+        answer:
+          monthlyResult === null
+            ? `O resultado do mês depende da quantidade. No preço atual, cada unidade deixa ${formatCurrency(calculation.unitContributionCents)} para pagar os gastos mensais.`
+            : `O resultado estimado do mês é ${formatCurrency(monthlyResult)}.`,
       },
       {
         key: "price_sufficiency",
-        question: "Meu preço paga tudo?",
-        answer: priceAnswer,
+        question: "Qual é o menor preço completo?",
+        answer:
+          calculation.minimumPriceCents === null
+            ? unknownVolume
+              ? "Ainda não calculamos um menor preço completo porque falta uma quantidade para dividir os gastos do mês."
+              : "Ainda não foi possível calcular um menor preço completo com os valores informados."
+            : `O menor preço para não ficar no prejuízo é ${formatCurrency(calculation.minimumPriceCents)}.`,
       },
       {
         key: "immediate_action",
-        question: "O que preciso fazer agora?",
+        question: "O que posso observar agora?",
         answer: action,
       },
     ],

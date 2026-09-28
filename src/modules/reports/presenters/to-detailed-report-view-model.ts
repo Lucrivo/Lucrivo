@@ -45,6 +45,11 @@ type DetailedItemViewModel = {
   variableCostLabel: string;
   feeLabel: string;
   netRevenueLabel: string;
+  fixedAllocationLabel: string;
+  totalUnitCostLabel: string;
+  unitProfitLabel: string;
+  realMarginLabel: string;
+  completeCostUnavailableReason?: string;
   unitContributionLabel: string;
   monthlyContributionLabel: string;
   marginLabel: string;
@@ -87,21 +92,21 @@ type DetailedReportViewModel = {
 const breakEvenHelp: PlainLanguageHelpContent = {
   title: "Quanto precisa entrar para cobrir os gastos?",
   description:
-    "É a estimativa de faturamento mensal necessária para que o valor deixado pelas vendas pague os gastos do mês.",
+    "É a estimativa de faturamento mensal necessária para pagar os gastos do mês com os valores deixados pelas vendas.",
   technicalTerm: "faturamento de equilíbrio",
 };
 
 const marginHelp: PlainLanguageHelpContent = {
   title: "Quanto sobra a cada R$ 100?",
   description:
-    "Mostra quanto fica no negócio depois dos custos dos itens, impostos, cartão e gastos mensais usados neste diagnóstico.",
-  technicalTerm: "margem",
+    "Mostra quanto fica depois dos custos dos itens, impostos, cartão e gastos mensais usados neste diagnóstico.",
+  technicalTerm: "margem real",
 };
 
 const surplusHelp: PlainLanguageHelpContent = {
-  title: "O que sobra por venda?",
+  title: "O que cada venda deixa para o mês?",
   description:
-    "É o valor que resta depois do custo do item e das taxas. Ele ajuda a pagar os gastos do mês.",
+    "É o valor que resta depois do custo da unidade e das cobranças da venda. Esse valor ajuda a pagar os gastos mensais.",
   technicalTerm: "contribuição unitária",
 };
 
@@ -115,8 +120,8 @@ function optionalPercentage(value: number | null): string {
 
 function unavailableReason(snapshot: CurrentDetailedReportSnapshot): string {
   return snapshot.results.isPartial
-    ? "Informe as vendas mensais para calcular."
-    : "As taxas informadas impedem este cálculo.";
+    ? "Informe uma quantidade para dividir os gastos do mês."
+    : "As informações atuais não permitem calcular este valor.";
 }
 
 function technicalDetails(
@@ -146,7 +151,7 @@ function technicalDetails(
 }
 
 function toDetailedReportViewModel({
-  id,
+  id: _id,
   createdAt,
   snapshot,
 }: {
@@ -154,7 +159,7 @@ function toDetailedReportViewModel({
   createdAt: string;
   snapshot: CurrentDetailedReportSnapshot;
 }): DetailedReportViewModel {
-  const language = getReportLanguageProfile(snapshot);
+  const language = getReportLanguageProfile();
   const inputById = new Map(
     snapshot.inputs.items.map((item) => [item.id, item]),
   );
@@ -188,7 +193,13 @@ function toDetailedReportViewModel({
         key: "sales",
         label: "Unidades necessárias no mês",
         value: `${formatIntegerVolume(salesGoal.monthly)} unidades`,
-        supportingText: `Estimativa mantendo a mesma proporção de vendas entre os itens. ${formatIntegerVolume(salesGoal.weekly)} por semana e ${formatIntegerVolume(salesGoal.daily)} por dia.`,
+        ...(salesGoal.basedOnKnownMix &&
+        salesGoal.weekly !== null &&
+        salesGoal.daily !== null
+          ? {
+              supportingText: `Estimativa mantendo a proporção informada entre os itens. ${formatIntegerVolume(salesGoal.weekly)} por semana e ${formatIntegerVolume(salesGoal.daily)} por dia.`,
+            }
+          : {}),
       }
     : {
         key: "sales",
@@ -232,6 +243,13 @@ function toDetailedReportViewModel({
     (item) => {
       const result = resultById.get(item.id);
       if (!result) return [];
+      const completeCostUnavailableReason =
+        result.totalUnitCostCents === null ? reason : undefined;
+      const breakEvenUnavailableReason =
+        result.breakEvenUnitPriceCents === null
+          ? (completeCostUnavailableReason ??
+            "As cobranças informadas impedem este cálculo.")
+          : undefined;
       return [
         {
           id: item.id,
@@ -243,37 +261,32 @@ function toDetailedReportViewModel({
               : `${formatIntegerVolume(item.monthlySalesVolume)} unidades vendidas no mês`,
           statusLabel: result.directLoss
             ? "Perda por venda"
-            : "Deixa valor por venda",
+            : "Deixa valor para pagar o mês",
           statusTone: result.directLoss ? "critical" : "positive",
           priceLabel: formatCurrency(item.unitSalePriceCents),
           variableCostLabel: formatCurrency(result.variableUnitCostCents),
           feeLabel: formatCurrency(result.feeAmountCents),
           netRevenueLabel: formatCurrency(result.netUnitRevenueCents),
+          fixedAllocationLabel: optionalCurrency(result.fixedAllocationCents),
+          totalUnitCostLabel: optionalCurrency(result.totalUnitCostCents),
+          unitProfitLabel: optionalCurrency(result.unitProfitCents),
+          realMarginLabel: optionalPercentage(result.realMarginBasisPoints),
+          ...(completeCostUnavailableReason
+            ? { completeCostUnavailableReason }
+            : {}),
           unitContributionLabel: formatCurrency(result.unitContributionCents),
-          monthlyContributionLabel:
-            result.monthlyContributionCents === null
-              ? "Ainda não calculado"
-              : formatCurrency(result.monthlyContributionCents),
-          marginLabel:
-            result.contributionMarginBasisPoints === null
-              ? "Ainda não calculada"
-              : formatBasisPoints(result.contributionMarginBasisPoints),
-          breakEvenLabel:
-            result.breakEvenUnitPriceCents === null
-              ? "Ainda não calculado"
-              : formatCurrency(result.breakEvenUnitPriceCents),
-          breakEvenUnavailableReason:
-            result.breakEvenUnitPriceCents === null
-              ? "As taxas informadas impedem este cálculo."
-              : undefined,
+          monthlyContributionLabel: optionalCurrency(
+            result.monthlyContributionCents,
+          ),
+          marginLabel: optionalPercentage(result.contributionMarginBasisPoints),
+          breakEvenLabel: optionalCurrency(result.breakEvenUnitPriceCents),
+          ...(breakEvenUnavailableReason ? { breakEvenUnavailableReason } : {}),
           technicalDetails: technicalDetails(item),
           discountSimulationBase: {
             originalPriceCents: item.unitSalePriceCents,
-            unitCostCents: result.variableUnitCostCents,
+            unitCostCents: result.totalUnitCostCents,
             totalFeeBasisPoints,
-            attentionBandBasisPoints: snapshot.policy.attentionBandBasisPoints,
             minimumPriceCents: result.breakEvenUnitPriceCents,
-            partial: true,
           },
         },
       ];
@@ -284,20 +297,25 @@ function toDetailedReportViewModel({
     .flatMap<DetailedComparisonEntryViewModel>((result) => {
       const input = inputById.get(result.itemId);
       if (!input) return [];
-      const amountCents = snapshot.results.isPartial
-        ? result.unitContributionCents
-        : (result.monthlyContributionCents ?? 0);
+      const complete =
+        result.unitProfitCents !== null && input.monthlySalesVolume !== null;
+      const amountCents =
+        result.unitProfitCents !== null && input.monthlySalesVolume !== null
+          ? result.unitProfitCents * input.monthlySalesVolume
+          : result.unitContributionCents;
       return [
         {
           id: result.itemId,
           name: input.name,
           amountCents,
           amountLabel: formatCurrency(amountCents),
-          contextLabel: snapshot.results.isPartial ? "por unidade" : "no mês",
+          contextLabel: complete ? "no mês" : "por unidade",
           statusLabel:
             amountCents < 0
-              ? "Prejudica o resultado"
-              : "Ajuda a cobrir os gastos",
+              ? "Reduz o resultado"
+              : complete
+                ? "Resultado estimado do item"
+                : "Ajuda a pagar os gastos do mês",
           tone: amountCents < 0 ? "critical" : "positive",
         },
       ];

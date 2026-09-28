@@ -1,4 +1,5 @@
 import { ceilDivide, roundDivide } from "@/modules/reports/domain/integer-math";
+import { calculateFixedAllocation } from "@/modules/reports/domain/unit-economics";
 
 import type {
   DetailedDiagnosisCalculation,
@@ -9,7 +10,6 @@ import type {
 import { calculateDetailedItem } from "./calculate-detailed-item";
 
 const RATE_SCALE = 10_000;
-const DETAILED_ATTENTION_BAND_BASIS_POINTS = 2_000;
 
 function classifyDetailedDiagnosis(input: {
   hasDirectLoss: boolean;
@@ -34,15 +34,10 @@ function classifyDetailedDiagnosis(input: {
     return { verdict: "operational_loss", priority: "price" };
   }
   if (input.monthlyResultCents === 0) {
-    return { verdict: "break_even", priority: "margin" };
+    return { verdict: "break_even", priority: "volume" };
   }
-  if (
-    input.finalMarginBasisPoints !== null &&
-    input.finalMarginBasisPoints < DETAILED_ATTENTION_BAND_BASIS_POINTS
-  ) {
-    return { verdict: "tight_margin", priority: "margin" };
-  }
-  return { verdict: "adequate_margin", priority: "volume" };
+
+  return { verdict: "positive_result", priority: "volume" };
 }
 
 function sumIntegers(values: number[]): number {
@@ -55,19 +50,34 @@ function sumIntegers(values: number[]): number {
 function calculateDetailedDiagnosis(
   command: DetailedDiagnosisCommand,
 ): DetailedDiagnosisCalculation {
+  const effectiveProLaboreCents = command.proLaboreIncluded
+    ? command.proLaboreCents
+    : 0;
   const effectiveFixedCostCents = roundDivide(
-    BigInt(command.fixedMonthlyExpensesCents) + BigInt(command.proLaboreCents),
+    BigInt(command.fixedMonthlyExpensesCents) + BigInt(effectiveProLaboreCents),
     BigInt(1),
   );
   const rates = {
     taxRateBasisPoints: command.taxRateBasisPoints,
     cardFeeRateBasisPoints: command.cardFeeRateBasisPoints,
   };
-  const items = command.items.map((item) => calculateDetailedItem(item, rates));
   const missingVolumeItemIds = command.items
     .filter((item) => item.monthlySalesVolume === null)
     .map((item) => item.id);
   const isPartial = missingVolumeItemIds.length > 0;
+  const totalKnownVolume = isPartial
+    ? null
+    : command.items.reduce(
+        (sum, item) => sum + (item.monthlySalesVolume ?? 0),
+        0,
+      );
+  const fixedAllocationCents = calculateFixedAllocation(
+    effectiveFixedCostCents,
+    totalKnownVolume,
+  );
+  const items = command.items.map((item) =>
+    calculateDetailedItem(item, rates, fixedAllocationCents),
+  );
   const hasDirectLoss = items.some((item) => item.directLoss);
 
   if (isPartial) {
@@ -187,8 +197,4 @@ function calculateDetailedDiagnosis(
   };
 }
 
-export {
-  DETAILED_ATTENTION_BAND_BASIS_POINTS,
-  calculateDetailedDiagnosis,
-  classifyDetailedDiagnosis,
-};
+export { calculateDetailedDiagnosis, classifyDetailedDiagnosis };

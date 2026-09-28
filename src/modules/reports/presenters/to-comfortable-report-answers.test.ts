@@ -11,68 +11,33 @@ function answer(
 }
 
 describe("toComfortableReportAnswers", () => {
-  it("explains a positive monthly result with warmer, direct language", () => {
-    const [result] = toComfortableReportAnswers([
-      answer("profitability", "Sim — o resultado do mês foi R$ 4.200,00."),
-    ]);
-
-    expect(result?.answer).toBe(
-      "Sim, está. Com base nas informações, seu lucro no mês foi de R$ 4.200,00.",
-    );
-  });
-
-  it("preserves scenario details while making short answers more conversational", () => {
+  it("preserves objective calculated answers", () => {
     const results = toComfortableReportAnswers([
       answer(
         "profitability",
-        "Sim — sobram R$ 27,41 por hora depois de pagar os gastos.",
+        "Com os valores informados, o resultado estimado do mês é R$ 4.200,00.",
       ),
       answer(
         "price_sufficiency",
-        "Não — o preço precisa ser pelo menos R$ 54,35 para pagar os gastos informados.",
-      ),
-      answer(
-        "immediate_action",
-        "Acompanhe o resultado e preserve as condições atuais.",
+        "O menor preço para não ficar no prejuízo é R$ 54,35.",
       ),
     ]);
 
     expect(results.map(({ answer: value }) => value)).toEqual([
-      "Sim, está. Com base nas informações, sobram R$ 27,41 por hora depois de pagar os gastos.",
-      "Ainda não. Com base nas informações, o preço precisa ser pelo menos R$ 54,35 para pagar os gastos informados.",
-      "Agora, o mais importante é: acompanhe o resultado e preserve as condições atuais.",
+      "Com os valores informados, o resultado estimado do mês é R$ 4.200,00.",
+      "O menor preço para não ficar no prejuízo é R$ 54,35.",
     ]);
   });
 
-  it("describes loss and break-even results without harsh shorthand", () => {
+  it("adds the action introduction once", () => {
     const results = toComfortableReportAnswers([
-      answer("profitability", "Não — o resultado do mês foi -R$ 350,00."),
-      answer(
-        "profitability",
-        "Ainda não — as vendas pagaram exatamente os gastos do mês.",
-      ),
+      answer("immediate_action", "Informe quantas vendas faz no mês."),
+      answer("immediate_action", "Agora, o mais importante é: reveja o preço."),
     ]);
 
     expect(results.map(({ answer: value }) => value)).toEqual([
-      "Ainda não. Com base nas informações, houve um prejuízo de R$ 350,00 no mês.",
-      "Ainda não há lucro. Com base nas informações, as vendas pagaram exatamente os gastos do mês.",
-    ]);
-  });
-
-  it("adapts concise answers from saved legacy reports", () => {
-    const results = toComfortableReportAnswers([
-      answer("profitability", "Sim, há lucro por unidade."),
-      answer(
-        "profitability",
-        "O preço apenas paga os gastos, sem deixar dinheiro.",
-      ),
-      answer("price_sufficiency", "O preço ainda está abaixo da meta."),
-    ]);
-
-    expect(results.map(({ answer: value }) => value)).toEqual([
-      "Sim, está. Com base nas informações, há lucro por unidade.",
-      "Ainda não há lucro. Com base nas informações, o preço apenas paga os gastos, sem deixar dinheiro.",
-      "Ainda não. Com base nas informações, o preço ainda está abaixo da meta.",
+      "Agora, o mais importante é: informe quantas vendas faz no mês.",
+      "Agora, o mais importante é: reveja o preço.",
     ]);
   });
 });

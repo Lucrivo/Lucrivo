@@ -194,16 +194,6 @@ describe("toEditableReportDraft", () => {
       packagingUnitCostCents: 0,
     });
   });
-
-  it("keeps legacy snapshots readable but not editable", () => {
-    const [, product] = snapshots();
-    expect(
-      toEditableReportDraft(
-        { ...product!, contentVersion: 3 } as ReportSnapshot,
-        () => submissionId,
-      ),
-    ).toBeNull();
-  });
 });
 
 export { snapshots, submissionId };
