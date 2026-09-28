@@ -40,6 +40,16 @@ const productCommand: DetailedDiagnosisCommand = {
   ],
 };
 
+const digitalCommand: DetailedDiagnosisCommand = {
+  ...productCommand,
+  submissionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+  items: productCommand.items.map((item) =>
+    item.kind === "manufacturing"
+      ? item
+      : { ...item, kind: "digital" as const, packagingUnitCostCents: 0 },
+  ),
+};
+
 const productionCommand: DetailedDiagnosisCommand = {
   ...productCommand,
   submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
@@ -158,6 +168,22 @@ describe("DetailedReportDetail", () => {
       screen.getByRole("link", { name: "Voltar aos relatórios" }),
     ).toHaveAttribute("href", "/reports");
     expect(screen.queryByText(/\bmix\b/i)).not.toBeInTheDocument();
+  });
+
+  it("renders Digital identity without physical-product terminology", () => {
+    render(
+      <DetailedReportDetail
+        id={170}
+        createdAt="2026-09-17T15:00:00.000Z"
+        snapshot={snapshotFor(digitalCommand)}
+      />,
+    );
+
+    expect(screen.getByText("Produto digital")).toBeVisible();
+    expect(screen.queryByText(/fornecedor|embalagem/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/ficha técnica|fabricação/i),
+    ).not.toBeInTheDocument();
   });
 
   it("presents a partial Production mix neutrally with technical-sheet details", async () => {

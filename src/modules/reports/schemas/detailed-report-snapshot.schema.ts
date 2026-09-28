@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { calculateDetailedDiagnosis } from "@/modules/detailed-diagnosis/domain/calculate-detailed-diagnosis";
 import type { DetailedDiagnosisCommand } from "@/modules/detailed-diagnosis/types";
+import { productKinds } from "@/modules/quick-diagnosis/types";
 
 import {
   nonNegativeSafeIntegerSchema,
@@ -32,7 +33,7 @@ const detailedItemBaseShape = {
 
 const detailedProductItemSchema = z.strictObject({
   ...detailedItemBaseShape,
-  kind: z.literal("resale"),
+  kind: z.enum(productKinds),
   purchaseUnitCostCents: nonNegativeSafeIntegerSchema,
   packagingUnitCostCents: nonNegativeSafeIntegerSchema,
 });
@@ -144,7 +145,7 @@ const detailedReportSnapshotSchema = z
     contentVersion: z.literal(1),
     analysisMode: z.literal("detailed"),
     category: z.enum(["product", "production"]),
-    scenario: z.enum(["resale", "manufacturing"]),
+    scenario: z.enum(["resale", "digital", "manufacturing"]),
     currency: z.literal("BRL"),
     unit: z.literal("mix"),
     policy: z.strictObject({
@@ -161,9 +162,17 @@ const detailedReportSnapshotSchema = z
     guidance: z.array(detailedGuidanceSchema),
   })
   .superRefine((snapshot, context) => {
+    const firstItemKind = snapshot.inputs.items[0]?.kind;
     const expectedScenario =
-      snapshot.category === "product" ? "resale" : "manufacturing";
+      snapshot.category === "product" &&
+      (firstItemKind === "resale" || firstItemKind === "digital")
+        ? firstItemKind
+        : snapshot.category === "production" &&
+            firstItemKind === "manufacturing"
+          ? "manufacturing"
+          : null;
     if (
+      expectedScenario === null ||
       snapshot.scenario !== expectedScenario ||
       snapshot.inputs.category !== snapshot.category
     ) {
@@ -198,6 +207,14 @@ const detailedReportSnapshotSchema = z
         });
       }
       itemIds.add(item.id);
+
+      if (item.kind === "digital" && item.packagingUnitCostCents !== 0) {
+        context.addIssue({
+          code: "custom",
+          path: ["inputs", "items", index, "packagingUnitCostCents"],
+          message: "Produto digital não pode ter custo de embalagem.",
+        });
+      }
 
       if (
         item.kind === "manufacturing" &&

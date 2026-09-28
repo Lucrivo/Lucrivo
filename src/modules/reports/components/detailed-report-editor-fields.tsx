@@ -6,6 +6,7 @@ import { PlusIcon } from "lucide-react";
 import { Accordion } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import type { DetailedDiagnosisInput } from "@/modules/detailed-diagnosis/types";
+import type { ProductKind } from "@/modules/quick-diagnosis/types";
 import {
   FixedExpensesField,
   OwnerCompensationFields,
@@ -22,6 +23,7 @@ type DetailedDraft = Extract<EditableReportDraft, { kind: "detailed" }>;
 function newItem(
   category: DetailedDiagnosisInput["category"],
   id: string,
+  productKind: ProductKind = "resale",
 ): DetailedDiagnosisInput["items"][number] {
   const common = {
     id,
@@ -32,9 +34,9 @@ function newItem(
   return category === "product"
     ? {
         ...common,
-        kind: "resale",
+        kind: productKind,
         purchaseUnitCost: "",
-        packagingUnitCost: "",
+        packagingUnitCost: productKind === "digital" ? "0" : "",
       }
     : {
         ...common,
@@ -110,7 +112,14 @@ function DetailedReportEditorFields({
 
   function addItem() {
     const id = crypto.randomUUID();
-    updateRoot("items", [...values.items, newItem(values.category, id)]);
+    const productKind =
+      values.category === "product"
+        ? values.items.find((item) => item.kind !== "manufacturing")?.kind
+        : undefined;
+    updateRoot("items", [
+      ...values.items,
+      newItem(values.category, id, productKind),
+    ]);
     setExpandedItemIds((current) => [...current, id]);
   }
 

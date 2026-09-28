@@ -28,6 +28,16 @@ const productCommand: DetailedDiagnosisCommand = {
   ],
 };
 
+const digitalCommand: DetailedDiagnosisCommand = {
+  ...productCommand,
+  submissionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+  items: productCommand.items.map((item) =>
+    item.kind === "manufacturing"
+      ? item
+      : { ...item, kind: "digital" as const, packagingUnitCostCents: 0 },
+  ),
+};
+
 const productionCommand: DetailedDiagnosisCommand = {
   ...productCommand,
   submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
@@ -87,6 +97,26 @@ describe("buildDetailedReportSnapshot", () => {
       },
     });
     expect(parseDetailedReportSnapshot(snapshot)).toEqual(snapshot);
+  });
+
+  it("derives the Digital scenario from the first validated Product item", () => {
+    const snapshot = buildDetailedReportSnapshot(
+      digitalCommand,
+      calculateDetailedDiagnosis(digitalCommand),
+    );
+
+    expect(snapshot).toMatchObject({
+      category: "product",
+      scenario: "digital",
+      inputs: {
+        items: [
+          expect.objectContaining({
+            kind: "digital",
+            packagingUnitCostCents: 0,
+          }),
+        ],
+      },
+    });
   });
 
   it("builds a partial Production snapshot with ordered normalized inputs", () => {

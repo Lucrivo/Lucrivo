@@ -55,7 +55,9 @@ function buildDetailedReportSnapshot(
     category: command.category,
     scenario:
       command.category === "product"
-        ? ("resale" as const)
+        ? command.items[0]?.kind === "digital"
+          ? ("digital" as const)
+          : ("resale" as const)
         : ("manufacturing" as const),
     currency: "BRL" as const,
     unit: "mix" as const,

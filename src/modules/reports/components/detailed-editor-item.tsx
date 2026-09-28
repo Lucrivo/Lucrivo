@@ -18,9 +18,9 @@ import type {
   DetailedProductionItemInput,
 } from "@/modules/detailed-diagnosis/types";
 import { MonthlyVolumeField } from "@/modules/quick-diagnosis/components/shared/business-fields";
+import { ProductDirectCostField } from "@/modules/quick-diagnosis/components/shared/product-fields";
 import {
   ProductionUnitCostField,
-  ResalePurchaseCostField,
   UnitSalePriceField,
 } from "@/modules/quick-diagnosis/components/shared/unit-value-fields";
 
@@ -131,21 +131,24 @@ function DetailedEditorItem({
             onChange={(value) => onChange("monthlySalesVolume", value)}
           />
         </div>
-        {item.kind === "resale" ? (
+        {item.kind !== "manufacturing" ? (
           <div className="grid gap-4 md:grid-cols-2">
-            <ResalePurchaseCostField
+            <ProductDirectCostField
+              kind={item.kind}
               field={`${base}.purchaseUnitCost`}
               value={item.purchaseUnitCost}
               errors={errors}
               onChange={(value) => onChange("purchaseUnitCost", value)}
             />
-            <EditorField
-              id={`${base}.packagingUnitCost`}
-              label="Embalagem por unidade (R$)"
-              value={item.packagingUnitCost}
-              error={errors[`${base}.packagingUnitCost`]}
-              onChange={(value) => onChange("packagingUnitCost", value)}
-            />
+            {item.kind === "resale" ? (
+              <EditorField
+                id={`${base}.packagingUnitCost`}
+                label="Embalagem por unidade (R$)"
+                value={item.packagingUnitCost}
+                error={errors[`${base}.packagingUnitCost`]}
+                onChange={(value) => onChange("packagingUnitCost", value)}
+              />
+            ) : null}
           </div>
         ) : (
           <ProductionItemFields

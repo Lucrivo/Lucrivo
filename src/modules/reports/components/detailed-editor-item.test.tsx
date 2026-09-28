@@ -23,6 +23,16 @@ function fixture() {
   return { snapshot, draft };
 }
 
+function digitalFixture() {
+  const snapshot = snapshots()[4];
+  if (!snapshot || !isDetailedReportSnapshot(snapshot))
+    throw new Error("expected Digital detailed snapshot");
+  const draft = toEditableReportDraft(snapshot, () => submissionId);
+  if (!draft || draft.kind !== "detailed")
+    throw new Error("expected Digital detailed draft");
+  return { snapshot, draft };
+}
+
 function Harness({
   initialDraft,
   errors = {},
@@ -163,6 +173,38 @@ describe("DetailedReportEditorFields", () => {
         "Opcional. Deixe em branco se o produto não tiver custo direto.",
       ),
     ).toBeVisible();
+  });
+
+  it("keeps a Digital scenario fixed and gives new items Digital fields", async () => {
+    const user = userEvent.setup();
+    const { snapshot, draft: initialDraft } = digitalFixture();
+
+    function DigitalHarness() {
+      const [draft, setDraft] = useState(initialDraft);
+      return (
+        <DetailedReportEditorFields
+          draft={draft}
+          errors={{}}
+          previewSnapshot={snapshot}
+          revealErrorsSignal={0}
+          onChange={setDraft}
+        />
+      );
+    }
+
+    render(<DigitalHarness />);
+    expect(
+      screen.queryByRole("radiogroup", { name: "Tipo de produto" }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Adicionar item" }));
+
+    expect(
+      screen.getByLabelText("Existe algum gasto a cada venda?"),
+    ).toBeVisible();
+    expect(screen.queryByText(/fornecedor|embalagem/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/ficha técnica|fabricação/i),
+    ).not.toBeInTheDocument();
   });
 
   it("opens a newly added item without expanding existing items", async () => {
