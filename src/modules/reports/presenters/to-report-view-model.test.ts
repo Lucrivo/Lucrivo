@@ -168,6 +168,37 @@ describe("toReportViewModel", () => {
       );
     }
   });
+  it("adds answer helpers only to the new content version", () => {
+    const currentSnapshot = buildProductReportSnapshot(
+      productCommand,
+      calculateProductReport(productCommand),
+    );
+    const historicalSnapshot = {
+      ...currentSnapshot,
+      contentVersion: 4 as const,
+    };
+    const current = toReportViewModel({
+      id: 45,
+      createdAt: "2026-09-01T15:00:00.000Z",
+      snapshot: currentSnapshot,
+    });
+    const historical = toReportViewModel({
+      id: 46,
+      createdAt: "2026-09-01T15:00:00.000Z",
+      snapshot: historicalSnapshot,
+    });
+
+    expect(
+      current.executiveSummary.answers.map(({ help }) => help?.title),
+    ).toEqual([
+      "Como calculamos o resultado do mês",
+      "O que o preço precisa pagar",
+      "Como escolhemos a prioridade",
+    ]);
+    expect(historical.executiveSummary.answers.every(({ help }) => !help)).toBe(
+      true,
+    );
+  });
 
   it.each([
     [

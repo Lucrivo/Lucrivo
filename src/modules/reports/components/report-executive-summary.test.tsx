@@ -78,6 +78,15 @@ describe("ReportExecutiveSummary", () => {
         expect.stringContaining(`${question}${answer}`),
       ),
     );
+    expect(
+      within(summary).getByRole("button", { name: "Como calculamos?" }),
+    ).toBeInTheDocument();
+    expect(
+      within(summary).getByRole("button", { name: "O que está incluído?" }),
+    ).toBeInTheDocument();
+    expect(
+      within(summary).getByRole("button", { name: "Por que este passo?" }),
+    ).toBeInTheDocument();
   });
 
   it.each([

@@ -31,6 +31,67 @@ const command: NormalizedServiceDiagnosisCommand = {
 };
 
 describe("buildServiceExecutiveSummary", () => {
+  it("uses direct questions and answers every service state", () => {
+    const cases = [
+      {
+        input: { appointmentRateCents: 0 },
+        first: /^Ainda não dá para calcular\./,
+        second: /^Ainda não dá para confirmar/,
+      },
+      {
+        input: { appointmentRateCents: 1_000 },
+        first: /^Não\./,
+        second: /^Não\./,
+      },
+      {
+        input: { appointmentRateCents: 3_000 },
+        first: /^Não\./,
+        second: /^Não\./,
+      },
+      {
+        input: { appointmentRateCents: 4_225 },
+        first: /^Ainda não\./,
+        second: /^Sim, exatamente\./,
+      },
+      {
+        input: { monthlyWorkMinutes: 0 },
+        first: /^Ainda não dá para calcular com segurança\./,
+        second: /^Ainda não dá para calcular o menor preço completo/,
+      },
+    ];
+
+    for (const { input, first, second } of cases) {
+      const adjusted = { ...command, ...input };
+      const summary = buildServiceExecutiveSummary(
+        adjusted,
+        calculateServiceReport(adjusted),
+      );
+      expect(summary.answers.map(({ question }) => question)).toEqual([
+        "Estou ganhando dinheiro?",
+        "Meu preço paga todos os gastos?",
+        "O que preciso fazer agora?",
+      ]);
+      expect(summary.answers[0]?.answer).toMatch(first);
+      expect(summary.answers[1]?.answer).toMatch(second);
+    }
+  });
+  it("does not call an incomplete service result negative", () => {
+    const incomplete = {
+      ...command,
+      monthlyWorkMinutes: 0,
+    };
+    const summary = buildServiceExecutiveSummary(
+      incomplete,
+      calculateServiceReport(incomplete),
+    );
+
+    expect(summary.verdict).toEqual({
+      label: "Falta completar a rotina",
+      body: "A rotina informada ainda não permite distribuir os gastos por serviço.",
+      tone: "neutral",
+    });
+  });
+
   it("puts current and minimum prices before objective result values", () => {
     const summary = buildServiceExecutiveSummary(
       command,

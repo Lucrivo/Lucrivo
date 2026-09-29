@@ -159,10 +159,10 @@ select results_eq(
     order by report_family
   $$,
   $$ values
-    ('detailed'::text, 1::smallint, 1::smallint, 1::smallint),
-    ('product'::text, 3::smallint, 3::smallint, 4::smallint),
-    ('production'::text, 3::smallint, 3::smallint, 4::smallint),
-    ('service'::text, 4::smallint, 3::smallint, 5::smallint)
+    ('detailed'::text, 1::smallint, 1::smallint, 2::smallint),
+    ('product'::text, 3::smallint, 3::smallint, 5::smallint),
+    ('production'::text, 3::smallint, 3::smallint, 5::smallint),
+    ('service'::text, 4::smallint, 3::smallint, 6::smallint)
   $$,
   'seed snapshots use only current report version tuples'
 );

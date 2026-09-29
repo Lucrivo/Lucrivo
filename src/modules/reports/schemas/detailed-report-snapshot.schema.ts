@@ -147,7 +147,10 @@ const detailedReportSnapshotSchema = z
   .strictObject({
     schemaVersion: z.literal(DETAILED_REPORT_SCHEMA_VERSION),
     calculationVersion: z.literal(DETAILED_REPORT_CALCULATION_VERSION),
-    contentVersion: z.literal(DETAILED_REPORT_CONTENT_VERSION),
+    contentVersion: z.union([
+      z.literal(1),
+      z.literal(DETAILED_REPORT_CONTENT_VERSION),
+    ]),
     analysisMode: z.literal("detailed"),
     category: z.enum(["product", "production"]),
     scenario: z.enum(["resale", "digital", "manufacturing"]),

@@ -81,7 +81,10 @@ const productionReportSnapshotSchema = z
   .strictObject({
     schemaVersion: z.literal(PRODUCTION_REPORT_SCHEMA_VERSION),
     calculationVersion: z.literal(PRODUCTION_CALCULATION_VERSION),
-    contentVersion: z.literal(PRODUCTION_CONTENT_VERSION),
+    contentVersion: z.union([
+      z.literal(4),
+      z.literal(PRODUCTION_CONTENT_VERSION),
+    ]),
     category: z.literal("production"),
     scenario: z.literal("manufacturing"),
     currency: z.literal("BRL"),

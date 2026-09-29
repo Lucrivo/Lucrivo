@@ -32,12 +32,12 @@ function build(input: DetailedDiagnosisCommand) {
 }
 
 describe("buildDetailedReportSnapshot", () => {
-  it("builds the corrected Detailed 1/1/1 contract with full item economics", () => {
+  it("builds the Detailed 1/1/2 contract with direct summary language", () => {
     const snapshot = build(command);
     expect(snapshot).toMatchObject({
       schemaVersion: 1,
       calculationVersion: 1,
-      contentVersion: 1,
+      contentVersion: 2,
       policy: { concentrationThresholdBasisPoints: 4_500 },
       results: {
         verdict: "positive_result",

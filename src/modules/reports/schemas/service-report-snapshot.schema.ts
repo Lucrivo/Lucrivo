@@ -99,7 +99,10 @@ const serviceReportSnapshotSchema = z
   .strictObject({
     schemaVersion: z.literal(SERVICE_REPORT_SCHEMA_VERSION),
     calculationVersion: z.literal(SERVICE_REPORT_CALCULATION_VERSION),
-    contentVersion: z.literal(SERVICE_REPORT_CONTENT_VERSION),
+    contentVersion: z.union([
+      z.literal(5),
+      z.literal(SERVICE_REPORT_CONTENT_VERSION),
+    ]),
     category: z.literal("service"),
     scenario: z.enum(servicePricingMethods),
     currency: z.literal("BRL"),

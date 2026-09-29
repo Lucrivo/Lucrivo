@@ -8,9 +8,11 @@ import {
   formatReportScenario,
 } from "../formatters";
 import { calculateDetailedSalesGoal } from "../domain/calculate-detailed-sales-goal";
-import type {
-  CurrentDetailedReportSnapshot,
-  ReportDiscountSimulationBase,
+import {
+  DETAILED_REPORT_CONTENT_VERSION,
+  type CurrentDetailedReportSnapshot,
+  type ExecutiveSummaryAnswer,
+  type ReportDiscountSimulationBase,
 } from "../types";
 import { getReportLanguageProfile } from "./report-language";
 import { toComfortableReportAnswers } from "./to-comfortable-report-answers";
@@ -109,6 +111,43 @@ const surplusHelp: PlainLanguageHelpContent = {
     "É o valor que resta depois do custo da unidade e das cobranças da venda. Esse valor ajuda a pagar os gastos mensais.",
   technicalTerm: "contribuição unitária",
 };
+function detailedAnswerHelp(
+  key: ExecutiveSummaryAnswer["key"],
+): PlainLanguageHelpContent {
+  if (key === "profitability") {
+    return {
+      triggerLabel: "Como calculamos?",
+      title: "Como calculamos o resultado do conjunto",
+      description:
+        "Somamos o valor deixado pelas vendas de todos os itens e descontamos os gastos mensais uma única vez. Um item com perda continua sendo destacado, mesmo quando os demais compensam essa perda.",
+    };
+  }
+  if (key === "price_sufficiency") {
+    return {
+      triggerLabel: "O que está incluído?",
+      title: "O que os preços precisam pagar",
+      description:
+        "Os preços completos incluem os custos de cada item, impostos, cartão e a parte dos gastos mensais distribuída conforme as quantidades informadas.",
+    };
+  }
+  return {
+    triggerLabel: "Por que este passo?",
+    title: "Como escolhemos a prioridade",
+    description:
+      "Primeiro tratamos itens que perdem dinheiro em cada venda. Depois, quantidades ausentes, prejuízo do conjunto e volume. Assim, aumentar vendas nunca aparece como solução para um item que gera perda.",
+  };
+}
+
+function toDetailedSummaryAnswers(snapshot: CurrentDetailedReportSnapshot) {
+  const answers = toComfortableReportAnswers(snapshot.executiveSummary.answers);
+  if (snapshot.contentVersion !== DETAILED_REPORT_CONTENT_VERSION) {
+    return answers;
+  }
+  return answers.map((answer) => ({
+    ...answer,
+    help: detailedAnswerHelp(answer.key),
+  }));
+}
 
 function optionalCurrency(value: number | null): string {
   return value === null ? "Ainda não calculado" : formatCurrency(value);
@@ -339,7 +378,7 @@ function toDetailedReportViewModel({
         toneLabel: language.toneLabels[snapshot.executiveSummary.verdict.tone],
       },
       facts: snapshot.executiveSummary.facts,
-      answers: toComfortableReportAnswers(snapshot.executiveSummary.answers),
+      answers: toDetailedSummaryAnswers(snapshot),
     },
     numbers,
     sections: snapshot.sections

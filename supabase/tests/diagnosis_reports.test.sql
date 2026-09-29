@@ -523,7 +523,7 @@ create function pg_temp.create_month_report_v4(
   p_report_snapshot jsonb default '{
     "schemaVersion": 4,
     "calculationVersion": 3,
-    "contentVersion": 5,
+    "contentVersion": 6,
     "category": "service",
     "scenario": "month",
     "unit": "hour",
@@ -590,7 +590,7 @@ as $$
     0,
     p_schema_version,
     3::smallint,
-    5::smallint,
+    6::smallint,
     'month',
     3079,
     -5801,
@@ -655,7 +655,7 @@ select results_eq(
     'month'::text,
     4::smallint,
     3::smallint,
-    5::smallint,
+    6::smallint,
     'hour'::text,
     3079::bigint,
     'month'::text,
@@ -709,7 +709,7 @@ select throws_ok(
   ) $$,
   '22023',
   'invalid report snapshot',
-  'normalized function writes only version 4 3 5'
+  'normalized function writes only version 4 3 6'
 );
 select results_eq(
   $$

@@ -27,6 +27,21 @@ const command: DetailedDiagnosisCommand = {
 };
 
 describe("buildDetailedReportContent", () => {
+  it("uses direct plural questions for the item mix", () => {
+    const content = buildDetailedReportContent(
+      command,
+      calculateDetailedDiagnosis(command),
+    );
+
+    expect(
+      content.executiveSummary.answers.map(({ question }) => question),
+    ).toEqual([
+      "Estou ganhando dinheiro?",
+      "Meus preços pagam todos os gastos?",
+      "O que preciso fazer agora?",
+    ]);
+  });
+
   it("uses complete item prices and objective positive-result copy", () => {
     const content = buildDetailedReportContent(
       command,
@@ -71,5 +86,50 @@ describe("buildDetailedReportContent", () => {
       calculateDetailedDiagnosis(partial),
     );
     expect(JSON.stringify(content)).toContain("inventar uma proporção");
+  });
+  it("keeps a positive mix while exposing an item that loses per sale", () => {
+    const mixed: DetailedDiagnosisCommand = {
+      ...command,
+      fixedMonthlyExpensesCents: 0,
+      proLaboreIncluded: false,
+      proLaboreCents: 0,
+      taxRateBasisPoints: 0,
+      cardFeeRateBasisPoints: 0,
+      items: [
+        {
+          id: "11111111-1111-4111-8111-111111111111",
+          position: 0,
+          name: "Item com perda",
+          kind: "resale",
+          unitSalePriceCents: 1_000,
+          monthlySalesVolume: 1,
+          purchaseUnitCostCents: 1_500,
+          packagingUnitCostCents: 0,
+        },
+        {
+          id: "22222222-2222-4222-8222-222222222222",
+          position: 1,
+          name: "Item rentável",
+          kind: "resale",
+          unitSalePriceCents: 10_000,
+          monthlySalesVolume: 100,
+          purchaseUnitCostCents: 100,
+          packagingUnitCostCents: 0,
+        },
+      ],
+    };
+    const content = buildDetailedReportContent(
+      mixed,
+      calculateDetailedDiagnosis(mixed),
+    );
+
+    expect(content.executiveSummary.verdict.label).toBe("Prejuízo por venda");
+    expect(content.executiveSummary.answers[0]?.answer).toMatch(/^Sim\./);
+    expect(content.executiveSummary.answers[0]?.answer).toContain(
+      "Item com perda",
+    );
+    expect(content.executiveSummary.answers[1]?.answer).toMatch(
+      /^Não completamente\./,
+    );
   });
 });

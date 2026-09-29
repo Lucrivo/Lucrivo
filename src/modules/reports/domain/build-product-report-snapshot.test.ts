@@ -23,14 +23,14 @@ function build(input: ProductDiagnosisCommand) {
 }
 
 describe("buildProductReportSnapshot", () => {
-  it("builds the corrected Product 3/3/4 contract with full-cost language", () => {
+  it("builds the Product 3/3/5 contract with direct summary language", () => {
     const snapshot = build(command);
     const content = JSON.stringify(snapshot);
 
     expect(snapshot).toMatchObject({
       schemaVersion: 3,
       calculationVersion: 3,
-      contentVersion: 4,
+      contentVersion: 5,
       results: {
         minimumPriceCents: 3_871,
         unitProfitCents: 1_515,

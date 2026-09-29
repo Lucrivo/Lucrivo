@@ -35,6 +35,70 @@ const verdictContent = {
     tone: "positive",
   },
 } as const;
+function serviceVerdictContent(
+  calculation: ServiceReportCalculation,
+): ReportExecutiveSummary["verdict"] {
+  if (
+    calculation.verdict === "operational_loss" &&
+    calculation.unitProfitCents === null
+  ) {
+    return {
+      label: "Falta completar a rotina",
+      body: "A rotina informada ainda não permite distribuir os gastos por serviço.",
+      tone: "neutral",
+    };
+  }
+  return verdictContent[calculation.verdict];
+}
+
+function profitabilityAnswer(
+  calculation: ServiceReportCalculation,
+  unit: string,
+): string {
+  if (calculation.verdict === "missing_price") {
+    return "Ainda não dá para calcular. Falta informar quanto você cobra.";
+  }
+
+  if (calculation.verdict === "direct_loss") {
+    const contribution = calculation.unitContributionCents;
+    return contribution !== null && contribution < 0
+      ? `Não. Faltam ${formatCurrency(Math.abs(contribution))} por ${unit} antes mesmo de pagar a estrutura mensal.`
+      : `Não. O preço paga apenas os materiais e as cobranças da venda, sem deixar valor para a estrutura mensal por ${unit}.`;
+  }
+
+  if (calculation.unitProfitCents === null) {
+    return "Ainda não dá para calcular com segurança. A rotina de trabalho não permite distribuir os gastos.";
+  }
+
+  if (calculation.verdict === "operational_loss") {
+    return `Não. Faltam ${formatCurrency(Math.abs(calculation.unitProfitCents))} por ${unit} para pagar todos os valores considerados.`;
+  }
+
+  if (calculation.verdict === "break_even") {
+    return "Ainda não. O preço paga exatamente os valores considerados, sem deixar sobra adicional.";
+  }
+
+  return `Sim. Sobram ${formatCurrency(calculation.unitProfitCents)} por ${unit} depois dos valores considerados.`;
+}
+
+function priceSufficiencyAnswer(calculation: ServiceReportCalculation): string {
+  if (calculation.verdict === "missing_price") {
+    return "Ainda não dá para confirmar sem o preço atual.";
+  }
+  if (calculation.minimumPriceCents === null) {
+    return "Ainda não dá para calcular o menor preço completo com a rotina informada.";
+  }
+  if (
+    calculation.verdict === "direct_loss" ||
+    calculation.verdict === "operational_loss"
+  ) {
+    return `Não. O menor preço para não ficar no prejuízo é ${formatCurrency(calculation.minimumPriceCents)}.`;
+  }
+  if (calculation.verdict === "break_even") {
+    return "Sim, exatamente. O preço paga todos os valores considerados, sem deixar sobra.";
+  }
+  return "Sim. O preço paga todos os gastos usados no cálculo.";
+}
 
 function buildServiceExecutiveSummary(
   _command: NormalizedServiceDiagnosisCommand,
@@ -49,20 +113,39 @@ function buildServiceExecutiveSummary(
     calculation.realMarginBasisPoints === null
       ? "Ainda não calculado"
       : formatBasisPoints(calculation.realMarginBasisPoints);
-  const action = {
+  const priorityBody = {
     missing_price: "Informe o preço atual para completar o cálculo.",
-    direct_loss: "Compare o preço com materiais e cobranças da venda.",
-    operational_loss: "Compare o preço atual com o menor preço calculado.",
-    break_even: "Acompanhe o preço, os gastos e a rotina informada.",
-    positive_result:
-      "Acompanhe o valor e a porcentagem que sobram com a rotina informada.",
+    direct_loss:
+      "Revise primeiro o preço, os materiais e as cobranças da venda.",
+    operational_loss:
+      calculation.unitProfitCents === null
+        ? "Revise primeiro a rotina usada para distribuir os gastos."
+        : "Revise primeiro o preço e os valores considerados no serviço.",
+    break_even:
+      "Crie uma pequena folga entre o preço e os valores considerados.",
+    positive_result: "Acompanhe o resultado e preserve as condições atuais.",
   }[calculation.verdict];
+  const action = {
+    missing_price: "Informe o preço atual para concluir a comparação.",
+    direct_loss:
+      "Revise o preço, os materiais e as cobranças antes de buscar mais serviços.",
+    operational_loss:
+      calculation.unitProfitCents === null
+        ? "Revise os dias, as horas e a duração dos atendimentos informados."
+        : "Compare o preço atual com o menor preço sem prejuízo e revise a rotina ou os gastos.",
+    break_even:
+      "Busque uma pequena folga no preço, nos custos ou na quantidade de serviços.",
+    positive_result:
+      "Acompanhe a quantidade de serviços e preserve as condições atuais.",
+  }[calculation.verdict];
+  const profitability = profitabilityAnswer(calculation, unit);
+  const priceAnswer = priceSufficiencyAnswer(calculation);
 
   return {
     headline: "Resultado do seu serviço",
     introduction:
       "Compare o preço atual com o menor preço completo e veja quanto sobra depois dos valores considerados.",
-    verdict: verdictContent[calculation.verdict],
+    verdict: serviceVerdictContent(calculation),
     facts: [
       {
         key: "price",
@@ -89,28 +172,22 @@ function buildServiceExecutiveSummary(
         margin: "Resultado",
         volume: "Quantidade de serviços",
       }[calculation.priority],
-      body: action,
+      body: priorityBody,
     },
     answers: [
       {
         key: "profitability",
-        question: "Quanto sobra por serviço?",
-        answer:
-          calculation.unitProfitCents === null
-            ? "Ainda não foi possível calcular porque falta uma rotina de trabalho válida."
-            : `Depois dos valores considerados, sobram ${resultText} por ${unit}.`,
+        question: "Estou ganhando dinheiro?",
+        answer: profitability,
       },
       {
         key: "price_sufficiency",
-        question: "Qual é o menor preço completo?",
-        answer:
-          calculation.minimumPriceCents === null
-            ? "Ainda não foi possível calcular com os dados de rotina informados."
-            : `O menor preço para não ficar no prejuízo é ${formatCurrency(calculation.minimumPriceCents)}.`,
+        question: "Meu preço paga todos os gastos?",
+        answer: priceAnswer,
       },
       {
         key: "immediate_action",
-        question: "O que posso observar agora?",
+        question: "O que preciso fazer agora?",
         answer: action,
       },
     ],

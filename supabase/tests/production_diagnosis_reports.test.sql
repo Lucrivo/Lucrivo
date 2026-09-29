@@ -1812,7 +1812,7 @@ as $$
   select jsonb_build_object(
     'schemaVersion', 3,
     'calculationVersion', 3,
-    'contentVersion', 4,
+    'contentVersion', 5,
     'category', 'production',
     'scenario', 'manufacturing',
     'currency', 'BRL',
@@ -1885,7 +1885,7 @@ as $$
     p_submission_id, true, 5000::bigint, 3000::bigint, 500::bigint,
     1000::bigint, 500::bigint, 10000::bigint, 100000::bigint,
     p_monthly_sales_volume, true, 200000::bigint, 600::integer, 200::integer,
-    3::smallint, 3::smallint, 4::smallint, 'manufacturing'::text,
+    3::smallint, 3::smallint, 5::smallint, 'manufacturing'::text,
     10000::bigint,
     case when p_monthly_sales_volume = 100 then 1200 else null end,
     case when p_monthly_sales_volume = 100 then 1200 else null end,

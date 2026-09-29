@@ -133,17 +133,17 @@ describe("report RPC argument mappers", () => {
     expect(args.service).toMatchObject({
       p_schema_version: 4,
       p_calculation_version: 3,
-      p_content_version: 5,
+      p_content_version: 6,
     });
     expect(args.product).toMatchObject({
       p_schema_version: 3,
       p_calculation_version: 3,
-      p_content_version: 4,
+      p_content_version: 5,
     });
     expect(args.production).toMatchObject({
       p_schema_version: 3,
       p_calculation_version: 3,
-      p_content_version: 4,
+      p_content_version: 5,
     });
   });
 

@@ -35,7 +35,7 @@ describe("buildProductionExecutiveSummary", () => {
       calculateProductionReport({ ...command, monthlySalesVolume: null }),
     );
     expect(summary.facts[1].referenceValue).toBe("Ainda não calculado");
-    expect(summary.answers[1].answer).toContain("falta uma quantidade");
+    expect(summary.answers[1].answer).toMatch(/falta uma quantidade/i);
   });
 
   it("contains no target-based or margin-quality language", () => {

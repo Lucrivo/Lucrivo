@@ -75,7 +75,7 @@ const productReportSnapshotSchema = z
   .strictObject({
     schemaVersion: z.literal(PRODUCT_REPORT_SCHEMA_VERSION),
     calculationVersion: z.literal(PRODUCT_CALCULATION_VERSION),
-    contentVersion: z.literal(PRODUCT_CONTENT_VERSION),
+    contentVersion: z.union([z.literal(4), z.literal(PRODUCT_CONTENT_VERSION)]),
     category: z.literal("product"),
     scenario: z.enum(["resale", "digital"]),
     currency: z.literal("BRL"),

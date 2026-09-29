@@ -8,13 +8,17 @@ import {
   formatReportUnit,
 } from "../formatters";
 import { isDetailedReportSnapshot } from "../schemas/report-snapshot.schema";
-import type {
-  ProductReportSnapshot,
-  ProductionReportSnapshot,
-  QuickReportSnapshot,
-  ReportDiscountSimulationBase,
-  ReportSnapshot,
-  ServiceReportSnapshot,
+import {
+  PRODUCT_CONTENT_VERSION,
+  PRODUCTION_CONTENT_VERSION,
+  SERVICE_REPORT_CONTENT_VERSION,
+  type ExecutiveSummaryAnswer,
+  type ProductReportSnapshot,
+  type ProductionReportSnapshot,
+  type QuickReportSnapshot,
+  type ReportDiscountSimulationBase,
+  type ReportSnapshot,
+  type ServiceReportSnapshot,
 } from "../types";
 import {
   getReportLanguageProfile,
@@ -39,9 +43,13 @@ type ReportNumberViewModel = {
   help?: PlainLanguageHelpContent;
 };
 
+type ReportExecutiveSummaryAnswerViewModel = ExecutiveSummaryAnswer & {
+  help?: PlainLanguageHelpContent;
+};
+
 type ReportExecutiveSummaryViewModel = Omit<
   QuickReportSnapshot["executiveSummary"],
-  "verdict" | "facts"
+  "verdict" | "facts" | "answers"
 > & {
   verdict: QuickReportSnapshot["executiveSummary"]["verdict"] & {
     toneLabel: string;
@@ -51,6 +59,7 @@ type ReportExecutiveSummaryViewModel = Omit<
       help?: PlainLanguageHelpContent;
     }
   >;
+  answers: ReportExecutiveSummaryAnswerViewModel[];
 };
 
 type ReportSectionViewModel = QuickReportSnapshot["sections"][number] & {
@@ -104,6 +113,88 @@ const digitalCostHelp = {
   description:
     "Um produto digital pode não ter custo direto. Quando existe, consideramos o valor informado para cada venda.",
 } as const satisfies PlainLanguageHelpContent;
+const actionAnswerHelp = {
+  triggerLabel: "Por que este passo?",
+  title: "Como escolhemos a prioridade",
+  description:
+    "Primeiro tratamos uma perda que acontece em cada venda. Depois, dados ausentes, prejuízo no resultado e quantidade de vendas. Assim, não sugerimos vender mais quando cada nova venda aumenta a perda.",
+} as const satisfies PlainLanguageHelpContent;
+
+function usesCurrentAnswerContent(snapshot: QuickReportSnapshot): boolean {
+  if (snapshot.category === "service") {
+    return snapshot.contentVersion === SERVICE_REPORT_CONTENT_VERSION;
+  }
+  if (snapshot.category === "product") {
+    return snapshot.contentVersion === PRODUCT_CONTENT_VERSION;
+  }
+  return snapshot.contentVersion === PRODUCTION_CONTENT_VERSION;
+}
+
+function answerHelp(
+  snapshot: QuickReportSnapshot,
+  key: ExecutiveSummaryAnswer["key"],
+): PlainLanguageHelpContent {
+  if (key === "immediate_action") return actionAnswerHelp;
+
+  if (snapshot.category === "service") {
+    return key === "profitability"
+      ? {
+          triggerLabel: "Como calculamos?",
+          title: "Como calculamos o resultado do serviço",
+          description:
+            "Distribuímos os gastos mensais e o valor que você quer receber pela rotina informada. Depois descontamos essa parte, os materiais e as cobranças do preço de cada hora ou atendimento.",
+        }
+      : {
+          triggerLabel: "O que está incluído?",
+          title: "O que o preço precisa pagar",
+          description:
+            "O menor preço considera a rotina informada, os gastos mensais, o valor que você quer receber, os materiais e as cobranças da venda.",
+        };
+  }
+
+  if (key === "profitability") {
+    const directCost =
+      snapshot.category === "production"
+        ? "o custo de fabricação"
+        : snapshot.scenario === "digital"
+          ? "o custo por venda"
+          : "o custo de compra";
+    return {
+      triggerLabel: "Como calculamos?",
+      title: "Como calculamos o resultado do mês",
+      description: `Multiplicamos o valor deixado por cada venda pela quantidade informada e descontamos os gastos mensais e o pró-labore incluído. Antes disso, cada venda já desconta ${directCost}, impostos e cartão.`,
+    };
+  }
+
+  const volumeMissing =
+    snapshot.results.monthlySalesVolumeUsed === null ||
+    snapshot.results.monthlySalesVolumeUsed === 0;
+  return volumeMissing
+    ? {
+        triggerLabel: "Por que ainda não sabemos?",
+        title: "Falta uma quantidade para completar o preço",
+        description:
+          "Sem uma quantidade maior que zero, não dividimos os gastos mensais entre as unidades. Por isso ainda não é possível confirmar se o preço paga todos os gastos.",
+      }
+    : {
+        triggerLabel: "O que está incluído?",
+        title: "O que o preço precisa pagar",
+        description:
+          "O menor preço inclui o custo direto, impostos, cartão e a parte dos gastos mensais correspondente à quantidade informada. Se a quantidade mudar, esse valor também pode mudar.",
+      };
+}
+
+function toSummaryAnswers(
+  snapshot: QuickReportSnapshot,
+): ReportExecutiveSummaryAnswerViewModel[] {
+  const answers = toComfortableReportAnswers(snapshot.executiveSummary.answers);
+  if (!usesCurrentAnswerContent(snapshot)) return answers;
+
+  return answers.map((answer) => ({
+    ...answer,
+    help: answerHelp(snapshot, answer.key),
+  }));
+}
 
 function optionalCurrency(
   value: number | null,
@@ -314,7 +405,7 @@ function toReportViewModel({
         toneLabel: language.toneLabels[snapshot.executiveSummary.verdict.tone],
       },
       facts: snapshot.executiveSummary.facts,
-      answers: toComfortableReportAnswers(snapshot.executiveSummary.answers),
+      answers: toSummaryAnswers(snapshot),
     },
     numbers,
     sections: snapshot.sections

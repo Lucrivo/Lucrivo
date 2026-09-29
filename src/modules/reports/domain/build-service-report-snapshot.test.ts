@@ -35,12 +35,12 @@ function build(input = command) {
 }
 
 describe("buildServiceReportSnapshot", () => {
-  it("builds the corrected Service 4/3/5 contract", () => {
+  it("builds the Service 4/3/6 contract with direct summary language", () => {
     const snapshot = build();
     expect(snapshot).toMatchObject({
       schemaVersion: 4,
       calculationVersion: 3,
-      contentVersion: 5,
+      contentVersion: 6,
       results: { verdict: "positive_result" },
     });
     expect(snapshot).not.toHaveProperty("policy.targetMarginBasisPoints");
