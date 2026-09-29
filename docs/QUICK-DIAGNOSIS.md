@@ -10,7 +10,7 @@ O diagnóstico rápido do Lucrivo procura responder, em linguagem simples, três
 
 Este documento trata somente do **diagnóstico rápido de um único produto, produção ou serviço**. A análise detalhada de vários produtos, a ficha técnica completa do estoque, o painel demonstrativo e a comparação histórica não fazem parte deste escopo.
 
-O sistema não pesquisa preços de concorrentes e não determina um “preço correto de mercado”. Ele calcula referências com base exclusivamente nos números informados pelo usuário. Nos relatórios atuais de Produto e Produção, R$ 20 a cada R$ 100 é apenas uma faixa interna de atenção, não uma meta universal.
+O sistema não pesquisa preços de concorrentes e não determina um “preço correto de mercado”. Ele calcula referências com base exclusivamente nos números informados pelo usuário. Nenhuma categoria usa uma margem universal como meta, corte de veredito ou base para recomendar preço.
 
 ---
 
@@ -45,7 +45,7 @@ Perguntas sobre imposto e cartão
         v
 Resultado imediato
         |
-        +--> veredito de margem
+        +--> veredito objetivo do resultado
         +--> principal ponto a corrigir
         +--> preço atual e menor preço sem prejuízo
         +--> resultado do mês e quanto sobra a cada R$ 100
@@ -137,16 +137,15 @@ O volume mensal significa **unidades vendidas**, não unidades apenas produzidas
 
 ### 4.1 Parâmetros comuns
 
-| Parâmetro            | Significado para o negócio                                                        | Efeito no resultado                                                                      |
-| -------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Preço atual          | Valor cobrado do cliente                                                          | Base da receita e de todas as margens                                                    |
-| Custos fixos mensais | Gastos que existem mesmo sem vender, como aluguel, luz, contador e salários fixos | Precisam ser absorvidos pelas vendas ou horas faturáveis                                 |
-| Pró-labore           | Salário desejado pelo dono                                                        | Quando ligado, é tratado como parte do custo mensal                                      |
-| Imposto              | Percentual do preço destinado a tributos                                          | Reduz o valor líquido de cada venda                                                      |
-| Taxa de cartão       | Percentual descontado pela forma de pagamento                                     | Reduz o valor líquido de cada venda                                                      |
-| Faixa de atenção     | Leitura interna de quanto sobra a cada R$ 100                                     | Abaixo de R$ 20 sinaliza pouca folga em Produto e Produção; não define preço recomendado |
-| Dias por semana      | Dias de funcionamento ou atendimento                                              | Divide a meta mensal em metas semanais e diárias                                         |
-| Desconto simulado    | Redução percentual aplicada ao preço atual                                        | Recalcula preço, lucro e margem após o desconto                                          |
+| Parâmetro            | Significado para o negócio                                                        | Efeito no resultado                                      |
+| -------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Preço atual          | Valor cobrado do cliente                                                          | Base da receita e de todas as margens                    |
+| Custos fixos mensais | Gastos que existem mesmo sem vender, como aluguel, luz, contador e salários fixos | Precisam ser absorvidos pelas vendas ou horas faturáveis |
+| Pró-labore           | Salário desejado pelo dono                                                        | Quando ligado, é tratado como parte do custo mensal      |
+| Imposto              | Percentual do preço destinado a tributos                                          | Reduz o valor líquido de cada venda                      |
+| Taxa de cartão       | Percentual descontado pela forma de pagamento                                     | Reduz o valor líquido de cada venda                      |
+| Dias por semana      | Dias de funcionamento ou atendimento                                              | Divide a meta mensal em metas semanais e diárias         |
+| Desconto simulado    | Redução percentual aplicada ao preço atual                                        | Recalcula preço, lucro e margem após o desconto          |
 
 ### 4.2 Parâmetros de produtos
 
@@ -174,15 +173,13 @@ O volume mensal significa **unidades vendidas**, não unidades apenas produzidas
 
 O comportamento atual começa com alguns valores predefinidos:
 
-- faixa interna de atenção abaixo de **R$ 20 a cada R$ 100** para produtos e produção própria;
-- faixa de atenção interna de **R$ 15 a cada R$ 100** para serviços;
 - simulação inicial de **10% de desconto**;
 - referência de **6 dias por semana para produtos e produção própria**;
 - referência de **5 dias por semana para serviços**;
 - pró-labore inicialmente desligado para produtos e produção própria;
 - pró-labore mensal informado diretamente no fluxo de serviços.
 
-No fluxo atual de Produto e Produção, 20% serve somente para separar `Margem apertada` de `Lucro`. Não é meta obrigatória, margem ideal nem base para um preço recomendado. No relatório atual de Serviço, R$ 15 a cada R$ 100 separa “Pouca folga” de “Boa folga”; essa faixa também é apenas um alerta.
+Não existe margem padrão aplicada a Produto, Produção ou Serviço. O percentual real é descritivo: mostra quanto sobra a cada R$ 100, mas não transforma um resultado positivo em alerta por ficar abaixo de um número arbitrário.
 
 Campos numéricos vazios ou inválidos são tratados como **zero**. Isso permite continuar o diagnóstico, mas também significa que um campo esquecido pode tornar o resultado incompleto.
 
@@ -232,7 +229,7 @@ Ela não considera necessariamente imposto, cartão, frete, despesas fixas e pr�
 Margem real = Lucro por unidade ÷ Preço
 ```
 
-Essa é a margem usada no veredito.
+Esse percentual descreve o resultado. O veredito usa sinais objetivos: perda direta, dados incompletos, ausência de vendas, resultado negativo, equilíbrio ou resultado positivo.
 
 ### 5.6 Margem de contribuição
 
@@ -304,13 +301,13 @@ Se o pró-labore estiver desligado, apenas o custo fixo operacional é considera
 
 Os relatórios atuais preservam a resposta original e distinguem três estados:
 
-- **volume vazio:** significa que o usuário ainda não sabe ou não informou a quantidade. O diagnóstico é parcial; faturamento, resultado e margem mensal ficam indisponíveis. A meta mensal aparece apenas como referência, enquanto as metas semanal e diária ficam ocultas;
-- **volume igual a zero:** significa um mês conhecido sem vendas. O faturamento é zero e o resultado mensal é o negativo dos gastos mensais efetivos;
-- **volume positivo:** permite calcular a análise mensal completa.
+- **volume vazio:** significa que o usuário ainda não sabe ou não informou a quantidade. O diagnóstico é parcial; faturamento, resultado mensal, rateio dos gastos, custo completo por unidade, menor preço completo, lucro unitário e margem real ficam indisponíveis. A quantidade mensal necessária no preço atual ainda pode ser calculada pela contribuição da venda; as referências semanal e diária ficam ocultas;
+- **volume igual a zero:** significa um mês conhecido sem vendas. O faturamento é zero e o resultado mensal é o negativo dos gastos mensais efetivos. Como não há unidades para receber o rateio, custo completo, menor preço completo, lucro unitário e margem real ficam indisponíveis;
+- **volume positivo:** permite ratear os gastos mensais e calcular a análise mensal e unitária completa.
 
 Em todos os casos, o valor deixado por venda continua sendo calculado a partir de preço, taxas e custo direto. Os gastos mensais permanecem inteiros e nunca são divididos por zero.
 
-Relatórios salvos mantêm o contrato e os números da versão em que foram criados. A mudança de interpretação do campo vazio não recalcula snapshots antigos.
+Os relatórios criados pelo comportamento atual persistem exatamente esses estados; volume desconhecido nunca é convertido em zero.
 
 ### 6.4 Custo total considerado por unidade
 
@@ -349,11 +346,11 @@ Sem vendas, esse percentual não é calculado.
 Preço mínimo = custo total por unidade ÷ (1 - T), quando Q > 0
 ```
 
-Sem quantidade informada, a referência cobre apenas o custo direto e as cobranças da venda. Os gastos mensais são pagos pela quantidade necessária mostrada no relatório. Zero é um preço mínimo válido quando não há custo direto.
+Sem quantidade positiva, o sistema não inventa um custo completo nem um menor preço por unidade. Ainda pode informar a quantidade mensal necessária no preço atual quando a contribuição unitária é positiva.
 
 ### 6.9 Ausência de preço-alvo
 
-Os relatórios atuais de Produto e Produção não calculam nem exibem preço-alvo. Relatórios antigos preservam esse campo somente como parte de seus snapshots imutáveis.
+Os relatórios atuais não calculam nem exibem preço baseado em margem desejada. A única referência de preço é o menor valor que cobre o custo completo conhecido, e ela só existe quando há volume positivo para ratear os gastos mensais.
 
 ### 6.10 Quantidade necessária para cobrir o mês
 
@@ -384,7 +381,6 @@ Considere:
 - **CD** = custo direto de material por hora ou atendimento;
 - **P** = preço da hora ou do atendimento;
 - **V** = imposto + cartão;
-- **M** = meta de margem.
 
 ### 7.1 Capacidade mensal normalizada
 
@@ -440,14 +436,13 @@ margem real = lucroUnit ÷ preço
 
 A contribuição mostra quanto cada venda deixa para pagar pró-labore e contas fixas depois de taxas e material. O lucro unitário também desconta o custo de estrutura rateado.
 
-### 7.6 Menor preço sem prejuízo e preço de referência
+### 7.6 Menor preço sem prejuízo
 
 ```text
 preço mínimo = custoUnit ÷ (1 − imposto − cartão)
-preço-alvo = custoUnit ÷ (1 − imposto − cartão − margem-alvo)
 ```
 
-O relatório atual de Serviço destaca o menor preço sem prejuízo e não exibe um preço-alvo. O cálculo interno de referência é preservado por compatibilidade histórica, mas não orienta a comunicação atual do Serviço.
+O relatório de Serviço destaca somente o menor preço sem prejuízo. Nenhum percentual universal é acrescentado ao cálculo.
 
 ### 7.7 Capacidade mensal
 
@@ -470,28 +465,28 @@ Essa meta representa quantas horas ou atendimentos precisam contribuir para paga
 
 ## 8. Regras do veredito
 
-### 8.1 Classificação atual de Produto e Produção
+### 8.1 Classificação objetiva
 
-| Situação             | Condição usada                                                      | Resultado apresentado                       |
-| -------------------- | ------------------------------------------------------------------- | ------------------------------------------- |
-| Prejuízo direto      | Cada venda deixa valor negativo após custo direto e taxas           | Vender mais aumenta a perda                 |
-| Sem vendas           | Quantidade omitida e gastos mensais iguais a zero                   | Não há movimento mensal para avaliar        |
-| Prejuízo operacional | Quantidade omitida com gastos mensais, ou resultado mensal negativo | O mês não pagou os gastos informados        |
-| No limite            | Resultado mensal igual a zero                                       | O mês pagou exatamente os gastos            |
-| Margem apertada      | Resultado positivo abaixo de R$ 20 a cada R$ 100 vendidos           | Há lucro, mas pouca folga                   |
-| Lucro                | Resultado positivo a partir de R$ 20 a cada R$ 100 vendidos         | Há folga segundo a faixa interna de atenção |
+| Situação             | Condição usada                                                    | Resultado apresentado                |
+| -------------------- | ----------------------------------------------------------------- | ------------------------------------ |
+| Preço ausente        | Serviço sem preço atual                                           | É necessário informar o preço        |
+| Prejuízo direto      | Cada venda deixa valor igual ou inferior a zero após custo direto | Vender mais não resolve a perda      |
+| Volume incompleto    | Produto ou Produção sem quantidade mensal informada               | Faltam dados para a análise completa |
+| Sem vendas           | Quantidade mensal conhecida e igual a zero                        | O mês não teve vendas                |
+| Prejuízo operacional | Resultado final menor que zero                                    | O mês não pagou os gastos informados |
+| No limite            | Resultado final igual a zero                                      | O mês pagou exatamente os gastos     |
+| Resultado positivo   | Resultado final maior que zero                                    | O mês terminou com valor positivo    |
 
-Relatórios antigos e Serviço mantêm as classificações de suas próprias versões e não são recalculados.
+O percentual de margem não muda essa classificação. Qualquer resultado acima de zero recebe o veredito objetivo de resultado positivo.
 
 ### 8.2 Escolha do principal ponto a corrigir
 
-O sistema escolhe apenas uma prioridade principal:
+O sistema escolhe apenas uma prioridade principal entre custo, dados, preço e volume:
 
 | Prioridade | Quando é escolhida                                                                    | Orientação central                                   |
 | ---------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | Custo      | Produto não cobre nem os custos variáveis da unidade                                  | Reduzir custo ou elevar preço antes de buscar volume |
 | Preço      | A venda cobre o variável, mas não paga toda a estrutura; ou serviço fecha no vermelho | Corrigir o preço para sair do prejuízo               |
-| Margem     | Existe lucro, porém com pouca folga                                                   | Rever preço e gastos                                 |
 | Volume     | O preço deixa valor positivo, mas o mês depende de mais vendas                        | Buscar o número necessário de clientes ou vendas     |
 
 Essa prioridade também orienta a resposta “O que preciso fazer agora?” e a interpretação enviada à IA.
@@ -521,7 +516,7 @@ Acima do menor preço
         = existe alguma sobra; a leitura mensal depende das vendas e gastos
 ```
 
-Preço-alvo aparece somente em relatórios legados. Os relatórios `2/2/3` não o calculam nem o apresentam.
+Não existe uma segunda referência baseada em margem desejada.
 
 ---
 
@@ -543,7 +538,7 @@ O limite máximo de desconto antes do prejuízo é:
 Teto de desconto = 1 - (preço mínimo ÷ preço atual)
 ```
 
-Esse teto indica apenas o ponto em que o lucro chega a zero. Um desconto abaixo do teto ainda pode reduzir a margem para menos do que a meta desejada.
+Esse teto indica o ponto em que o lucro chega a zero. A simulação mostra objetivamente o novo lucro e a nova margem, sem compará-los a um percentual universal.
 
 ---
 
@@ -579,23 +574,9 @@ O investimento inicial não altera preço, margem, ponto de equilíbrio nem os d
 
 ---
 
-## 13. Regras de meta existentes no motor de cálculo
+## 13. Ausência de margem universal
 
-O motor foi preparado para trabalhar com a meta de duas formas, embora os controles para escolhê-las não estejam atualmente visíveis no diagnóstico rápido. Por isso, esta seção descreve uma capacidade interna existente, e não uma opção disponível ao usuário nessa jornada.
-
-### Opção A — margem percentual
-
-O usuário informa diretamente o percentual desejado. Exemplos: 15%, 20% ou 30%.
-
-No comportamento visível atual, são aplicados automaticamente 20% para produto e produção própria e 15% para serviço.
-
-### Opção B — lucro desejado em reais
-
-O usuário informa quanto deseja lucrar no mês, além do pró-labore. O sistema converte esse valor em uma margem equivalente.
-
-Para produto, o lucro mensal é primeiro dividido pelo volume mensal para encontrar o lucro desejado por unidade. Sem volume informado, essa conversão resulta em meta zero e não produz uma referência útil.
-
-Para serviço, o lucro mensal desejado é comparado ao custo mensal formado por despesas fixas e pró-labore.
+O motor atual não recebe nem aplica um percentual de margem desejada. Resultado e margem são consequências dos dados informados. O sistema pode mostrar o menor preço sem prejuízo e a quantidade necessária para pagar os gastos, mas não afirma qual margem seria ideal para um ramo, região ou estratégia comercial.
 
 ---
 
@@ -608,20 +589,19 @@ Ao salvar, o sistema registra um retrato do diagnóstico contendo, entre outros 
 - preço atual;
 - margem real;
 - preço mínimo;
-- preço-alvo;
 - lucro por unidade ou atendimento;
 - contribuição por venda;
-- situação da margem;
+- veredito objetivo do resultado;
 - principal ponto a corrigir;
 - indicação de ausência de volume.
 
 A IA não realiza os cálculos principais. O motor de regras calcula os números primeiro; a IA recebe o retrato pronto para explicá-lo em linguagem consultiva.
 
-Novos relatórios de Serviço usam o contrato `4/3/5` (schema/cálculo/conteúdo). Eles preservam preço e unidade originais, custo de material original, minutos trabalhados por dia e duração do atendimento, ao lado dos valores normalizados usados no cálculo. Os contratos legados `2/1/2`, `3/2/3` e `3/2/4` continuam sendo lidos sem reinterpretar nem recalcular seus números.
+Os contratos atuais mantiveram seus números de versão: Serviço `4/3/5`, Produto `3/3/4`, Produção `3/3/4` e Detalhado `1/1/1` (schema/cálculo/conteúdo). Os nomes públicos também permanecem `create_service_diagnosis_report_v4`, `create_product_diagnosis_report_v3`, `create_production_diagnosis_report_v3` e `create_detailed_diagnosis_report`.
 
 Relatórios compatíveis podem ser editados por clientes com plano pago diretamente na página de detalhe, com uma prévia calculada em tempo real pelo mesmo motor determinístico usado no salvamento. Ao confirmar, o cliente escolhe entre substituir o registro atual ou salvar um novo relatório. A substituição atualiza o mesmo registro, preserva seu identificador e sua data de criação e incrementa a versão de concorrência; ela não cria uma cópia histórica oculta. A exclusão solicitada pelo cliente é lógica. Relatórios gerados durante um período de assinatura permanecem visíveis após o encerramento desse período.
 
-Contratos legados permanecem somente para leitura. Seus snapshots continuam imutáveis e não são recalculados com regras futuras.
+Snapshots locais anteriores à correção não recebem camada de compatibilidade nem backfill e não fazem parte do seed atual. A aplicação e o seed validam somente os contratos atuais listados acima.
 
 No protótipo fora do ambiente original, o salvamento pode não persistir após recarregar a página e o relatório de IA pode exibir uma mensagem de indisponibilidade. Essas limitações não alteram os cálculos exibidos na tela.
 
@@ -634,11 +614,11 @@ No protótipo fora do ambiente original, o salvamento pode não persistir após 
 3. **Serviço sem horas faturáveis também fica incompleto.** O custo da hora passa a zero, tornando o resultado irreal.
 4. **Imposto e cartão em branco são considerados zero.** Isso pode superestimar a margem.
 5. **O sistema não avalia demanda ou concorrência.** Um preço financeiramente saudável ainda pode não ser aceito pelo mercado.
-6. **As faixas internas não são recomendações setoriais.** R$ 20 a cada R$ 100 em Produto e Produção e R$ 15 a cada R$ 100 em Serviço não garantem adequação ao ramo, à região ou ao mercado.
+6. **Não existe margem universal.** A margem calculada descreve os dados informados e não garante adequação ao ramo, à região ou ao mercado.
 7. **Taxas iguais ou superiores a 100% impedem uma referência de menor preço.** O relatório explica essa limitação sem inventar um valor.
 8. **Rendimento e perda de produção não fazem parte do diagnóstico rápido atual.** Essas informações são tratadas somente no diagnóstico detalhado/ficha técnica.
 9. **O ponto de equilíbrio não representa necessariamente crescimento.** Ele mostra o mínimo para cobrir a estrutura; lucro adicional exige margem ou volume superior.
-10. **O teto de desconto significa lucro zero, não margem saudável.** A empresa pode continuar no azul e, ainda assim, ficar abaixo da meta.
+10. **O teto de desconto significa lucro zero.** Ele não recomenda uma política comercial nem uma margem ideal.
 
 ---
 
@@ -646,32 +626,33 @@ No protótipo fora do ambiente original, o salvamento pode não persistir após 
 
 Considere um produto com:
 
-- preço atual: R$ 50;
-- custo direto: R$ 20;
-- frete/embalagem: R$ 2;
-- custos fixos com pró-labore: R$ 3.000 por mês;
+- preço atual: R$ 55;
+- custo direto: R$ 16;
+- gastos mensais efetivos: R$ 4.000;
 - volume: 200 unidades por mês;
-- imposto + cartão: 10%;
-- faixa interna de atenção: R$ 20 a cada R$ 100.
+- imposto + cartão: 7%.
 
 ```text
-Custo mensal por unidade = 3.000 ÷ 200 = R$ 15
+Custo mensal por unidade = 4.000 ÷ 200 = R$ 20
 
-Custo total por unidade = 20 + 2 + 15 = R$ 37
+Custo total por unidade = 16 + 20 = R$ 36
 
-Preço após impostos e cartão = 50 × 90% = R$ 45
+Preço após impostos e cartão = 55 × 93% = R$ 51,15
 
-Valor deixado por venda = 45 - 22 = R$ 23
+Valor deixado por venda = 51,15 - 16 = R$ 35,15
 
-Resultado do mês = 23 × 200 - 3.000 = R$ 1.600
+Lucro por unidade = 51,15 - 36 = R$ 15,15
 
-Quanto sobra a cada R$ 100 = 1.600 ÷ 10.000 = R$ 16
+Resultado do mês = 15,15 × 200 = R$ 3.030
 
-Preço mínimo = 37 ÷ 90% = R$ 41,11
+Quanto sobra a cada R$ 100 = 3.030 ÷ 11.000 = 27,55%
 
+Preço mínimo = 36 ÷ 93% = R$ 38,71
+
+Quantidade mensal necessária = teto(4.000 ÷ 35,15) = 114 vendas
 ```
 
-Interpretação: o produto fecha o mês com R$ 1.600 de resultado. Como sobram R$ 16 a cada R$ 100 vendidos, ele fica na faixa de **Margem apertada**. Os R$ 20 são apenas um sinal interno de atenção; o sistema não apresenta preço-alvo.
+Interpretação: o produto fecha o mês com R$ 3.030 de resultado e recebe o veredito **Resultado positivo**. A margem de 27,55% é apresentada como medida do resultado, não como comparação com uma meta universal.
 
 ---
 
@@ -686,7 +667,6 @@ Considere um profissional com:
 - preço por atendimento: R$ 80;
 - material consumido por atendimento: R$ 10;
 - imposto + cartão: 8%;
-- faixa de atenção: R$ 15 a cada R$ 100 cobrados.
 
 ```text
 custoBase = 2.000 + 4.000 = R$ 6.000
@@ -712,7 +692,7 @@ preço mínimo = 60 ÷ 92% = R$ 65,22
 meta mensal = teto(6.000 ÷ 63,60) = 95 atendimentos
 ```
 
-Interpretação: o preço cobre estrutura, material e taxas. Sobram R$ 17 a cada R$ 100 cobrados, portanto o relatório mostra “Boa folga”. A contribuição de R$ 63,60 é o valor que cada atendimento deixa para pagar a estrutura mensal; por isso são necessários pelo menos 95 atendimentos para fechar essa conta.
+Interpretação: o preço cobre estrutura, material e taxas. O resultado unitário é positivo e a margem real é 17%. A contribuição de R$ 63,60 é o valor que cada atendimento deixa para pagar a estrutura mensal; por isso são necessários pelo menos 95 atendimentos para fechar essa conta.
 
 ---
 
@@ -731,13 +711,9 @@ O preço cobre também o custo fixo rateado ou o custo do serviço?
   Não -> prejuízo; prioridade = preço
   Sim -> continuar
 
-A margem real está abaixo da meta?
-  Sim -> margem apertada; prioridade = margem
-  Não -> continuar
-
-A margem supera a meta em mais de 3 pontos percentuais?
-  Sim -> acima da meta; prioridade = volume
-  Não -> margem adequada; prioridade = volume
+O resultado final é igual a zero?
+  Sim -> no limite; prioridade = volume
+  Não -> resultado positivo; prioridade = volume
 ```
 
-Em resumo, o diagnóstico rápido segue uma ordem de proteção do negócio: primeiro impede que cada venda gere perda, depois verifica se a estrutura inteira é paga, em seguida compara o lucro com a meta e, somente quando o preço se sustenta, recomenda buscar mais volume.
+Em resumo, o diagnóstico rápido segue uma ordem de proteção do negócio: primeiro verifica se cada venda contribui, depois exige os dados necessários e confere se a estrutura inteira é paga. Quando o resultado é maior que zero, registra objetivamente um resultado positivo e usa a margem apenas para descrevê-lo.
