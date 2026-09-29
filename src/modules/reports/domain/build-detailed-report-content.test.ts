@@ -55,6 +55,21 @@ describe("buildDetailedReportContent", () => {
     expect(content.executiveSummary.answers[0]?.answer).toMatch(
       /^Sim\. O lucro estimado do conjunto é de R\$ .+ no mês\.$/,
     );
+    expect(
+      content.sections.find(({ key }) => key === "margin_diagnosis"),
+    ).toMatchObject({
+      title: "Quanto sobra no mês",
+      body: expect.stringContaining("custos dos itens"),
+      emphasisLabel: "Lucro no mês",
+      emphasisValue: "R$ 3.030,00",
+    });
+    expect(
+      content.sections.find(({ key }) => key === "sales_goal"),
+    ).toMatchObject({
+      title: "Quanto você precisa vender",
+      emphasisLabel: "Faturamento necessário no mês",
+      emphasisValue: "R$ 6.258,90",
+    });
   });
 
   it("shows one unknown item's monthly quantity without a weekly split", () => {
@@ -67,7 +82,11 @@ describe("buildDetailedReportContent", () => {
       calculateDetailedDiagnosis(partial),
     );
     const sales = content.sections.find(({ key }) => key === "sales_goal");
-    expect(sales?.body).toContain("Como há um único item");
+    expect(sales).toMatchObject({
+      title: "Quanto você precisa vender",
+      emphasisLabel: "Faturamento necessário no mês",
+      emphasisValue: "R$ 6.258,90",
+    });
     expect(sales?.body).not.toMatch(/por semana|por dia/);
   });
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   calculateAllocatedUnitEconomics,
+  calculateBreakEvenRevenue,
   calculateDirectUnitEconomics,
   calculateFixedAllocation,
   calculateMonthlySalesGoal,
@@ -40,6 +41,12 @@ describe("unit economics", () => {
       minimumPriceCents: 3_871,
     });
     expect(calculateMonthlySalesGoal(400_000, 3_515)).toBe(114);
+    expect(calculateBreakEvenRevenue(400_000, 5_500, 3_515)).toBe(625_890);
+  });
+
+  it("does not calculate break-even revenue without a positive sale contribution", () => {
+    expect(calculateBreakEvenRevenue(400_000, 5_500, 0)).toBeNull();
+    expect(calculateBreakEvenRevenue(400_000, 5_500, -1)).toBeNull();
   });
 
   it.each([null, 0])(

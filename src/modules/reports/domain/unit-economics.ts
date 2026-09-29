@@ -91,8 +91,22 @@ function calculateMonthlySalesGoal(
   );
 }
 
+function calculateBreakEvenRevenue(
+  effectiveFixedCostCents: number,
+  currentPriceCents: number,
+  unitContributionCents: number,
+): number | null {
+  if (currentPriceCents <= 0 || unitContributionCents <= 0) return null;
+
+  return ceilDivide(
+    BigInt(effectiveFixedCostCents) * BigInt(currentPriceCents),
+    BigInt(unitContributionCents),
+  );
+}
+
 export {
   calculateAllocatedUnitEconomics,
+  calculateBreakEvenRevenue,
   calculateDirectUnitEconomics,
   calculateFixedAllocation,
   calculateMonthlySalesGoal,

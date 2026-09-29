@@ -1,10 +1,6 @@
 import type { NormalizedServiceDiagnosisCommand } from "@/modules/quick-diagnosis/types";
 
-import {
-  formatBasisPoints,
-  formatCurrency,
-  formatIntegerVolume,
-} from "../formatters";
+import { formatBasisPoints, formatCurrency } from "../formatters";
 import {
   parseCurrentServiceReportSnapshot,
   type CurrentServiceReportSnapshot,
@@ -17,6 +13,7 @@ import {
 } from "../types";
 import type { ServiceReportCalculation } from "./calculate-service-report";
 import { buildServiceExecutiveSummary } from "./build-service-executive-summary";
+import { calculateBreakEvenRevenue } from "./unit-economics";
 
 function breakEvenSection(
   calculation: ServiceReportCalculation,
@@ -61,20 +58,24 @@ function marginSection(calculation: ServiceReportCalculation): ReportSection {
 }
 
 function salesSection(calculation: ServiceReportCalculation): ReportSection {
-  const unit = calculation.unit === "hour" ? "horas" : "atendimentos";
+  const breakEvenRevenueCents = calculateBreakEvenRevenue(
+    calculation.monthlyCostCents,
+    calculation.currentPriceCents,
+    calculation.unitContributionCents ?? 0,
+  );
   return {
     key: "sales_goal",
-    title: "Quantas vendas pagam o mês",
+    title: "Quanto você precisa vender",
     body:
-      calculation.monthlySalesGoal === null
-        ? "No preço atual, ainda não há valor positivo por venda para pagar os gastos do mês."
-        : `No preço atual, cerca de ${formatIntegerVolume(calculation.monthlySalesGoal)} ${unit} pagam os gastos e separam o valor informado para você.`,
-    emphasisLabel: "Quantidade necessária no mês",
+      breakEvenRevenueCents === null
+        ? "No preço atual, cada serviço ainda não deixa um valor positivo para pagar os gastos do mês. Revise o preço ou os custos antes de definir uma meta de faturamento."
+        : "No preço atual, esta é a referência de faturamento mensal necessária para que o valor deixado pelos serviços pague os gastos e o valor informado para você.",
+    emphasisLabel: "Faturamento necessário no mês",
     emphasisValue:
-      calculation.monthlySalesGoal === null
+      breakEvenRevenueCents === null
         ? "Ainda não calculado"
-        : `${formatIntegerVolume(calculation.monthlySalesGoal)} ${unit}`,
-    tone: calculation.monthlySalesGoal === null ? "critical" : "neutral",
+        : formatCurrency(breakEvenRevenueCents),
+    tone: breakEvenRevenueCents === null ? "critical" : "neutral",
   };
 }
 

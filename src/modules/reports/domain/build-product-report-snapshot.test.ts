@@ -47,7 +47,47 @@ describe("buildProductReportSnapshot", () => {
     expect(content).toContain("Valor deixado por venda");
     expect(content).toContain("Resultado por venda");
     expect(content).toContain("Quanto sobra a cada R$ 100");
+    expect(
+      snapshot.sections.find(({ key }) => key === "margin_diagnosis"),
+    ).toMatchObject({
+      title: "Quanto sobra no mês",
+      body: expect.stringContaining("recebidos depois de impostos e cartão"),
+      emphasisLabel: "Lucro no mês",
+      emphasisValue: "R$ 3.030,00",
+    });
+    expect(
+      snapshot.sections.find(({ key }) => key === "sales_goal"),
+    ).toMatchObject({
+      title: "Quanto você precisa vender",
+      emphasisLabel: "Faturamento necessário no mês",
+      emphasisValue: "R$ 6.258,90",
+    });
     expect(parseProductReportSnapshot(snapshot)).toEqual(snapshot);
+  });
+
+  it("adapts the monthly mini-card to loss and break-even scenarios", () => {
+    const loss = build({ ...command, monthlySalesVolume: 10 });
+    expect(
+      loss.sections.find(({ key }) => key === "margin_diagnosis"),
+    ).toMatchObject({
+      title: "Quanto sobra no mês",
+      emphasisLabel: "Prejuízo no mês",
+      emphasisValue: "-R$ 3.648,50",
+    });
+
+    const breakEven = build({
+      ...command,
+      fixedMonthlyExpensesCents: 351_500,
+      monthlySalesVolume: 100,
+      proLaboreIncluded: false,
+      proLaboreCents: 0,
+    });
+    expect(
+      breakEven.sections.find(({ key }) => key === "margin_diagnosis"),
+    ).toMatchObject({
+      emphasisLabel: "Sem lucro nem prejuízo",
+      emphasisValue: "R$ 0,00",
+    });
   });
 
   it("shows only the monthly quantity when volume is unknown", () => {
@@ -65,8 +105,14 @@ describe("buildProductReportSnapshot", () => {
       unitCostCents: null,
       minimumPriceCents: null,
     });
-    expect(content).toContain("não dividimos os gastos do mês");
-    expect(content).toContain("separar o valor informado para você");
+    expect(content).toContain("Faturamento necessário no mês");
+    expect(content).toContain("e o valor informado para você");
+    expect(
+      snapshot.sections.find(({ key }) => key === "margin_diagnosis"),
+    ).toMatchObject({
+      title: "Quanto sobra no mês",
+      emphasisValue: "Ainda não calculado",
+    });
     expect(content).not.toMatch(/por semana|por dia/);
   });
 
@@ -79,7 +125,7 @@ describe("buildProductReportSnapshot", () => {
         proLaboreCents: 999_999,
       }),
     );
-    expect(content).not.toContain("separar o valor informado para você");
+    expect(content).not.toContain("e o valor informado para você");
   });
 
   it("contains no target-based or margin-quality language", () => {

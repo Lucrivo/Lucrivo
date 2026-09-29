@@ -61,7 +61,10 @@ describe("buildDetailedReportSnapshot", () => {
       items: [{ ...command.items[0], monthlySalesVolume: null }],
     });
     const sales = snapshot.sections.find(({ key }) => key === "sales_goal");
-    expect(sales?.body).toContain("Como há um único item");
+    expect(sales).toMatchObject({
+      title: "Quanto você precisa vender",
+      emphasisLabel: "Faturamento necessário no mês",
+    });
     expect(sales?.body).not.toMatch(/por semana|por dia/);
     expect(snapshot.results.items[0]).toMatchObject({
       fixedAllocationCents: null,

@@ -17,6 +17,7 @@ import {
   type ReportSection,
 } from "../types";
 import { buildProductionExecutiveSummary } from "./build-production-executive-summary";
+import { calculateBreakEvenRevenue } from "./unit-economics";
 
 function minimumPriceSection(
   calculation: ProductionReportCalculation,
@@ -85,23 +86,27 @@ function monthlySection(
   if (calculation.monthlyResultCents === null) {
     return {
       key: "margin_diagnosis",
-      title: "Resultado do mês",
-      body: "O resultado do mês depende de uma quantidade informada.",
-      emphasisLabel: "Quanto sobra a cada R$ 100",
+      title: "Quanto sobra no mês",
+      body: "O cálculo depende da quantidade vendida no mês. Informe esse valor para ver quanto sobra depois dos custos e gastos considerados.",
+      emphasisLabel: "Valor no mês",
       emphasisValue: "Ainda não calculado",
       tone: "neutral",
     };
   }
+  const margin =
+    calculation.realMarginBasisPoints === null
+      ? "Ainda não calculado"
+      : formatBasisPoints(calculation.realMarginBasisPoints);
   return {
     key: "margin_diagnosis",
-    title: "Resultado do mês",
-    body: `Quanto sobra a cada R$ 100: ${calculation.realMarginBasisPoints === null ? "Ainda não calculado" : formatBasisPoints(calculation.realMarginBasisPoints)}.`,
+    title: "Quanto sobra no mês",
+    body: `O cálculo considera ${formatCurrency(calculation.monthlyNetRevenueCents ?? 0)} recebidos depois de impostos e cartão, menos os custos de fabricação e os gastos mensais. Quanto sobra a cada R$ 100: ${margin}.`,
     emphasisLabel:
-      calculation.verdict === "positive_result"
-        ? "Resultado positivo"
-        : calculation.verdict === "break_even"
-          ? "Ponto de equilíbrio"
-          : "Resultado do mês",
+      calculation.monthlyResultCents > 0
+        ? "Lucro no mês"
+        : calculation.monthlyResultCents < 0
+          ? "Prejuízo no mês"
+          : "Sem lucro nem prejuízo",
     emphasisValue: formatCurrency(calculation.monthlyResultCents),
     tone:
       calculation.monthlyResultCents > 0
@@ -116,28 +121,30 @@ function salesSection(
   command: ProductionDiagnosisCommand,
   calculation: ProductionReportCalculation,
 ): ReportSection {
-  if (calculation.monthlySalesGoal === null) {
+  const breakEvenRevenueCents = calculateBreakEvenRevenue(
+    calculation.effectiveFixedCostCents,
+    calculation.currentPriceCents,
+    calculation.unitContributionCents,
+  );
+  if (breakEvenRevenueCents === null) {
     return {
       key: "sales_goal",
-      title: "Quantas vendas pagam o mês",
-      body: "No preço atual, uma nova venda ainda não deixa valor para pagar os gastos do mês.",
-      emphasisLabel: "Quantidade necessária",
+      title: "Quanto você precisa vender",
+      body: "No preço atual, cada unidade vendida ainda não deixa um valor positivo para pagar os gastos do mês. Revise o preço ou os custos antes de definir uma meta de faturamento.",
+      emphasisLabel: "Faturamento necessário no mês",
       emphasisValue: "Ainda não calculado",
       tone: "critical",
     };
   }
   const withdrawal = command.proLaboreIncluded
-    ? " e separar o valor informado para você"
+    ? " e o valor informado para você"
     : "";
-  const unknown = calculation.monthlySalesVolumeUsed === null;
   return {
     key: "sales_goal",
-    title: "Quantas vendas pagam o mês",
-    body: unknown
-      ? `Como você ainda não informou quantas vendas faz, não dividimos os gastos do mês por uma quantidade estimada. No preço atual, você precisa de cerca de ${formatIntegerVolume(calculation.monthlySalesGoal)} vendas para pagar esses gastos${withdrawal}.`
-      : `No preço atual, cerca de ${formatIntegerVolume(calculation.monthlySalesGoal)} vendas pagam os gastos do mês${withdrawal}.`,
-    emphasisLabel: "Vendas necessárias no mês",
-    emphasisValue: `${formatIntegerVolume(calculation.monthlySalesGoal)} vendas`,
+    title: "Quanto você precisa vender",
+    body: `No preço atual, esta é a referência de faturamento mensal necessária para que o valor deixado pelas vendas pague os gastos mensais${withdrawal}.`,
+    emphasisLabel: "Faturamento necessário no mês",
+    emphasisValue: formatCurrency(breakEvenRevenueCents),
     tone: "neutral",
   };
 }

@@ -50,6 +50,21 @@ describe("buildProductionReportSnapshot", () => {
     expect(content).toContain("Parte dos gastos do mês");
     expect(content).toContain("Custo completo por unidade");
     expect(content).toContain("Resultado por venda");
+    expect(
+      snapshot.sections.find(({ key }) => key === "margin_diagnosis"),
+    ).toMatchObject({
+      title: "Quanto sobra no mês",
+      body: expect.stringContaining("custos de fabricação"),
+      emphasisLabel: "Lucro no mês",
+      emphasisValue: "R$ 3.030,00",
+    });
+    expect(
+      snapshot.sections.find(({ key }) => key === "sales_goal"),
+    ).toMatchObject({
+      title: "Quanto você precisa vender",
+      emphasisLabel: "Faturamento necessário no mês",
+      emphasisValue: "R$ 6.258,90",
+    });
     expect(parseProductionReportSnapshot(snapshot)).toEqual(snapshot);
   });
 
@@ -65,7 +80,7 @@ describe("buildProductionReportSnapshot", () => {
       monthlySalesGoal: 114,
     });
     expect(snapshot.discountSimulationBase.unitCostCents).toBeNull();
-    expect(content).toContain("não dividimos os gastos do mês");
+    expect(content).toContain("Faturamento necessário no mês");
     expect(content).not.toMatch(/por semana|por dia/);
   });
 

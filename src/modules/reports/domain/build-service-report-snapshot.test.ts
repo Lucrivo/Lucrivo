@@ -52,12 +52,20 @@ describe("buildServiceReportSnapshot", () => {
   });
 
   it("uses objective complete-cost labels", () => {
-    const content = JSON.stringify(build());
+    const snapshot = build();
+    const content = JSON.stringify(snapshot);
     expect(content).toContain("Menor preço para não ficar no prejuízo");
     expect(content).toContain("Custo completo");
     expect(content).toContain("Resultado por serviço");
     expect(content).toContain("Quanto sobra a cada R$ 100");
     expect(content).toContain("Resultado positivo");
+    expect(
+      snapshot.sections.find(({ key }) => key === "sales_goal"),
+    ).toMatchObject({
+      title: "Quanto você precisa vender",
+      emphasisLabel: "Faturamento necessário no mês",
+      emphasisValue: "R$ 7.547,17",
+    });
   });
 
   it("keeps complete values unavailable without capacity", () => {

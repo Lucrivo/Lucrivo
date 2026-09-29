@@ -3,13 +3,9 @@ import type {
   DetailedDiagnosisCommand,
 } from "@/modules/detailed-diagnosis/types";
 
-import {
-  formatBasisPoints,
-  formatCurrency,
-  formatIntegerVolume,
-} from "../formatters";
+import { formatBasisPoints, formatCurrency } from "../formatters";
 import type { ReportExecutiveSummary, ReportSection } from "../types";
-import { calculateDetailedSalesGoal } from "./calculate-detailed-sales-goal";
+import { calculateBreakEvenRevenue } from "./unit-economics";
 
 type DetailedReportContent = {
   executiveSummary: ReportExecutiveSummary;
@@ -209,52 +205,89 @@ function saleSection(calculation: DetailedDiagnosisCalculation): ReportSection {
 function monthlySection(
   calculation: DetailedDiagnosisCalculation,
 ): ReportSection {
+  const result = calculation.monthlyResultCents;
+  const margin =
+    calculation.finalMarginBasisPoints === null
+      ? "Ainda não calculado"
+      : formatBasisPoints(calculation.finalMarginBasisPoints);
   return {
     key: "margin_diagnosis",
-    title: "Resultado do mês",
+    title: "Quanto sobra no mês",
     body:
-      calculation.monthlyResultCents === null
-        ? "Faltam quantidades para calcular o resultado do conjunto sem inventar uma proporção entre os itens."
-        : `Quanto sobra a cada R$ 100: ${calculation.finalMarginBasisPoints === null ? "Ainda não calculado" : formatBasisPoints(calculation.finalMarginBasisPoints)}.`,
-    emphasisLabel: "Resultado do mês",
-    emphasisValue: optionalCurrency(calculation.monthlyResultCents),
+      result === null
+        ? "Faltam quantidades para calcular quanto sobra no conjunto sem inventar uma proporção entre os itens."
+        : `O cálculo considera ${formatCurrency(calculation.monthlyNetRevenueCents ?? 0)} recebidos depois de impostos e cartão, menos os custos dos itens e os gastos mensais. Quanto sobra a cada R$ 100: ${margin}.`,
+    emphasisLabel:
+      result === null
+        ? "Valor no mês"
+        : result > 0
+          ? "Lucro no mês"
+          : result < 0
+            ? "Prejuízo no mês"
+            : "Sem lucro nem prejuízo",
+    emphasisValue: optionalCurrency(result),
     tone:
-      calculation.monthlyResultCents === null
+      result === null
         ? "neutral"
-        : calculation.monthlyResultCents > 0
+        : result > 0
           ? "positive"
-          : calculation.monthlyResultCents < 0
+          : result < 0
             ? "critical"
             : "neutral",
   };
+}
+
+function detailedBreakEvenRevenue(
+  command: DetailedDiagnosisCommand,
+  calculation: DetailedDiagnosisCalculation,
+): number | null {
+  if (calculation.breakEvenRevenueCents !== null) {
+    return calculation.breakEvenRevenueCents;
+  }
+  if (command.items.length !== 1) return null;
+
+  const item = command.items[0];
+  const itemResult = calculation.items.find(
+    (result) => result.itemId === item?.id,
+  );
+  if (!item || !itemResult) return null;
+
+  return calculateBreakEvenRevenue(
+    calculation.effectiveFixedCostCents,
+    item.unitSalePriceCents,
+    itemResult.unitContributionCents,
+  );
 }
 
 function salesSection(
   command: DetailedDiagnosisCommand,
   calculation: DetailedDiagnosisCalculation,
 ): ReportSection {
-  const goal = calculateDetailedSalesGoal(command, calculation, {
-    weeklyDivisorHundredths: 433,
-    operatingDaysPerWeek: 6,
-  });
-  if (!goal.available) {
+  const breakEvenRevenueCents = detailedBreakEvenRevenue(command, calculation);
+  if (breakEvenRevenueCents === null) {
+    const body = calculation.isPartial
+      ? "Informe as quantidades de todos os itens para calcular uma referência de faturamento sem inventar a proporção entre eles."
+      : calculation.verdict === "no_sales"
+        ? "Informe uma quantidade vendida maior que zero para calcular o faturamento necessário com a proporção entre os itens."
+        : "No preço atual, as vendas ainda não deixam um valor positivo suficiente para calcular o faturamento necessário.";
     return {
       key: "sales_goal",
-      title: "Quantas vendas pagam o mês",
-      body: goal.reason,
-      emphasisLabel: "Quantidade necessária",
+      title: "Quanto você precisa vender",
+      body,
+      emphasisLabel: "Faturamento necessário no mês",
       emphasisValue: "Ainda não calculado",
       tone: "neutral",
     };
   }
   return {
     key: "sales_goal",
-    title: "Quantas vendas pagam o mês",
-    body: goal.basedOnKnownMix
-      ? `Mantendo a proporção informada entre os itens, cerca de ${formatIntegerVolume(goal.monthly)} vendas pagam os gastos do mês.`
-      : `Como há um único item, no preço atual cerca de ${formatIntegerVolume(goal.monthly)} vendas pagam os gastos do mês. Não mostramos uma divisão semanal ou diária sem uma rotina informada.`,
-    emphasisLabel: "Vendas necessárias no mês",
-    emphasisValue: `${formatIntegerVolume(goal.monthly)} vendas`,
+    title: "Quanto você precisa vender",
+    body:
+      command.items.length === 1
+        ? "No preço atual, esta é a referência de faturamento mensal necessária para que o valor deixado pelas vendas pague os gastos mensais."
+        : "Mantendo a proporção informada entre os itens, esta é a referência de faturamento mensal necessária para que o valor deixado pelas vendas pague os gastos mensais.",
+    emphasisLabel: "Faturamento necessário no mês",
+    emphasisValue: formatCurrency(breakEvenRevenueCents),
     tone: "neutral",
   };
 }
