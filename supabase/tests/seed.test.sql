@@ -63,8 +63,8 @@ select is(
       'd1000000-0000-4000-8000-000000000000'::uuid and
       'd1000000-0000-4000-8000-000000000060'::uuid
   ),
-  295::bigint,
-  'seed creates 295 demo reports'
+  288::bigint,
+  'seed creates 288 demo reports'
 );
 
 select results_eq(
@@ -112,26 +112,59 @@ select results_eq(
     order by business_category::text, analysis_mode
   $$,
   $$ values
-    ('product'::text, 'detailed'::text, 7::bigint),
-    ('product'::text, 'quick'::text, 8::bigint),
-    ('production'::text, 'detailed'::text, 7::bigint),
-    ('production'::text, 'quick'::text, 8::bigint),
-    ('service'::text, 'quick'::text, 6::bigint)
+    ('product'::text, 'detailed'::text, 6::bigint),
+    ('product'::text, 'quick'::text, 6::bigint),
+    ('production'::text, 'detailed'::text, 6::bigint),
+    ('production'::text, 'quick'::text, 6::bigint),
+    ('service'::text, 'quick'::text, 5::bigint)
   $$,
-  'admin owns all 36 quick and detailed report scenarios'
+  'admin owns all 29 current quick and detailed report scenarios'
 );
 
-select is(
-  (
-    select count(*)::bigint
+select results_eq(
+  $$
+    select case
+        when analysis_mode = 'detailed' then 'detailed'
+        else business_category::text
+      end as report_family,
+      count(*)::bigint
     from public.diagnoses
     where user_id = 'd1000000-0000-4000-8000-000000000000'
-      and verdict = 'above_target'
-      and business_category in ('product', 'production')
-      and analysis_mode = 'quick'
-  ),
-  2::bigint,
-  'admin retains both historical above-target quick fixtures'
+      and verdict = 'positive_result'
+    group by report_family
+    order by report_family
+  $$,
+  $$ values
+    ('detailed'::text, 2::bigint),
+    ('product'::text, 1::bigint),
+    ('production'::text, 1::bigint),
+    ('service'::text, 1::bigint)
+  $$,
+  'every current report family includes positive-result coverage'
+);
+
+select results_eq(
+  $$
+    select distinct case
+        when analysis_mode = 'detailed' then 'detailed'
+        else business_category::text
+      end as report_family,
+      schema_version,
+      calculation_version,
+      content_version
+    from public.diagnoses
+    where user_id between
+      'd1000000-0000-4000-8000-000000000000'::uuid and
+      'd1000000-0000-4000-8000-000000000060'::uuid
+    order by report_family
+  $$,
+  $$ values
+    ('detailed'::text, 1::smallint, 1::smallint, 1::smallint),
+    ('product'::text, 3::smallint, 3::smallint, 4::smallint),
+    ('production'::text, 3::smallint, 3::smallint, 4::smallint),
+    ('service'::text, 4::smallint, 3::smallint, 5::smallint)
+  $$,
+  'seed snapshots use only current report version tuples'
 );
 
 select is(
@@ -147,6 +180,12 @@ select is(
         or report_snapshot ->> 'scenario' is distinct from scenario
         or report_snapshot #>> '{results,verdict}' is distinct from verdict
         or report_snapshot #>> '{results,priority}' is distinct from priority
+        or report_snapshot ->> 'schemaVersion'
+          is distinct from schema_version::text
+        or report_snapshot ->> 'calculationVersion'
+          is distinct from calculation_version::text
+        or report_snapshot ->> 'contentVersion'
+          is distinct from content_version::text
       )
   ),
   0::bigint,
@@ -240,8 +279,8 @@ select results_eq(
     order by diagnosis.business_category::text
   $$,
   $$ values
-    ('product'::text, array[1, 2, 3, 5, 8, 10, 12]::integer[]),
-    ('production'::text, array[12, 10, 8, 5, 3, 2, 1]::integer[])
+    ('product'::text, array[1, 2, 3, 5, 8, 10]::integer[]),
+    ('production'::text, array[10, 8, 5, 3, 2, 1]::integer[])
   $$,
   'admin detailed reports cover small through large item sets'
 );
