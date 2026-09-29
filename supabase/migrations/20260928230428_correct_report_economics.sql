@@ -54,7 +54,7 @@ declare
   expected_current_price_cents bigint;
   expected_material_cost_cents bigint;
 begin
-  if caller_id is null then
+  if caller_id is null or not private.account_is_eligible() then
     raise exception using
       errcode = '42501',
       message = 'authentication required';
@@ -308,7 +308,7 @@ begin
   );
 
   if not report_is_free
-    and not private.has_paid_access_for_user(
+    and not private.has_report_entitlement_for_user(
       caller_id,
       pg_catalog.statement_timestamp()
     )
@@ -441,7 +441,7 @@ declare
   report_id bigint;
   report_is_free boolean;
 begin
-  if caller_id is null then
+  if caller_id is null or not private.account_is_eligible() then
     raise exception using errcode = '42501', message = 'authentication required';
   end if;
 
@@ -582,7 +582,7 @@ begin
   );
 
   if not report_is_free
-    and not private.has_paid_access_for_user(
+    and not private.has_report_entitlement_for_user(
       caller_id,
       pg_catalog.statement_timestamp()
     )
@@ -644,7 +644,7 @@ declare
   report_id bigint;
   report_is_free boolean;
 begin
-  if caller_id is null then
+  if caller_id is null or not private.account_is_eligible() then
     raise exception using errcode = '42501', message = 'authentication required';
   end if;
 
@@ -787,7 +787,7 @@ begin
   );
 
   if not report_is_free
-    and not private.has_paid_access_for_user(
+    and not private.has_report_entitlement_for_user(
       caller_id,
       pg_catalog.statement_timestamp()
     )
@@ -863,7 +863,7 @@ declare
   item_record record;
   ingredient_record record;
 begin
-  if caller_id is null then
+  if caller_id is null or not private.account_is_eligible() then
     raise exception using errcode = '42501', message = 'authentication required';
   end if;
 
@@ -1089,7 +1089,7 @@ begin
   );
 
   if not report_is_free
-    and not private.has_paid_access_for_user(
+    and not private.has_report_entitlement_for_user(
       caller_id,
       pg_catalog.statement_timestamp()
     )

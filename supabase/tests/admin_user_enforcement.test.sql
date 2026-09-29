@@ -183,17 +183,16 @@ select is(
     where namespace.nspname = 'private'
       and routine.proname in (
         'create_service_diagnosis_report_v4_impl',
-        'create_product_diagnosis_report_impl',
-        'create_product_diagnosis_report_v2_impl',
-        'create_production_diagnosis_report_impl',
-        'create_production_diagnosis_report_v2_impl'
+        'create_product_diagnosis_report_v3_impl',
+        'create_production_diagnosis_report_v3_impl',
+        'create_detailed_diagnosis_report_impl'
       )
       and pg_catalog.pg_get_functiondef(routine.oid)
         like '%not private.account_is_eligible()%'
       and pg_catalog.pg_get_functiondef(routine.oid)
         like '%private.has_report_entitlement_for_user%'
   ),
-  5::bigint,
+  4::bigint,
   'all report creation implementations check eligibility and courtesy'
 );
 
