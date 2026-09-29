@@ -1444,7 +1444,12 @@ as $$
     'scenario', 'resale',
     'currency', 'BRL',
     'unit', 'unit',
-    'policy', jsonb_build_object('attentionBandBasisPoints', 2000),
+    'policy', jsonb_build_object(
+      'weeklyDivisorHundredths', 433,
+      'operatingDaysPerWeek', 6,
+      'maximumDiscountPercent', 50,
+      'proLaboreIncluded', true
+    ),
     'inputs', jsonb_build_object(
       'productKind', 'resale',
       'purchaseUnitCostCents', 5000,
@@ -1459,16 +1464,30 @@ as $$
     'results', jsonb_build_object(
       'purchaseUnitCostCents', 5000,
       'currentPriceCents', 10000,
-      'fixedAllocationCents', null,
-      'totalUnitCostCents', null,
+      'fixedAllocationCents', case when p_volume = 100 then 3000 else null end,
+      'totalUnitCostCents', case when p_volume = 100 then 8000 else null end,
       'monthlySalesVolumeUsed', p_volume,
-      'monthlyGrossRevenueCents', case when p_volume is null then null else 0 end,
-      'monthlyNetRevenueCents', case when p_volume is null then null else 0 end,
+      'monthlyGrossRevenueCents',
+        case when p_volume is null then null else p_volume::bigint * 10000 end,
+      'monthlyNetRevenueCents',
+        case when p_volume is null then null else p_volume::bigint * 9200 end,
       'monthlyResultCents', p_monthly_result_cents,
-      'realMarginBasisPoints', null,
-      'unitProfitCents', null,
-      'verdict', case when p_volume is null then 'incomplete_volume' else 'no_sales' end,
-      'priority', case when p_volume is null then 'data' else 'volume' end
+      'realMarginBasisPoints',
+        case when p_volume = 100 then 1200 else null end,
+      'unitProfitCents', case when p_volume = 100 then 1200 else null end,
+      'verdict', case
+        when p_volume is null then 'incomplete_volume'
+        when p_volume = 0 then 'no_sales'
+        when p_monthly_result_cents < 0 then 'operational_loss'
+        when p_monthly_result_cents = 0 then 'break_even'
+        else 'positive_result'
+      end,
+      'priority', case
+        when p_volume is null then 'data'
+        when p_volume = 0 then 'volume'
+        when p_monthly_result_cents < 0 then 'price'
+        else 'volume'
+      end
     ),
     'executiveSummary', jsonb_build_object('headline', 'Diagnóstico'),
     'sections', jsonb_build_array(),
@@ -1479,7 +1498,8 @@ $$;
 create function pg_temp.create_product_report_v3(
   p_submission_id uuid,
   p_monthly_sales_volume integer,
-  p_monthly_result_cents bigint
+  p_monthly_result_cents bigint,
+  p_report_snapshot jsonb default null
 )
 returns bigint
 language sql
@@ -1488,14 +1508,30 @@ as $$
     p_submission_id, 'resale'::text, 5000::bigint, 10000::bigint,
     100000::bigint, p_monthly_sales_volume, true, 200000::bigint,
     600::integer, 200::integer, 3::smallint, 3::smallint, 4::smallint,
-    'resale'::text, 10000::bigint, null::integer, null::bigint,
+    'resale'::text, 10000::bigint,
+    case when p_monthly_sales_volume = 100 then 1200 else null end,
+    case when p_monthly_sales_volume = 100 then 1200 else null end,
     p_monthly_result_cents,
-    case when p_monthly_sales_volume is null then 'incomplete_volume' else 'no_sales' end,
-    case when p_monthly_sales_volume is null then 'data' else 'volume' end,
+    case
+      when p_monthly_sales_volume is null then 'incomplete_volume'
+      when p_monthly_sales_volume = 0 then 'no_sales'
+      when p_monthly_result_cents < 0 then 'operational_loss'
+      when p_monthly_result_cents = 0 then 'break_even'
+      else 'positive_result'
+    end,
+    case
+      when p_monthly_sales_volume is null then 'data'
+      when p_monthly_sales_volume = 0 then 'volume'
+      when p_monthly_result_cents < 0 then 'price'
+      else 'volume'
+    end,
     'unit'::text,
-    pg_temp.product_snapshot_v3(
-      p_monthly_sales_volume,
-      p_monthly_result_cents
+    coalesce(
+      p_report_snapshot,
+      pg_temp.product_snapshot_v3(
+        p_monthly_sales_volume,
+        p_monthly_result_cents
+      )
     )
   );
 $$;
@@ -1517,6 +1553,21 @@ select lives_ok(
     '50000000-0000-4000-8000-000000000087', 0, -300000
   ) $$,
   'Product V3 persists explicit zero volume'
+);
+select lives_ok(
+  $$ select pg_temp.create_product_report_v3(
+    '50000000-0000-4000-8000-000000000089', 100, 120000
+  ) $$,
+  'Product V3 accepts an objective positive result'
+);
+select results_eq(
+  $$
+    select verdict, priority, real_margin_basis_points, unit_profit_cents
+    from public.diagnoses
+    where submission_id = '50000000-0000-4000-8000-000000000089'
+  $$,
+  $$ values ('positive_result'::text, 'volume'::text, 1200::integer, 1200::bigint) $$,
+  'Product V3 persists objective result scalars'
 );
 select is(
   (
@@ -1544,8 +1595,56 @@ select throws_ok(
   'invalid product report snapshot',
   'Product V3 rejects monthly results without volume'
 );
+select throws_ok(
+  $$ select pg_temp.create_product_report_v3(
+    '50000000-0000-4000-8000-000000000090',
+    100,
+    120000,
+    jsonb_set(
+      pg_temp.product_snapshot_v3(100, 120000),
+      '{results,realMarginBasisPoints}',
+      '999'::jsonb
+    )
+  ) $$,
+  '22023',
+  'invalid product report snapshot',
+  'Product V3 rejects a margin that differs from the scalar'
+);
+select throws_ok(
+  $$ select pg_temp.create_product_report_v3(
+    '50000000-0000-4000-8000-000000000091',
+    100,
+    120000,
+    jsonb_set(
+      pg_temp.product_snapshot_v3(100, 120000),
+      '{results,verdict}',
+      '"operational_loss"'::jsonb
+    )
+  ) $$,
+  '22023',
+  'invalid product report snapshot',
+  'Product V3 rejects a verdict that differs from the scalar'
+);
 
 reset role;
+
+select ok(
+  pg_catalog.pg_get_functiondef(
+    'private.create_product_diagnosis_report_v3_impl(
+      uuid,text,bigint,bigint,bigint,integer,boolean,bigint,integer,integer,
+      smallint,smallint,smallint,text,bigint,integer,bigint,bigint,
+      text,text,text,jsonb
+    )'::regprocedure
+  ) like '%positive_result%'
+  and pg_catalog.pg_get_functiondef(
+    'private.create_product_diagnosis_report_v3_impl(
+      uuid,text,bigint,bigint,bigint,integer,boolean,bigint,integer,integer,
+      smallint,smallint,smallint,text,bigint,integer,bigint,bigint,
+      text,text,text,jsonb
+    )'::regprocedure
+  ) like '%jsonb_path_exists%',
+  'current Product writer validates objective verdicts and rejects target fields'
+);
 
 select * from finish();
 

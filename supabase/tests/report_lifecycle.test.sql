@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(27);
+select plan(28);
 
 insert into auth.users (id, aud, role, email)
 values
@@ -152,7 +152,12 @@ as $$
     'scenario', 'resale',
     'currency', 'BRL',
     'unit', 'unit',
-    'policy', jsonb_build_object('attentionBandBasisPoints', 2000),
+    'policy', jsonb_build_object(
+      'weeklyDivisorHundredths', 433,
+      'operatingDaysPerWeek', 6,
+      'maximumDiscountPercent', 50,
+      'proLaboreIncluded', true
+    ),
     'inputs', jsonb_build_object(
       'productKind', 'resale',
       'purchaseUnitCostCents', 5000,
@@ -419,6 +424,20 @@ select throws_ok(
 );
 
 reset role;
+
+select ok(
+  pg_catalog.pg_get_functiondef(
+    'private.replace_owned_diagnosis_from_staged_v1_impl(
+      bigint,bigint,integer
+    )'::regprocedure
+  ) like '%fixed_allocation_cents%'
+  and pg_catalog.pg_get_functiondef(
+    'private.replace_owned_diagnosis_from_staged_v1_impl(
+      bigint,bigint,integer
+    )'::regprocedure
+  ) like '%real_margin_basis_points%',
+  'staged replacement copies corrected detailed unit economics'
+);
 
 select * from finish();
 

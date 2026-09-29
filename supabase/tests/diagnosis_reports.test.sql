@@ -808,6 +808,18 @@ select ok(
   'registry verdict constraint includes the current unit-report verdicts'
 );
 
+select ok(
+  pg_get_constraintdef(
+    (
+      select oid
+      from pg_constraint
+      where conrelid = 'public.diagnoses'::regclass
+        and conname = 'diagnoses_verdict_check'
+    )
+  ) like '%positive_result%',
+  'registry verdict constraint accepts the objective positive result'
+);
+
 select * from finish();
 
 rollback;

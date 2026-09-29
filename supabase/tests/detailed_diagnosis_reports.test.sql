@@ -276,9 +276,13 @@ as $$
       'netUnitRevenueCents', 920,
       'unitContributionCents', 420,
       'contributionMarginBasisPoints', 4200,
+      'fixedAllocationCents', 7,
+      'totalUnitCostCents', 507,
+      'unitProfitCents', 413,
+      'realMarginBasisPoints', 4130,
       'monthlyGrossRevenueCents', 10000,
       'monthlyContributionCents', 4200,
-      'breakEvenUnitPriceCents', 610,
+      'breakEvenUnitPriceCents', 552,
       'directLoss', false
     ),
     jsonb_build_object(
@@ -295,9 +299,13 @@ as $$
       'netUnitRevenueCents', 1840,
       'unitContributionCents', 840,
       'contributionMarginBasisPoints', 4200,
+      'fixedAllocationCents', 7,
+      'totalUnitCostCents', 1007,
+      'unitProfitCents', 833,
+      'realMarginBasisPoints', 4165,
       'monthlyGrossRevenueCents', 10000,
       'monthlyContributionCents', 4200,
-      'breakEvenUnitPriceCents', 1220,
+      'breakEvenUnitPriceCents', 1095,
       'directLoss', false
     )
   );
@@ -412,7 +420,6 @@ as $$
     'currency', 'BRL',
     'unit', 'mix',
     'policy', jsonb_build_object(
-      'attentionBandBasisPoints', 2000,
       'concentrationThresholdBasisPoints', 4500,
       'weeklyDivisorHundredths', 433,
       'operatingDaysPerWeek', 6,
@@ -431,7 +438,9 @@ as $$
           item - array[
             'variableUnitCostCents', 'feeAmountCents',
             'netUnitRevenueCents', 'unitContributionCents',
-            'contributionMarginBasisPoints', 'monthlyGrossRevenueCents',
+            'contributionMarginBasisPoints', 'fixedAllocationCents',
+            'totalUnitCostCents', 'unitProfitCents',
+            'realMarginBasisPoints', 'monthlyGrossRevenueCents',
             'monthlyContributionCents', 'breakEvenUnitPriceCents',
             'directLoss'
           ]
@@ -454,6 +463,10 @@ as $$
             'unitContributionCents', item -> 'unitContributionCents',
             'contributionMarginBasisPoints',
               item -> 'contributionMarginBasisPoints',
+            'fixedAllocationCents', item -> 'fixedAllocationCents',
+            'totalUnitCostCents', item -> 'totalUnitCostCents',
+            'unitProfitCents', item -> 'unitProfitCents',
+            'realMarginBasisPoints', item -> 'realMarginBasisPoints',
             'monthlyGrossRevenueCents', item -> 'monthlyGrossRevenueCents',
             'monthlyContributionCents', item -> 'monthlyContributionCents',
             'breakEvenUnitPriceCents', item -> 'breakEvenUnitPriceCents',
@@ -473,7 +486,7 @@ as $$
       'mixContributionMarginBasisPoints', 4200,
       'finalMarginBasisPoints', 4150,
       'breakEvenRevenueCents', 239,
-      'verdict', 'adequate_margin',
+      'verdict', 'positive_result',
       'priority', 'volume'
     ),
     'executiveSummary', pg_temp.detailed_executive_summary(
@@ -504,9 +517,13 @@ as $$
       'netUnitRevenueCents', 920,
       'unitContributionCents', 520,
       'contributionMarginBasisPoints', 5200,
+      'fixedAllocationCents', 10,
+      'totalUnitCostCents', 410,
+      'unitProfitCents', 510,
+      'realMarginBasisPoints', 5100,
       'monthlyGrossRevenueCents', 10000,
       'monthlyContributionCents', 5200,
-      'breakEvenUnitPriceCents', 500,
+      'breakEvenUnitPriceCents', 446,
       'directLoss', false
     )
   );
@@ -533,7 +550,9 @@ as $$
           item - array[
             'variableUnitCostCents', 'feeAmountCents',
             'netUnitRevenueCents', 'unitContributionCents',
-            'contributionMarginBasisPoints', 'monthlyGrossRevenueCents',
+            'contributionMarginBasisPoints', 'fixedAllocationCents',
+            'totalUnitCostCents', 'unitProfitCents',
+            'realMarginBasisPoints', 'monthlyGrossRevenueCents',
             'monthlyContributionCents', 'breakEvenUnitPriceCents',
             'directLoss'
           ]
@@ -553,6 +572,10 @@ as $$
             'unitContributionCents', item -> 'unitContributionCents',
             'contributionMarginBasisPoints',
               item -> 'contributionMarginBasisPoints',
+            'fixedAllocationCents', item -> 'fixedAllocationCents',
+            'totalUnitCostCents', item -> 'totalUnitCostCents',
+            'unitProfitCents', item -> 'unitProfitCents',
+            'realMarginBasisPoints', item -> 'realMarginBasisPoints',
             'monthlyGrossRevenueCents', item -> 'monthlyGrossRevenueCents',
             'monthlyContributionCents', item -> 'monthlyContributionCents',
             'breakEvenUnitPriceCents', item -> 'breakEvenUnitPriceCents',
@@ -653,9 +676,13 @@ as $$
       'netUnitRevenueCents', 2760,
       'unitContributionCents', 2110,
       'contributionMarginBasisPoints', 7033,
+      'fixedAllocationCents', 50,
+      'totalUnitCostCents', 700,
+      'unitProfitCents', 2060,
+      'realMarginBasisPoints', 6867,
       'monthlyGrossRevenueCents', 6000,
       'monthlyContributionCents', 4220,
-      'breakEvenUnitPriceCents', 810,
+      'breakEvenUnitPriceCents', 761,
       'directLoss', false
     )
   );
@@ -676,7 +703,6 @@ as $$
     'currency', 'BRL',
     'unit', 'mix',
     'policy', jsonb_build_object(
-      'attentionBandBasisPoints', 2000,
       'concentrationThresholdBasisPoints', 4500,
       'weeklyDivisorHundredths', 433,
       'operatingDaysPerWeek', 6,
@@ -695,7 +721,9 @@ as $$
           item - array[
             'variableUnitCostCents', 'feeAmountCents',
             'netUnitRevenueCents', 'unitContributionCents',
-            'contributionMarginBasisPoints', 'monthlyGrossRevenueCents',
+            'contributionMarginBasisPoints', 'fixedAllocationCents',
+            'totalUnitCostCents', 'unitProfitCents',
+            'realMarginBasisPoints', 'monthlyGrossRevenueCents',
             'monthlyContributionCents', 'breakEvenUnitPriceCents',
             'directLoss'
           ]
@@ -717,6 +745,10 @@ as $$
             'unitContributionCents', item -> 'unitContributionCents',
             'contributionMarginBasisPoints',
               item -> 'contributionMarginBasisPoints',
+            'fixedAllocationCents', item -> 'fixedAllocationCents',
+            'totalUnitCostCents', item -> 'totalUnitCostCents',
+            'unitProfitCents', item -> 'unitProfitCents',
+            'realMarginBasisPoints', item -> 'realMarginBasisPoints',
             'monthlyGrossRevenueCents', item -> 'monthlyGrossRevenueCents',
             'monthlyContributionCents', item -> 'monthlyContributionCents',
             'breakEvenUnitPriceCents', item -> 'breakEvenUnitPriceCents',
@@ -735,7 +767,7 @@ as $$
       'mixContributionMarginBasisPoints', 7033,
       'finalMarginBasisPoints', 6867,
       'breakEvenRevenueCents', 143,
-      'verdict', 'adequate_margin',
+      'verdict', 'positive_result',
       'priority', 'volume'
     ),
     'executiveSummary', pg_temp.detailed_executive_summary(
@@ -770,7 +802,7 @@ as $$
     20000,
     p_monthly_result_cents,
     4150,
-    'adequate_margin',
+    'positive_result',
     'volume',
     2,
     false,
@@ -839,6 +871,38 @@ select results_eq(
 );
 select results_eq(
   $$
+    select
+      item.fixed_allocation_cents,
+      item.total_unit_cost_cents,
+      item.unit_profit_cents,
+      item.real_margin_basis_points,
+      diagnosis.report_snapshot #>>
+        array['results', 'items', item.position::text, 'fixedAllocationCents'],
+      diagnosis.report_snapshot #>>
+        array['results', 'items', item.position::text, 'totalUnitCostCents'],
+      diagnosis.report_snapshot #>>
+        array['results', 'items', item.position::text, 'unitProfitCents'],
+      diagnosis.report_snapshot #>>
+        array['results', 'items', item.position::text, 'realMarginBasisPoints']
+    from public.detailed_diagnosis_items as item
+    join public.diagnoses as diagnosis on diagnosis.id = item.diagnosis_id
+    where item.submission_id = '71000000-0000-4000-8000-000000000100'
+    order by item.position
+  $$,
+  $$ values
+    (
+      7::bigint, 507::bigint, 413::bigint, 4130::integer,
+      '7'::text, '507'::text, '413'::text, '4130'::text
+    ),
+    (
+      7::bigint, 1007::bigint, 833::bigint, 4165::integer,
+      '7'::text, '1007'::text, '833'::text, '4165'::text
+    )
+  $$,
+  'detailed JSON item economics match the normalized rows'
+);
+select results_eq(
+  $$
     select analysis_mode, current_price_cents, unit,
       monthly_gross_revenue_cents, monthly_result_cents, item_count, is_partial
     from public.diagnoses
@@ -902,7 +966,7 @@ select lives_ok(
     20000,
     8300,
     4150,
-    'adequate_margin',
+    'positive_result',
     'volume',
     2,
     false,
@@ -967,6 +1031,23 @@ select results_eq(
 );
 select results_eq(
   $$
+    select
+      fixed_allocation_cents,
+      total_unit_cost_cents,
+      unit_profit_cents,
+      real_margin_basis_points
+    from public.detailed_diagnosis_items
+    where diagnosis_id = current_setting('test.detailed_target_id')::bigint
+    order by position
+  $$,
+  $$ values
+    (7::bigint, 507::bigint, 413::bigint, 4130::integer),
+    (7::bigint, 1007::bigint, 833::bigint, 4165::integer)
+  $$,
+  'detailed replacement copies the corrected item economics'
+);
+select results_eq(
+  $$
     select sum(row_count)::bigint
     from (
       select count(*)::bigint as row_count
@@ -1006,7 +1087,7 @@ select lives_ok(
     10000,
     5100,
     5100,
-    'adequate_margin',
+    'positive_result',
     'volume',
     1,
     false,
@@ -1050,7 +1131,7 @@ select throws_ok(
     20000,
     8300,
     4150,
-    'adequate_margin',
+    'positive_result',
     'volume',
     2,
     false,
@@ -1080,7 +1161,7 @@ select throws_ok(
     10000,
     5100,
     5100,
-    'adequate_margin',
+    'positive_result',
     'volume',
     1,
     false,
@@ -1113,7 +1194,7 @@ select lives_ok(
     6000,
     4120,
     6867,
-    'adequate_margin',
+    'positive_result',
     'volume',
     1,
     false,
@@ -1312,7 +1393,7 @@ insert into public.diagnoses (
   1,
   1,
   null,
-  'adequate_margin',
+  'positive_result',
   'volume',
   'mix',
   '{}'::jsonb,
@@ -1385,7 +1466,7 @@ select throws_ok(
     '71000000-0000-4000-8000-000000000300',
     '71000000-0000-4000-8000-000000000001',
     'product', 'resale', 1, 1, 1,
-    null, 'adequate_margin', 'volume', 'unit', '{}'::jsonb
+    null, 'positive_result', 'volume', 'unit', '{}'::jsonb
   ) $$,
   '23514',
   null,
@@ -1401,12 +1482,29 @@ select throws_ok(
     '71000000-0000-4000-8000-000000000301',
     '71000000-0000-4000-8000-000000000001',
     'product', 'resale', 1, 1, 1,
-    null, 'adequate_margin', 'volume', 'unit', '{}'::jsonb,
+    null, 'positive_result', 'volume', 'unit', '{}'::jsonb,
     'detailed', 1, false
   ) $$,
   '23514',
   null,
   'detailed registry rows must use the mix unit'
+);
+
+select has_column(
+  'public', 'detailed_diagnosis_items', 'fixed_allocation_cents',
+  'detailed items persist allocated fixed cost'
+);
+select has_column(
+  'public', 'detailed_diagnosis_items', 'total_unit_cost_cents',
+  'detailed items persist complete unit cost'
+);
+select has_column(
+  'public', 'detailed_diagnosis_items', 'unit_profit_cents',
+  'detailed items persist objective unit profit'
+);
+select has_column(
+  'public', 'detailed_diagnosis_items', 'real_margin_basis_points',
+  'detailed items persist objective real margin'
 );
 
 select * from finish();
