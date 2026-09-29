@@ -73,7 +73,7 @@ function saleSection(
     key: "hidden_cost",
     title: "Custo e resultado por unidade",
     body: `${composition} Parte dos gastos do mês: ${formatCurrency(calculation.fixedAllocationCents ?? 0)}. Custo completo por unidade: ${formatCurrency(calculation.totalUnitCostCents)}. Valor deixado por venda: ${formatCurrency(calculation.unitContributionCents)}.`,
-    emphasisLabel: "Quanto sobra por venda",
+    emphasisLabel: "Resultado por venda",
     emphasisValue: formatCurrency(calculation.unitProfitCents ?? 0),
     tone: (calculation.unitProfitCents ?? 0) >= 0 ? "positive" : "critical",
   };
@@ -150,7 +150,7 @@ function discountSection(
     key: "discount_simulator",
     title: "Como um desconto muda o resultado",
     body: available
-      ? "Veja como o desconto muda quanto sobra por venda."
+      ? "Veja como o desconto muda o resultado por venda."
       : "Para calcular um desconto seguro, primeiro precisamos de uma quantidade para dividir os gastos do mês.",
     emphasisLabel: available ? "Limite antes do prejuízo" : "Simulação",
     emphasisValue:

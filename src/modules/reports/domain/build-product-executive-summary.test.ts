@@ -41,7 +41,9 @@ describe("buildProductExecutiveSummary", () => {
       tone: "positive",
     });
     expect(JSON.stringify(summary)).toContain("Quanto sobra a cada R$ 100");
-    expect(summary.answers[0]?.answer).toMatch(/^Sim\./);
+    expect(summary.answers[0]?.answer).toBe(
+      "Sim. Seu lucro estimado no mês é de R$ 3.030,00, depois dos valores considerados.",
+    );
     expect(summary.answers[1]?.answer).toMatch(/^Sim\./);
   });
   it.each([
@@ -55,7 +57,7 @@ describe("buildProductExecutiveSummary", () => {
     {
       name: "missing volume",
       input: { monthlySalesVolume: null },
-      first: /^Ainda não dá para calcular o resultado do mês\./,
+      first: /^Ainda não dá para calcular se há lucro no mês\./,
       second: /^Ainda não dá para confirmar\./,
       third: /Informe quantas vendas/,
     },
@@ -101,6 +103,27 @@ describe("buildProductExecutiveSummary", () => {
       expect(summary.answers[2]?.answer).toMatch(third);
     },
   );
+
+  it("distinguishes break-even from profit", () => {
+    const summary = buildProductExecutiveSummary(
+      calculateProductReport({
+        ...command,
+        purchaseUnitCostCents: 1_500,
+        unitSalePriceCents: 5_500,
+        fixedMonthlyExpensesCents: 300_000,
+        proLaboreCents: 100_000,
+        taxRateBasisPoints: 0,
+        cardFeeRateBasisPoints: 0,
+        monthlySalesVolume: 100,
+      }),
+      "resale",
+    );
+
+    expect(summary.answers[0]?.answer).toContain("Não há lucro nem prejuízo");
+    expect(summary.answers[1]?.answer).toContain(
+      "sem gerar lucro nem prejuízo",
+    );
+  });
 
   it("keeps complete price unavailable without volume", () => {
     const summary = buildProductExecutiveSummary(

@@ -136,9 +136,7 @@ describe("ReportListCard", () => {
     const verdict = within(card).getByText("Falta informar as vendas");
     expect(verdict).toBeInTheDocument();
     expect(verdict.closest('[data-slot="badge"]')).toHaveClass("text-info");
-    expect(
-      within(card).getByText("Quanto sobra por unidade"),
-    ).toBeInTheDocument();
+    expect(within(card).getByText("Resultado por unidade")).toBeInTheDocument();
     expect(within(card).queryByText("Lucro por venda")).not.toBeInTheDocument();
   });
 
@@ -171,9 +169,7 @@ describe("ReportListCard", () => {
     expect(within(card).getByText("Produção")).toBeInTheDocument();
     expect(within(card).getByText("Fabricação própria")).toBeInTheDocument();
     expect(within(card).getByText("Resultado positivo")).toBeInTheDocument();
-    expect(
-      within(card).getByText("Quanto sobra por unidade"),
-    ).toBeInTheDocument();
+    expect(within(card).getByText("Resultado por unidade")).toBeInTheDocument();
     expect(within(card).queryByText("Lucro por venda")).not.toBeInTheDocument();
     expect(
       within(card).getByRole("link", { name: "Abrir relatório" }),
@@ -185,9 +181,7 @@ describe("ReportListCard", () => {
 
     expect(screen.getByText("Resultado positivo")).toBeInTheDocument();
     expect(screen.getByText("Quanto sobra a cada R$ 100")).toBeInTheDocument();
-    expect(
-      screen.getByText("Quanto sobra por atendimento"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Resultado por atendimento")).toBeInTheDocument();
     expect(screen.getByText("Diagnóstico salvo")).toBeInTheDocument();
   });
 

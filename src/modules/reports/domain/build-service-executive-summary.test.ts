@@ -35,7 +35,7 @@ describe("buildServiceExecutiveSummary", () => {
     const cases = [
       {
         input: { appointmentRateCents: 0 },
-        first: /^Ainda não dá para calcular\./,
+        first: /^Ainda não dá para calcular se há lucro\./,
         second: /^Ainda não dá para confirmar/,
       },
       {
@@ -55,7 +55,7 @@ describe("buildServiceExecutiveSummary", () => {
       },
       {
         input: { monthlyWorkMinutes: 0 },
-        first: /^Ainda não dá para calcular com segurança\./,
+        first: /^Ainda não dá para calcular se há lucro com segurança\./,
         second: /^Ainda não dá para calcular o menor preço completo/,
       },
     ];
@@ -110,6 +110,10 @@ describe("buildServiceExecutiveSummary", () => {
       calculateServiceReport(command),
     );
     expect(summary.verdict.label).toBe("Resultado positivo");
+    expect(summary.answers[0]?.answer).toMatch(
+      /^Sim\. Seu lucro estimado é de R\$ .+ por atendimento, depois dos valores considerados\.$/,
+    );
+    expect(summary.facts[1].currentLabel).toBe("Resultado por serviço");
     expect(JSON.stringify(summary)).not.toMatch(
       /margem adequada|margem apertada|acima da meta|boa folga|pouca folga|meta de 15%|preço-alvo/i,
     );

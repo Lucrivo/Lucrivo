@@ -112,9 +112,9 @@ function DetailedReportDetail({
             Item por item
           </h2>
           <p className="text-muted-foreground max-w-3xl text-sm leading-6">
-            Veja o custo completo, quanto sobra e como cada venda ajuda a pagar
-            o mês. O simulador usa todos esses valores quando a quantidade foi
-            informada.
+            Veja o custo completo, o resultado por venda e como cada venda ajuda
+            a pagar o mês. O simulador usa todos esses valores quando a
+            quantidade foi informada.
           </p>
         </div>
         <Accordion

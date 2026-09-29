@@ -29,7 +29,7 @@ const verdictContent = {
   },
   break_even: {
     label: "Ponto de equilíbrio",
-    body: "As vendas pagam exatamente os valores considerados, sem sobra.",
+    body: "As vendas pagam exatamente os valores considerados, sem lucro nem prejuízo.",
     tone: "neutral",
   },
   positive_result: {
@@ -49,7 +49,7 @@ function profitabilityAnswer(calculation: ProductReportCalculation): string {
   if (calculation.verdict === "direct_loss") {
     const saleLoss = formatCurrency(Math.abs(contribution));
     if (result === null) {
-      return `Ainda não dá para calcular o resultado do mês, mas cada venda perde ${saleLoss} antes dos gastos mensais.`;
+      return `Ainda não dá para calcular se há lucro no mês, mas cada venda perde ${saleLoss} antes dos gastos mensais.`;
     }
     if (calculation.monthlySalesVolumeUsed === 0) {
       return result < 0
@@ -60,7 +60,7 @@ function profitabilityAnswer(calculation: ProductReportCalculation): string {
   }
 
   if (calculation.verdict === "incomplete_volume") {
-    return `Ainda não dá para calcular o resultado do mês. No preço atual, cada venda deixa ${formatCurrency(contribution)} para ajudar a pagar os gastos mensais.`;
+    return `Ainda não dá para calcular se há lucro no mês. No preço atual, cada venda deixa ${formatCurrency(contribution)} para ajudar a pagar os gastos mensais.`;
   }
 
   if (calculation.verdict === "no_sales") {
@@ -74,10 +74,10 @@ function profitabilityAnswer(calculation: ProductReportCalculation): string {
   }
 
   if (calculation.verdict === "break_even") {
-    return "Ainda não. As vendas pagam exatamente os valores considerados, sem deixar sobra.";
+    return "Ainda não. Não há lucro nem prejuízo: as vendas pagam exatamente os valores considerados.";
   }
 
-  return `Sim. Depois dos valores considerados, sobram ${formatCurrency(result ?? 0)} no mês.`;
+  return `Sim. Seu lucro estimado no mês é de ${formatCurrency(result ?? 0)}, depois dos valores considerados.`;
 }
 
 function priceSufficiencyAnswer(
@@ -100,7 +100,7 @@ function priceSufficiencyAnswer(
     return `Não. Para a quantidade informada, o preço precisaria ser pelo menos ${formatCurrency(calculation.minimumPriceCents)}.`;
   }
   if (calculation.verdict === "break_even") {
-    return "Sim, exatamente. O preço paga os custos e gastos considerados, sem deixar sobra.";
+    return "Sim, exatamente. O preço paga os custos e gastos considerados, sem gerar lucro nem prejuízo.";
   }
   return "Sim. Com a quantidade informada, o preço paga os custos e gastos considerados.";
 }
@@ -131,7 +131,7 @@ function buildProductExecutiveSummary(
     break_even:
       "Busque uma pequena folga no preço, nos gastos ou na quantidade vendida.",
     positive_result:
-      "Acompanhe o resultado, a porcentagem que sobra e a quantidade vendida.",
+      "Acompanhe o lucro, quanto ele representa a cada R$ 100 e a quantidade vendida.",
   }[calculation.verdict];
   const profitability = profitabilityAnswer(calculation);
   const priceAnswer = priceSufficiencyAnswer(calculation, productKind);
@@ -149,7 +149,7 @@ function buildProductExecutiveSummary(
         ? "Resultado do seu produto digital"
         : "Resultado do seu produto para revenda",
     introduction:
-      "Veja quanto a venda deixa para o mês e, quando há quantidade, quanto sobra depois de todos os valores considerados.",
+      "Veja quanto a venda deixa para o mês e, quando há quantidade, qual é o resultado depois de todos os valores considerados.",
     verdict: verdictContent[calculation.verdict],
     facts: [
       {

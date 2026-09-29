@@ -46,7 +46,7 @@ function marginSection(calculation: ServiceReportCalculation): ReportSection {
     key: "margin_diagnosis",
     title: "Resultado por serviço",
     body: `Custo completo por ${calculation.unit === "hour" ? "hora" : "atendimento"}: ${calculation.unitCostCents === null ? "Ainda não calculado" : formatCurrency(calculation.unitCostCents)}. Valor deixado por venda antes da estrutura: ${calculation.unitContributionCents === null ? "Ainda não calculado" : formatCurrency(calculation.unitContributionCents)}.`,
-    emphasisLabel: "Quanto sobra por venda",
+    emphasisLabel: "Resultado por serviço",
     emphasisValue:
       calculation.unitProfitCents === null
         ? "Ainda não calculado"

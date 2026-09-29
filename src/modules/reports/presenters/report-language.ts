@@ -22,7 +22,7 @@ const currentReportLanguage = {
   analysisEyebrow: "Entenda o resultado",
   analysisTitle: "Como chegamos a esse resultado",
   analysisDescription:
-    "Veja o que precisa ser pago, quanto sobra e quantas vendas são necessárias.",
+    "Veja o que precisa ser pago, qual é o resultado e quantas vendas são necessárias.",
   numbersTitle: "Seus números",
   numbersDescription: "Valores calculados com o que você informou.",
   priorityEyebrow: "Comece por aqui",

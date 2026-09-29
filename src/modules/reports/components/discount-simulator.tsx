@@ -116,11 +116,11 @@ function safetyMessage(simulation: DiscountSimulation): string {
     case "unavailable":
       return "Para calcular um desconto seguro, primeiro precisamos de uma quantidade para dividir os gastos do mês.";
     case "positive_result":
-      return `Resultado positivo: com este desconto, o preço ainda paga os valores considerados e deixa ${formatCurrency(simulation.unitProfitCents ?? 0)} por venda.`;
+      return `Lucro estimado: com este desconto, o preço ainda paga os valores considerados e gera ${formatCurrency(simulation.unitProfitCents ?? 0)} de lucro por venda.`;
     case "break_even":
-      return "No limite: com este desconto, o preço paga exatamente os valores considerados, sem deixar sobra por venda.";
+      return "No limite: com este desconto, o preço paga exatamente os valores considerados, sem gerar lucro nem prejuízo por venda.";
     case "loss":
-      return `Prejuízo: com este desconto, faltam ${formatCurrency(Math.abs(simulation.unitProfitCents ?? 0))} por venda para pagar os valores considerados.`;
+      return `Prejuízo estimado: com este desconto, o prejuízo é de ${formatCurrency(Math.abs(simulation.unitProfitCents ?? 0))} por venda.`;
   }
 }
 
@@ -164,7 +164,7 @@ function DiscountSimulator({
           </Badge>
         </div>
         <p className="text-muted-foreground max-w-3xl text-[0.9375rem] leading-6">
-          Arraste para ver como o desconto muda o preço e quanto sobra depois de
+          Arraste para ver como o desconto muda o preço e o resultado depois de
           todos os valores considerados.
         </p>
       </CardHeader>
@@ -227,7 +227,7 @@ function DiscountSimulator({
             </div>
             <div className="border-border/70 bg-card grid min-w-0 gap-1 rounded-xl border p-3">
               <dt className="text-muted-foreground text-xs">
-                Quanto sobra por {unitLabel}
+                Resultado por {unitLabel}
               </dt>
               <dd className="font-semibold break-words tabular-nums">
                 {optionalCurrency(simulation.unitProfitCents)}

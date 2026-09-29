@@ -14,7 +14,7 @@ const numbers: ReportNumberViewModel[] = [
   },
   {
     key: "profit",
-    label: "Quanto sobra por hora",
+    label: "Resultado por hora",
     value: "R$ 27,41",
   },
   {

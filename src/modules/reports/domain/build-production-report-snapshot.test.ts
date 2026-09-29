@@ -49,7 +49,7 @@ describe("buildProductionReportSnapshot", () => {
     expect(content).toContain("Quanto esta unidade custa");
     expect(content).toContain("Parte dos gastos do mês");
     expect(content).toContain("Custo completo por unidade");
-    expect(content).toContain("Quanto sobra por venda");
+    expect(content).toContain("Resultado por venda");
     expect(parseProductionReportSnapshot(snapshot)).toEqual(snapshot);
   });
 

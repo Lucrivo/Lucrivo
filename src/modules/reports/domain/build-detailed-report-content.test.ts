@@ -52,6 +52,9 @@ describe("buildDetailedReportContent", () => {
       "Cada valor inclui o custo direto, a parte dos gastos do mês",
     );
     expect(JSON.stringify(content)).toContain("Quanto sobra a cada R$ 100");
+    expect(content.executiveSummary.answers[0]?.answer).toMatch(
+      /^Sim\. O lucro estimado do conjunto é de R\$ .+ no mês\.$/,
+    );
   });
 
   it("shows one unknown item's monthly quantity without a weekly split", () => {
@@ -124,7 +127,9 @@ describe("buildDetailedReportContent", () => {
     );
 
     expect(content.executiveSummary.verdict.label).toBe("Prejuízo por venda");
-    expect(content.executiveSummary.answers[0]?.answer).toMatch(/^Sim\./);
+    expect(content.executiveSummary.answers[0]?.answer).toMatch(
+      /^Sim\. O lucro estimado do conjunto/,
+    );
     expect(content.executiveSummary.answers[0]?.answer).toContain(
       "Item com perda",
     );

@@ -58,7 +58,7 @@ describe("DetailedItemCard", () => {
       "Quanto esta unidade custa",
       "Parte dos gastos do mês",
       "Custo completo por unidade",
-      "Quanto sobra por venda",
+      "Resultado por venda",
       "Quanto sobra a cada R$ 100",
       "Menor preço para não ficar no prejuízo",
       "Valor deixado pelas vendas para pagar o mês",

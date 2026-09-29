@@ -119,6 +119,9 @@ describe("toReportViewModel", () => {
       "profit",
       "margin",
     ]);
+    expect(model.numbers.find(({ key }) => key === "profit")).toMatchObject({
+      label: "Resultado por hora",
+    });
     expect(model.numbers.at(-1)).toMatchObject({
       label: "Quanto sobra a cada R$ 100",
       value: "34,26%",

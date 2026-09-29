@@ -28,6 +28,9 @@ describe("buildProductionExecutiveSummary", () => {
     );
     expect(summary.verdict.label).toBe("Resultado positivo");
     expect(JSON.stringify(summary)).toContain("Quanto sobra a cada R$ 100");
+    expect(summary.answers[0]?.answer).toBe(
+      "Sim. Seu lucro estimado no mês é de R$ 3.030,00, depois dos valores considerados.",
+    );
   });
 
   it("keeps complete price unavailable without volume", () => {

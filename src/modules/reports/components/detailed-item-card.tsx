@@ -92,7 +92,7 @@ function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
                 value={item.netRevenueLabel}
               />
               <ValueRow
-                label="Quanto sobra por venda"
+                label="Resultado por venda"
                 value={item.unitProfitLabel}
               />
               <ValueRow

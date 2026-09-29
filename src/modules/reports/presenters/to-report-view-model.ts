@@ -279,7 +279,7 @@ function toServiceNumbers(
     },
     {
       key: "profit",
-      label: `Quanto sobra por ${singular}`,
+      label: `Resultado por ${singular}`,
       value: optionalCurrency(snapshot.results.unitProfitCents),
     },
     {

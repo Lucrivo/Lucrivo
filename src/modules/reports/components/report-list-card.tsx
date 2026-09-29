@@ -218,10 +218,10 @@ function ReportListCard({ report }: { report: OwnedReportSummary }) {
   const profitLabel = language.isPlainLanguage
     ? report.businessCategory === "product" ||
       report.businessCategory === "production"
-      ? "Quanto sobra por unidade"
+      ? "Resultado por unidade"
       : report.unit === "hour"
-        ? "Quanto sobra por hora"
-        : "Quanto sobra por atendimento"
+        ? "Resultado por hora"
+        : "Resultado por atendimento"
     : report.businessCategory === "product" ||
         report.businessCategory === "production"
       ? "Lucro por unidade"

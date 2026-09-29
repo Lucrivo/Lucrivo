@@ -47,7 +47,7 @@ function verdictContent(
       },
       break_even: {
         label: "Ponto de equilíbrio",
-        body: "As vendas pagam exatamente os valores considerados, sem sobra.",
+        body: "As vendas pagam exatamente os valores considerados, sem lucro nem prejuízo.",
         tone: "neutral",
       },
       positive_result: {
@@ -108,7 +108,7 @@ function immediateAction(
   if (calculation.verdict === "break_even") {
     return "Busque uma pequena folga nos preços, nos gastos ou nas quantidades vendidas.";
   }
-  return "Acompanhe o resultado do conjunto e verifique se algum item individual merece ajuste.";
+  return "Acompanhe o lucro do conjunto e verifique se algum item individual merece ajuste.";
 }
 
 function profitabilityAnswer(
@@ -123,7 +123,7 @@ function profitabilityAnswer(
       : "";
 
   if (result === null) {
-    return `Ainda não dá para calcular o resultado do conjunto porque faltam quantidades.${itemWarning}`;
+    return `Ainda não dá para calcular se há lucro no conjunto porque faltam quantidades.${itemWarning}`;
   }
   if (calculation.verdict === "no_sales") {
     return result < 0
@@ -134,9 +134,9 @@ function profitabilityAnswer(
     return `Não. O prejuízo estimado do conjunto é de ${formatCurrency(Math.abs(result))} no mês.${itemWarning}`;
   }
   if (result === 0) {
-    return `Ainda não. O conjunto paga exatamente os valores considerados, sem deixar sobra.${itemWarning}`;
+    return `Ainda não. Não há lucro nem prejuízo: o conjunto paga exatamente os valores considerados.${itemWarning}`;
   }
-  return `Sim. Depois dos valores considerados, o conjunto deixa ${formatCurrency(result)} no mês.${itemWarning}`;
+  return `Sim. O lucro estimado do conjunto é de ${formatCurrency(result)} no mês.${itemWarning}`;
 }
 
 function priceSufficiencyAnswer(
@@ -157,7 +157,7 @@ function priceSufficiencyAnswer(
     return "Não. Com as quantidades informadas, os preços não cobrem todos os custos e gastos mensais.";
   }
   if (calculation.verdict === "break_even") {
-    return "Sim, exatamente. Os preços cobrem os custos e gastos considerados, sem deixar sobra.";
+    return "Sim, exatamente. Os preços cobrem os custos e gastos considerados, sem gerar lucro nem prejuízo.";
   }
   return "Sim. Com a proporção informada, os preços cobrem os custos dos itens e os gastos mensais.";
 }
@@ -190,7 +190,7 @@ function saleSection(calculation: DetailedDiagnosisCalculation): ReportSection {
     return {
       key: "hidden_cost",
       title: "Custo e resultado por unidade",
-      body: "Quanto esta unidade custa e o valor deixado por venda continuam disponíveis. Parte dos gastos do mês, custo completo por unidade e quanto sobra por venda precisam das quantidades de todos os itens.",
+      body: "Quanto esta unidade custa e o valor deixado por venda continuam disponíveis. Parte dos gastos do mês, custo completo por unidade e resultado por venda precisam das quantidades de todos os itens.",
       emphasisLabel: "Valores completos",
       emphasisValue: "Ainda não calculado",
       tone: "neutral",

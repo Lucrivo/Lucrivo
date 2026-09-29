@@ -26,7 +26,7 @@ const verdictContent = {
   },
   break_even: {
     label: "Ponto de equilíbrio",
-    body: "O preço paga exatamente os valores considerados, sem sobra.",
+    body: "O preço paga exatamente os valores considerados, sem lucro nem prejuízo.",
     tone: "neutral",
   },
   positive_result: {
@@ -56,29 +56,29 @@ function profitabilityAnswer(
   unit: string,
 ): string {
   if (calculation.verdict === "missing_price") {
-    return "Ainda não dá para calcular. Falta informar quanto você cobra.";
+    return "Ainda não dá para calcular se há lucro. Falta informar quanto você cobra.";
   }
 
   if (calculation.verdict === "direct_loss") {
     const contribution = calculation.unitContributionCents;
     return contribution !== null && contribution < 0
-      ? `Não. Faltam ${formatCurrency(Math.abs(contribution))} por ${unit} antes mesmo de pagar a estrutura mensal.`
+      ? `Não. Cada ${unit} gera uma perda de ${formatCurrency(Math.abs(contribution))} antes mesmo de pagar a estrutura mensal.`
       : `Não. O preço paga apenas os materiais e as cobranças da venda, sem deixar valor para a estrutura mensal por ${unit}.`;
   }
 
   if (calculation.unitProfitCents === null) {
-    return "Ainda não dá para calcular com segurança. A rotina de trabalho não permite distribuir os gastos.";
+    return "Ainda não dá para calcular se há lucro com segurança. A rotina de trabalho não permite distribuir os gastos.";
   }
 
   if (calculation.verdict === "operational_loss") {
-    return `Não. Faltam ${formatCurrency(Math.abs(calculation.unitProfitCents))} por ${unit} para pagar todos os valores considerados.`;
+    return `Não. Seu prejuízo estimado é de ${formatCurrency(Math.abs(calculation.unitProfitCents))} por ${unit}, depois dos valores considerados.`;
   }
 
   if (calculation.verdict === "break_even") {
-    return "Ainda não. O preço paga exatamente os valores considerados, sem deixar sobra adicional.";
+    return "Ainda não. Não há lucro nem prejuízo: o preço paga exatamente os valores considerados.";
   }
 
-  return `Sim. Sobram ${formatCurrency(calculation.unitProfitCents)} por ${unit} depois dos valores considerados.`;
+  return `Sim. Seu lucro estimado é de ${formatCurrency(calculation.unitProfitCents)} por ${unit}, depois dos valores considerados.`;
 }
 
 function priceSufficiencyAnswer(calculation: ServiceReportCalculation): string {
@@ -95,7 +95,7 @@ function priceSufficiencyAnswer(calculation: ServiceReportCalculation): string {
     return `Não. O menor preço para não ficar no prejuízo é ${formatCurrency(calculation.minimumPriceCents)}.`;
   }
   if (calculation.verdict === "break_even") {
-    return "Sim, exatamente. O preço paga todos os valores considerados, sem deixar sobra.";
+    return "Sim, exatamente. O preço paga todos os valores considerados, sem gerar lucro nem prejuízo.";
   }
   return "Sim. O preço paga todos os gastos usados no cálculo.";
 }
@@ -144,7 +144,7 @@ function buildServiceExecutiveSummary(
   return {
     headline: "Resultado do seu serviço",
     introduction:
-      "Compare o preço atual com o menor preço completo e veja quanto sobra depois dos valores considerados.",
+      "Compare o preço atual com o menor preço completo e veja o resultado depois dos valores considerados.",
     verdict: serviceVerdictContent(calculation),
     facts: [
       {
@@ -159,7 +159,7 @@ function buildServiceExecutiveSummary(
       },
       {
         key: "margin",
-        currentLabel: "Quanto sobra por serviço",
+        currentLabel: "Resultado por serviço",
         currentValue: resultText,
         referenceLabel: "Quanto sobra a cada R$ 100",
         referenceValue: marginText,

@@ -60,8 +60,9 @@ describe("DiscountSimulator", () => {
     expect(slider).toHaveValue("10");
     expect(slider).toHaveAttribute("aria-valuetext", "10% de desconto");
     expect(within(simulator).getByTestId("discount-safety")).toHaveTextContent(
-      "Resultado positivo",
+      "Lucro estimado",
     );
+    expect(within(simulator).getByText("Resultado por unidade")).toBeVisible();
     expect(simulator.textContent).not.toMatch(/meta|faixa|folga/i);
   });
 
@@ -71,10 +72,12 @@ describe("DiscountSimulator", () => {
 
     fireEvent.change(slider, { target: { value: "20" } });
     expect(screen.getByTestId("discount-safety")).toHaveTextContent(
-      "No limite",
+      "sem gerar lucro nem prejuízo",
     );
     fireEvent.change(slider, { target: { value: "50" } });
-    expect(screen.getByTestId("discount-safety")).toHaveTextContent("Prejuízo");
+    expect(screen.getByTestId("discount-safety")).toHaveTextContent(
+      "Prejuízo estimado",
+    );
   });
 
   it("disables the range and explains the missing quantity", () => {
