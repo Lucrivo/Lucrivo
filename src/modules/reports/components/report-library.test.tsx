@@ -14,12 +14,12 @@ const report = {
   currentPriceCents: 8_000,
   realMarginBasisPoints: 1_700,
   unitProfitCents: 1_360,
-  verdict: "adequate_margin",
+  verdict: "positive_result",
   priority: "volume",
   unit: "hour",
-  schemaVersion: 3,
-  calculationVersion: 2,
-  contentVersion: 3,
+  schemaVersion: 4,
+  calculationVersion: 3,
+  contentVersion: 5,
   monthlyGrossRevenueCents: null,
   monthlyResultCents: null,
   itemCount: null,
@@ -38,9 +38,9 @@ const productReport = {
   verdict: "incomplete_volume",
   priority: "data",
   unit: "unit",
-  schemaVersion: 1,
-  calculationVersion: 1,
-  contentVersion: 2,
+  schemaVersion: 3,
+  calculationVersion: 3,
+  contentVersion: 4,
   monthlyGrossRevenueCents: null,
   monthlyResultCents: null,
   itemCount: null,
@@ -56,12 +56,12 @@ const productionReport = {
   currentPriceCents: 10_000,
   realMarginBasisPoints: 1_200,
   unitProfitCents: 1_200,
-  verdict: "tight_margin",
-  priority: "margin",
+  verdict: "positive_result",
+  priority: "volume",
   unit: "unit",
-  schemaVersion: 1,
-  calculationVersion: 1,
-  contentVersion: 2,
+  schemaVersion: 3,
+  calculationVersion: 3,
+  contentVersion: 4,
   monthlyGrossRevenueCents: null,
   monthlyResultCents: null,
   itemCount: null,
@@ -81,7 +81,7 @@ const detailedReport = {
   contentVersion: 1,
   monthlyGrossRevenueCents: 500_000,
   monthlyResultCents: 92_500,
-  verdict: "adequate_margin",
+  verdict: "positive_result",
   priority: "volume",
   itemCount: 3,
   isPartial: false,
@@ -97,7 +97,7 @@ describe("ReportListCard", () => {
     expect(within(card).getByText("Serviço")).toBeInTheDocument();
     expect(within(card).getByText("Por hora")).toBeInTheDocument();
     expect(within(card).getByText("28/08/2026, 19:30")).toBeInTheDocument();
-    expect(within(card).getByText("Margem adequada")).toBeInTheDocument();
+    expect(within(card).getByText("Resultado positivo")).toBeInTheDocument();
     expect(within(card).getByText("R$ 80,00")).toBeInTheDocument();
     expect(within(card).getByText("17%")).toBeInTheDocument();
     expect(within(card).getByText("R$ 13,60")).toBeInTheDocument();
@@ -136,9 +136,7 @@ describe("ReportListCard", () => {
     const verdict = within(card).getByText("Falta informar as vendas");
     expect(verdict).toBeInTheDocument();
     expect(verdict.closest('[data-slot="badge"]')).toHaveClass("text-info");
-    expect(
-      within(card).getByText("Quanto sobra por unidade"),
-    ).toBeInTheDocument();
+    expect(within(card).getByText("Resultado por unidade")).toBeInTheDocument();
     expect(within(card).queryByText("Lucro por venda")).not.toBeInTheDocument();
   });
 
@@ -153,7 +151,7 @@ describe("ReportListCard", () => {
       />,
     );
 
-    const verdict = screen.getByText("Venda com prejuízo");
+    const verdict = screen.getByText("Prejuízo por venda");
     expect(verdict.closest('[data-slot="badge"]')).toHaveClass(
       "text-destructive",
     );
@@ -170,10 +168,8 @@ describe("ReportListCard", () => {
     ).toBeInTheDocument();
     expect(within(card).getByText("Produção")).toBeInTheDocument();
     expect(within(card).getByText("Fabricação própria")).toBeInTheDocument();
-    expect(within(card).getByText("Abaixo da meta")).toBeInTheDocument();
-    expect(
-      within(card).getByText("Quanto sobra por unidade"),
-    ).toBeInTheDocument();
+    expect(within(card).getByText("Resultado positivo")).toBeInTheDocument();
+    expect(within(card).getByText("Resultado por unidade")).toBeInTheDocument();
     expect(within(card).queryByText("Lucro por venda")).not.toBeInTheDocument();
     expect(
       within(card).getByRole("link", { name: "Abrir relatório" }),
@@ -181,17 +177,11 @@ describe("ReportListCard", () => {
   });
 
   it("uses the saved plain-language labels for a current Service report", () => {
-    render(
-      <ReportListCard
-        report={{ ...report, contentVersion: 4, unit: "appointment" }}
-      />,
-    );
+    render(<ReportListCard report={{ ...report, unit: "appointment" }} />);
 
-    expect(screen.getByText("Meta alcançada")).toBeInTheDocument();
+    expect(screen.getByText("Resultado positivo")).toBeInTheDocument();
     expect(screen.getByText("Quanto sobra a cada R$ 100")).toBeInTheDocument();
-    expect(
-      screen.getByText("Quanto sobra por atendimento"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Resultado por atendimento")).toBeInTheDocument();
     expect(screen.getByText("Diagnóstico salvo")).toBeInTheDocument();
   });
 
@@ -217,7 +207,7 @@ describe("ReportListCard", () => {
     expect(within(card).getByText("Revenda")).toBeVisible();
     expect(within(card).getByText("Análise de produtos")).toBeVisible();
     expect(within(card).getByText("3 itens analisados")).toBeVisible();
-    expect(within(card).getByText("Lucro")).toBeVisible();
+    expect(within(card).getByText("Resultado positivo")).toBeVisible();
     expect(within(card).getByText("R$ 925,00")).toBeVisible();
     expect(within(card).getByText("18,5%")).toBeVisible();
     expect(

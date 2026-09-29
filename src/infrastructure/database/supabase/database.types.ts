@@ -371,6 +371,7 @@ export type Database = {
           direct_labor_unit_cost_cents: number | null;
           direct_loss: boolean;
           fee_amount_cents: number;
+          fixed_allocation_cents: number | null;
           id: number;
           kind: string;
           loss_rate_basis_points: number | null;
@@ -384,9 +385,12 @@ export type Database = {
           position: number;
           production_unit_cost_cents: number | null;
           purchase_unit_cost_cents: number | null;
+          real_margin_basis_points: number | null;
           recipe_yield: number | null;
           submission_id: string;
+          total_unit_cost_cents: number | null;
           unit_contribution_cents: number;
+          unit_profit_cents: number | null;
           unit_sale_price_cents: number;
           user_id: string;
           variable_unit_cost_cents: number;
@@ -400,6 +404,7 @@ export type Database = {
           direct_labor_unit_cost_cents?: number | null;
           direct_loss: boolean;
           fee_amount_cents: number;
+          fixed_allocation_cents?: number | null;
           id?: never;
           kind: string;
           loss_rate_basis_points?: number | null;
@@ -413,9 +418,12 @@ export type Database = {
           position: number;
           production_unit_cost_cents?: number | null;
           purchase_unit_cost_cents?: number | null;
+          real_margin_basis_points?: number | null;
           recipe_yield?: number | null;
           submission_id: string;
+          total_unit_cost_cents?: number | null;
           unit_contribution_cents: number;
+          unit_profit_cents?: number | null;
           unit_sale_price_cents: number;
           user_id: string;
           variable_unit_cost_cents: number;
@@ -429,6 +437,7 @@ export type Database = {
           direct_labor_unit_cost_cents?: number | null;
           direct_loss?: boolean;
           fee_amount_cents?: number;
+          fixed_allocation_cents?: number | null;
           id?: never;
           kind?: string;
           loss_rate_basis_points?: number | null;
@@ -442,9 +451,12 @@ export type Database = {
           position?: number;
           production_unit_cost_cents?: number | null;
           purchase_unit_cost_cents?: number | null;
+          real_margin_basis_points?: number | null;
           recipe_yield?: number | null;
           submission_id?: string;
+          total_unit_cost_cents?: number | null;
           unit_contribution_cents?: number;
+          unit_profit_cents?: number | null;
           unit_sale_price_cents?: number;
           user_id?: string;
           variable_unit_cost_cents?: number;

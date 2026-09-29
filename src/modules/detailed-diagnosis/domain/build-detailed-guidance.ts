@@ -18,22 +18,24 @@ function namesFor(
     .join(", ");
 }
 
-function buildMissingVolumeGuidance(
+function missingVolumeGuidance(
   command: DetailedDiagnosisCommand,
   calculation: DetailedDiagnosisCalculation,
 ): DetailedGuidance | null {
   if (!calculation.isPartial) return null;
-
   return {
     key: "missing_volume",
     tone: "neutral",
-    title: "Falta informar algumas vendas",
-    body: `Informe o volume mensal de ${namesFor(command, calculation.missingVolumeItemIds)} para concluir o resultado geral. Os valores por unidade continuam disponíveis.`,
+    title: "Faltam quantidades de alguns itens",
+    body:
+      command.items.length === 1
+        ? `Informe a quantidade mensal de ${namesFor(command, calculation.missingVolumeItemIds)} para dividir os gastos do mês. A quantidade necessária no preço atual continua disponível.`
+        : `Informe a quantidade mensal de ${namesFor(command, calculation.missingVolumeItemIds)}. Uma quantidade única para o conjunto exigiria inventar uma proporção entre os itens.`,
     itemIds: calculation.missingVolumeItemIds,
   };
 }
 
-function buildDirectLossGuidance(
+function directLossGuidance(
   command: DetailedDiagnosisCommand,
   calculation: DetailedDiagnosisCalculation,
 ): DetailedGuidance | null {
@@ -41,65 +43,54 @@ function buildDirectLossGuidance(
     .filter((item) => item.directLoss)
     .map((item) => item.itemId);
   if (itemIds.length === 0) return null;
-
   return {
     key: "direct_loss",
     tone: "critical",
     title:
       itemIds.length === 1
-        ? "Um item não se paga por venda"
-        : "Há itens que não se pagam por venda",
-    body: `${namesFor(command, itemIds)} não cobre custos variáveis e taxas com o preço atual. Revise preço ou custos antes de ampliar as vendas.`,
+        ? "Um item não paga seus valores diretos"
+        : "Há itens que não pagam seus valores diretos",
+    body: `${namesFor(command, itemIds)} não deixa valor para os gastos do mês no preço atual. Revise preço ou custo antes de ampliar as vendas.`,
     itemIds,
   };
 }
 
-function buildBusinessResultGuidance(
+function businessResultGuidance(
   calculation: DetailedDiagnosisCalculation,
 ): DetailedGuidance | null {
   if (calculation.isPartial) return null;
-
-  const content: Record<
-    DetailedDiagnosisCalculation["verdict"],
-    Pick<DetailedGuidance, "tone" | "title" | "body">
-  > = {
+  const content = {
     direct_loss: {
       tone: "critical",
-      title: "O conjunto de itens contém perda por venda",
-      body: "Corrija os itens que não deixam contribuição antes de buscar mais volume.",
+      title: "Há perda direta no conjunto",
+      body: "Revise os itens que não deixam valor para os gastos do mês.",
     },
     incomplete_volume: {
       tone: "neutral",
-      title: "Faltam dados para concluir",
-      body: "Informe todos os volumes para calcular o resultado do negócio.",
+      title: "Faltam quantidades",
+      body: "Informe todas as quantidades para calcular o resultado do conjunto.",
     },
     no_sales: {
-      tone: "warning",
-      title: "O mês está sem vendas",
-      body: "Com volume zero, os gastos mensais permanecem sem cobertura.",
+      tone: "neutral",
+      title: "O mês informado está sem vendas",
+      body: "Com volume zero, o resultado corresponde aos gastos mensais.",
     },
     operational_loss: {
       tone: "critical",
-      title: "As vendas não cobrem os gastos mensais",
-      body: "O valor deixado por todos os itens ainda é menor que os gastos mensais considerados.",
+      title: "O resultado estimado do mês ficou negativo",
+      body: "O valor deixado pelas vendas é menor que os gastos mensais considerados.",
     },
     break_even: {
-      tone: "warning",
-      title: "O negócio está no ponto de equilíbrio",
-      body: "As vendas cobrem exatamente os gastos mensais, sem formar margem final.",
+      tone: "neutral",
+      title: "O resultado está no ponto de equilíbrio",
+      body: "As vendas pagam exatamente os valores considerados, sem sobra.",
     },
-    tight_margin: {
-      tone: "warning",
-      title: "O resultado tem pouca folga",
-      body: "O conjunto de itens supera os gastos mensais, mas a margem final ainda é apertada.",
-    },
-    adequate_margin: {
+    positive_result: {
       tone: "positive",
-      title: "O conjunto de itens cobre os gastos com folga",
-      body: "O resultado mensal está acima do ponto de equilíbrio e tem margem adequada.",
+      title: "O resultado estimado do mês ficou positivo",
+      body: `Depois dos valores considerados, o resultado do mês é ${calculation.monthlyResultCents ?? 0} centavos.`,
     },
-  };
-
+  } as const;
   return {
     key: "business_result",
     ...content[calculation.verdict],
@@ -117,18 +108,17 @@ function positiveMonthlyItems(
   );
 }
 
-function buildConcentrationGuidance(
+function concentrationGuidance(
   command: DetailedDiagnosisCommand,
   calculation: DetailedDiagnosisCalculation,
 ): DetailedGuidance | null {
   if (calculation.isPartial) return null;
-
   const positiveItems = positiveMonthlyItems(calculation);
-  const totalPositiveContribution = positiveItems.reduce(
+  const total = positiveItems.reduce(
     (sum, item) => sum + BigInt(item.monthlyContributionCents ?? 0),
     BigInt(0),
   );
-  const leadingItem = positiveItems.reduce<DetailedItemCalculation | null>(
+  const leading = positiveItems.reduce<DetailedItemCalculation | null>(
     (best, item) =>
       best === null ||
       (item.monthlyContributionCents ?? 0) >
@@ -137,82 +127,76 @@ function buildConcentrationGuidance(
         : best,
     null,
   );
-
   if (
-    leadingItem === null ||
-    BigInt(leadingItem.monthlyContributionCents ?? 0) * BigInt(10_000) <=
-      totalPositiveContribution * BigInt(CONCENTRATION_THRESHOLD_BASIS_POINTS)
+    leading === null ||
+    BigInt(leading.monthlyContributionCents ?? 0) * BigInt(10_000) <=
+      total * BigInt(CONCENTRATION_THRESHOLD_BASIS_POINTS)
   ) {
     return null;
   }
-
   return {
     key: "concentration",
     tone: "warning",
-    title: "A contribuição está concentrada em um item",
-    body: `${namesFor(command, [leadingItem.itemId])} responde por mais de 45% do valor positivo deixado pelo conjunto de itens. Acompanhe essa dependência.`,
-    itemIds: [leadingItem.itemId],
+    title: "Um item deixa a maior parte do valor do conjunto",
+    body: `${namesFor(command, [leading.itemId])} responde por mais de 45% do valor positivo deixado pelas vendas informadas.`,
+    itemIds: [leading.itemId],
   };
 }
 
-function buildHighVolumeLowMarginGuidance(
+function highVolumeLowerResultGuidance(
   command: DetailedDiagnosisCommand,
   calculation: DetailedDiagnosisCalculation,
 ): DetailedGuidance | null {
   if (calculation.isPartial) return null;
-
-  const positiveMarginItems = calculation.items.filter(
+  const comparable = calculation.items.filter(
     (item) =>
-      item.contributionMarginBasisPoints !== null &&
-      item.contributionMarginBasisPoints > 0,
+      item.realMarginBasisPoints !== null && item.unitProfitCents !== null,
   );
-  if (positiveMarginItems.length < 2) return null;
-
+  if (comparable.length < 2) return null;
   const volumeById = new Map(
     command.items.map((item) => [item.id, item.monthlySalesVolume ?? 0]),
   );
-  const highestVolumeItem = positiveMarginItems.reduce((highest, item) =>
+  const highestVolume = comparable.reduce((highest, item) =>
     (volumeById.get(item.itemId) ?? 0) > (volumeById.get(highest.itemId) ?? 0)
       ? item
       : highest,
   );
-  const worstPositiveMargin = Math.min(
-    ...positiveMarginItems.map(
-      (item) => item.contributionMarginBasisPoints ?? Number.MAX_SAFE_INTEGER,
-    ),
+  const lowestMargin = Math.min(
+    ...comparable.map((item) => item.realMarginBasisPoints ?? 0),
   );
-  if (highestVolumeItem.contributionMarginBasisPoints !== worstPositiveMargin) {
-    return null;
-  }
-
+  if (highestVolume.realMarginBasisPoints !== lowestMargin) return null;
   return {
     key: "high_volume_low_margin",
-    tone: "warning",
-    title: "O item mais vendido tem a menor margem positiva",
-    body: `${namesFor(command, [highestVolumeItem.itemId])} lidera o volume, mas deixa proporcionalmente menos por venda. Uma pequena melhoria nele pode ter impacto recorrente.`,
-    itemIds: [highestVolumeItem.itemId],
+    tone: "neutral",
+    title: "O item mais vendido deixa menos proporcionalmente",
+    body: `${namesFor(command, [highestVolume.itemId])} tem a maior quantidade e deixa menos por venda do que os outros itens informados.`,
+    itemIds: [highestVolume.itemId],
   };
 }
 
-function buildBestUnitContributionGuidance(
+function bestUnitResultGuidance(
   command: DetailedDiagnosisCommand,
   calculation: DetailedDiagnosisCalculation,
 ): DetailedGuidance | null {
-  const bestItem = calculation.items.reduce<DetailedItemCalculation | null>(
-    (best, item) =>
-      best === null || item.unitContributionCents > best.unitContributionCents
+  const candidates = calculation.items.filter(
+    (item) => item.unitProfitCents !== null,
+  );
+  const best = candidates.reduce<DetailedItemCalculation | null>(
+    (current, item) =>
+      current === null ||
+      (item.unitProfitCents ?? Number.MIN_SAFE_INTEGER) >
+        (current.unitProfitCents ?? Number.MIN_SAFE_INTEGER)
         ? item
-        : best,
+        : current,
     null,
   );
-  if (bestItem === null || bestItem.unitContributionCents <= 0) return null;
-
+  if (best === null) return null;
   return {
     key: "best_unit_contribution",
     tone: "positive",
-    title: "Este item deixa mais valor por venda",
-    body: `${namesFor(command, [bestItem.itemId])} deixa o maior valor por venda entre os itens analisados.`,
-    itemIds: [bestItem.itemId],
+    title: "Este item deixa mais depois dos valores considerados",
+    body: `${namesFor(command, [best.itemId])} deixa o maior valor por venda entre os itens com custo completo calculado.`,
+    itemIds: [best.itemId],
   };
 }
 
@@ -221,12 +205,12 @@ function buildDetailedGuidance(
   calculation: DetailedDiagnosisCalculation,
 ): DetailedGuidance[] {
   return [
-    buildMissingVolumeGuidance(command, calculation),
-    buildDirectLossGuidance(command, calculation),
-    buildBusinessResultGuidance(calculation),
-    buildConcentrationGuidance(command, calculation),
-    buildHighVolumeLowMarginGuidance(command, calculation),
-    buildBestUnitContributionGuidance(command, calculation),
+    missingVolumeGuidance(command, calculation),
+    directLossGuidance(command, calculation),
+    businessResultGuidance(calculation),
+    concentrationGuidance(command, calculation),
+    highVolumeLowerResultGuidance(command, calculation),
+    bestUnitResultGuidance(command, calculation),
   ].filter((guidance): guidance is DetailedGuidance => guidance !== null);
 }
 

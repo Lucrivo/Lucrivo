@@ -39,8 +39,8 @@ const serviceCommand: NormalizedServiceDiagnosisCommand = {
   taxRateBasisPoints: 600,
   cardFeeRateBasisPoints: 200,
   source: {
-    pricingMethod: "week",
-    currentPriceCents: 450_000,
+    pricingMethod: "hour",
+    currentPriceCents: 15_000,
     materialCostUnit: "hour",
     materialCostCents: 1_000,
     dailyWorkMinutes: 360,
@@ -63,12 +63,12 @@ const productCommand: ProductDiagnosisCommand = {
 
 const productionCommand: ProductionDiagnosisCommand = {
   submissionId: "53000000-0000-4000-8000-000000000001",
-  costCompositionEnabled: true,
+  costCompositionEnabled: false,
   productionUnitCostCents: 5_000,
-  materialUnitCostCents: 3_000,
-  packagingUnitCostCents: 500,
-  directLaborUnitCostCents: 1_000,
-  otherVariableUnitCostCents: 500,
+  materialUnitCostCents: null,
+  packagingUnitCostCents: null,
+  directLaborUnitCostCents: null,
+  otherVariableUnitCostCents: null,
   unitSalePriceCents: 10_000,
   fixedMonthlyExpensesCents: 100_000,
   monthlySalesVolume: 100,
@@ -80,66 +80,75 @@ const productionCommand: ProductionDiagnosisCommand = {
 
 const detailedCommand: DetailedDiagnosisCommand = {
   submissionId: "54000000-0000-4000-8000-000000000001",
-  category: "production",
+  category: "product",
   fixedMonthlyExpensesCents: 100_000,
-  proLaboreIncluded: true,
-  proLaboreCents: 200_000,
+  proLaboreIncluded: false,
+  proLaboreCents: 0,
   taxRateBasisPoints: 600,
   cardFeeRateBasisPoints: 200,
   items: [
     {
       id: "54100000-0000-4000-8000-000000000001",
       position: 0,
-      name: "Bolo de cenoura",
-      kind: "manufacturing",
-      costMode: "technical_sheet",
-      unitSalePriceCents: 5_000,
-      monthlySalesVolume: 50,
-      recipeYield: 10,
-      lossRateBasisPoints: 500,
-      packagingUnitCostCents: 100,
-      directLaborUnitCostCents: 200,
-      otherVariableUnitCostCents: 50,
-      ingredients: [
-        {
-          id: "54200000-0000-4000-8000-000000000001",
-          position: 0,
-          name: "Farinha",
-          quantityMillionths: 1_500_000,
-          unit: "kg",
-          unitCostTenThousandths: 30_000,
-        },
-      ],
+      name: "Caneca",
+      kind: "resale",
+      unitSalePriceCents: 10_000,
+      monthlySalesVolume: 100,
+      purchaseUnitCostCents: 5_000,
+      packagingUnitCostCents: 0,
     },
   ],
 };
 
-describe("report RPC argument mappers", () => {
-  it("maps Service source data without accepting a user id", () => {
-    const snapshot = buildServiceReportSnapshot(
-      serviceCommand,
-      calculateServiceReport(serviceCommand),
-    );
-    const args = toServiceRpcArgs(serviceCommand, snapshot);
+function allArgs() {
+  const serviceSnapshot = buildServiceReportSnapshot(
+    serviceCommand,
+    calculateServiceReport(serviceCommand),
+  );
+  const productSnapshot = buildProductReportSnapshot(
+    productCommand,
+    calculateProductReport(productCommand),
+  );
+  const productionSnapshot = buildProductionReportSnapshot(
+    productionCommand,
+    calculateProductionReport(productionCommand),
+  );
+  const detailedCalculation = calculateDetailedDiagnosis(detailedCommand);
+  const detailedSnapshot = buildDetailedReportSnapshot(
+    detailedCommand,
+    detailedCalculation,
+  );
+  return {
+    service: toServiceRpcArgs(serviceCommand, serviceSnapshot),
+    product: toProductRpcArgs(productCommand, productSnapshot),
+    production: toProductionRpcArgs(productionCommand, productionSnapshot),
+    detailed: toDetailedRpcArgs(detailedCommand, detailedSnapshot),
+    detailedCalculation,
+  };
+}
 
-    expect(args).toMatchObject({
-      p_submission_id: serviceCommand.submissionId,
-      p_source_pricing_method: "week",
-      p_source_current_price_cents: 450_000,
-      p_schema_version: snapshot.schemaVersion,
-      p_verdict: snapshot.results.verdict,
+describe("report RPC argument mappers", () => {
+  it("preserves the current quick-report version tuples", () => {
+    const args = allArgs();
+    expect(args.service).toMatchObject({
+      p_schema_version: 4,
+      p_calculation_version: 3,
+      p_content_version: 6,
     });
-    expect(args).not.toHaveProperty("p_user_id");
+    expect(args.product).toMatchObject({
+      p_schema_version: 3,
+      p_calculation_version: 3,
+      p_content_version: 5,
+    });
+    expect(args.production).toMatchObject({
+      p_schema_version: 3,
+      p_calculation_version: 3,
+      p_content_version: 5,
+    });
   });
 
   it("preserves nullable Product values", () => {
-    const snapshot = buildProductReportSnapshot(
-      productCommand,
-      calculateProductReport(productCommand),
-    );
-
-    expect(toProductRpcArgs(productCommand, snapshot)).toMatchObject({
-      p_submission_id: productCommand.submissionId,
+    expect(allArgs().product).toMatchObject({
       p_monthly_sales_volume: null,
       p_monthly_result_cents: null,
       p_real_margin_basis_points: null,
@@ -147,47 +156,24 @@ describe("report RPC argument mappers", () => {
     });
   });
 
-  it("maps composed Production costs", () => {
-    const snapshot = buildProductionReportSnapshot(
-      productionCommand,
-      calculateProductionReport(productionCommand),
-    );
-
-    expect(toProductionRpcArgs(productionCommand, snapshot)).toMatchObject({
-      p_submission_id: productionCommand.submissionId,
-      p_cost_composition_enabled: true,
-      p_material_unit_cost_cents: 3_000,
-      p_production_unit_cost_cents: 5_000,
-      p_verdict: snapshot.results.verdict,
-    });
-  });
-
-  it("combines detailed source items with calculated fields", () => {
-    const calculation = calculateDetailedDiagnosis(detailedCommand);
-    const snapshot = buildDetailedReportSnapshot(detailedCommand, calculation);
-    const args = toDetailedRpcArgs(detailedCommand, snapshot);
-    const sourceItem = detailedCommand.items[0];
-    if (
-      !sourceItem ||
-      sourceItem.kind !== "manufacturing" ||
-      sourceItem.costMode !== "technical_sheet"
-    ) {
-      throw new Error("Expected a technical-sheet manufacturing item.");
-    }
-
-    expect(args).toMatchObject({
-      p_submission_id: detailedCommand.submissionId,
-      p_category: "production",
-      p_item_count: 1,
-      p_is_partial: false,
-      p_verdict: calculation.verdict,
-    });
-    expect(args.p_items).toEqual([
+  it("persists all four detailed full-cost fields in p_items", () => {
+    const { detailed, detailedCalculation } = allArgs();
+    expect(detailed.p_items).toEqual([
       expect.objectContaining({
-        id: sourceItem.id,
-        variableUnitCostCents: calculation.items[0]?.variableUnitCostCents,
-        ingredients: sourceItem.ingredients,
+        fixedAllocationCents:
+          detailedCalculation.items[0]?.fixedAllocationCents,
+        totalUnitCostCents: detailedCalculation.items[0]?.totalUnitCostCents,
+        unitProfitCents: detailedCalculation.items[0]?.unitProfitCents,
+        realMarginBasisPoints:
+          detailedCalculation.items[0]?.realMarginBasisPoints,
       }),
     ]);
+  });
+
+  it("does not serialize target or attention fields in any RPC argument", () => {
+    const { detailedCalculation: _calculation, ...args } = allArgs();
+    expect(JSON.stringify(args)).not.toMatch(
+      /targetMarginBasisPoints|attentionBandBasisPoints|targetPriceCents|priceReferencesPartial/,
+    );
   });
 });

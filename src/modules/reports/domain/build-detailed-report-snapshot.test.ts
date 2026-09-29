@@ -2,150 +2,99 @@ import { describe, expect, it } from "vitest";
 
 import { calculateDetailedDiagnosis } from "@/modules/detailed-diagnosis/domain/calculate-detailed-diagnosis";
 import type { DetailedDiagnosisCommand } from "@/modules/detailed-diagnosis/types";
-
 import { parseDetailedReportSnapshot } from "../schemas/detailed-report-snapshot.schema";
 import { buildDetailedReportSnapshot } from "./build-detailed-report-snapshot";
 
-const productCommand: DetailedDiagnosisCommand = {
+const command: DetailedDiagnosisCommand = {
   submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   category: "product",
-  fixedMonthlyExpensesCents: 200,
-  proLaboreIncluded: false,
-  proLaboreCents: 0,
-  taxRateBasisPoints: 0,
-  cardFeeRateBasisPoints: 0,
+  fixedMonthlyExpensesCents: 300_000,
+  proLaboreIncluded: true,
+  proLaboreCents: 100_000,
+  taxRateBasisPoints: 500,
+  cardFeeRateBasisPoints: 200,
   items: [
     {
       id: "11111111-1111-4111-8111-111111111111",
       position: 0,
       name: "Caneca",
       kind: "resale",
-      unitSalePriceCents: 1000,
-      monthlySalesVolume: 1,
-      purchaseUnitCostCents: 500,
-      packagingUnitCostCents: 0,
-    },
-  ],
-};
-
-const digitalCommand: DetailedDiagnosisCommand = {
-  ...productCommand,
-  submissionId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
-  items: productCommand.items.map((item) =>
-    item.kind === "manufacturing"
-      ? item
-      : { ...item, kind: "digital" as const, packagingUnitCostCents: 0 },
-  ),
-};
-
-const productionCommand: DetailedDiagnosisCommand = {
-  ...productCommand,
-  submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-  category: "production",
-  proLaboreIncluded: true,
-  proLaboreCents: 100,
-  items: [
-    {
-      id: "22222222-2222-4222-8222-222222222222",
-      position: 0,
-      name: "Bolo",
-      kind: "manufacturing",
-      costMode: "technical_sheet",
-      unitSalePriceCents: 1500,
-      monthlySalesVolume: null,
-      recipeYield: 10,
-      lossRateBasisPoints: 1000,
+      unitSalePriceCents: 5_500,
+      monthlySalesVolume: 200,
+      purchaseUnitCostCents: 1_500,
       packagingUnitCostCents: 100,
-      directLaborUnitCostCents: 50,
-      otherVariableUnitCostCents: 25,
-      ingredients: [
-        {
-          id: "33333333-3333-4333-8333-333333333333",
-          position: 0,
-          name: "Farinha",
-          quantityMillionths: 500_000,
-          unit: "kg",
-          unitCostTenThousandths: 50_000,
-        },
-      ],
     },
   ],
 };
+
+function build(input: DetailedDiagnosisCommand) {
+  return buildDetailedReportSnapshot(input, calculateDetailedDiagnosis(input));
+}
 
 describe("buildDetailedReportSnapshot", () => {
-  it("builds a complete Product snapshot with exact V1 versions", () => {
-    const snapshot = buildDetailedReportSnapshot(
-      productCommand,
-      calculateDetailedDiagnosis(productCommand),
-    );
-
+  it("builds the Detailed 1/1/2 contract with direct summary language", () => {
+    const snapshot = build(command);
     expect(snapshot).toMatchObject({
       schemaVersion: 1,
       calculationVersion: 1,
-      contentVersion: 1,
-      analysisMode: "detailed",
-      category: "product",
-      scenario: "resale",
-      currency: "BRL",
-      unit: "mix",
-      policy: {
-        attentionBandBasisPoints: 2000,
-        concentrationThresholdBasisPoints: 4500,
-        weeklyDivisorHundredths: 433,
-        operatingDaysPerWeek: 6,
-        proLaboreIncluded: false,
-      },
-    });
-    expect(parseDetailedReportSnapshot(snapshot)).toEqual(snapshot);
-  });
-
-  it("derives the Digital scenario from the first validated Product item", () => {
-    const snapshot = buildDetailedReportSnapshot(
-      digitalCommand,
-      calculateDetailedDiagnosis(digitalCommand),
-    );
-
-    expect(snapshot).toMatchObject({
-      category: "product",
-      scenario: "digital",
-      inputs: {
+      contentVersion: 2,
+      policy: { concentrationThresholdBasisPoints: 4_500 },
+      results: {
+        verdict: "positive_result",
         items: [
-          expect.objectContaining({
-            kind: "digital",
-            packagingUnitCostCents: 0,
-          }),
+          {
+            fixedAllocationCents: 2_000,
+            totalUnitCostCents: 3_600,
+            unitProfitCents: 1_515,
+            realMarginBasisPoints: 2_755,
+          },
         ],
       },
     });
+    expect(snapshot.policy).not.toHaveProperty("attentionBandBasisPoints");
+    expect(parseDetailedReportSnapshot(snapshot)).toEqual(snapshot);
   });
 
-  it("builds a partial Production snapshot with ordered normalized inputs", () => {
-    const snapshot = buildDetailedReportSnapshot(
-      productionCommand,
-      calculateDetailedDiagnosis(productionCommand),
-    );
+  it("shows a single-item monthly goal without inventing routine splits", () => {
+    const snapshot = build({
+      ...command,
+      items: [{ ...command.items[0], monthlySalesVolume: null }],
+    });
+    const sales = snapshot.sections.find(({ key }) => key === "sales_goal");
+    expect(sales).toMatchObject({
+      title: "Quanto você precisa vender",
+      emphasisLabel: "Faturamento necessário no mês",
+    });
+    expect(sales?.body).not.toMatch(/por semana|por dia/);
+    expect(snapshot.results.items[0]).toMatchObject({
+      fixedAllocationCents: null,
+      totalUnitCostCents: null,
+      unitProfitCents: null,
+      realMarginBasisPoints: null,
+      breakEvenUnitPriceCents: null,
+    });
+  });
 
-    expect(snapshot).toMatchObject({
-      category: "production",
-      scenario: "manufacturing",
-      results: {
-        isPartial: true,
-        missingVolumeItemIds: [productionCommand.items[0].id],
-        monthlyGrossRevenueCents: null,
-        verdict: "incomplete_volume",
-      },
-      guidance: [
-        expect.objectContaining({ key: "missing_volume", tone: "neutral" }),
-        expect.objectContaining({ key: "best_unit_contribution" }),
+  it("explains that a multi-item partial goal would invent a mix", () => {
+    const snapshot = build({
+      ...command,
+      items: [
+        { ...command.items[0], monthlySalesVolume: 10 },
+        {
+          ...command.items[0],
+          id: "22222222-2222-4222-8222-222222222222",
+          position: 1,
+          name: "Caderno",
+          monthlySalesVolume: null,
+        },
       ],
     });
-    expect(snapshot.inputs.items[0].position).toBe(0);
-    expect(
-      snapshot.inputs.items[0].kind === "manufacturing" &&
-        snapshot.inputs.items[0].costMode === "technical_sheet"
-        ? snapshot.inputs.items[0].ingredients[0].position
-        : null,
-    ).toBe(0);
-    expect(parseDetailedReportSnapshot(snapshot)).toEqual(snapshot);
+    expect(JSON.stringify(snapshot)).toContain("inventar uma proporção");
+  });
+
+  it("contains no target-based or margin-quality language", () => {
+    expect(JSON.stringify(build(command))).not.toMatch(
+      /margem adequada|margem apertada|acima da meta|boa folga|pouca folga|meta de 15%|meta de 20%|preço-alvo/i,
+    );
   });
 });

@@ -1,84 +1,146 @@
 import { describe, expect, it } from "vitest";
 
 import type { ProductDiagnosisCommand } from "@/modules/quick-diagnosis/types";
-
 import { buildProductExecutiveSummary } from "./build-product-executive-summary";
 import { calculateProductReport } from "./calculate-product-report";
 
 const command: ProductDiagnosisCommand = {
   submissionId: "550e8400-e29b-41d4-a716-446655440000",
   productKind: "resale",
-  purchaseUnitCostCents: 5000,
-  unitSalePriceCents: 10000,
-  fixedMonthlyExpensesCents: 100000,
-  monthlySalesVolume: 100,
+  purchaseUnitCostCents: 1_600,
+  unitSalePriceCents: 5_500,
+  fixedMonthlyExpensesCents: 300_000,
+  monthlySalesVolume: 200,
   proLaboreIncluded: true,
-  proLaboreCents: 200000,
-  taxRateBasisPoints: 600,
+  proLaboreCents: 100_000,
+  taxRateBasisPoints: 500,
   cardFeeRateBasisPoints: 200,
 };
 
 describe("buildProductExecutiveSummary", () => {
-  it.each([
-    ["direct_loss", "Prejuízo por venda"],
-    ["operational_loss", "Prejuízo no mês"],
-    ["no_sales", "Sem vendas no mês"],
-    ["break_even", "No limite"],
-    ["tight_margin", "Margem apertada"],
-    ["adequate_margin", "Lucro"],
-  ] as const)("presents %s as %s", (verdict, label) => {
-    const base = calculateProductReport(command);
-    expect(
-      buildProductExecutiveSummary({ ...base, verdict }).verdict.label,
-    ).toBe(label);
-  });
-
-  it("keeps an unknown-volume month partial and neutral", () => {
+  it("uses the three direct questions in their decision order", () => {
     const summary = buildProductExecutiveSummary(
-      calculateProductReport({ ...command, monthlySalesVolume: null }),
-    );
-    expect(summary.facts[0]).toEqual(
-      expect.objectContaining({
-        currentLabel: "Resultado do mês",
-        currentValue: "Ainda não calculado",
-        referenceValue: "Ainda não calculado",
-      }),
-    );
-    expect(summary.verdict).toMatchObject({
-      label: "Falta informar as vendas",
-      tone: "neutral",
-    });
-    expect(summary.priority.body).toContain("Informe");
-    expect(summary.answers[0].answer).toContain("Ainda não é possível");
-    expect(summary.answers[1].question).toBe("Meu preço paga tudo?");
-  });
-
-  it("uses separate Resale and Digital language", () => {
-    const calculation = calculateProductReport({
-      ...command,
-      productKind: "digital",
-      purchaseUnitCostCents: 0,
-    });
-    const digital = buildProductExecutiveSummary(calculation, "digital");
-    const resale = buildProductExecutiveSummary(
       calculateProductReport(command),
       "resale",
     );
-    expect(digital.headline).toBe("Seu produto digital dá lucro?");
-    expect(JSON.stringify(digital)).toContain("custo por venda");
-    expect(JSON.stringify(digital)).not.toMatch(
-      /fornecedor|custo de compra|fabricação/i,
-    );
-    expect(resale.headline).toBe("Seu produto para revenda dá lucro?");
-    expect(JSON.stringify(resale)).toContain("custo de compra");
+
+    expect(summary.answers.map(({ question }) => question)).toEqual([
+      "Estou ganhando dinheiro?",
+      "Meu preço paga todos os gastos?",
+      "O que preciso fazer agora?",
+    ]);
   });
 
-  it("keeps prohibited technical and target language out", () => {
-    const content = JSON.stringify(
-      buildProductExecutiveSummary(calculateProductReport(command)),
+  it("describes a positive result factually", () => {
+    const summary = buildProductExecutiveSummary(
+      calculateProductReport(command),
+      "resale",
     );
-    expect(content).not.toMatch(
-      /ponto de equilíbrio|pró-labore|alíquota|rateio|receita líquida|margem de contribuição|preço-alvo|custo operacional|meta de 20%|margem ideal/i,
+    expect(summary.verdict).toMatchObject({
+      label: "Resultado positivo",
+      tone: "positive",
+    });
+    expect(JSON.stringify(summary)).toContain("Quanto sobra a cada R$ 100");
+    expect(summary.answers[0]?.answer).toBe(
+      "Sim. Seu lucro estimado no mês é de R$ 3.030,00, depois dos valores considerados.",
+    );
+    expect(summary.answers[1]?.answer).toMatch(/^Sim\./);
+  });
+  it.each([
+    {
+      name: "direct loss",
+      input: { unitSalePriceCents: 1_000, purchaseUnitCostCents: 1_600 },
+      first: /^Não\./,
+      second: /^Não\./,
+      third: /antes de vender mais/,
+    },
+    {
+      name: "missing volume",
+      input: { monthlySalesVolume: null },
+      first: /^Ainda não dá para calcular se há lucro no mês\./,
+      second: /^Ainda não dá para confirmar\./,
+      third: /Informe quantas vendas/,
+    },
+    {
+      name: "no sales",
+      input: { monthlySalesVolume: 0 },
+      first: /^Ainda não houve vendas/,
+      second: /^Ainda não dá para confirmar/,
+      third: /quantidade necessária/,
+    },
+    {
+      name: "operational loss",
+      input: { monthlySalesVolume: 10 },
+      first: /^Não\./,
+      second: /^Não\./,
+      third: /menor preço/,
+    },
+    {
+      name: "break even",
+      input: {
+        purchaseUnitCostCents: 1_500,
+        unitSalePriceCents: 5_500,
+        fixedMonthlyExpensesCents: 300_000,
+        proLaboreCents: 100_000,
+        taxRateBasisPoints: 0,
+        cardFeeRateBasisPoints: 0,
+        monthlySalesVolume: 100,
+      },
+      first: /^Ainda não\./,
+      second: /^Sim, exatamente\./,
+      third: /pequena folga/,
+    },
+  ])(
+    "adapts the three answers for $name",
+    ({ input, first, second, third }) => {
+      const summary = buildProductExecutiveSummary(
+        calculateProductReport({ ...command, ...input }),
+        "resale",
+      );
+
+      expect(summary.answers[0]?.answer).toMatch(first);
+      expect(summary.answers[1]?.answer).toMatch(second);
+      expect(summary.answers[2]?.answer).toMatch(third);
+    },
+  );
+
+  it("distinguishes break-even from profit", () => {
+    const summary = buildProductExecutiveSummary(
+      calculateProductReport({
+        ...command,
+        purchaseUnitCostCents: 1_500,
+        unitSalePriceCents: 5_500,
+        fixedMonthlyExpensesCents: 300_000,
+        proLaboreCents: 100_000,
+        taxRateBasisPoints: 0,
+        cardFeeRateBasisPoints: 0,
+        monthlySalesVolume: 100,
+      }),
+      "resale",
+    );
+
+    expect(summary.answers[0]?.answer).toContain("Não há lucro nem prejuízo");
+    expect(summary.answers[1]?.answer).toContain(
+      "sem gerar lucro nem prejuízo",
+    );
+  });
+
+  it("keeps complete price unavailable without volume", () => {
+    const summary = buildProductExecutiveSummary(
+      calculateProductReport({ ...command, monthlySalesVolume: null }),
+      "resale",
+    );
+    expect(summary.facts[1].referenceValue).toBe("Ainda não calculado");
+    expect(summary.answers[1].answer).toMatch(/falta uma quantidade/i);
+  });
+
+  it("contains no target-based or margin-quality language", () => {
+    const summary = buildProductExecutiveSummary(
+      calculateProductReport(command),
+      "resale",
+    );
+    expect(JSON.stringify(summary)).not.toMatch(
+      /margem adequada|margem apertada|acima da meta|boa folga|pouca folga|meta de 20%|preço-alvo/i,
     );
   });
 });

@@ -5,6 +5,7 @@ import type {
 
 import { formatBasisPoints, formatCurrency } from "../formatters";
 import type { ReportExecutiveSummary, ReportSection } from "../types";
+import { calculateBreakEvenRevenue } from "./unit-economics";
 
 type DetailedReportContent = {
   executiveSummary: ReportExecutiveSummary;
@@ -18,75 +19,143 @@ function optionalCurrency(value: number | null): string {
 function verdictContent(
   calculation: DetailedDiagnosisCalculation,
 ): ReportExecutiveSummary["verdict"] {
-  const content: Record<
-    DetailedDiagnosisCalculation["verdict"],
-    ReportExecutiveSummary["verdict"]
-  > = {
-    direct_loss: {
-      label: "Prejuízo por venda",
-      body: "Há itens que deixam um valor negativo antes mesmo dos gastos mensais.",
-      tone: "critical",
-    },
-    incomplete_volume: {
-      label: "Falta informar as vendas",
-      body: "O resultado mensal ainda não foi calculado porque faltam vendas de um ou mais itens.",
-      tone: "neutral",
-    },
-    no_sales: {
-      label: "Sem vendas no mês",
-      body: "O mês foi calculado sem vendas; os gastos mensais continuam considerados.",
-      tone: "neutral",
-    },
-    operational_loss: {
-      label: "Prejuízo no mês",
-      body: "O resultado do mês ficou negativo com as vendas e os gastos informados.",
-      tone: "critical",
-    },
-    break_even: {
-      label: "No limite",
-      body: "As vendas do mês pagam exatamente os gastos informados, sem deixar sobra.",
-      tone: "warning",
-    },
-    tight_margin: {
-      label: "Margem apertada",
-      body: "O mês terminou positivo, mas com pouca folga para imprevistos.",
-      tone: "warning",
-    },
-    adequate_margin: {
-      label: "Lucro",
-      body: "O mês terminou positivo com as vendas e os gastos informados.",
-      tone: "positive",
-    },
-  };
-  return content[calculation.verdict];
+  return (
+    {
+      direct_loss: {
+        label: "Prejuízo por venda",
+        body: "Há itens que deixam um valor negativo antes dos gastos mensais.",
+        tone: "critical",
+      },
+      incomplete_volume: {
+        label: "Falta informar as vendas",
+        body: "O resultado mensal depende das quantidades ainda não informadas.",
+        tone: "neutral",
+      },
+      no_sales: {
+        label: "Sem vendas no mês",
+        body: "O mês informado teve volume zero e manteve os gastos mensais.",
+        tone: "neutral",
+      },
+      operational_loss: {
+        label: "Prejuízo no mês",
+        body: "O resultado estimado do mês ficou negativo.",
+        tone: "critical",
+      },
+      break_even: {
+        label: "Ponto de equilíbrio",
+        body: "As vendas pagam exatamente os valores considerados, sem lucro nem prejuízo.",
+        tone: "neutral",
+      },
+      positive_result: {
+        label: "Resultado positivo",
+        body: "O resultado estimado do mês ficou positivo.",
+        tone: "positive",
+      },
+    } as const
+  )[calculation.verdict];
 }
 
-function immediateAction(calculation: DetailedDiagnosisCalculation): string {
+function joinNames(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? "um item";
+  return `${names.slice(0, -1).join(", ")} e ${names.at(-1)}`;
+}
+
+function directLossNames(
+  command: DetailedDiagnosisCommand,
+  calculation: DetailedDiagnosisCalculation,
+): string[] {
+  const inputById = new Map(command.items.map((item) => [item.id, item.name]));
+  return calculation.items
+    .filter((item) => item.directLoss)
+    .map((item) => inputById.get(item.itemId) ?? "Item");
+}
+
+function priorityBody(calculation: DetailedDiagnosisCalculation): string {
   return {
-    direct_loss:
-      "Revise primeiro os preços e os gastos das vendas que geram perda.",
+    direct_loss: "Revise primeiro os itens que geram perda por venda.",
     incomplete_volume:
-      "Informe as vendas de todos os itens para completar o resultado mensal.",
-    no_sales: "Use o faturamento necessário abaixo como referência inicial.",
-    operational_loss: "Revise primeiro os preços, custos e gastos do mês.",
-    break_even: "Busque uma pequena folga nos preços, gastos ou vendas.",
-    tight_margin: "Proteja a pouca folga revendo preços e gastos.",
-    adequate_margin: "Acompanhe o resultado e preserve as condições atuais.",
+      "Informe as quantidades restantes para completar o resultado.",
+    no_sales: "Defina uma referência de vendas para o próximo mês.",
+    operational_loss:
+      "Revise primeiro os preços e os gastos considerados no mês.",
+    break_even: "Crie uma pequena folga entre preços, gastos e vendas.",
+    positive_result: "Acompanhe o resultado e preserve as condições atuais.",
   }[calculation.verdict];
 }
 
-function priorityContent(
+function immediateAction(
+  command: DetailedDiagnosisCommand,
   calculation: DetailedDiagnosisCalculation,
-): ReportExecutiveSummary["priority"] {
-  const body = immediateAction(calculation);
-  const label = {
-    cost: "Custos dos itens",
-    data: "Dados de vendas",
-    price: "Preços e gastos",
-    margin: "Folga do resultado",
-    volume: "Faturamento do mês",
-  }[calculation.priority];
-  return { label, body };
+): string {
+  if (calculation.verdict === "direct_loss") {
+    return `Revise primeiro os preços e custos de ${joinNames(directLossNames(command, calculation))} antes de aumentar as vendas.`;
+  }
+  if (calculation.verdict === "incomplete_volume") {
+    return "Informe as quantidades restantes para completar o resultado do conjunto.";
+  }
+  if (calculation.verdict === "no_sales") {
+    return command.items.length === 1
+      ? "Use a quantidade necessária abaixo como primeira referência para o próximo mês."
+      : "Defina uma proporção de vendas entre os itens para obter uma quantidade necessária confiável.";
+  }
+  if (calculation.verdict === "operational_loss") {
+    return "Compare os preços atuais com os menores preços sem prejuízo e avalie a quantidade necessária.";
+  }
+  if (calculation.verdict === "break_even") {
+    return "Busque uma pequena folga nos preços, nos gastos ou nas quantidades vendidas.";
+  }
+  return "Acompanhe o lucro do conjunto e verifique se algum item individual merece ajuste.";
+}
+
+function profitabilityAnswer(
+  command: DetailedDiagnosisCommand,
+  calculation: DetailedDiagnosisCalculation,
+): string {
+  const result = calculation.monthlyResultCents;
+  const lossNames = directLossNames(command, calculation);
+  const itemWarning =
+    lossNames.length > 0
+      ? ` Porém, há perda por venda em: ${joinNames(lossNames)}.`
+      : "";
+
+  if (result === null) {
+    return `Ainda não dá para calcular se há lucro no conjunto porque faltam quantidades.${itemWarning}`;
+  }
+  if (calculation.verdict === "no_sales") {
+    return result < 0
+      ? `Ainda não houve vendas no mês. Com os gastos informados, o prejuízo estimado é de ${formatCurrency(Math.abs(result))}.`
+      : "Ainda não houve vendas no mês, e o resultado ficou em R$ 0,00.";
+  }
+  if (result < 0) {
+    return `Não. O prejuízo estimado do conjunto é de ${formatCurrency(Math.abs(result))} no mês.${itemWarning}`;
+  }
+  if (result === 0) {
+    return `Ainda não. Não há lucro nem prejuízo: o conjunto paga exatamente os valores considerados.${itemWarning}`;
+  }
+  return `Sim. O lucro estimado do conjunto é de ${formatCurrency(result)} no mês.${itemWarning}`;
+}
+
+function priceSufficiencyAnswer(
+  command: DetailedDiagnosisCommand,
+  calculation: DetailedDiagnosisCalculation,
+): string {
+  const lossNames = directLossNames(command, calculation);
+  if (lossNames.length > 0) {
+    return `Não completamente. Há itens que não cobrem seus próprios custos e cobranças: ${joinNames(lossNames)}.`;
+  }
+  if (calculation.verdict === "incomplete_volume") {
+    return "Ainda não dá para confirmar. Sem todas as quantidades, os gastos mensais não podem ser distribuídos corretamente entre os itens.";
+  }
+  if (calculation.verdict === "no_sales") {
+    return "Ainda não dá para confirmar. Sem vendas, não existe uma proporção segura para distribuir os gastos mensais entre os itens.";
+  }
+  if (calculation.verdict === "operational_loss") {
+    return "Não. Com as quantidades informadas, os preços não cobrem todos os custos e gastos mensais.";
+  }
+  if (calculation.verdict === "break_even") {
+    return "Sim, exatamente. Os preços cobrem os custos e gastos considerados, sem gerar lucro nem prejuízo.";
+  }
+  return "Sim. Com a proporção informada, os preços cobrem os custos dos itens e os gastos mensais.";
 }
 
 function minimumPriceSection(
@@ -94,18 +163,16 @@ function minimumPriceSection(
   calculation: DetailedDiagnosisCalculation,
 ): ReportSection {
   const inputById = new Map(command.items.map((item) => [item.id, item]));
-  const values = calculation.items.map((result) => {
-    const name = inputById.get(result.itemId)?.name ?? "Item";
-    const value =
-      result.breakEvenUnitPriceCents === null
-        ? "indisponível"
-        : formatCurrency(result.breakEvenUnitPriceCents);
-    return `${name}: ${value}`;
+  const values = calculation.items.map((item) => {
+    const name = inputById.get(item.itemId)?.name ?? "Item";
+    return `${name}: ${item.breakEvenUnitPriceCents === null ? "Ainda não calculado" : formatCurrency(item.breakEvenUnitPriceCents)}`;
   });
   return {
     key: "break_even",
-    title: "Seus menores preços sem prejuízo",
-    body: `Cada valor cobre os gastos da própria venda. Os gastos mensais permanecem no resultado geral. ${values.join(" · ")}`,
+    title: "Menores preços para não ficar no prejuízo",
+    body: calculation.isPartial
+      ? `Não dividimos os gastos do mês porque faltam quantidades. ${values.join(" · ")}`
+      : `Cada valor inclui o custo direto, a parte dos gastos do mês e as cobranças da venda. ${values.join(" · ")}`,
     emphasisLabel: "Itens analisados",
     emphasisValue: String(values.length),
     tone: calculation.items.some((item) => item.directLoss)
@@ -115,21 +182,20 @@ function minimumPriceSection(
 }
 
 function saleSection(calculation: DetailedDiagnosisCalculation): ReportSection {
-  if (calculation.isPartial)
+  if (calculation.isPartial) {
     return {
       key: "hidden_cost",
-      title: "O que sai das vendas",
-      body: "Os custos e as cobranças de cada venda já aparecem item por item. Falta informar as vendas de todos os itens para somar o mês sem apresentar um total parcial como resultado do negócio.",
-      emphasisLabel: "Total do mês",
+      title: "Custo e resultado por unidade",
+      body: "Quanto esta unidade custa e o valor deixado por venda continuam disponíveis. Parte dos gastos do mês, custo completo por unidade e resultado por venda precisam das quantidades de todos os itens.",
+      emphasisLabel: "Valores completos",
       emphasisValue: "Ainda não calculado",
-      tone: calculation.items.some((item) => item.directLoss)
-        ? "critical"
-        : "neutral",
+      tone: "neutral",
     };
+  }
   return {
     key: "hidden_cost",
     title: "O que sai das vendas",
-    body: `No mês, impostos e cartão retiram ${formatCurrency(calculation.monthlyFeeAmountCents ?? 0)}, e os custos próprios dos itens somam ${formatCurrency(calculation.monthlyVariableCostCents ?? 0)}.`,
+    body: `Impostos e cartão retiram ${formatCurrency(calculation.monthlyFeeAmountCents ?? 0)} no mês. Os custos diretos dos itens somam ${formatCurrency(calculation.monthlyVariableCostCents ?? 0)} e os gastos mensais são subtraídos uma vez do conjunto.`,
     emphasisLabel: "Receita depois de impostos e cartão",
     emphasisValue: optionalCurrency(calculation.monthlyNetRevenueCents),
     tone: "neutral",
@@ -139,59 +205,89 @@ function saleSection(calculation: DetailedDiagnosisCalculation): ReportSection {
 function monthlySection(
   calculation: DetailedDiagnosisCalculation,
 ): ReportSection {
-  if (calculation.isPartial)
-    return {
-      key: "margin_diagnosis",
-      title: "Quanto sobra no mês",
-      body: "Falta informar as vendas de todos os itens para calcular o resultado mensal do negócio.",
-      emphasisLabel: "Resultado mensal",
-      emphasisValue: "Ainda não calculado",
-      tone: calculation.items.some((item) => item.directLoss)
-        ? "critical"
-        : "neutral",
-    };
-  const result = calculation.monthlyResultCents ?? 0;
+  const result = calculation.monthlyResultCents;
   const margin =
     calculation.finalMarginBasisPoints === null
-      ? "Sem vendas para calcular"
+      ? "Ainda não calculado"
       : formatBasisPoints(calculation.finalMarginBasisPoints);
   return {
     key: "margin_diagnosis",
     title: "Quanto sobra no mês",
-    body: `O resultado considera a receita depois de impostos e cartão, menos os custos dos itens e os gastos mensais. Quanto sobra a cada R$ 100: ${margin}.`,
-    emphasisLabel: verdictContent(calculation).label,
-    emphasisValue: formatCurrency(result),
+    body:
+      result === null
+        ? "Faltam quantidades para calcular quanto sobra no conjunto sem inventar uma proporção entre os itens."
+        : `O cálculo considera ${formatCurrency(calculation.monthlyNetRevenueCents ?? 0)} recebidos depois de impostos e cartão, menos os custos dos itens e os gastos mensais. Quanto sobra a cada R$ 100: ${margin}.`,
+    emphasisLabel:
+      result === null
+        ? "Valor no mês"
+        : result > 0
+          ? "Lucro no mês"
+          : result < 0
+            ? "Prejuízo no mês"
+            : "Sem lucro nem prejuízo",
+    emphasisValue: optionalCurrency(result),
     tone:
-      result > 0
-        ? calculation.verdict === "tight_margin"
-          ? "warning"
-          : "positive"
-        : result < 0
-          ? "critical"
-          : "neutral",
+      result === null
+        ? "neutral"
+        : result > 0
+          ? "positive"
+          : result < 0
+            ? "critical"
+            : "neutral",
   };
 }
 
+function detailedBreakEvenRevenue(
+  command: DetailedDiagnosisCommand,
+  calculation: DetailedDiagnosisCalculation,
+): number | null {
+  if (calculation.breakEvenRevenueCents !== null) {
+    return calculation.breakEvenRevenueCents;
+  }
+  if (command.items.length !== 1) return null;
+
+  const item = command.items[0];
+  const itemResult = calculation.items.find(
+    (result) => result.itemId === item?.id,
+  );
+  if (!item || !itemResult) return null;
+
+  return calculateBreakEvenRevenue(
+    calculation.effectiveFixedCostCents,
+    item.unitSalePriceCents,
+    itemResult.unitContributionCents,
+  );
+}
+
 function salesSection(
+  command: DetailedDiagnosisCommand,
   calculation: DetailedDiagnosisCalculation,
 ): ReportSection {
-  if (calculation.breakEvenRevenueCents === null)
+  const breakEvenRevenueCents = detailedBreakEvenRevenue(command, calculation);
+  if (breakEvenRevenueCents === null) {
+    const body = calculation.isPartial
+      ? "Informe as quantidades de todos os itens para calcular uma referência de faturamento sem inventar a proporção entre eles."
+      : calculation.verdict === "no_sales"
+        ? "Informe uma quantidade vendida maior que zero para calcular o faturamento necessário com a proporção entre os itens."
+        : "No preço atual, as vendas ainda não deixam um valor positivo suficiente para calcular o faturamento necessário.";
     return {
       key: "sales_goal",
       title: "Quanto você precisa vender",
-      body: calculation.isPartial
-        ? "Falta informar as vendas de todos os itens para calcular uma referência de faturamento para o conjunto."
-        : "As vendas precisam deixar um valor positivo antes que seja possível calcular o faturamento necessário.",
-      emphasisLabel: "Faturamento necessário",
+      body,
+      emphasisLabel: "Faturamento necessário no mês",
       emphasisValue: "Ainda não calculado",
-      tone: calculation.isPartial ? "neutral" : "critical",
+      tone: "neutral",
     };
+  }
   return {
     key: "sales_goal",
     title: "Quanto você precisa vender",
-    body: "Esta é a referência de faturamento mensal necessária para que o valor deixado pelas vendas pague os gastos mensais.",
+    body:
+      command.items.length === 1
+        ? "No preço atual, esta é a referência de faturamento mensal necessária para que o valor deixado pelas vendas pague os gastos mensais."
+        : "Mantendo a proporção informada entre os itens, esta é a referência de faturamento mensal necessária para que o valor deixado pelas vendas pague os gastos mensais.",
     emphasisLabel: "Faturamento necessário no mês",
-    emphasisValue: formatCurrency(calculation.breakEvenRevenueCents),
+    emphasisValue: formatCurrency(breakEvenRevenueCents),
     tone: "neutral",
   };
 }
@@ -200,31 +296,29 @@ function buildDetailedReportContent(
   command: DetailedDiagnosisCommand,
   calculation: DetailedDiagnosisCalculation,
 ): DetailedReportContent {
-  const action = immediateAction(calculation);
-  const monthlyResult = calculation.monthlyResultCents;
-  const profitability =
-    monthlyResult === null
-      ? "Ainda não é possível calcular o resultado do mês. Falta informar as vendas de todos os itens."
-      : monthlyResult > 0
-        ? `Sim — o resultado do mês foi ${formatCurrency(monthlyResult)}.`
-        : monthlyResult === 0
-          ? "Ainda não — as vendas pagaram exatamente os gastos do mês."
-          : `Não — o resultado do mês foi ${formatCurrency(monthlyResult)}.`;
-
+  const action = immediateAction(command, calculation);
+  const summaryPriorityBody = priorityBody(calculation);
+  const priorityLabel = {
+    cost: "Custos dos itens",
+    data: "Quantidades vendidas",
+    price: "Preços e gastos",
+    margin: "Resultado",
+    volume: "Quantidade de vendas",
+  }[calculation.priority];
   return {
     executiveSummary: {
       headline:
         command.category === "product"
-          ? "Seus produtos dão lucro?"
-          : "Suas produções dão lucro?",
+          ? "Resultado dos seus produtos"
+          : "Resultado das suas produções",
       introduction:
-        "Veja o resultado geral, os menores preços por item e o primeiro ponto que merece atenção.",
+        "Veja o resultado do conjunto e os valores completos de cada item quando todas as quantidades são conhecidas.",
       verdict: verdictContent(calculation),
       facts: [
         {
           key: "margin",
           currentLabel: "Resultado do mês",
-          currentValue: optionalCurrency(monthlyResult),
+          currentValue: optionalCurrency(calculation.monthlyResultCents),
           referenceLabel: "Quanto sobra a cada R$ 100",
           referenceValue:
             calculation.finalMarginBasisPoints === null
@@ -235,26 +329,21 @@ function buildDetailedReportContent(
           key: "price",
           currentLabel: "Faturamento atual",
           currentValue: optionalCurrency(calculation.monthlyGrossRevenueCents),
-          referenceLabel: "Quanto precisa vender para cobrir os gastos",
+          referenceLabel: "Faturamento que paga os gastos",
           referenceValue: optionalCurrency(calculation.breakEvenRevenueCents),
         },
       ],
-      priority: priorityContent(calculation),
+      priority: { label: priorityLabel, body: summaryPriorityBody },
       answers: [
         {
           key: "profitability",
           question: "Estou ganhando dinheiro?",
-          answer: profitability,
+          answer: profitabilityAnswer(command, calculation),
         },
         {
           key: "price_sufficiency",
-          question: "Meus preços pagam os gastos?",
-          answer: calculation.isPartial
-            ? "Os menores preços por item já estão calculados, mas falta informar todas as vendas para avaliar os gastos mensais."
-            : calculation.monthlyResultCents !== null &&
-                calculation.monthlyResultCents >= 0
-              ? "Sim — com as vendas informadas, os preços cobrem os custos dos itens e os gastos mensais."
-              : "Ainda não — com as vendas informadas, os preços não cobrem todos os custos e gastos mensais.",
+          question: "Meus preços pagam todos os gastos?",
+          answer: priceSufficiencyAnswer(command, calculation),
         },
         {
           key: "immediate_action",
@@ -267,7 +356,7 @@ function buildDetailedReportContent(
       minimumPriceSection(command, calculation),
       saleSection(calculation),
       monthlySection(calculation),
-      salesSection(calculation),
+      salesSection(command, calculation),
     ],
   };
 }

@@ -75,7 +75,7 @@ describe("createServiceReport", () => {
         p_source_appointment_duration_minutes: 0,
         p_schema_version: 4,
         p_calculation_version: 3,
-        p_content_version: 5,
+        p_content_version: 6,
         p_scenario: "month",
         p_report_snapshot: snapshot,
       }),

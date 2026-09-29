@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import type { NormalizedServiceDiagnosisCommand } from "@/modules/quick-diagnosis/types";
-
-import { calculateServiceReport } from "./calculate-service-report";
 import { buildServiceExecutiveSummary } from "./build-service-executive-summary";
+import { calculateServiceReport } from "./calculate-service-report";
 
-const baseCommand: NormalizedServiceDiagnosisCommand = {
+const command: NormalizedServiceDiagnosisCommand = {
   submissionId: "550e8400-e29b-41d4-a716-446655440000",
   pricingMethod: "appointment",
   desiredMonthlyIncomeCents: 400_000,
@@ -18,131 +17,105 @@ const baseCommand: NormalizedServiceDiagnosisCommand = {
   minuteRateCents: 0,
   appointmentRateCents: 8_000,
   appointmentDurationMinutes: 50,
-  materialUnitCostCents: 0,
+  materialUnitCostCents: 1_000,
   taxRateBasisPoints: 600,
   cardFeeRateBasisPoints: 200,
   source: {
     pricingMethod: "appointment",
     currentPriceCents: 8_000,
-    materialCostUnit: null,
-    materialCostCents: 0,
+    materialCostUnit: "appointment",
+    materialCostCents: 1_000,
     dailyWorkMinutes: 480,
     appointmentDurationMinutes: 50,
   },
 };
 
-function build(command: NormalizedServiceDiagnosisCommand) {
-  return buildServiceExecutiveSummary(command, calculateServiceReport(command));
-}
-
 describe("buildServiceExecutiveSummary", () => {
-  it("puts current and minimum prices before the amount left", () => {
-    const summary = build(baseCommand);
+  it("uses direct questions and answers every service state", () => {
+    const cases = [
+      {
+        input: { appointmentRateCents: 0 },
+        first: /^Ainda não dá para calcular se há lucro\./,
+        second: /^Ainda não dá para confirmar/,
+      },
+      {
+        input: { appointmentRateCents: 1_000 },
+        first: /^Não\./,
+        second: /^Não\./,
+      },
+      {
+        input: { appointmentRateCents: 3_000 },
+        first: /^Não\./,
+        second: /^Não\./,
+      },
+      {
+        input: { appointmentRateCents: 4_225 },
+        first: /^Ainda não\./,
+        second: /^Sim, exatamente\./,
+      },
+      {
+        input: { monthlyWorkMinutes: 0 },
+        first: /^Ainda não dá para calcular se há lucro com segurança\./,
+        second: /^Ainda não dá para calcular o menor preço completo/,
+      },
+    ];
 
-    expect(summary.facts).toEqual([
-      expect.objectContaining({
-        key: "price",
-        currentLabel: "Você cobra",
-        currentValue: "R$ 80,00",
-        referenceLabel: "Menor preço sem prejuízo",
-      }),
-      expect.objectContaining({
-        key: "margin",
-        currentLabel: "Quanto sobra a cada R$ 100",
-        referenceLabel: "Leitura",
-        referenceValue: "Boa folga",
-      }),
-    ]);
+    for (const { input, first, second } of cases) {
+      const adjusted = { ...command, ...input };
+      const summary = buildServiceExecutiveSummary(
+        adjusted,
+        calculateServiceReport(adjusted),
+      );
+      expect(summary.answers.map(({ question }) => question)).toEqual([
+        "Estou ganhando dinheiro?",
+        "Meu preço paga todos os gastos?",
+        "O que preciso fazer agora?",
+      ]);
+      expect(summary.answers[0]?.answer).toMatch(first);
+      expect(summary.answers[1]?.answer).toMatch(second);
+    }
   });
-
-  it.each([
-    [3_000, "Prejuízo", "critical"],
-    [3_600, "Pouca folga", "warning"],
-    [8_000, "Boa folga", "positive"],
-  ] as const)(
-    "uses plain-language reading for price %s",
-    (appointmentRateCents, label, tone) => {
-      const command = {
-        ...baseCommand,
-        appointmentRateCents,
-        source: {
-          ...baseCommand.source,
-          currentPriceCents: appointmentRateCents,
-        },
-      };
-      const summary = build(command);
-
-      expect(summary.verdict).toEqual(expect.objectContaining({ label, tone }));
-      expect(summary.facts[1].referenceValue).toBe(label);
-    },
-  );
-
-  it.each([
-    [
-      { desiredMonthlyIncomeCents: 700_000 },
-      "Quanto você quer receber por mês",
-    ],
-    [
-      {
-        desiredMonthlyIncomeCents: 100_000,
-        fixedMonthlyExpensesCents: 800_000,
-      },
-      "Gastos que existem todo mês",
-    ],
-    [
-      {
-        desiredMonthlyIncomeCents: 100_000,
-        fixedMonthlyExpensesCents: 100_000,
-        materialUnitCostCents: 5_000,
-      },
-      "Materiais usados",
-    ],
-    [
-      {
-        desiredMonthlyIncomeCents: 100_000,
-        fixedMonthlyExpensesCents: 100_000,
-        taxRateBasisPoints: 5_000,
-        cardFeeRateBasisPoints: 4_000,
-      },
-      "Impostos e taxas",
-    ],
-  ] as const)(
-    "highlights the largest financial weight %#",
-    (override, label) => {
-      const command = {
-        ...baseCommand,
-        ...override,
-        appointmentRateCents: 4_000,
-        source: { ...baseCommand.source, currentPriceCents: 4_000 },
-      };
-
-      expect(build(command).priority.label).toBe(label);
-    },
-  );
-
-  it("uses deterministic tie order", () => {
-    const command = {
-      ...baseCommand,
-      desiredMonthlyIncomeCents: 300_000,
-      fixedMonthlyExpensesCents: 300_000,
-      appointmentRateCents: 3_500,
-      source: { ...baseCommand.source, currentPriceCents: 3_500 },
+  it("does not call an incomplete service result negative", () => {
+    const incomplete = {
+      ...command,
+      monthlyWorkMinutes: 0,
     };
-
-    expect(build(command).priority.label).toBe(
-      "Quanto você quer receber por mês",
+    const summary = buildServiceExecutiveSummary(
+      incomplete,
+      calculateServiceReport(incomplete),
     );
+
+    expect(summary.verdict).toEqual({
+      label: "Falta completar a rotina",
+      body: "A rotina informada ainda não permite distribuir os gastos por serviço.",
+      tone: "neutral",
+    });
   });
 
-  it("keeps sales volume as the healthy priority", () => {
-    expect(build(baseCommand).priority.label).toBe("Quantidade de serviços");
+  it("puts current and minimum prices before objective result values", () => {
+    const summary = buildServiceExecutiveSummary(
+      command,
+      calculateServiceReport(command),
+    );
+    expect(summary.facts.map(({ key }) => key)).toEqual(["price", "margin"]);
+    expect(summary.facts[0].referenceLabel).toBe(
+      "Menor preço para não ficar no prejuízo",
+    );
+    expect(summary.facts[1].referenceLabel).toBe("Quanto sobra a cada R$ 100");
   });
 
-  it("keeps forbidden technical and target wording out", () => {
-    const content = JSON.stringify(build(baseCommand));
-
-    expect(content).not.toMatch(
-      /meta de 15%|preço-alvo|pró-labore|alíquota|rateio|A conta que ninguém faz/i,
+  it("describes any positive result without a quality judgment", () => {
+    const summary = buildServiceExecutiveSummary(
+      command,
+      calculateServiceReport(command),
+    );
+    expect(summary.verdict.label).toBe("Resultado positivo");
+    expect(summary.answers[0]?.answer).toMatch(
+      /^Sim\. Seu lucro estimado é de R\$ .+ por atendimento, depois dos valores considerados\.$/,
+    );
+    expect(summary.facts[1].currentLabel).toBe("Resultado por serviço");
+    expect(JSON.stringify(summary)).not.toMatch(
+      /margem adequada|margem apertada|acima da meta|boa folga|pouca folga|meta de 15%|preço-alvo/i,
     );
   });
 });

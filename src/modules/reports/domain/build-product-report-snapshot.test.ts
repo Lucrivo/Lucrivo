@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import type { ProductDiagnosisCommand } from "@/modules/quick-diagnosis/types";
-
 import { parseProductReportSnapshot } from "../schemas/product-report-snapshot.schema";
 import { buildProductReportSnapshot } from "./build-product-report-snapshot";
 import { calculateProductReport } from "./calculate-product-report";
@@ -9,13 +8,13 @@ import { calculateProductReport } from "./calculate-product-report";
 const command: ProductDiagnosisCommand = {
   submissionId: "550e8400-e29b-41d4-a716-446655440000",
   productKind: "resale",
-  purchaseUnitCostCents: 5000,
-  unitSalePriceCents: 10000,
-  fixedMonthlyExpensesCents: 100000,
-  monthlySalesVolume: 100,
+  purchaseUnitCostCents: 1_600,
+  unitSalePriceCents: 5_500,
+  fixedMonthlyExpensesCents: 300_000,
+  monthlySalesVolume: 200,
   proLaboreIncluded: true,
-  proLaboreCents: 200000,
-  taxRateBasisPoints: 600,
+  proLaboreCents: 100_000,
+  taxRateBasisPoints: 500,
   cardFeeRateBasisPoints: 200,
 };
 
@@ -24,123 +23,114 @@ function build(input: ProductDiagnosisCommand) {
 }
 
 describe("buildProductReportSnapshot", () => {
-  it("builds and parses the Product 3/3/4 contract", () => {
+  it("builds the Product 3/3/5 contract with direct summary language", () => {
     const snapshot = build(command);
-    expect(snapshot).toEqual(
-      expect.objectContaining({
-        schemaVersion: 3,
-        calculationVersion: 3,
-        contentVersion: 4,
-        scenario: "resale",
-      }),
-    );
-    expect(snapshot.policy).toEqual(
-      expect.objectContaining({ attentionBandBasisPoints: 2000 }),
-    );
-    expect(snapshot.inputs.productKind).toBe("resale");
-    expect(snapshot.results).toEqual(
-      expect.objectContaining({
-        feeAmountCents: 800,
-        monthlySalesVolumeUsed: 100,
-        monthlyGrossRevenueCents: 1000000,
-        monthlyNetRevenueCents: 920000,
-        monthlyResultCents: 120000,
-      }),
-    );
-    expect(snapshot.results).not.toHaveProperty("targetPriceCents");
-    expect(parseProductReportSnapshot(snapshot)).toEqual(snapshot);
-  });
+    const content = JSON.stringify(snapshot);
 
-  it.each([
-    [{ unitSalePriceCents: 5000, monthlySalesVolume: null }, "direct_loss"],
-    [{ monthlySalesVolume: null }, "incomplete_volume"],
-    [
-      {
-        monthlySalesVolume: null,
-        fixedMonthlyExpensesCents: 0,
-        proLaboreIncluded: false,
-        proLaboreCents: 0,
+    expect(snapshot).toMatchObject({
+      schemaVersion: 3,
+      calculationVersion: 3,
+      contentVersion: 5,
+      results: {
+        minimumPriceCents: 3_871,
+        unitProfitCents: 1_515,
+        realMarginBasisPoints: 2_755,
+        verdict: "positive_result",
       },
-      "incomplete_volume",
-    ],
-    [{ monthlySalesVolume: 10 }, "operational_loss"],
-    [{ fixedMonthlyExpensesCents: 220000 }, "break_even"],
-    [{}, "tight_margin"],
-    [
-      {
-        fixedMonthlyExpensesCents: 0,
-        proLaboreIncluded: false,
-        proLaboreCents: 0,
+      discountSimulationBase: {
+        unitCostCents: 3_600,
+        minimumPriceCents: 3_871,
       },
-      "adequate_margin",
-    ],
-  ] as const)(
-    "builds scenario-specific content for %s",
-    (overrides, verdict) => {
-      const snapshot = build({ ...command, ...overrides });
-      expect(snapshot.results.verdict).toBe(verdict);
-      expect(snapshot.executiveSummary.verdict.label).toBe(
-        {
-          direct_loss: "Prejuízo por venda",
-          incomplete_volume: "Falta informar as vendas",
-          operational_loss: "Prejuízo no mês",
-          no_sales: "Sem vendas no mês",
-          break_even: "No limite",
-          tight_margin: "Margem apertada",
-          adequate_margin: "Lucro",
-        }[verdict],
-      );
-      expect(snapshot.sections.map(({ key }) => key)).toEqual([
-        "break_even",
-        "hidden_cost",
-        "margin_diagnosis",
-        "sales_goal",
-        "discount_simulator",
-      ]);
-      expect(snapshot.sections.map(({ title }) => title)).toEqual([
-        "Seu menor preço sem prejuízo",
-        "O que sai de cada venda",
-        "Quanto sobra no mês",
-        "Quanto você precisa vender",
-        "Como um desconto muda o resultado",
-      ]);
-    },
-  );
-
-  it("uses Digital cost language and preserves omitted volume", () => {
-    const snapshot = build({
-      ...command,
-      productKind: "digital",
-      purchaseUnitCostCents: 0,
-      monthlySalesVolume: null,
     });
-    const content = JSON.stringify({
-      executiveSummary: snapshot.executiveSummary,
-      sections: snapshot.sections,
-    });
-    expect(snapshot.scenario).toBe("digital");
-    expect(snapshot.inputs.monthlySalesVolume).toBeNull();
-    expect(snapshot.results.monthlySalesVolumeUsed).toBeNull();
+    expect(content).toContain("Parte dos gastos do mês");
+    expect(content).toContain("Custo completo por unidade");
+    expect(content).toContain("Valor deixado por venda");
+    expect(content).toContain("Resultado por venda");
+    expect(content).toContain("Quanto sobra a cada R$ 100");
     expect(
       snapshot.sections.find(({ key }) => key === "margin_diagnosis"),
     ).toMatchObject({
-      emphasisLabel: "Resultado mensal",
-      emphasisValue: "Ainda não calculado",
-      tone: "neutral",
+      title: "Quanto sobra no mês",
+      body: expect.stringContaining("recebidos depois de impostos e cartão"),
+      emphasisLabel: "Lucro no mês",
+      emphasisValue: "R$ 3.030,00",
     });
-    const salesGoal = snapshot.sections.find(({ key }) => key === "sales_goal");
-    expect(salesGoal?.body).toContain("esta meta é apenas uma referência");
-    expect(salesGoal?.body).not.toMatch(/por semana|por dia/);
-    expect(content).toContain("custo por venda");
-    expect(content).not.toMatch(/fornecedor|custo de compra|fabricação/i);
-    expect(content).not.toMatch(
-      /ponto de equilíbrio|pró-labore|alíquota|rateio|receita líquida|margem de contribuição|preço-alvo|custo operacional|meta de 20%|margem ideal/i,
-    );
+    expect(
+      snapshot.sections.find(({ key }) => key === "sales_goal"),
+    ).toMatchObject({
+      title: "Quanto você precisa vender",
+      emphasisLabel: "Faturamento necessário no mês",
+      emphasisValue: "R$ 6.258,90",
+    });
+    expect(parseProductReportSnapshot(snapshot)).toEqual(snapshot);
   });
 
-  it("keeps Resale supplier-domain wording separate", () => {
-    const content = JSON.stringify(build(command));
-    expect(content).toContain("custo de compra");
-    expect(content).not.toMatch(/produto digital|fabricação/i);
+  it("adapts the monthly mini-card to loss and break-even scenarios", () => {
+    const loss = build({ ...command, monthlySalesVolume: 10 });
+    expect(
+      loss.sections.find(({ key }) => key === "margin_diagnosis"),
+    ).toMatchObject({
+      title: "Quanto sobra no mês",
+      emphasisLabel: "Prejuízo no mês",
+      emphasisValue: "-R$ 3.648,50",
+    });
+
+    const breakEven = build({
+      ...command,
+      fixedMonthlyExpensesCents: 351_500,
+      monthlySalesVolume: 100,
+      proLaboreIncluded: false,
+      proLaboreCents: 0,
+    });
+    expect(
+      breakEven.sections.find(({ key }) => key === "margin_diagnosis"),
+    ).toMatchObject({
+      emphasisLabel: "Sem lucro nem prejuízo",
+      emphasisValue: "R$ 0,00",
+    });
+  });
+
+  it("shows only the monthly quantity when volume is unknown", () => {
+    const snapshot = build({ ...command, monthlySalesVolume: null });
+    const content = JSON.stringify(snapshot);
+
+    expect(snapshot.results).toMatchObject({
+      minimumPriceCents: null,
+      totalUnitCostCents: null,
+      unitProfitCents: null,
+      realMarginBasisPoints: null,
+      monthlySalesGoal: 114,
+    });
+    expect(snapshot.discountSimulationBase).toMatchObject({
+      unitCostCents: null,
+      minimumPriceCents: null,
+    });
+    expect(content).toContain("Faturamento necessário no mês");
+    expect(content).toContain("e o valor informado para você");
+    expect(
+      snapshot.sections.find(({ key }) => key === "margin_diagnosis"),
+    ).toMatchObject({
+      title: "Quanto sobra no mês",
+      emphasisValue: "Ainda não calculado",
+    });
+    expect(content).not.toMatch(/por semana|por dia/);
+  });
+
+  it("omits the withdrawal clause when pro-labore is disabled", () => {
+    const content = JSON.stringify(
+      build({
+        ...command,
+        monthlySalesVolume: null,
+        proLaboreIncluded: false,
+        proLaboreCents: 999_999,
+      }),
+    );
+    expect(content).not.toContain("e o valor informado para você");
+  });
+
+  it("contains no target-based or margin-quality language", () => {
+    expect(JSON.stringify(build(command))).not.toMatch(
+      /margem adequada|margem apertada|acima da meta|boa folga|pouca folga|meta de 15%|meta de 20%|preço-alvo/i,
+    );
   });
 });

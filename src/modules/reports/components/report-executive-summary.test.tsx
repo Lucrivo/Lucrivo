@@ -62,7 +62,7 @@ describe("ReportExecutiveSummary", () => {
         name: "Comece por aqui",
       }),
     ).toBeInTheDocument();
-    expect(within(summary).getByText("Bom resultado")).toBeInTheDocument();
+    expect(within(summary).getByText("Resultado positivo")).toBeInTheDocument();
     expect(
       within(summary).getByText("Quantidade de serviços"),
     ).toBeInTheDocument();
@@ -78,13 +78,22 @@ describe("ReportExecutiveSummary", () => {
         expect.stringContaining(`${question}${answer}`),
       ),
     );
+    expect(
+      within(summary).getByRole("button", { name: "Como calculamos?" }),
+    ).toBeInTheDocument();
+    expect(
+      within(summary).getByRole("button", { name: "O que está incluído?" }),
+    ).toBeInTheDocument();
+    expect(
+      within(summary).getByRole("button", { name: "Por que este passo?" }),
+    ).toBeInTheDocument();
   });
 
   it.each([
     ["neutral", "Informação"],
-    ["warning", "Fique de olho"],
+    ["warning", "Atenção"],
     ["critical", "Precisa de atenção"],
-    ["positive", "Bom resultado"],
+    ["positive", "Resultado positivo"],
   ] as const)("keeps a visible label for the %s tone", (tone, toneLabel) => {
     render(
       <ReportExecutiveSummary

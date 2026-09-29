@@ -20,19 +20,15 @@ const reportSnapshotSchema = z.union([
 
 type ReportSnapshot = z.infer<typeof reportSnapshotSchema>;
 type QuickReportSnapshot = z.infer<typeof quickReportSnapshotSchema>;
-type ReportDiscountSimulationBase =
-  QuickReportSnapshot["discountSimulationBase"];
+type ReportDiscountSimulationBase = {
+  originalPriceCents: number;
+  unitCostCents: number | null;
+  totalFeeBasisPoints: number;
+  minimumPriceCents: number | null;
+};
 
 function parseReportSnapshot(value: unknown): ReportSnapshot {
-  if (
-    typeof value === "object" &&
-    value !== null &&
-    "analysisMode" in value &&
-    value.analysisMode === "detailed"
-  ) {
-    return detailedReportSnapshotSchema.parse(value);
-  }
-  return quickReportSnapshotSchema.parse(value);
+  return reportSnapshotSchema.parse(value);
 }
 
 function isDetailedReportSnapshot(
@@ -44,8 +40,9 @@ function isDetailedReportSnapshot(
 export {
   isDetailedReportSnapshot,
   parseReportSnapshot,
+  quickReportSnapshotSchema,
   reportSnapshotSchema,
+  type QuickReportSnapshot,
   type ReportDiscountSimulationBase,
   type ReportSnapshot,
-  type QuickReportSnapshot,
 };

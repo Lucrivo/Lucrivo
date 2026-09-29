@@ -66,13 +66,10 @@ const serviceCommand: NormalizedServiceDiagnosisCommand = {
     appointmentDurationMinutes: 0,
   },
 };
-const legacyServiceSnapshot = {
-  ...buildServiceReportSnapshot(
-    serviceCommand,
-    calculateServiceReport(serviceCommand),
-  ),
-  contentVersion: 3 as const,
-};
+const currentServiceSnapshot = buildServiceReportSnapshot(
+  serviceCommand,
+  calculateServiceReport(serviceCommand),
+);
 
 const productCommand: ProductDiagnosisCommand = {
   submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
@@ -118,7 +115,7 @@ const detailedSnapshot = buildDetailedReportSnapshot(
 
 describe("ReportPage", () => {
   const supabase = { from: vi.fn() };
-  const snapshot = legacyServiceSnapshot;
+  const snapshot = currentServiceSnapshot;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -143,10 +140,12 @@ describe("ReportPage", () => {
     render(await ReportPage({ params: Promise.resolve({ id }) }));
   }
 
-  it("renders an owned legacy Service snapshot with legacy labels", async () => {
+  it("renders an owned current Service snapshot with plain labels", async () => {
     await renderPage();
 
-    expect(screen.getByText("Seu relatório financeiro")).toBeInTheDocument();
+    expect(
+      screen.getByText("Resultado do seu diagnóstico"),
+    ).toBeInTheDocument();
     expect(requireUser).toHaveBeenCalledOnce();
     expect(getOwnedReport).toHaveBeenCalledWith({
       supabase,

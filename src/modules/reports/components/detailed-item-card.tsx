@@ -1,4 +1,4 @@
-import { TriangleAlertIcon } from "lucide-react";
+import { InfoIcon, TriangleAlertIcon } from "lucide-react";
 
 import { PlainLanguageHelp } from "@/components/shared/plain-language-help";
 import {
@@ -13,6 +13,17 @@ import {
   type DetailedItemViewModel,
 } from "../presenters/to-detailed-report-view-model";
 import { DiscountSimulator } from "./discount-simulator";
+
+function ValueRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-end gap-4 py-3">
+      <dt className="text-muted-foreground text-sm">{label}</dt>
+      <dd className="max-w-full min-w-0 text-right font-semibold break-words tabular-nums">
+        {value}
+      </dd>
+    </div>
+  );
+}
 
 function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
   return (
@@ -38,7 +49,7 @@ function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
             </strong>
           </span>
           <span className="text-muted-foreground grid gap-0.5 font-normal">
-            <span className="text-xs">Quanto este item deixa no mês</span>
+            <span className="text-xs">Valor que ajuda a pagar o mês</span>
             <strong className="text-foreground tabular-nums">
               {item.monthlyContributionLabel}
             </strong>
@@ -57,99 +68,90 @@ function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
       <AccordionContent className="border-border grid gap-6 border-t px-4 pt-5 pb-5 sm:px-5">
         {item.statusTone === "critical" ? (
           <p className="border-destructive/25 bg-destructive/5 text-destructive rounded-xl border p-3 text-sm">
-            O preço atual não cobre o custo do item e as taxas desta venda.
+            O preço atual não cobre o custo da unidade e as cobranças desta
+            venda.
+          </p>
+        ) : null}
+
+        {item.completeCostUnavailableReason ? (
+          <p className="border-info/25 bg-info/8 text-info flex items-start gap-2 rounded-xl border p-3 text-sm leading-5">
+            <InfoIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+            {item.completeCostUnavailableReason}
           </p>
         ) : null}
 
         <div className="grid gap-5 lg:grid-cols-2">
           <section aria-labelledby={`${item.id}-sale`} className="grid gap-3">
             <h4 id={`${item.id}-sale`} className="text-base font-semibold">
-              Venda
+              Venda e resultado
             </h4>
             <dl className="border-border/70 divide-border bg-background/70 grid divide-y rounded-xl border px-4">
-              <div className="flex items-end justify-between gap-4 py-3">
-                <dt className="text-muted-foreground">Preço</dt>
-                <dd className="font-semibold tabular-nums">
-                  {item.priceLabel}
-                </dd>
-              </div>
-              <div className="flex items-end justify-between gap-4 py-3">
-                <dt className="text-muted-foreground">
-                  Depois de impostos e cartão
-                </dt>
-                <dd className="font-semibold tabular-nums">
-                  {item.netRevenueLabel}
-                </dd>
-              </div>
-              <div className="flex items-end justify-between gap-4 py-3">
-                <dt className="text-muted-foreground">
-                  Valor deixado por venda
-                </dt>
-                <dd className="font-semibold tabular-nums">
-                  {item.unitContributionLabel}
-                </dd>
-              </div>
+              <ValueRow label="Preço" value={item.priceLabel} />
+              <ValueRow
+                label="Valor depois de impostos e cartão"
+                value={item.netRevenueLabel}
+              />
+              <ValueRow
+                label="Resultado por venda"
+                value={item.unitProfitLabel}
+              />
+              <ValueRow
+                label="Quanto sobra a cada R$ 100"
+                value={item.realMarginLabel}
+              />
             </dl>
           </section>
 
           <section aria-labelledby={`${item.id}-costs`} className="grid gap-3">
             <h4 id={`${item.id}-costs`} className="text-base font-semibold">
-              Gastos desta venda
+              Composição do custo
             </h4>
             <dl className="border-border/70 divide-border bg-background/70 grid divide-y rounded-xl border px-4">
-              <div className="flex items-end justify-between gap-4 py-3">
-                <dt className="text-muted-foreground">Custo do item</dt>
-                <dd className="font-semibold tabular-nums">
-                  {item.variableCostLabel}
-                </dd>
-              </div>
-              <div className="flex items-end justify-between gap-4 py-3">
-                <dt className="text-muted-foreground">Impostos e cartão</dt>
-                <dd className="font-semibold tabular-nums">{item.feeLabel}</dd>
-              </div>
-              <div className="grid gap-1 py-3">
-                <dt className="text-muted-foreground">
-                  Percentual que sobra da venda
-                </dt>
-                <dd className="font-semibold tabular-nums">
-                  {item.marginLabel}
-                </dd>
-                <PlainLanguageHelp {...surplusHelp} />
-              </div>
+              <ValueRow
+                label="Quanto esta unidade custa"
+                value={item.variableCostLabel}
+              />
+              <ValueRow label="Impostos e cartão" value={item.feeLabel} />
+              <ValueRow
+                label="Parte dos gastos do mês"
+                value={item.fixedAllocationLabel}
+              />
+              <ValueRow
+                label="Custo completo por unidade"
+                value={item.totalUnitCostLabel}
+              />
             </dl>
           </section>
         </div>
 
         <dl className="grid gap-4 sm:grid-cols-2">
-          <div className="border-border/70 bg-background/70 grid gap-1 rounded-xl border p-4">
+          <div className="border-border/70 bg-background/70 grid min-w-0 gap-1 rounded-xl border p-4">
             <dt className="text-muted-foreground text-sm">
-              Menor preço sem prejuízo na venda
+              Menor preço para não ficar no prejuízo
             </dt>
-            <dd className="text-lg font-semibold tabular-nums">
+            <dd className="text-lg font-semibold break-words tabular-nums">
               {item.breakEvenLabel}
             </dd>
             {item.breakEvenUnavailableReason ? (
-              <p className="text-muted-foreground text-xs">
+              <p className="text-muted-foreground text-xs leading-5">
                 {item.breakEvenUnavailableReason}
               </p>
             ) : null}
           </div>
-          <div className="border-border/70 bg-background/70 grid gap-1 rounded-xl border p-4">
+          <div className="border-border/70 bg-background/70 grid min-w-0 gap-1 rounded-xl border p-4">
             <dt className="text-muted-foreground text-sm">
-              Quanto este item deixa no mês
+              Valor deixado pelas vendas para pagar o mês
             </dt>
-            <dd className="text-lg font-semibold tabular-nums">
+            <dd className="text-lg font-semibold break-words tabular-nums">
               {item.monthlyContributionLabel}
             </dd>
+            <PlainLanguageHelp {...surplusHelp} />
           </div>
         </dl>
 
         <DiscountSimulator
           base={item.discountSimulationBase}
-          context={{
-            category: item.category,
-            mode: "detailed_item_attention",
-          }}
+          context={{ category: item.category }}
         />
 
         {item.technicalDetails ? (

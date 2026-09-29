@@ -7,7 +7,6 @@ import type {
   SeedUser,
   SqlCast,
 } from "./model";
-import { allAdminReportTemplates } from "./historical-report-scenarios";
 import { buildSeedReportIds, currentReportTemplates } from "./report-scenarios";
 import {
   renderBatchInsert,
@@ -385,7 +384,7 @@ function renderReports(catalog: DemoSeedCatalog): {
   timestamps: string;
 } {
   const templates = new Map(
-    [...allAdminReportTemplates, ...currentReportTemplates].map((template) => [
+    [...currentReportTemplates, ...currentReportTemplates].map((template) => [
       template.key,
       template,
     ]),
@@ -659,8 +658,8 @@ begin
 
   if seeded_user_count <> 97
     or client_count <> 96
-    or report_count <> 295
-    or admin_report_count <> 36
+    or report_count <> 288
+    or admin_report_count <> 29
     or client_report_count <> 259
     or paid_client_count <> 40
     or courtesy_client_count <> 12

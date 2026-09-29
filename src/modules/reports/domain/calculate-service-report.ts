@@ -8,8 +8,6 @@ import type {
 import { ceilDivide, multiplyDivideRound, roundDivide } from "./integer-math";
 
 const RATE_SCALE = 10_000;
-const SERVICE_TARGET_MARGIN_BPS = 1_500;
-const SERVICE_ABOVE_TARGET_BPS = 300;
 const WEEKLY_DIVISOR_HUNDREDTHS = 433;
 
 type ServiceReportCalculation = {
@@ -27,7 +25,6 @@ type ServiceReportCalculation = {
   unitProfitCents: number | null;
   realMarginBasisPoints: number | null;
   minimumPriceCents: number | null;
-  targetPriceCents: number | null;
   monthlySalesGoal: number | null;
   weeklySalesGoal: number | null;
   dailySalesGoal: number | null;
@@ -45,19 +42,12 @@ function classifyServiceMargin(
   if (unitContributionCents !== null && unitContributionCents <= 0) {
     return "direct_loss";
   }
-  if (realMarginBasisPoints === null || realMarginBasisPoints <= 0) {
+  if (realMarginBasisPoints === null || realMarginBasisPoints < 0) {
     return "operational_loss";
   }
-  if (realMarginBasisPoints < SERVICE_TARGET_MARGIN_BPS) {
-    return "tight_margin";
-  }
-  if (
-    realMarginBasisPoints <=
-    SERVICE_TARGET_MARGIN_BPS + SERVICE_ABOVE_TARGET_BPS
-  ) {
-    return "adequate_margin";
-  }
-  return "above_target";
+  if (realMarginBasisPoints === 0) return "break_even";
+
+  return "positive_result";
 }
 
 function selectServicePriority(
@@ -67,7 +57,6 @@ function selectServicePriority(
   if (verdict === "missing_price" || verdict === "operational_loss") {
     return "price";
   }
-  if (verdict === "tight_margin") return "margin";
   return "volume";
 }
 
@@ -96,13 +85,11 @@ function calculateServiceReport(
     BigInt(1),
   );
   const netRateBps = RATE_SCALE - totalFeeBasisPoints;
-  const targetRateBps = netRateBps - SERVICE_TARGET_MARGIN_BPS;
   const unit: ServiceReportUnit =
     command.pricingMethod === "hour" ? "hour" : "appointment";
   const unitDurationMinutes =
     command.pricingMethod === "hour" ? 60 : command.appointmentDurationMinutes;
   const priceCents = currentUnitPrice(command);
-
   const hourCostCents =
     command.monthlyWorkMinutes > 0
       ? multiplyDivideRound(monthlyCostCents, 60, command.monthlyWorkMinutes)
@@ -155,13 +142,6 @@ function calculateServiceReport(
           BigInt(netRateBps),
         )
       : null;
-  const targetPriceCents =
-    unitCostCents !== null && targetRateBps > 0
-      ? ceilDivide(
-          BigInt(unitCostCents) * BigInt(RATE_SCALE),
-          BigInt(targetRateBps),
-        )
-      : null;
   const verdict = classifyServiceMargin(
     priceCents,
     unitContributionCents,
@@ -209,7 +189,6 @@ function calculateServiceReport(
     unitProfitCents,
     realMarginBasisPoints,
     minimumPriceCents,
-    targetPriceCents,
     monthlySalesGoal,
     weeklySalesGoal,
     dailySalesGoal,
@@ -221,7 +200,6 @@ function calculateServiceReport(
 
 export {
   RATE_SCALE,
-  SERVICE_TARGET_MARGIN_BPS,
   calculateServiceReport,
   classifyServiceMargin,
   selectServicePriority,

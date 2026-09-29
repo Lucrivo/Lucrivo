@@ -63,7 +63,7 @@ gasto mensal efetivo = gastos fixos + pró-labore
 
 Quando desligado, o valor considerado de pró-labore é zero. A mão de obra direta de uma produção é um custo variável por unidade e não substitui o pró-labore do dono.
 
-### 4.3 Taxas e faixa interna de atenção
+### 4.3 Taxas e margem descritiva
 
 Imposto e taxa de cartão/plataforma são percentuais aplicados igualmente a todos os itens:
 
@@ -72,10 +72,10 @@ taxa total = imposto + cartão
 valor da taxa por unidade = preço de venda × taxa total
 ```
 
-Não existe margem promocional escolhida pelo usuário. O relatório usa
-internamente uma faixa de atenção de 20% para explicar a folga em simulações de
-desconto. Essa faixa não é uma meta universal, não altera o preço informado e
-não promete um preço de mercado.
+Não existe margem promocional escolhida pelo usuário nem percentual universal
+aplicado pelo sistema. A margem mostra quanto o conjunto deixa a cada R$ 100,
+mas não altera o preço informado, não define o veredito e não promete um preço
+de mercado.
 
 ## 5. Informações comuns de cada item
 
@@ -89,8 +89,11 @@ Todo item possui:
 
 O volume tem três estados:
 
-- **vazio:** volume desconhecido; o resultado geral fica parcial;
-- **zero:** mês conhecido sem vendas daquele item;
+- **vazio:** volume desconhecido; o resultado geral fica parcial e o sistema
+  não inventa rateio, custo completo, menor preço completo, lucro unitário ou
+  margem real;
+- **zero:** mês conhecido sem vendas daquele item; se o total de unidades do
+  conjunto também for zero, não existe base para o rateio;
 - **positivo:** quantidade conhecida de vendas mensais.
 
 O sistema nunca preenche ou altera automaticamente o volume. A meta de equilíbrio é uma referência do relatório, não uma mutação da resposta do usuário.
@@ -213,16 +216,28 @@ contribuição mensal do item = contribuição unitária × Q
 
 Quando o volume está vazio, os dois valores mensais do item ficam indisponíveis.
 
-### 9.1 Referências de preço
+### 9.1 Rateio e referência de preço completo
 
-O relatório calcula uma referência de preço por item quando matematicamente possível:
+Quando todos os volumes são conhecidos e o total de unidades é positivo, os
+gastos mensais são distribuídos uma única vez pelo conjunto:
 
-- **menor preço sem prejuízo na venda:** cobre o custo variável e as taxas da
-  própria venda, sem contribuição positiva.
+```text
+volume total = soma dos volumes de todos os itens
+rateio fixo por unidade = gasto mensal efetivo ÷ volume total
+custo completo do item = custo variável unitário + rateio fixo por unidade
+lucro unitário = receita líquida unitária - custo completo do item
+margem real do item = lucro unitário ÷ preço do item
+menor preço completo = custo completo do item ÷ (1 - taxa total)
+```
 
-Taxas que eliminem o denominador deixam a referência indisponível; o sistema
-não inventa um valor. A referência e o simulador individual não rateiam os
-gastos mensais: esses gastos permanecem no resultado geral do negócio.
+O mesmo rateio por unidade é aplicado a todos os itens. Assim, os gastos do mês
+entram uma única vez no resultado do conjunto, em vez de serem repetidos para
+cada item. Taxas que eliminem o denominador deixam o menor preço indisponível;
+o sistema não inventa um valor.
+
+Se qualquer volume estiver vazio, ou se o volume total conhecido for zero, o
+rateio e todos os valores que dependem dele ficam indisponíveis. Custos
+variáveis, taxas, receita líquida e contribuição por unidade continuam visíveis.
 
 ## 10. Resultado geral
 
@@ -241,11 +256,17 @@ A margem de contribuição do conjunto é ponderada pelo faturamento. Não é a 
 Se qualquer volume estiver vazio, o relatório é **parcial**:
 
 - identifica nominalmente os itens pendentes;
-- mantém custos, contribuição unitária, margens unitárias e preços de referência;
+- mantém custos variáveis, contribuição unitária e margem de contribuição;
+- não apresenta rateio, custo completo, menor preço completo, lucro unitário ou
+  margem real de nenhum item;
 - deixa faturamento, contribuição, resultado, margem final e equilíbrio do conjunto indisponíveis;
 - ordena a comparação pela posição original, e não por uma contribuição mensal inexistente.
 
 Volume zero não torna o relatório parcial. Ele representa um mês conhecido sem vendas.
+Quando todos os itens têm volume zero, o faturamento é zero, o resultado mensal
+é o negativo do gasto mensal efetivo e não existe rateio unitário. Quando ao
+menos um item tem volume positivo, o rateio usa o total de unidades do conjunto,
+inclusive para comparar itens cujo volume individual informado foi zero.
 
 ### 10.1 Quantidade necessária de vendas
 
@@ -267,13 +288,16 @@ operação por semana.
 
 ## 11. Veredito, prioridade e orientações
 
-O motor classifica o cenário com um veredito e uma prioridade entre custo, dados, preço, margem e volume. A ordem protege o negócio:
+O motor classifica o cenário com um veredito e uma prioridade entre custo, dados, preço e volume. A ordem protege o negócio:
 
 1. sinaliza itens com perda direta;
 2. pede volumes ausentes;
 3. verifica mês sem vendas ou perda operacional;
-4. identifica equilíbrio ou margem apertada;
-5. reconhece quando o conjunto de itens cobre os gastos com folga.
+4. identifica equilíbrio quando o resultado é exatamente zero;
+5. reconhece resultado positivo sempre que o valor final é maior que zero.
+
+Não existe corte por percentual: a margem final descreve o resultado, mas não
+rebaixa um valor positivo para uma categoria intermediária.
 
 As orientações podem destacar:
 
@@ -300,7 +324,13 @@ Ao confirmar, o servidor executa na ordem:
 
 O registro principal, os itens, os ingredientes e o snapshot são gravados na mesma transação. Se uma parte falhar, nada é salvo. Repetir o mesmo identificador de submissão retorna o mesmo relatório, evitando duplicação.
 
-O snapshot detalhado atual usa as versões `1/1/1` de schema, cálculo e conteúdo.
+O snapshot detalhado atual mantém as versões `1/1/1` de schema, cálculo e
+conteúdo, e a RPC pública continua se chamando
+`create_detailed_diagnosis_report`. Os contratos rápidos também preservam suas
+versões e nomes públicos: Serviço `4/3/5` com
+`create_service_diagnosis_report_v4`, Produto `3/3/4` com
+`create_product_diagnosis_report_v3` e Produção `3/3/4` com
+`create_production_diagnosis_report_v3`.
 Clientes com plano pago podem editar relatórios compatíveis diretamente no
 detalhe e acompanhar uma prévia determinística em tempo real. O editor preserva
 o cenário salvo, inclusive Digital, e usa seus campos e textos específicos.
@@ -318,7 +348,9 @@ fechado mantém nome, preço de venda, custo direto e situação em regiões
 explícitas. Remover item ou ingrediente exige confirmação, e cancelar preserva o
 rascunho.
 
-Relatórios legados permanecem somente para leitura e seus snapshots não são recalculados com regras futuras. Um relatório gerado durante um período de assinatura continua acessível ao proprietário depois que esse período termina.
+Snapshots locais anteriores à correção não recebem camada de compatibilidade nem
+backfill e não fazem parte do seed atual. Um relatório gerado durante um período
+de assinatura continua acessível ao proprietário depois que esse período termina.
 
 ## 13. Biblioteca e detalhe do relatório
 

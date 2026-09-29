@@ -5,6 +5,11 @@ import type { DetailedDiagnosisCommand } from "@/modules/detailed-diagnosis/type
 import { productKinds } from "@/modules/quick-diagnosis/types";
 
 import {
+  DETAILED_REPORT_CALCULATION_VERSION,
+  DETAILED_REPORT_CONTENT_VERSION,
+  DETAILED_REPORT_SCHEMA_VERSION,
+} from "../types";
+import {
   nonNegativeSafeIntegerSchema,
   positiveSafeIntegerSchema,
   reportExecutiveSummarySchema,
@@ -30,21 +35,18 @@ const detailedItemBaseShape = {
   unitSalePriceCents: positiveSafeIntegerSchema,
   monthlySalesVolume: volumeSchema,
 };
-
 const detailedProductItemSchema = z.strictObject({
   ...detailedItemBaseShape,
   kind: z.enum(productKinds),
   purchaseUnitCostCents: nonNegativeSafeIntegerSchema,
   packagingUnitCostCents: nonNegativeSafeIntegerSchema,
 });
-
 const detailedSummarizedProductionItemSchema = z.strictObject({
   ...detailedItemBaseShape,
   kind: z.literal("manufacturing"),
   costMode: z.literal("summarized"),
-  productionUnitCostCents: positiveSafeIntegerSchema,
+  productionUnitCostCents: nonNegativeSafeIntegerSchema,
 });
-
 const detailedIngredientSchema = z.strictObject({
   id: uuidSchema,
   position: z.number().int().nonnegative(),
@@ -53,7 +55,6 @@ const detailedIngredientSchema = z.strictObject({
   unit: z.string().trim().min(1),
   unitCostTenThousandths: nonNegativeSafeIntegerSchema,
 });
-
 const detailedTechnicalSheetProductionItemSchema = z.strictObject({
   ...detailedItemBaseShape,
   kind: z.literal("manufacturing"),
@@ -65,13 +66,11 @@ const detailedTechnicalSheetProductionItemSchema = z.strictObject({
   otherVariableUnitCostCents: nonNegativeSafeIntegerSchema,
   ingredients: z.array(detailedIngredientSchema).min(1),
 });
-
 const detailedDiagnosisItemSchema = z.union([
   detailedProductItemSchema,
   detailedSummarizedProductionItemSchema,
   detailedTechnicalSheetProductionItemSchema,
 ]);
-
 const detailedDiagnosisCommandSchema = z.strictObject({
   submissionId: uuidSchema,
   category: z.enum(["product", "production"]),
@@ -82,7 +81,6 @@ const detailedDiagnosisCommandSchema = z.strictObject({
   cardFeeRateBasisPoints: basisPointsSchema,
   items: z.array(detailedDiagnosisItemSchema).min(1),
 });
-
 const detailedItemCalculationSchema = z.strictObject({
   itemId: uuidSchema,
   variableUnitCostCents: nonNegativeSafeIntegerSchema,
@@ -90,12 +88,15 @@ const detailedItemCalculationSchema = z.strictObject({
   netUnitRevenueCents: safeIntegerSchema,
   unitContributionCents: safeIntegerSchema,
   contributionMarginBasisPoints: safeIntegerSchema.nullable(),
+  fixedAllocationCents: nonNegativeSafeIntegerSchema.nullable(),
+  totalUnitCostCents: nonNegativeSafeIntegerSchema.nullable(),
+  unitProfitCents: safeIntegerSchema.nullable(),
+  realMarginBasisPoints: safeIntegerSchema.nullable(),
   monthlyGrossRevenueCents: nonNegativeSafeIntegerSchema.nullable(),
   monthlyContributionCents: safeIntegerSchema.nullable(),
   breakEvenUnitPriceCents: nonNegativeSafeIntegerSchema.nullable(),
   directLoss: z.boolean(),
 });
-
 const detailedDiagnosisResultsSchema = z.strictObject({
   effectiveFixedCostCents: nonNegativeSafeIntegerSchema,
   isPartial: z.boolean(),
@@ -117,12 +118,10 @@ const detailedDiagnosisResultsSchema = z.strictObject({
     "no_sales",
     "operational_loss",
     "break_even",
-    "tight_margin",
-    "adequate_margin",
+    "positive_result",
   ]),
   priority: z.enum(["cost", "data", "price", "margin", "volume"]),
 });
-
 const detailedGuidanceSchema = z.strictObject({
   key: z.enum([
     "missing_volume",
@@ -137,19 +136,27 @@ const detailedGuidanceSchema = z.strictObject({
   body: z.string().min(1),
   itemIds: z.array(uuidSchema),
 });
+const detailedSectionKeys = [
+  "break_even",
+  "hidden_cost",
+  "margin_diagnosis",
+  "sales_goal",
+] as const;
 
 const detailedReportSnapshotSchema = z
   .strictObject({
-    schemaVersion: z.literal(1),
-    calculationVersion: z.literal(1),
-    contentVersion: z.literal(1),
+    schemaVersion: z.literal(DETAILED_REPORT_SCHEMA_VERSION),
+    calculationVersion: z.literal(DETAILED_REPORT_CALCULATION_VERSION),
+    contentVersion: z.union([
+      z.literal(1),
+      z.literal(DETAILED_REPORT_CONTENT_VERSION),
+    ]),
     analysisMode: z.literal("detailed"),
     category: z.enum(["product", "production"]),
     scenario: z.enum(["resale", "digital", "manufacturing"]),
     currency: z.literal("BRL"),
     unit: z.literal("mix"),
     policy: z.strictObject({
-      attentionBandBasisPoints: z.literal(2_000),
       concentrationThresholdBasisPoints: z.literal(4_500),
       weeklyDivisorHundredths: z.literal(433),
       operatingDaysPerWeek: z.literal(6),
@@ -158,7 +165,7 @@ const detailedReportSnapshotSchema = z
     inputs: detailedDiagnosisCommandSchema,
     results: detailedDiagnosisResultsSchema,
     executiveSummary: reportExecutiveSummarySchema,
-    sections: z.array(reportSectionSchema).length(4),
+    sections: z.array(reportSectionSchema).length(detailedSectionKeys.length),
     guidance: z.array(detailedGuidanceSchema),
   })
   .superRefine((snapshot, context) => {
@@ -174,7 +181,8 @@ const detailedReportSnapshotSchema = z
     if (
       expectedScenario === null ||
       snapshot.scenario !== expectedScenario ||
-      snapshot.inputs.category !== snapshot.category
+      snapshot.inputs.category !== snapshot.category ||
+      snapshot.policy.proLaboreIncluded !== snapshot.inputs.proLaboreIncluded
     ) {
       context.addIssue({
         code: "custom",
@@ -182,17 +190,6 @@ const detailedReportSnapshotSchema = z
         message: "Categoria, cenário e entradas não correspondem.",
       });
     }
-
-    if (
-      snapshot.policy.proLaboreIncluded !== snapshot.inputs.proLaboreIncluded
-    ) {
-      context.addIssue({
-        code: "custom",
-        path: ["policy"],
-        message: "A política não corresponde às entradas.",
-      });
-    }
-
     const itemIds = new Set<string>();
     snapshot.inputs.items.forEach((item, index) => {
       if (
@@ -207,7 +204,6 @@ const detailedReportSnapshotSchema = z
         });
       }
       itemIds.add(item.id);
-
       if (item.kind === "digital" && item.packagingUnitCostCents !== 0) {
         context.addIssue({
           code: "custom",
@@ -215,30 +211,10 @@ const detailedReportSnapshotSchema = z
           message: "Produto digital não pode ter custo de embalagem.",
         });
       }
-
-      if (
-        item.kind === "manufacturing" &&
-        item.costMode === "technical_sheet"
-      ) {
-        const ingredientIds = new Set<string>();
-        item.ingredients.forEach((ingredient, ingredientIndex) => {
-          if (
-            ingredient.position !== ingredientIndex ||
-            ingredientIds.has(ingredient.id)
-          ) {
-            context.addIssue({
-              code: "custom",
-              path: ["inputs", "items", index, "ingredients", ingredientIndex],
-              message: "Ingrediente fora de ordem ou duplicado.",
-            });
-          }
-          ingredientIds.add(ingredient.id);
-        });
-      }
     });
-
-    const command = snapshot.inputs as DetailedDiagnosisCommand;
-    const expectedResults = calculateDetailedDiagnosis(command);
+    const expectedResults = calculateDetailedDiagnosis(
+      snapshot.inputs as DetailedDiagnosisCommand,
+    );
     if (JSON.stringify(snapshot.results) !== JSON.stringify(expectedResults)) {
       context.addIssue({
         code: "custom",
@@ -246,25 +222,18 @@ const detailedReportSnapshotSchema = z
         message: "Os resultados não correspondem às entradas normalizadas.",
       });
     }
-
-    const expectedSectionKeys = [
-      "break_even",
-      "hidden_cost",
-      "margin_diagnosis",
-      "sales_goal",
-    ];
-    expectedSectionKeys.forEach((key, index) => {
-      if (snapshot.sections[index]?.key === key) return;
-      context.addIssue({
-        code: "custom",
-        path: ["sections", index, "key"],
-        message: "As seções do relatório detalhado estão fora de ordem.",
-      });
+    detailedSectionKeys.forEach((key, index) => {
+      if (snapshot.sections[index]?.key !== key)
+        context.addIssue({
+          code: "custom",
+          path: ["sections", index, "key"],
+          message: "As seções do relatório detalhado estão fora de ordem.",
+        });
     });
   });
 
-type DetailedReportSnapshotV1 = z.infer<typeof detailedReportSnapshotSchema>;
-type CurrentDetailedReportSnapshot = DetailedReportSnapshotV1;
+type DetailedReportSnapshot = z.infer<typeof detailedReportSnapshotSchema>;
+type CurrentDetailedReportSnapshot = DetailedReportSnapshot;
 
 function parseDetailedReportSnapshot(
   value: unknown,
@@ -276,5 +245,5 @@ export {
   detailedReportSnapshotSchema,
   parseDetailedReportSnapshot,
   type CurrentDetailedReportSnapshot,
-  type DetailedReportSnapshotV1,
+  type DetailedReportSnapshot,
 };

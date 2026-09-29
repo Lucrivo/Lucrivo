@@ -1,24 +1,23 @@
 const SERVICE_REPORT_SCHEMA_VERSION = 4;
 const SERVICE_REPORT_CALCULATION_VERSION = 3;
-const SERVICE_REPORT_CONTENT_VERSION = 5;
+const SERVICE_REPORT_CONTENT_VERSION = 6;
 const PRODUCT_REPORT_SCHEMA_VERSION = 3;
 const PRODUCT_CALCULATION_VERSION = 3;
-const PRODUCT_CONTENT_VERSION = 4;
+const PRODUCT_CONTENT_VERSION = 5;
 const PRODUCTION_REPORT_SCHEMA_VERSION = 3;
 const PRODUCTION_CALCULATION_VERSION = 3;
-const PRODUCTION_CONTENT_VERSION = 4;
+const PRODUCTION_CONTENT_VERSION = 5;
 const DETAILED_REPORT_SCHEMA_VERSION = 1;
 const DETAILED_REPORT_CALCULATION_VERSION = 1;
-const DETAILED_REPORT_CONTENT_VERSION = 1;
+const DETAILED_REPORT_CONTENT_VERSION = 2;
 
 const reportTones = ["neutral", "positive", "warning", "critical"] as const;
 const serviceReportVerdicts = [
   "missing_price",
   "direct_loss",
   "operational_loss",
-  "tight_margin",
-  "adequate_margin",
-  "above_target",
+  "break_even",
+  "positive_result",
 ] as const;
 const productReportVerdicts = [
   "direct_loss",
@@ -26,9 +25,7 @@ const productReportVerdicts = [
   "operational_loss",
   "no_sales",
   "break_even",
-  "tight_margin",
-  "adequate_margin",
-  "above_target",
+  "positive_result",
 ] as const;
 const productionReportVerdicts = [
   "direct_loss",
@@ -36,9 +33,7 @@ const productionReportVerdicts = [
   "operational_loss",
   "no_sales",
   "break_even",
-  "tight_margin",
-  "adequate_margin",
-  "above_target",
+  "positive_result",
 ] as const;
 const reportVerdicts = [
   "missing_price",
@@ -47,9 +42,7 @@ const reportVerdicts = [
   "operational_loss",
   "no_sales",
   "break_even",
-  "tight_margin",
-  "adequate_margin",
-  "above_target",
+  "positive_result",
 ] as const;
 const serviceReportPriorities = ["cost", "price", "margin", "volume"] as const;
 const productReportPriorities = [
@@ -129,7 +122,6 @@ type ProductReportCalculation = {
   monthlyResultCents: number | null;
   realMarginBasisPoints: number | null;
   minimumPriceCents: number | null;
-  priceReferencesPartial: boolean;
   monthlySalesGoal: number | null;
   weeklySalesGoal: number | null;
   dailySalesGoal: number | null;
@@ -155,7 +147,6 @@ type ProductionReportCalculation = {
   monthlyResultCents: number | null;
   realMarginBasisPoints: number | null;
   minimumPriceCents: number | null;
-  priceReferencesPartial: boolean;
   monthlySalesGoal: number | null;
   weeklySalesGoal: number | null;
   dailySalesGoal: number | null;
@@ -216,7 +207,7 @@ export {
 
 export type {
   CurrentDetailedReportSnapshot,
-  DetailedReportSnapshotV1,
+  DetailedReportSnapshot,
 } from "./schemas/detailed-report-snapshot.schema";
 export type {
   ExecutiveSummaryAnswer,
@@ -228,19 +219,11 @@ export type {
   CurrentProductReportSnapshot,
   ProductReportDiscountSimulationBase,
   ProductReportSnapshot,
-  ProductReportSnapshotV1,
-  ProductReportSnapshotV2,
-  ProductReportSnapshotV3,
-  ProductReportSnapshotV4,
 } from "./schemas/product-report-snapshot.schema";
 export type {
   CurrentProductionReportSnapshot,
   ProductionReportDiscountSimulationBase,
   ProductionReportSnapshot,
-  ProductionReportSnapshotV1,
-  ProductionReportSnapshotV2,
-  ProductionReportSnapshotV3,
-  ProductionReportSnapshotV4,
 } from "./schemas/production-report-snapshot.schema";
 export type {
   QuickReportSnapshot,
@@ -251,8 +234,4 @@ export type {
   CurrentServiceReportSnapshot,
   ServiceReportDiscountSimulationBase,
   ServiceReportSnapshot,
-  ServiceReportSnapshotV2,
-  ServiceReportSnapshotV3,
-  ServiceReportSnapshotV4,
-  ServiceReportSnapshotV5,
 } from "./schemas/service-report-snapshot.schema";

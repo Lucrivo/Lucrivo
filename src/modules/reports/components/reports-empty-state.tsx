@@ -29,8 +29,8 @@ function ReportsEmptyState() {
               Diagnósticos salvos
             </h2>
             <p className="text-muted-foreground leading-7">
-              Faça um diagnóstico para salvar seus números, ver quanto sobra e
-              consultar o resultado depois.
+              Faça um diagnóstico para salvar seus números, entender o resultado
+              e consultá-lo depois.
             </p>
           </div>
           <Link

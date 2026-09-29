@@ -31,7 +31,7 @@ describe("renderDemoSeed", () => {
     expect(sql).toContain("delete from private.admin_user_state");
   });
 
-  it("batches operational data and emits exactly 295 report calls", () => {
+  it("batches operational data and emits exactly 288 report calls", () => {
     expect(sql).toContain("insert into auth.users");
     expect(sql).toContain("insert into auth.identities");
     expect(sql).toContain("insert into public.billing_contracts");
@@ -40,7 +40,7 @@ describe("renderDemoSeed", () => {
       sql.match(
         /select public\.create_(?:service|product|production|detailed)_diagnosis_report(?:_v\d+)?\(/g,
       ),
-    ).toHaveLength(295);
+    ).toHaveLength(288);
   });
 
   it("creates reports before final states and enforces final invariants", () => {
@@ -50,7 +50,7 @@ describe("renderDemoSeed", () => {
       sql.indexOf("insert into private.admin_user_state"),
     );
     expect(sql).toContain("demo_seed_invariant_failed");
-    expect(sql).toContain("295");
+    expect(sql).toContain("288");
     expect(sql).toContain("47880");
   });
 });

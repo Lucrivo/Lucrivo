@@ -110,6 +110,10 @@ type DetailedItemCalculation = {
   netUnitRevenueCents: number;
   unitContributionCents: number;
   contributionMarginBasisPoints: number | null;
+  fixedAllocationCents: number | null;
+  totalUnitCostCents: number | null;
+  unitProfitCents: number | null;
+  realMarginBasisPoints: number | null;
   monthlyGrossRevenueCents: number | null;
   monthlyContributionCents: number | null;
   breakEvenUnitPriceCents: number | null;
@@ -122,8 +126,7 @@ type DetailedDiagnosisVerdict =
   | "no_sales"
   | "operational_loss"
   | "break_even"
-  | "tight_margin"
-  | "adequate_margin";
+  | "positive_result";
 
 type DetailedDiagnosisPriority =
   "cost" | "data" | "price" | "margin" | "volume";

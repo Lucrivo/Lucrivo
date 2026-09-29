@@ -77,11 +77,11 @@ describe("demo user and operations catalog", () => {
     });
   });
 
-  it("assigns all 295 reports with stable ordinals and deletion coverage", () => {
-    expect(catalog.reports).toHaveLength(295);
+  it("assigns all 288 reports with stable ordinals and deletion coverage", () => {
+    expect(catalog.reports).toHaveLength(288);
     expect(
       catalog.reports.filter((report) => report.ownerId === catalog.admin.id),
-    ).toHaveLength(36);
+    ).toHaveLength(29);
     expect(
       catalog.reports.filter((report) => report.ownerId !== catalog.admin.id),
     ).toHaveLength(259);

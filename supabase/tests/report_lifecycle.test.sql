@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(27);
+select plan(28);
 
 insert into auth.users (id, aud, role, email)
 values
@@ -147,12 +147,17 @@ as $$
   select jsonb_build_object(
     'schemaVersion', 3,
     'calculationVersion', 3,
-    'contentVersion', 4,
+    'contentVersion', 5,
     'category', 'product',
     'scenario', 'resale',
     'currency', 'BRL',
     'unit', 'unit',
-    'policy', jsonb_build_object('attentionBandBasisPoints', 2000),
+    'policy', jsonb_build_object(
+      'weeklyDivisorHundredths', 433,
+      'operatingDaysPerWeek', 6,
+      'maximumDiscountPercent', 50,
+      'proLaboreIncluded', true
+    ),
     'inputs', jsonb_build_object(
       'productKind', 'resale',
       'purchaseUnitCostCents', 5000,
@@ -292,7 +297,7 @@ select throws_ok(
       '81000000-0000-4000-8000-000000000106'::uuid,
       'resale'::text, 5000::bigint, 12000::bigint, 100000::bigint,
       null::integer, true, 200000::bigint, 600::integer, 200::integer,
-      3::smallint, 3::smallint, 4::smallint, 'resale'::text,
+      3::smallint, 3::smallint, 5::smallint, 'resale'::text,
       12000::bigint, null::integer, null::bigint, null::bigint,
       'incomplete_volume'::text, 'data'::text, 'unit'::text,
       pg_temp.lifecycle_product_snapshot_v3()
@@ -339,7 +344,7 @@ select is(
       '81000000-0000-4000-8000-000000000106'::uuid,
       'resale'::text, 5000::bigint, 12000::bigint, 100000::bigint,
       null::integer, true, 200000::bigint, 600::integer, 200::integer,
-      3::smallint, 3::smallint, 4::smallint, 'resale'::text,
+      3::smallint, 3::smallint, 5::smallint, 'resale'::text,
       12000::bigint, null::integer, null::bigint, null::bigint,
       'incomplete_volume'::text, 'data'::text, 'unit'::text,
       pg_temp.lifecycle_product_snapshot_v3()
@@ -419,6 +424,20 @@ select throws_ok(
 );
 
 reset role;
+
+select ok(
+  pg_catalog.pg_get_functiondef(
+    'private.replace_owned_diagnosis_from_staged_v1_impl(
+      bigint,bigint,integer
+    )'::regprocedure
+  ) like '%fixed_allocation_cents%'
+  and pg_catalog.pg_get_functiondef(
+    'private.replace_owned_diagnosis_from_staged_v1_impl(
+      bigint,bigint,integer
+    )'::regprocedure
+  ) like '%real_margin_basis_points%',
+  'staged replacement copies corrected detailed unit economics'
+);
 
 select * from finish();
 

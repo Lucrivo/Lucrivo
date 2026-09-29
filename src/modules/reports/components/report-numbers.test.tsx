@@ -2,151 +2,126 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
+import type { ReportNumberViewModel } from "../presenters/to-report-view-model";
 import { ReportNumbers } from "./report-numbers";
 
-const numbers = [
-  { key: "price" as const, label: "Preço atual", value: "R$ 80,00" },
-  { key: "margin" as const, label: "Margem real", value: "17%" },
-  { key: "profit" as const, label: "Lucro por hora", value: "R$ 13,60" },
-  { key: "minimum" as const, label: "Preço mínimo", value: "R$ 65,22" },
-  { key: "target" as const, label: "Preço-alvo (15%)", value: "R$ 77,93" },
+const numbers: ReportNumberViewModel[] = [
+  { key: "price", label: "Preço atual", value: "R$ 80,00" },
+  {
+    key: "minimum",
+    label: "Menor preço para não ficar no prejuízo",
+    value: "R$ 50,21",
+  },
+  {
+    key: "profit",
+    label: "Resultado por hora",
+    value: "R$ 27,41",
+  },
+  {
+    key: "margin",
+    label: "Quanto sobra a cada R$ 100",
+    value: "34,26%",
+  },
 ];
 
 describe("ReportNumbers", () => {
-  it("renders exactly five labeled values", () => {
+  it("renders objective labeled values without target numbers", () => {
     render(
       <ReportNumbers
         numbers={numbers}
         title="Seus números"
-        description="Referências financeiras deste diagnóstico."
+        description="Valores calculados com o que você informou."
       />,
     );
     const rail = screen.getByRole("complementary", { name: "Seus números" });
 
     expect(
-      within(rail).getByRole("heading", { name: "Seus números" }),
-    ).toBeInTheDocument();
-    expect(
       Array.from(rail.querySelectorAll("dt")).map((term) => term.textContent),
     ).toEqual(numbers.map(({ label }) => label));
-    expect(
-      Array.from(rail.querySelectorAll("dd")).map(
-        (description) => description.textContent,
-      ),
-    ).toEqual(numbers.map(({ value }) => value));
+    expect(rail.textContent).not.toMatch(/meta|preço-alvo/i);
   });
 
-  it("features a leading sales goal while keeping the other values in the regular list", () => {
+  it("features a sales goal and keeps its explanation visible", () => {
     render(
       <ReportNumbers
         numbers={[
           {
             key: "sales",
-            label: "Unidades necessárias no mês",
-            value: "72 unidades",
+            label: "Vendas necessárias no mês",
+            value: "72 vendas",
             supportingText: "17 por semana e 3 por dia.",
           },
-          ...numbers.slice(0, 2),
+          ...numbers,
         ]}
         title="Seus números"
         description="Valores calculados com o que você informou."
       />,
     );
 
-    const rail = screen.getByRole("complementary", { name: "Seus números" });
-    const featured = rail.querySelector<HTMLElement>(
+    const featured = document.querySelector<HTMLElement>(
       '[data-slot="featured-report-number"]',
     );
-    const regular = rail.querySelector<HTMLElement>(
-      '[data-slot="report-number-list"]',
-    );
-
     expect(featured).not.toBeNull();
-    expect(regular).not.toBeNull();
+    expect(within(featured!).getByText("72 vendas")).toBeVisible();
     expect(
-      within(featured!).getByText("Unidades necessárias no mês"),
+      within(featured!).getByText("17 por semana e 3 por dia."),
     ).toBeVisible();
-    expect(within(featured!).getByText("72 unidades")).toBeVisible();
-    expect(
-      Array.from(regular!.querySelectorAll("dt")).map(
-        (term) => term.textContent,
-      ),
-    ).toEqual(["Preço atual", "Margem real"]);
-    expect(rail.querySelectorAll("dl")).toHaveLength(2);
-    expect(rail.querySelectorAll("dt")).toHaveLength(3);
-    expect(rail.querySelectorAll("dd")).toHaveLength(3);
   });
 
-  it("explains only the two calculated terms and restores focus", async () => {
+  it("shows why a complete value is unavailable and opens help by keyboard", async () => {
     const user = userEvent.setup();
-    const explainedNumbers = numbers.map((number) =>
-      number.key === "margin"
-        ? {
-            ...number,
-            help: {
-              title: "Quanto sobra a cada R$ 100",
-              description:
-                "Mostra quanto fica no negócio depois de pagar os gastos usados neste cálculo.",
-              technicalTerm: "margem",
-            },
-          }
-        : number.key === "target"
-          ? {
-              ...number,
-              help: {
-                triggerLabel: "Como calculamos?",
-                title: "Preço para alcançar a meta",
-                description:
-                  "É o preço calculado com seus gastos, taxas e a meta definida neste diagnóstico.",
-                technicalTerm: "preço-alvo",
-              },
-            }
-          : number,
-    );
-
     render(
       <ReportNumbers
-        numbers={explainedNumbers}
+        numbers={[
+          {
+            key: "minimum",
+            label: "Menor preço para não ficar no prejuízo",
+            value: "Ainda não calculado",
+            supportingText:
+              "Informe uma quantidade maior que zero para dividir os gastos do mês.",
+            help: {
+              triggerLabel: "Por que está indisponível?",
+              title: "Falta uma quantidade para completar o cálculo",
+              description:
+                "Informe uma quantidade maior que zero para dividir os gastos do mês e calcular o custo completo.",
+            },
+          },
+        ]}
         title="Seus números"
         description="Valores calculados com o que você informou."
       />,
     );
 
-    expect(screen.getAllByRole("button")).toHaveLength(2);
-    const trigger = screen.getByRole("button", { name: "Como calculamos?" });
-    await user.click(trigger);
+    expect(screen.getByText("Ainda não calculado")).toBeVisible();
     expect(
       screen.getByText(
-        "É o preço calculado com seus gastos, taxas e a meta definida neste diagnóstico.",
+        "Informe uma quantidade maior que zero para dividir os gastos do mês.",
       ),
-    ).toBeInTheDocument();
-
+    ).toBeVisible();
+    const trigger = screen.getByRole("button", {
+      name: "Por que está indisponível?",
+    });
+    await user.tab();
+    expect(trigger).toHaveFocus();
+    await user.keyboard("{Enter}");
+    expect(
+      screen.getByRole("heading", {
+        name: "Falta uma quantidade para completar o cálculo",
+      }),
+    ).toBeVisible();
     await user.keyboard("{Escape}");
     expect(trigger).toHaveFocus();
   });
 
-  it("keeps long values readable and opens help from the keyboard", async () => {
-    const user = userEvent.setup();
+  it("keeps long financial values readable", () => {
     render(
       <div className="w-64">
         <ReportNumbers
           numbers={[
             {
               key: "minimum",
-              label: "Menor preço sem prejuízo",
+              label: "Menor preço para não ficar no prejuízo",
               value: "R$ 1.234.567.890,00",
-              help: {
-                triggerLabel: "Como calculamos?",
-                title: "Menor preço sem prejuízo",
-                description:
-                  "Inclui os gastos mensais, quanto você quer receber, materiais e taxas.",
-              },
-            },
-            {
-              key: "sales",
-              label: "Quantidade de serviços por mês",
-              value: "123.456 atendimentos",
-              supportingText: "28.511 por semana e 5.703 por dia de trabalho.",
             },
           ]}
           title="Seus números"
@@ -155,17 +130,6 @@ describe("ReportNumbers", () => {
       </div>,
     );
 
-    const trigger = screen.getByRole("button", { name: "Como calculamos?" });
-    await user.tab();
-    expect(trigger).toHaveFocus();
-    await user.keyboard("{Enter}");
-    expect(
-      screen.getByText("Menor preço sem prejuízo", { selector: "h2" }),
-    ).toBeInTheDocument();
-    await user.keyboard("{Escape}");
-    expect(trigger).toHaveFocus();
-
     expect(screen.getByText("R$ 1.234.567.890,00")).toHaveClass("break-words");
-    expect(screen.getByText("123.456 atendimentos")).toHaveClass("break-words");
   });
 });

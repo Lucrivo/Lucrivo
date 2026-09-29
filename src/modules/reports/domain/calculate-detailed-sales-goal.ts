@@ -2,7 +2,13 @@ import type { CurrentDetailedReportSnapshot } from "../types";
 import { ceilDivide } from "./integer-math";
 
 type DetailedSalesGoal =
-  | { available: true; monthly: number; weekly: number; daily: number }
+  | {
+      available: true;
+      monthly: number;
+      weekly: number | null;
+      daily: number | null;
+      basedOnKnownMix: boolean;
+    }
   | { available: false; reason: string };
 
 function calculateDetailedSalesGoal(
@@ -14,9 +20,32 @@ function calculateDetailedSalesGoal(
   >,
 ): DetailedSalesGoal {
   if (results.isPartial) {
+    if (inputs.items.length !== 1) {
+      return {
+        available: false,
+        reason:
+          "Para calcular uma quantidade única, informe as vendas mensais de todos os itens.",
+      };
+    }
+
+    const itemContributionCents = results.items[0]?.unitContributionCents;
+    if (itemContributionCents === undefined || itemContributionCents <= 0) {
+      return {
+        available: false,
+        reason:
+          "No preço atual, este item ainda não deixa valor para pagar os gastos do mês.",
+      };
+    }
+
     return {
-      available: false,
-      reason: "Informe as vendas mensais de todos os itens para calcular.",
+      available: true,
+      monthly: ceilDivide(
+        BigInt(results.effectiveFixedCostCents),
+        BigInt(itemContributionCents),
+      ),
+      weekly: null,
+      daily: null,
+      basedOnKnownMix: false,
     };
   }
 
@@ -24,14 +53,13 @@ function calculateDetailedSalesGoal(
     (sum, item) => sum + (item.monthlySalesVolume ?? 0),
     0,
   );
-
   if (totalVolume <= 0) {
     return {
       available: false,
-      reason: "Informe uma quantidade vendida maior que zero para calcular.",
+      reason:
+        "Informe uma quantidade vendida maior que zero para mostrar a proporção entre os itens.",
     };
   }
-
   if (
     results.monthlyContributionCents === null ||
     results.monthlyContributionCents <= 0
@@ -39,7 +67,7 @@ function calculateDetailedSalesGoal(
     return {
       available: false,
       reason:
-        "As vendas informadas não deixam valor suficiente para calcular uma meta.",
+        "As vendas informadas não deixam valor suficiente para calcular uma quantidade.",
     };
   }
 
@@ -53,7 +81,13 @@ function calculateDetailedSalesGoal(
   );
   const daily = ceilDivide(BigInt(weekly), BigInt(policy.operatingDaysPerWeek));
 
-  return { available: true, monthly, weekly, daily };
+  return {
+    available: true,
+    monthly,
+    weekly,
+    daily,
+    basedOnKnownMix: true,
+  };
 }
 
 export { calculateDetailedSalesGoal, type DetailedSalesGoal };

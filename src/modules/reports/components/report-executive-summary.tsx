@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { PlainLanguageHelp } from "@/components/shared/plain-language-help";
 import { cn } from "@/lib/utils";
 
 import type { ReportExecutiveSummaryViewModel } from "../presenters/to-report-view-model";
@@ -107,6 +108,9 @@ function ReportExecutiveSummary({
               <p className="text-foreground/86 text-base leading-7">
                 {answer.answer}
               </p>
+              {answer.help ? (
+                <PlainLanguageHelp {...answer.help} className="mt-0.5" />
+              ) : null}
             </div>
           </li>
         ))}

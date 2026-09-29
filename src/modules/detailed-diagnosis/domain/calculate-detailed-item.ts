@@ -1,4 +1,8 @@
-import { ceilDivide, roundDivide } from "@/modules/reports/domain/integer-math";
+import { roundDivide } from "@/modules/reports/domain/integer-math";
+import {
+  calculateAllocatedUnitEconomics,
+  calculateDirectUnitEconomics,
+} from "@/modules/reports/domain/unit-economics";
 
 import type {
   DetailedDiagnosisItem,
@@ -26,7 +30,6 @@ function calculateTechnicalSheetCost(
       ),
     BigInt(0),
   );
-
   const sellableIngredientUnitTenThousandths = BigInt(
     roundDivide(
       ingredientTotalTenThousandths * BigInt(10_000),
@@ -59,35 +62,33 @@ function calculateVariableUnitCost(item: DetailedDiagnosisItem): number {
   }
 }
 
-function calculatePriceFloor(
-  variableUnitCostCents: number,
-  denominatorBasisPoints: number,
-): number | null {
-  if (denominatorBasisPoints <= 0) return null;
-
-  return ceilDivide(
-    BigInt(variableUnitCostCents) * BigInt(10_000),
-    BigInt(denominatorBasisPoints),
-  );
-}
-
 function calculateDetailedItem(
   item: DetailedDiagnosisItem,
   rates: DetailedItemRates,
+  fixedAllocationCents: number | null,
 ): DetailedItemCalculation {
   const variableUnitCostCents = calculateVariableUnitCost(item);
-  const feeRateBasisPoints =
+  const totalFeeBasisPoints =
     rates.taxRateBasisPoints + rates.cardFeeRateBasisPoints;
-  const netUnitRevenueCents = roundDivide(
-    BigInt(item.unitSalePriceCents) * BigInt(10_000 - feeRateBasisPoints),
-    BigInt(10_000),
-  );
-  const feeAmountCents = item.unitSalePriceCents - netUnitRevenueCents;
-  const unitContributionCents = netUnitRevenueCents - variableUnitCostCents;
+  const direct = calculateDirectUnitEconomics({
+    currentPriceCents: item.unitSalePriceCents,
+    directUnitCostCents: variableUnitCostCents,
+    totalFeeBasisPoints,
+  });
+  const allocated =
+    fixedAllocationCents === null
+      ? null
+      : calculateAllocatedUnitEconomics({
+          ...direct,
+          currentPriceCents: item.unitSalePriceCents,
+          directUnitCostCents: variableUnitCostCents,
+          totalFeeBasisPoints,
+          fixedAllocationCents,
+        });
   const contributionMarginBasisPoints =
     item.unitSalePriceCents > 0
       ? roundDivide(
-          BigInt(unitContributionCents) * BigInt(10_000),
+          BigInt(direct.unitContributionCents) * BigInt(10_000),
           BigInt(item.unitSalePriceCents),
         )
       : null;
@@ -102,24 +103,26 @@ function calculateDetailedItem(
     item.monthlySalesVolume === null
       ? null
       : roundDivide(
-          BigInt(unitContributionCents) * BigInt(item.monthlySalesVolume),
+          BigInt(direct.unitContributionCents) *
+            BigInt(item.monthlySalesVolume),
           BigInt(1),
         );
 
   return {
     itemId: item.id,
     variableUnitCostCents,
-    feeAmountCents,
-    netUnitRevenueCents,
-    unitContributionCents,
+    feeAmountCents: direct.feeAmountCents,
+    netUnitRevenueCents: direct.netRevenueCents,
+    unitContributionCents: direct.unitContributionCents,
     contributionMarginBasisPoints,
+    fixedAllocationCents,
+    totalUnitCostCents: allocated?.totalUnitCostCents ?? null,
+    unitProfitCents: allocated?.unitProfitCents ?? null,
+    realMarginBasisPoints: allocated?.realMarginBasisPoints ?? null,
     monthlyGrossRevenueCents,
     monthlyContributionCents,
-    breakEvenUnitPriceCents: calculatePriceFloor(
-      variableUnitCostCents,
-      10_000 - feeRateBasisPoints,
-    ),
-    directLoss: unitContributionCents <= 0,
+    breakEvenUnitPriceCents: allocated?.minimumPriceCents ?? null,
+    directLoss: direct.unitContributionCents <= 0,
   };
 }
 

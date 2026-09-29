@@ -25,42 +25,29 @@ function resultsWith(overrides: Partial<Results> = {}): Results {
     isPartial: false,
     effectiveFixedCostCents: 10_000,
     monthlyContributionCents: 10_000,
+    items: [{ unitContributionCents: 2_500 }],
     ...overrides,
   } as Results;
 }
 
 describe("calculateDetailedSalesGoal", () => {
-  it("calculates monthly, weekly, and daily units with ceiling division", () => {
+  it("calculates a single unknown item's monthly goal without a routine split", () => {
     expect(
       calculateDetailedSalesGoal(
-        inputsWithVolumes([10]),
-        resultsWith(),
+        inputsWithVolumes([null]),
+        resultsWith({ isPartial: true, monthlyContributionCents: null }),
         policy,
       ),
-    ).toEqual({ available: true, monthly: 10, weekly: 3, daily: 1 });
+    ).toEqual({
+      available: true,
+      monthly: 4,
+      weekly: null,
+      daily: null,
+      basedOnKnownMix: false,
+    });
   });
 
-  it("rounds every non-divisible result upward", () => {
-    expect(
-      calculateDetailedSalesGoal(
-        inputsWithVolumes([10]),
-        resultsWith({ effectiveFixedCostCents: 25_001 }),
-        policy,
-      ),
-    ).toEqual({ available: true, monthly: 26, weekly: 7, daily: 2 });
-  });
-
-  it("returns zero units when fixed costs are zero", () => {
-    expect(
-      calculateDetailedSalesGoal(
-        inputsWithVolumes([10]),
-        resultsWith({ effectiveFixedCostCents: 0 }),
-        policy,
-      ),
-    ).toEqual({ available: true, monthly: 0, weekly: 0, daily: 0 });
-  });
-
-  it("explains when any item volume is missing", () => {
+  it("does not invent a combined mix when multiple items include unknown volume", () => {
     expect(
       calculateDetailedSalesGoal(
         inputsWithVolumes([10, null]),
@@ -69,11 +56,28 @@ describe("calculateDetailedSalesGoal", () => {
       ),
     ).toEqual({
       available: false,
-      reason: "Informe as vendas mensais de todos os itens para calcular.",
+      reason:
+        "Para calcular uma quantidade única, informe as vendas mensais de todos os itens.",
     });
   });
 
-  it("explains when total volume is zero", () => {
+  it("preserves the informed mix when every volume is known", () => {
+    expect(
+      calculateDetailedSalesGoal(
+        inputsWithVolumes([4, 6]),
+        resultsWith({ monthlyContributionCents: 20_000 }),
+        policy,
+      ),
+    ).toEqual({
+      available: true,
+      monthly: 5,
+      weekly: 2,
+      daily: 1,
+      basedOnKnownMix: true,
+    });
+  });
+
+  it("returns unavailable when known total volume is zero", () => {
     expect(
       calculateDetailedSalesGoal(
         inputsWithVolumes([0, 0]),
@@ -82,24 +86,8 @@ describe("calculateDetailedSalesGoal", () => {
       ),
     ).toEqual({
       available: false,
-      reason: "Informe uma quantidade vendida maior que zero para calcular.",
+      reason:
+        "Informe uma quantidade vendida maior que zero para mostrar a proporção entre os itens.",
     });
   });
-
-  it.each([null, 0, -1])(
-    "explains when monthly contribution is %s",
-    (monthlyContributionCents) => {
-      expect(
-        calculateDetailedSalesGoal(
-          inputsWithVolumes([10]),
-          resultsWith({ monthlyContributionCents }),
-          policy,
-        ),
-      ).toEqual({
-        available: false,
-        reason:
-          "As vendas informadas não deixam valor suficiente para calcular uma meta.",
-      });
-    },
-  );
 });

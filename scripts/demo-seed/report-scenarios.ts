@@ -135,9 +135,8 @@ const serviceShapes = [
   ["missing_price", "month", "0.00", false, "", ""],
   ["direct_loss", "minute", "1.00", true, "70.00", "hour"],
   ["operational_loss", "week", "1000.00", false, "", ""],
-  ["tight_margin", "day", "348.00", false, "", ""],
-  ["adequate_margin", "appointment", "60.00", false, "", ""],
-  ["above_target", "hour", "70.00", false, "", ""],
+  ["break_even", "hour", "50.21", false, "", ""],
+  ["positive_result", "hour", "70.00", false, "", ""],
 ] as const;
 
 function buildServiceTemplate(
@@ -201,8 +200,7 @@ const commerceVerdicts = [
   "no_sales",
   "operational_loss",
   "break_even",
-  "tight_margin",
-  "adequate_margin",
+  "positive_result",
 ] as const;
 
 type CommerceVerdict = (typeof commerceVerdicts)[number];
@@ -223,9 +221,7 @@ function commerceShape(verdict: CommerceVerdict): {
       return { volume: 50, directCost: 5_000, effectiveFixedCost: 300_000 };
     case "break_even":
       return { volume: 100, directCost: 5_000, effectiveFixedCost: 420_000 };
-    case "tight_margin":
-      return { volume: 100, directCost: 5_000, effectiveFixedCost: 300_000 };
-    case "adequate_margin":
+    case "positive_result":
       return { volume: 100, directCost: 3_000, effectiveFixedCost: 200_000 };
   }
 }
@@ -327,8 +323,8 @@ function buildProductionTemplate(verdict: CommerceVerdict): SeedReportTemplate {
   };
 }
 
-const productDetailedCounts = [1, 2, 3, 5, 8, 10, 12] as const;
-const productionDetailedCounts = [12, 10, 8, 5, 3, 2, 1] as const;
+const productDetailedCounts = [1, 2, 3, 5, 8, 10] as const;
+const productionDetailedCounts = [10, 8, 5, 3, 2, 1] as const;
 
 function detailedProductItems(
   ids: SeedReportIds,
@@ -336,7 +332,7 @@ function detailedProductItems(
   itemCount: number,
 ): DetailedDiagnosisItem[] {
   return Array.from({ length: itemCount }, (_, position) => {
-    const isAdequateLeader = verdict === "adequate_margin" && position === 0;
+    const isPositiveLeader = verdict === "positive_result" && position === 0;
     return {
       id: ids.itemId(position),
       position,
@@ -345,7 +341,7 @@ function detailedProductItems(
       purchaseUnitCostCents:
         verdict === "direct_loss"
           ? 9_500
-          : verdict === "adequate_margin" && !isAdequateLeader
+          : verdict === "positive_result" && !isPositiveLeader
             ? 3_000
             : 5_000,
       packagingUnitCostCents: 0,
@@ -355,11 +351,11 @@ function detailedProductItems(
           ? null
           : verdict === "no_sales"
             ? 0
-            : isAdequateLeader
+            : isPositiveLeader
               ? 1_000
               : verdict === "operational_loss" || verdict === "break_even"
                 ? 10
-                : verdict === "adequate_margin"
+                : verdict === "positive_result"
                   ? 10
                   : 100,
     };
@@ -374,13 +370,11 @@ function detailedFixedCost(
   if (category === "product") {
     if (verdict === "operational_loss") return itemCount * 50_000;
     if (verdict === "break_even") return itemCount * 50_000;
-    if (verdict === "tight_margin") return itemCount * 300_000;
-    if (verdict === "adequate_margin") return itemCount * 100_000;
+    if (verdict === "positive_result") return itemCount * 100_000;
     return 300_000;
   }
   if (verdict === "operational_loss") return 1_000_000;
-  if (verdict === "tight_margin") return 1_050_000;
-  if (verdict === "adequate_margin") return 200_000;
+  if (verdict === "positive_result") return 200_000;
   return 300_000;
 }
 

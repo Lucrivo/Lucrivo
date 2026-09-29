@@ -71,15 +71,7 @@ const verdictPresentation: Record<
     badge: "warning",
     icon: CircleAlertIcon,
   },
-  tight_margin: {
-    badge: "warning",
-    icon: CircleAlertIcon,
-  },
-  adequate_margin: {
-    badge: "success",
-    icon: CircleCheckIcon,
-  },
-  above_target: {
+  positive_result: {
     badge: "success",
     icon: CircleCheckIcon,
   },
@@ -226,10 +218,10 @@ function ReportListCard({ report }: { report: OwnedReportSummary }) {
   const profitLabel = language.isPlainLanguage
     ? report.businessCategory === "product" ||
       report.businessCategory === "production"
-      ? "Quanto sobra por unidade"
+      ? "Resultado por unidade"
       : report.unit === "hour"
-        ? "Quanto sobra por hora"
-        : "Quanto sobra por atendimento"
+        ? "Resultado por hora"
+        : "Resultado por atendimento"
     : report.businessCategory === "product" ||
         report.businessCategory === "production"
       ? "Lucro por unidade"
