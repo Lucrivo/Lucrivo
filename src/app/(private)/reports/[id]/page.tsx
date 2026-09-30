@@ -6,6 +6,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { requireUser } from "@/modules/auth/services/require-user";
 import { getBillingOverview } from "@/modules/billing/services/get-billing-overview.service";
+import { ReportAiAssistant } from "@/modules/report-ai/components/report-ai-assistant";
+import { getReportAiHistory } from "@/modules/report-ai/services/report-ai-store.service";
 import { DetailedReportDetail } from "@/modules/reports/components/detailed-report-detail";
 import { ReportDetail } from "@/modules/reports/components/report-detail";
 import { ReportManagement } from "@/modules/reports/components/report-management";
@@ -74,9 +76,29 @@ export default async function ReportPage({
   if (result.status === "read_failed") throw new Error("report_read_failed");
   if (result.status === "unavailable") return <UnavailableReport />;
 
-  const billing = await getBillingOverview({ supabase, userId });
-  const canEdit =
+  const [billing, historyResult] = await Promise.all([
+    getBillingOverview({ supabase, userId }),
+    getReportAiHistory({
+      supabase,
+      userId,
+      diagnosisId: result.report.id,
+      currentVersion: result.report.version,
+    }),
+  ]);
+  const canAsk =
     billing.status === "success" && billing.overview.tier === "paid";
+  const canEdit = canAsk;
+  const history =
+    historyResult.status === "success" ? historyResult.history : null;
+  const assistant =
+    history && (canAsk || history.versions.length > 0) ? (
+      <ReportAiAssistant
+        diagnosisId={result.report.id}
+        reportVersion={result.report.version}
+        canAsk={canAsk}
+        initialHistory={history}
+      />
+    ) : null;
   const draft = toEditableReportDraft(result.report.snapshot);
   const management = (
     <ReportManagement
@@ -90,14 +112,22 @@ export default async function ReportPage({
 
   if (isDetailedReportSnapshot(result.report.snapshot))
     return (
-      <DetailedReportDetail
-        id={result.report.id}
-        createdAt={result.report.createdAt}
-        snapshot={result.report.snapshot}
-        management={management}
-      />
+      <>
+        <DetailedReportDetail
+          id={result.report.id}
+          createdAt={result.report.createdAt}
+          snapshot={result.report.snapshot}
+          management={management}
+        />
+        {assistant}
+      </>
     );
 
   const viewModel = toReportViewModel(result.report);
-  return <ReportDetail viewModel={viewModel} management={management} />;
+  return (
+    <>
+      <ReportDetail viewModel={viewModel} management={management} />
+      {assistant}
+    </>
+  );
 }

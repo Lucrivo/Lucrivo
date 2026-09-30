@@ -673,6 +673,109 @@ export type Database = {
           },
         ];
       };
+      report_ai_conversations: {
+        Row: {
+          created_at: string;
+          diagnosis_id: number;
+          id: number;
+          report_version: number;
+          summary: string;
+          summary_through_turn: number | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          diagnosis_id: number;
+          id?: never;
+          report_version: number;
+          summary?: string;
+          summary_through_turn?: number | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          diagnosis_id?: number;
+          id?: never;
+          report_version?: number;
+          summary?: string;
+          summary_through_turn?: number | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "report_ai_conversations_diagnosis_id_fkey";
+            columns: ["diagnosis_id"];
+            isOneToOne: false;
+            referencedRelation: "diagnoses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      report_ai_turns: {
+        Row: {
+          answer: string | null;
+          cached_input_tokens: number | null;
+          completed_at: string | null;
+          conversation_id: number;
+          counts_toward_quota: boolean;
+          created_at: string;
+          error_code: string | null;
+          id: number;
+          input_tokens: number | null;
+          model: string;
+          output_tokens: number | null;
+          question: string;
+          request_id: string;
+          status: string;
+          user_id: string;
+        };
+        Insert: {
+          answer?: string | null;
+          cached_input_tokens?: number | null;
+          completed_at?: string | null;
+          conversation_id: number;
+          counts_toward_quota?: boolean;
+          created_at?: string;
+          error_code?: string | null;
+          id?: never;
+          input_tokens?: number | null;
+          model: string;
+          output_tokens?: number | null;
+          question: string;
+          request_id: string;
+          status: string;
+          user_id: string;
+        };
+        Update: {
+          answer?: string | null;
+          cached_input_tokens?: number | null;
+          completed_at?: string | null;
+          conversation_id?: number;
+          counts_toward_quota?: boolean;
+          created_at?: string;
+          error_code?: string | null;
+          id?: never;
+          input_tokens?: number | null;
+          model?: string;
+          output_tokens?: number | null;
+          question?: string;
+          request_id?: string;
+          status?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "report_ai_turns_conversation_user_fkey";
+            columns: ["conversation_id", "user_id"];
+            isOneToOne: false;
+            referencedRelation: "report_ai_conversations";
+            referencedColumns: ["id", "user_id"];
+          },
+        ];
+      };
       service_diagnoses: {
         Row: {
           appointment_duration_minutes: number;
@@ -786,6 +889,16 @@ export type Database = {
           p_user_id: string;
         };
         Returns: Json;
+      };
+      complete_report_ai_turn_v1: {
+        Args: {
+          p_answer: string;
+          p_cached_input_tokens: number;
+          p_input_tokens: number;
+          p_output_tokens: number;
+          p_turn_id: number;
+        };
+        Returns: string;
       };
       create_detailed_diagnosis_report: {
         Args: {
@@ -1053,6 +1166,14 @@ export type Database = {
       current_account_is_eligible: { Args: never; Returns: boolean };
       current_courtesy_access_expires_at: { Args: never; Returns: string };
       current_user_is_admin: { Args: never; Returns: boolean };
+      fail_report_ai_turn_v1: {
+        Args: {
+          p_counts_toward_quota: boolean;
+          p_error_code: string;
+          p_turn_id: number;
+        };
+        Returns: string;
+      };
       get_admin_dashboard_v1: { Args: never; Returns: Json };
       get_admin_user_v1: { Args: { p_user_id: string }; Returns: Json };
       list_admin_recent_subscriptions_v1: {
@@ -1207,8 +1328,26 @@ export type Database = {
         };
         Returns: number;
       };
+      reserve_report_ai_turn_v1: {
+        Args: {
+          p_diagnosis_id: number;
+          p_model: string;
+          p_question: string;
+          p_report_version: number;
+          p_request_id: string;
+        };
+        Returns: Json;
+      };
       soft_delete_owned_diagnosis_v1: {
         Args: { p_diagnosis_id: number; p_expected_version: number };
+        Returns: string;
+      };
+      update_report_ai_summary_v1: {
+        Args: {
+          p_conversation_id: number;
+          p_summary: string;
+          p_summary_through_turn: number;
+        };
         Returns: string;
       };
     };
