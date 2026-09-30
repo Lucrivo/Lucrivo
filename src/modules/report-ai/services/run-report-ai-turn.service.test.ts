@@ -263,6 +263,59 @@ describe("runReportAiTurn", () => {
     );
   });
 
+  it.each([
+    ["credit_balance_exhausted", undefined],
+    ["organization_spend_limit_exceeded", undefined],
+    ["project_spend_limit_exceeded", undefined],
+    ["organization_usage_limit_exceeded", undefined],
+    [undefined, "insufficient_quota"],
+  ])(
+    "marks the status-less provider billing rejection code=%s type=%s uncounted",
+    async (code, type) => {
+      async function* rejected() {
+        throw Object.assign(new Error("private provider detail"), {
+          code,
+          type,
+        });
+      }
+
+      await expect(
+        collect(runReportAiTurn({ ...input, gateway: gateway(rejected) })),
+      ).resolves.toEqual([
+        { type: "accepted", turnId: 11 },
+        { type: "failed", code: "provider_rejected", retry: "same_request" },
+      ]);
+      expect(failReportAiTurn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          errorCode: "provider_rejected",
+          countsTowardQuota: false,
+        }),
+      );
+    },
+  );
+
+  it("keeps the quota for a status-less provider availability failure", async () => {
+    async function* unavailable() {
+      throw Object.assign(new Error("private provider detail"), {
+        code: "server_is_overloaded",
+        type: "service_unavailable_error",
+      });
+    }
+
+    await expect(
+      collect(runReportAiTurn({ ...input, gateway: gateway(unavailable) })),
+    ).resolves.toEqual([
+      { type: "accepted", turnId: 11 },
+      { type: "failed", code: "provider_unavailable", retry: "new_request" },
+    ]);
+    expect(failReportAiTurn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        errorCode: "provider_unavailable",
+        countsTowardQuota: true,
+      }),
+    );
+  });
+
   it("keeps the quota after a timeout or unknown provider outcome", async () => {
     async function* timedOut() {
       throw new DOMException("private timeout", "AbortError");

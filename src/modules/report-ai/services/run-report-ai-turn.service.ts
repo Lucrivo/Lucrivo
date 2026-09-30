@@ -95,7 +95,20 @@ function createTimedSignal(requestSignal?: AbortSignal) {
 }
 
 function isProviderRejection(error: unknown): boolean {
-  if (!error || typeof error !== "object" || !("status" in error)) return false;
+  if (!error || typeof error !== "object") return false;
+
+  const code = Reflect.get(error, "code");
+  const type = Reflect.get(error, "type");
+  if (
+    type === "insufficient_quota" ||
+    code === "credit_balance_exhausted" ||
+    code === "organization_spend_limit_exceeded" ||
+    code === "project_spend_limit_exceeded" ||
+    code === "organization_usage_limit_exceeded"
+  ) {
+    return true;
+  }
+
   const status = Reflect.get(error, "status");
   return (
     typeof status === "number" &&
