@@ -125,14 +125,9 @@ async function getReportAiHistory(input: {
     const selectedConversation = parsedConversations.data.find(
       (conversation) => conversation.report_version === selectedVersion,
     );
-    const versions = Array.from(
-      new Set([
-        input.currentVersion,
-        ...parsedConversations.data.map((conversation) =>
-          Number(conversation.report_version),
-        ),
-      ]),
-    ).sort((left, right) => right - left);
+    const versions = parsedConversations.data.map(
+      (conversation) => conversation.report_version,
+    );
 
     if (!selectedConversation) {
       if (selectedVersion !== input.currentVersion)

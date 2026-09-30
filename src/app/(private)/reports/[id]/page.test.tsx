@@ -13,20 +13,36 @@ import { buildServiceReportSnapshot } from "@/modules/reports/domain/build-servi
 import { calculateProductReport } from "@/modules/reports/domain/calculate-product-report";
 import { calculateServiceReport } from "@/modules/reports/domain/calculate-service-report";
 
-const { getBillingOverview, getOwnedReport, notFound, requireUser } =
-  vi.hoisted(() => ({
-    getBillingOverview: vi.fn(),
-    getOwnedReport: vi.fn(),
-    notFound: vi.fn(() => {
-      throw new Error("NEXT_NOT_FOUND");
-    }),
-    requireUser: vi.fn(),
-  }));
+const {
+  getBillingOverview,
+  getOwnedReport,
+  getReportAiHistory,
+  ReportAiAssistant,
+  notFound,
+  requireUser,
+} = vi.hoisted(() => ({
+  getBillingOverview: vi.fn(),
+  getOwnedReport: vi.fn(),
+  getReportAiHistory: vi.fn(),
+  ReportAiAssistant: vi.fn(({ canAsk }: { canAsk: boolean }) => (
+    <div>Assistente IA: {canAsk ? "ativo" : "somente leitura"}</div>
+  )),
+  notFound: vi.fn(() => {
+    throw new Error("NEXT_NOT_FOUND");
+  }),
+  requireUser: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({ notFound }));
 vi.mock("@/modules/auth/services/require-user", () => ({ requireUser }));
 vi.mock("@/modules/billing/services/get-billing-overview.service", () => ({
   getBillingOverview,
+}));
+vi.mock("@/modules/report-ai/services/report-ai-store.service", () => ({
+  getReportAiHistory,
+}));
+vi.mock("@/modules/report-ai/components/report-ai-assistant", () => ({
+  ReportAiAssistant,
 }));
 vi.mock("@/modules/reports/services/get-report.service", () => ({
   getOwnedReport,
@@ -134,6 +150,16 @@ describe("ReportPage", () => {
         snapshot,
       },
     });
+    getReportAiHistory.mockResolvedValue({
+      status: "success",
+      history: {
+        currentVersion: 0,
+        selectedVersion: 0,
+        versions: [],
+        summary: "",
+        turns: [],
+      },
+    });
   });
 
   async function renderPage(id = "42") {
@@ -152,6 +178,15 @@ describe("ReportPage", () => {
       userId: "trusted-user",
       diagnosisId: "42",
     });
+    expect(screen.getByText("Assistente IA: ativo")).toBeVisible();
+    expect(ReportAiAssistant).toHaveBeenCalledWith(
+      expect.objectContaining({
+        diagnosisId: 42,
+        reportVersion: 0,
+        canAsk: true,
+      }),
+      undefined,
+    );
   });
 
   it("renders an owned current Product snapshot with plain labels", async () => {
@@ -193,6 +228,60 @@ describe("ReportPage", () => {
     expect(
       screen.queryByText("Resultado do seu diagnóstico"),
     ).not.toBeInTheDocument();
+    expect(screen.getByText("Assistente IA: ativo")).toBeVisible();
+  });
+
+  it.each(["free", "courtesy"])(
+    "does not mount an empty assistant for the %s tier",
+    async (tier) => {
+      getBillingOverview.mockResolvedValue({
+        status: "success",
+        overview: { tier },
+      });
+
+      await renderPage();
+
+      expect(screen.queryByText(/Assistente IA:/)).not.toBeInTheDocument();
+    },
+  );
+
+  it.each(["free", "courtesy"])(
+    "keeps existing history readable for the %s tier",
+    async (tier) => {
+      getBillingOverview.mockResolvedValue({
+        status: "success",
+        overview: { tier },
+      });
+      getReportAiHistory.mockResolvedValue({
+        status: "success",
+        history: {
+          currentVersion: 0,
+          selectedVersion: 0,
+          versions: [0],
+          summary: "",
+          turns: [],
+        },
+      });
+
+      await renderPage();
+
+      expect(screen.getByText("Assistente IA: somente leitura")).toBeVisible();
+      expect(ReportAiAssistant).toHaveBeenCalledWith(
+        expect.objectContaining({ canAsk: false }),
+        undefined,
+      );
+    },
+  );
+
+  it("keeps the report visible when AI history cannot be loaded", async () => {
+    getReportAiHistory.mockResolvedValue({ status: "read_failed" });
+
+    await renderPage();
+
+    expect(
+      screen.getByText("Resultado do seu diagnóstico"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Assistente IA:/)).not.toBeInTheDocument();
   });
 
   it.each(["abc", "0"])("calls notFound for malformed id %s", async (id) => {
@@ -201,6 +290,7 @@ describe("ReportPage", () => {
     ).rejects.toThrow("NEXT_NOT_FOUND");
     expect(notFound).toHaveBeenCalledOnce();
     expect(getOwnedReport).not.toHaveBeenCalled();
+    expect(getReportAiHistory).not.toHaveBeenCalled();
   });
 
   it("calls notFound for missing or foreign reports", async () => {
@@ -210,6 +300,7 @@ describe("ReportPage", () => {
       ReportPage({ params: Promise.resolve({ id: "42" }) }),
     ).rejects.toThrow("NEXT_NOT_FOUND");
     expect(notFound).toHaveBeenCalledOnce();
+    expect(getReportAiHistory).not.toHaveBeenCalled();
   });
 
   it("renders a stable unavailable panel for an invalid owned snapshot", async () => {
@@ -229,6 +320,7 @@ describe("ReportPage", () => {
     expect(
       screen.getByRole("link", { name: "Novo diagnóstico" }),
     ).toHaveAttribute("href", "/quick-diagnosis");
+    expect(getReportAiHistory).not.toHaveBeenCalled();
   });
 
   it("throws a safe route error for a transient read failure", async () => {
@@ -237,5 +329,6 @@ describe("ReportPage", () => {
     await expect(
       ReportPage({ params: Promise.resolve({ id: "42" }) }),
     ).rejects.toThrow("report_read_failed");
+    expect(getReportAiHistory).not.toHaveBeenCalled();
   });
 });

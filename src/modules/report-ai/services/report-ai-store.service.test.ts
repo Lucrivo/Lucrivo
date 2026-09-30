@@ -155,7 +155,7 @@ describe("report AI store", () => {
       history: {
         currentVersion: 4,
         selectedVersion: 4,
-        versions: [4],
+        versions: [],
         summary: "",
         turns: [],
       },
