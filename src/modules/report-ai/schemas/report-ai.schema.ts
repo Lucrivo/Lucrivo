@@ -34,6 +34,16 @@ const reportAiTurnDtoSchema = z
   })
   .strict();
 
+const reportAiHistorySchema = z
+  .object({
+    currentVersion: safeNonNegativeInteger,
+    selectedVersion: safeNonNegativeInteger,
+    versions: z.array(safeNonNegativeInteger),
+    summary: z.string(),
+    turns: z.array(reportAiTurnDtoSchema),
+  })
+  .strict();
+
 const reportAiStreamEventSchema = z.discriminatedUnion("type", [
   z
     .object({ type: z.literal("accepted"), turnId: safePositiveInteger })
@@ -53,6 +63,7 @@ const reportAiStreamEventSchema = z.discriminatedUnion("type", [
 
 export {
   reportAiDiagnosisIdSchema,
+  reportAiHistorySchema,
   reportAiHistoryQuerySchema,
   reportAiMessageSchema,
   reportAiStreamEventSchema,
