@@ -673,6 +673,109 @@ export type Database = {
           },
         ];
       };
+      report_ai_conversations: {
+        Row: {
+          created_at: string;
+          diagnosis_id: number;
+          id: number;
+          report_version: number;
+          summary: string;
+          summary_through_turn: number | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          diagnosis_id: number;
+          id?: never;
+          report_version: number;
+          summary?: string;
+          summary_through_turn?: number | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          diagnosis_id?: number;
+          id?: never;
+          report_version?: number;
+          summary?: string;
+          summary_through_turn?: number | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "report_ai_conversations_diagnosis_id_fkey";
+            columns: ["diagnosis_id"];
+            isOneToOne: false;
+            referencedRelation: "diagnoses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      report_ai_turns: {
+        Row: {
+          answer: string | null;
+          cached_input_tokens: number | null;
+          completed_at: string | null;
+          conversation_id: number;
+          counts_toward_quota: boolean;
+          created_at: string;
+          error_code: string | null;
+          id: number;
+          input_tokens: number | null;
+          model: string;
+          output_tokens: number | null;
+          question: string;
+          request_id: string;
+          status: string;
+          user_id: string;
+        };
+        Insert: {
+          answer?: string | null;
+          cached_input_tokens?: number | null;
+          completed_at?: string | null;
+          conversation_id: number;
+          counts_toward_quota?: boolean;
+          created_at?: string;
+          error_code?: string | null;
+          id?: never;
+          input_tokens?: number | null;
+          model: string;
+          output_tokens?: number | null;
+          question: string;
+          request_id: string;
+          status: string;
+          user_id: string;
+        };
+        Update: {
+          answer?: string | null;
+          cached_input_tokens?: number | null;
+          completed_at?: string | null;
+          conversation_id?: number;
+          counts_toward_quota?: boolean;
+          created_at?: string;
+          error_code?: string | null;
+          id?: never;
+          input_tokens?: number | null;
+          model?: string;
+          output_tokens?: number | null;
+          question?: string;
+          request_id?: string;
+          status?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "report_ai_turns_conversation_user_fkey";
+            columns: ["conversation_id", "user_id"];
+            isOneToOne: false;
+            referencedRelation: "report_ai_conversations";
+            referencedColumns: ["id", "user_id"];
+          },
+        ];
+      };
       service_diagnoses: {
         Row: {
           appointment_duration_minutes: number;
