@@ -29,34 +29,36 @@
 
 ## File Structure
 
-| Path | Responsibility |
-|---|---|
-| `supabase/migrations/20260929190000_create_report_ai_assistant.sql` | Tabelas, constraints, índices, grants e RLS. |
-| `supabase/migrations/20260929191000_add_report_ai_assistant_rpcs.sql` | Reserva idempotente, conclusão, falha e resumo por RPC. |
-| `supabase/tests/report_ai_assistant.test.sql` | Contrato pgTAP de schema, isolamento, acesso pago, cotas e concorrência. |
-| `src/config/report-ai-environment.ts` | Leitura fail-closed da chave e do modelo OpenAI. |
-| `src/infrastructure/ai/openai/report-ai.gateway.ts` | Única adaptação do SDK OpenAI para streaming e resumo. |
-| `src/modules/report-ai/report-ai.types.ts` | Contratos internos, DTOs HTTP e eventos NDJSON. |
-| `src/modules/report-ai/schemas/report-ai.schema.ts` | Validação da pergunta, UUID, versão e query de histórico. |
-| `src/modules/report-ai/domain/build-report-ai-context.ts` | Projeção segura e compacta do relatório validado. |
-| `src/modules/report-ai/domain/build-report-ai-prompt.ts` | Instruções estáveis e montagem do histórico enviado ao modelo. |
-| `src/modules/report-ai/services/report-ai-store.service.ts` | Leituras RLS e wrappers tipados das RPCs. |
-| `src/modules/report-ai/services/run-report-ai-turn.service.ts` | Orquestra reserva, geração, persistência, falhas e compactação. |
-| `src/app/api/reports/[id]/ai/conversations/route.ts` | Leitura autenticada do histórico de uma versão. |
-| `src/app/api/reports/[id]/ai/messages/route.ts` | Entrada autenticada e resposta NDJSON em streaming. |
-| `src/modules/report-ai/client/report-ai-stream.ts` | Parser incremental de NDJSON sem estado React. |
-| `src/modules/report-ai/components/report-ai-assistant.tsx` | Botão fixo, painel, histórico, compositor e estados acessíveis. |
-| `src/app/(private)/reports/[id]/page.tsx` | Bootstrap server-side e montagem do assistente no relatório. |
-| `docs/report-ai-runbook.md` | Configuração, custo, alertas e validação operacional. |
+| Path                                                                  | Responsibility                                                           |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `supabase/migrations/20260929190000_create_report_ai_assistant.sql`   | Tabelas, constraints, índices, grants e RLS.                             |
+| `supabase/migrations/20260929191000_add_report_ai_assistant_rpcs.sql` | Reserva idempotente, conclusão, falha e resumo por RPC.                  |
+| `supabase/tests/report_ai_assistant.test.sql`                         | Contrato pgTAP de schema, isolamento, acesso pago, cotas e concorrência. |
+| `src/config/report-ai-environment.ts`                                 | Leitura fail-closed da chave e do modelo OpenAI.                         |
+| `src/infrastructure/ai/openai/report-ai.gateway.ts`                   | Única adaptação do SDK OpenAI para streaming e resumo.                   |
+| `src/modules/report-ai/report-ai.types.ts`                            | Contratos internos, DTOs HTTP e eventos NDJSON.                          |
+| `src/modules/report-ai/schemas/report-ai.schema.ts`                   | Validação da pergunta, UUID, versão e query de histórico.                |
+| `src/modules/report-ai/domain/build-report-ai-context.ts`             | Projeção segura e compacta do relatório validado.                        |
+| `src/modules/report-ai/domain/build-report-ai-prompt.ts`              | Instruções estáveis e montagem do histórico enviado ao modelo.           |
+| `src/modules/report-ai/services/report-ai-store.service.ts`           | Leituras RLS e wrappers tipados das RPCs.                                |
+| `src/modules/report-ai/services/run-report-ai-turn.service.ts`        | Orquestra reserva, geração, persistência, falhas e compactação.          |
+| `src/app/api/reports/[id]/ai/conversations/route.ts`                  | Leitura autenticada do histórico de uma versão.                          |
+| `src/app/api/reports/[id]/ai/messages/route.ts`                       | Entrada autenticada e resposta NDJSON em streaming.                      |
+| `src/modules/report-ai/client/report-ai-stream.ts`                    | Parser incremental de NDJSON sem estado React.                           |
+| `src/modules/report-ai/components/report-ai-assistant.tsx`            | Botão fixo, painel, histórico, compositor e estados acessíveis.          |
+| `src/app/(private)/reports/[id]/page.tsx`                             | Bootstrap server-side e montagem do assistente no relatório.             |
+| `docs/report-ai-runbook.md`                                           | Configuração, custo, alertas e validação operacional.                    |
 
 ### Task 1: Create the Conversation Schema and Read Boundary
 
 **Files:**
+
 - Create: `supabase/migrations/20260929190000_create_report_ai_assistant.sql`
 - Create: `supabase/tests/report_ai_assistant.test.sql`
 - Modify: `src/infrastructure/database/supabase/database.types.ts`
 
 **Interfaces:**
+
 - Consumes: `public.diagnoses(id, user_id, version)` and `auth.users(id)`.
 - Produces: `public.report_ai_conversations`, `public.report_ai_turns`, ownership-only `SELECT`, and generated TypeScript table types.
 
@@ -230,11 +232,13 @@ git commit -m "feat: add report AI conversation schema"
 ### Task 2: Add Atomic Reservation and Turn Mutation RPCs
 
 **Files:**
+
 - Create: `supabase/migrations/20260929191000_add_report_ai_assistant_rpcs.sql`
 - Modify: `supabase/tests/report_ai_assistant.test.sql`
 - Modify: `src/infrastructure/database/supabase/database.types.ts`
 
 **Interfaces:**
+
 - Consumes: Task 1 tables and `private.has_paid_access(timestamptz)`.
 - Produces: `reserve_report_ai_turn_v1`, `complete_report_ai_turn_v1`, `fail_report_ai_turn_v1`, and `update_report_ai_summary_v1` RPCs for an authenticated caller only.
 
@@ -394,6 +398,7 @@ git commit -m "feat: enforce report AI usage limits"
 ### Task 3: Add Fail-Closed OpenAI Configuration and Gateway
 
 **Files:**
+
 - Modify: `package.json`
 - Modify: `pnpm-lock.yaml`
 - Modify: `.env.example`
@@ -403,6 +408,7 @@ git commit -m "feat: enforce report AI usage limits"
 - Create: `src/infrastructure/ai/openai/report-ai.gateway.test.ts`
 
 **Interfaces:**
+
 - Consumes: `OPENAI_API_KEY` and optional `OPENAI_REPORT_ASSISTANT_MODEL`.
 - Produces: `readReportAiEnvironment(env?)` and `createOpenAiReportAiGateway(config, client?)` implementing `ReportAiGateway`.
 
@@ -414,9 +420,10 @@ Define the expected safe contract:
 expect(() => readReportAiEnvironment({})).toThrow(
   "Invalid report AI environment configuration",
 );
-expect(
-  readReportAiEnvironment({ OPENAI_API_KEY: "sk-test-value" }),
-).toEqual({ apiKey: "sk-test-value", model: "gpt-6-luna" });
+expect(readReportAiEnvironment({ OPENAI_API_KEY: "sk-test-value" })).toEqual({
+  apiKey: "sk-test-value",
+  model: "gpt-6-luna",
+});
 expect(
   readReportAiEnvironment({
     OPENAI_API_KEY: "sk-test-value",
@@ -439,8 +446,7 @@ type ReportAiUsage = {
 };
 
 type ReportAiGatewayEvent =
-  | { type: "delta"; text: string }
-  | { type: "completed"; usage: ReportAiUsage };
+  { type: "delta"; text: string } | { type: "completed"; usage: ReportAiUsage };
 
 type GenerateReportAnswerInput = {
   instructions: string;
@@ -449,7 +455,9 @@ type GenerateReportAnswerInput = {
 };
 
 interface ReportAiGateway {
-  streamAnswer(input: GenerateReportAnswerInput): AsyncIterable<ReportAiGatewayEvent>;
+  streamAnswer(
+    input: GenerateReportAnswerInput,
+  ): AsyncIterable<ReportAiGatewayEvent>;
   summarize(input: GenerateReportAnswerInput): Promise<{
     summary: string;
     usage: ReportAiUsage;
@@ -524,12 +532,14 @@ git commit -m "feat: add OpenAI report gateway"
 ### Task 4: Build the Safe Report Context and Prompt
 
 **Files:**
+
 - Create: `src/modules/report-ai/domain/build-report-ai-context.ts`
 - Create: `src/modules/report-ai/domain/build-report-ai-context.test.ts`
 - Create: `src/modules/report-ai/domain/build-report-ai-prompt.ts`
 - Create: `src/modules/report-ai/domain/build-report-ai-prompt.test.ts`
 
 **Interfaces:**
+
 - Consumes: `OwnedReport`, `toReportViewModel`, `toDetailedReportViewModel` and completed turn text.
 - Produces: `buildReportAiContext(report): string`, `REPORT_AI_INSTRUCTIONS`, and `buildReportAiMessages(input)`.
 
@@ -574,7 +584,9 @@ expect(messages.at(-1)).toEqual({
   content: "Qual é o próximo passo?",
 });
 expect(messages.filter((item) => item.role === "assistant")).toHaveLength(10);
-expect(messages.some((item) => item.content.includes("pergunta 1"))).toBe(false);
+expect(messages.some((item) => item.content.includes("pergunta 1"))).toBe(
+  false,
+);
 ```
 
 - [ ] **Step 3: Run tests and verify missing builders**
@@ -660,6 +672,7 @@ git commit -m "feat: build safe report AI context"
 ### Task 5: Add Typed Store Services and HTTP Contracts
 
 **Files:**
+
 - Create: `src/modules/report-ai/report-ai.types.ts`
 - Create: `src/modules/report-ai/schemas/report-ai.schema.ts`
 - Create: `src/modules/report-ai/schemas/report-ai.schema.test.ts`
@@ -667,6 +680,7 @@ git commit -m "feat: build safe report AI context"
 - Create: `src/modules/report-ai/services/report-ai-store.service.test.ts`
 
 **Interfaces:**
+
 - Consumes: generated Supabase types and Task 2 RPCs.
 - Produces: validated request schemas, `ReportAiHistory`, DTOs, and typed persistence methods used by routes/orchestration/UI.
 
@@ -790,10 +804,12 @@ git commit -m "feat: add report AI persistence services"
 ### Task 6: Add the Authenticated Conversation Read Endpoint
 
 **Files:**
+
 - Create: `src/app/api/reports/[id]/ai/conversations/route.ts`
 - Create: `src/app/api/reports/[id]/ai/conversations/route.test.ts`
 
 **Interfaces:**
+
 - Consumes: `requireUser`, `getOwnedReport`, `reportAiHistoryQuerySchema`, and `getReportAiHistory`.
 - Produces: `GET /api/reports/:id/ai/conversations?version=N` returning `ReportAiHistory`.
 
@@ -803,7 +819,9 @@ Mock dependencies as existing billing route tests do. Cover malformed ID/query, 
 
 ```ts
 const response = await GET(
-  new Request("https://app.lucrivo.test/api/reports/42/ai/conversations?version=2"),
+  new Request(
+    "https://app.lucrivo.test/api/reports/42/ai/conversations?version=2",
+  ),
   { params: Promise.resolve({ id: "42" }) },
 );
 
@@ -850,12 +868,14 @@ git commit -m "feat: expose report AI conversation history"
 ### Task 7: Orchestrate Generation, Failure Semantics and Streaming Route
 
 **Files:**
+
 - Create: `src/modules/report-ai/services/run-report-ai-turn.service.ts`
 - Create: `src/modules/report-ai/services/run-report-ai-turn.service.test.ts`
 - Create: `src/app/api/reports/[id]/ai/messages/route.ts`
 - Create: `src/app/api/reports/[id]/ai/messages/route.test.ts`
 
 **Interfaces:**
+
 - Consumes: Tasks 3–5 gateway, context, prompt and store contracts plus `getBillingOverview` and `getOwnedReport`.
 - Produces: `runReportAiTurn(input): AsyncGenerator<ReportAiStreamEvent>` and `POST /api/reports/:id/ai/messages` as `application/x-ndjson`.
 
@@ -994,12 +1014,14 @@ git commit -m "feat: stream report AI answers"
 ### Task 8: Build the Browser Stream Parser and Conversation State
 
 **Files:**
+
 - Create: `src/modules/report-ai/client/report-ai-stream.ts`
 - Create: `src/modules/report-ai/client/report-ai-stream.test.ts`
 - Create: `src/modules/report-ai/client/use-report-ai-conversation.ts`
 - Create: `src/modules/report-ai/client/use-report-ai-conversation.test.tsx`
 
 **Interfaces:**
+
 - Consumes: Task 5 `ReportAiHistory`/`ReportAiStreamEvent` and Tasks 6–7 endpoints.
 - Produces: `readReportAiEventStream(response)` and `useReportAiConversation(config)` for a presentation-only component.
 
@@ -1066,10 +1088,12 @@ git commit -m "feat: manage streamed report AI conversations"
 ### Task 9: Build the Responsive and Accessible Assistant Panel
 
 **Files:**
+
 - Create: `src/modules/report-ai/components/report-ai-assistant.tsx`
 - Create: `src/modules/report-ai/components/report-ai-assistant.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `useReportAiConversation`, `Sheet`, `Button`, `Textarea`, initial history, report version and paid state.
 - Produces: `ReportAiAssistant` fixed trigger and responsive panel.
 
@@ -1145,10 +1169,12 @@ git commit -m "feat: add report AI assistant panel"
 ### Task 10: Integrate Bootstrap and Paid Access into the Report Page
 
 **Files:**
+
 - Modify: `src/app/(private)/reports/[id]/page.tsx`
 - Modify: `src/app/(private)/reports/[id]/page.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `getBillingOverview`, `getReportAiHistory`, and `ReportAiAssistant`.
 - Produces: assistant on valid reports for paid users or users with existing history.
 
@@ -1216,12 +1242,14 @@ git commit -m "feat: mount AI assistant on paid reports"
 ### Task 11: Add Operations Documentation and Run the Release Gate
 
 **Files:**
+
 - Create: `docs/report-ai-runbook.md`
 - Modify: `README.md`
 - Modify: `.gitignore`
 - Test: all files changed in Tasks 1–10
 
 **Interfaces:**
+
 - Consumes: completed feature and environment contract.
 - Produces: operator setup, cost/incident procedure, ignored Visual Companion artifacts and verified release evidence.
 

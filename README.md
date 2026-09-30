@@ -26,6 +26,13 @@ prefixe secrets com `NEXT_PUBLIC_`. A configuração do webhook, a lista de
 eventos, a homologação e os procedimentos de recuperação estão no
 [runbook de billing com Asaas](docs/asaas-billing-runbook.md).
 
+Para usar o Assistente Lucrivo nos relatórios, configure no servidor
+`OPENAI_API_KEY` e, opcionalmente,
+`OPENAI_REPORT_ASSISTANT_MODEL=gpt-6-luna`. Nunca use o prefixo `NEXT_PUBLIC_`
+nessas variáveis. Limites, monitoramento de custos, privacidade, rotação de
+chaves e resposta a incidentes estão no
+[runbook do assistente de IA](docs/report-ai-runbook.md).
+
 ## Banco local
 
 Reconstrua o banco a partir de `supabase/config.toml`, migrations e
