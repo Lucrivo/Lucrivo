@@ -132,6 +132,7 @@ function useReportAiConversation({
   });
   const inFlight = useRef(false);
   const activeRequestId = useRef<string | null>(null);
+  const draftRef = useRef("");
 
   const performSend = useCallback(
     async (question: string, requestId: string) => {
@@ -160,6 +161,7 @@ function useReportAiConversation({
           } else if (event.type === "completed") {
             terminal = true;
             activeRequestId.current = null;
+            draftRef.current = "";
             dispatch({ type: "completed", turn: event.turn });
           } else if (event.type === "failed") {
             terminal = true;
@@ -188,7 +190,7 @@ function useReportAiConversation({
   );
 
   const send = useCallback(async () => {
-    const question = state.draft.trim();
+    const question = draftRef.current.trim();
     if (
       inFlight.current ||
       !canAsk ||
@@ -202,13 +204,7 @@ function useReportAiConversation({
     const requestId = crypto.randomUUID();
     activeRequestId.current = requestId;
     await performSend(question, requestId);
-  }, [
-    canAsk,
-    performSend,
-    reportVersion,
-    state.draft,
-    state.history.selectedVersion,
-  ]);
+  }, [canAsk, performSend, reportVersion, state.history.selectedVersion]);
 
   const retry = useCallback(async () => {
     if (inFlight.current || !state.error || !canAsk) return;
@@ -256,6 +252,7 @@ function useReportAiConversation({
   return {
     ...state,
     setDraft(value) {
+      draftRef.current = value.slice(0, 2_000);
       dispatch({ type: "draft_changed", value });
     },
     selectVersion,
