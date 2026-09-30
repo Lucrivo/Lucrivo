@@ -139,6 +139,38 @@ describe("ReportAiAssistant", () => {
     ).toHaveAttribute("aria-live", "polite");
   });
 
+  it("announces provider and history waits", async () => {
+    useReportAiConversation.mockReturnValue(
+      viewModel({
+        pendingQuestion: "Pergunta",
+        state: "streaming",
+      }),
+    );
+    const user = userEvent.setup();
+    const { rerender } = renderAssistant();
+    await user.click(
+      screen.getByRole("button", { name: "Abrir Assistente Lucrivo" }),
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Analisando este relatório…",
+    );
+
+    useReportAiConversation.mockReturnValue(
+      viewModel({ state: "loading_history" }),
+    );
+    rerender(
+      <ReportAiAssistant
+        diagnosisId={42}
+        reportVersion={3}
+        canAsk
+        initialHistory={emptyHistory}
+      />,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Carregando histórico…",
+    );
+  });
+
   it("shows the character count near the limit", async () => {
     useReportAiConversation.mockReturnValue(
       viewModel({ draft: "a".repeat(1_950) }),

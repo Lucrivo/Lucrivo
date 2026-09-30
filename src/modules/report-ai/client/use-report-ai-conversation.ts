@@ -133,11 +133,13 @@ function useReportAiConversation({
   const inFlight = useRef(false);
   const activeRequestId = useRef<string | null>(null);
   const draftRef = useRef("");
+  const failedHistoryVersion = useRef<number | null>(null);
 
   const performSend = useCallback(
     async (question: string, requestId: string) => {
       if (inFlight.current) return;
       inFlight.current = true;
+      failedHistoryVersion.current = null;
       dispatch({ type: "send_started", question });
 
       try {
@@ -206,19 +208,6 @@ function useReportAiConversation({
     await performSend(question, requestId);
   }, [canAsk, performSend, reportVersion, state.history.selectedVersion]);
 
-  const retry = useCallback(async () => {
-    if (inFlight.current || !state.error || !canAsk) return;
-    const question = (state.pendingQuestion ?? state.draft).trim();
-    if (question.length === 0 || question.length > 2_000) return;
-
-    const requestId =
-      state.error.retry === "same_request" && activeRequestId.current
-        ? activeRequestId.current
-        : crypto.randomUUID();
-    activeRequestId.current = requestId;
-    await performSend(question, requestId);
-  }, [canAsk, performSend, state.draft, state.error, state.pendingQuestion]);
-
   const selectVersion = useCallback(
     async (version: number) => {
       if (inFlight.current || !Number.isSafeInteger(version) || version < 0)
@@ -231,13 +220,16 @@ function useReportAiConversation({
           { cache: "no-store" },
         );
         if (!response.ok) {
+          failedHistoryVersion.current = version;
           dispatch({ type: "failed", error: await readHttpError(response) });
           return;
         }
         const parsed = reportAiHistorySchema.safeParse(await response.json());
         if (!parsed.success) throw new Error("invalid_history");
+        failedHistoryVersion.current = null;
         dispatch({ type: "history_loaded", history: parsed.data });
       } catch {
+        failedHistoryVersion.current = version;
         dispatch({
           type: "failed",
           error: { code: "service_unavailable", retry: "same_request" },
@@ -248,6 +240,32 @@ function useReportAiConversation({
     },
     [diagnosisId],
   );
+
+  const retry = useCallback(async () => {
+    if (inFlight.current || !state.error) return;
+    if (failedHistoryVersion.current !== null) {
+      await selectVersion(failedHistoryVersion.current);
+      return;
+    }
+    if (!canAsk) return;
+
+    const question = (state.pendingQuestion ?? state.draft).trim();
+    if (question.length === 0 || question.length > 2_000) return;
+
+    const requestId =
+      state.error.retry === "same_request" && activeRequestId.current
+        ? activeRequestId.current
+        : crypto.randomUUID();
+    activeRequestId.current = requestId;
+    await performSend(question, requestId);
+  }, [
+    canAsk,
+    performSend,
+    selectVersion,
+    state.draft,
+    state.error,
+    state.pendingQuestion,
+  ]);
 
   return {
     ...state,

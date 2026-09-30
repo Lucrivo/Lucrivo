@@ -148,6 +148,40 @@ describe("useReportAiConversation", () => {
     expect(result.current.history).toEqual(priorHistory);
   });
 
+  it("retries a failed history load instead of sending a question", async () => {
+    const priorHistory = {
+      ...emptyHistory,
+      selectedVersion: 2,
+      turns: [completedTurn],
+    };
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: "service_unavailable" }), {
+          status: 503,
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(priorHistory), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    const { result } = renderConversation();
+
+    await act(async () => result.current.selectVersion(2));
+    expect(result.current.state).toBe("error");
+    await act(async () => result.current.retry());
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      "/api/reports/42/ai/conversations?version=2",
+      { cache: "no-store" },
+    );
+    expect(result.current.history).toEqual(priorHistory);
+    expect(randomUUID).not.toHaveBeenCalled();
+  });
+
   it("gates sending by paid access and the selected report version", async () => {
     const inactive = renderConversation(false);
     act(() => inactive.result.current.setDraft("Pergunta"));

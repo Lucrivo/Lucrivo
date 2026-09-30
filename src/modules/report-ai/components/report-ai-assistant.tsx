@@ -60,6 +60,9 @@ function ReportAiAssistant({
 }: ReportAiAssistantProps) {
   const [open, setOpen] = useState(false);
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const messageAreaRef = useRef<HTMLDivElement>(null);
+  const messageEndRef = useRef<HTMLDivElement>(null);
+  const followsLatestRef = useRef(true);
   const conversation = useReportAiConversation({
     diagnosisId,
     reportVersion,
@@ -75,16 +78,42 @@ function ReportAiAssistant({
   const canSubmit = !composerDisabled && conversation.draft.trim().length > 0;
 
   useEffect(() => {
-    if (open) titleRef.current?.focus();
+    if (open) {
+      titleRef.current?.focus();
+      messageEndRef.current?.scrollIntoView?.({ block: "end" });
+    }
   }, [open]);
 
+  useEffect(() => {
+    if (open && followsLatestRef.current) {
+      messageEndRef.current?.scrollIntoView?.({ block: "end" });
+    }
+  }, [
+    conversation.history.turns.length,
+    conversation.pendingQuestion,
+    conversation.streamingText,
+    conversation.state,
+    open,
+  ]);
+
+  function followLatest() {
+    followsLatestRef.current = true;
+    requestAnimationFrame(() =>
+      messageEndRef.current?.scrollIntoView?.({ block: "end" }),
+    );
+  }
+
   function submitSuggestion(suggestion: string) {
+    followLatest();
     conversation.setDraft(suggestion);
     void conversation.send();
   }
 
   function submit() {
-    if (canSubmit) void conversation.send();
+    if (canSubmit) {
+      followLatest();
+      void conversation.send();
+    }
   }
 
   return (
@@ -105,7 +134,7 @@ function ReportAiAssistant({
       <SheetContent
         side="right"
         showCloseButton={false}
-        className="inset-0 h-dvh w-full max-w-none gap-0 sm:inset-y-0 sm:right-0 sm:left-auto sm:w-[32rem] sm:max-w-[calc(100vw-2rem)]"
+        className="inset-0 h-dvh w-full max-w-none gap-0 data-[side=right]:!w-full data-[side=right]:!max-w-none sm:inset-y-0 sm:right-0 sm:left-auto sm:w-[32rem] sm:max-w-[calc(100vw-2rem)] sm:data-[side=right]:!w-[32rem] sm:data-[side=right]:!max-w-[calc(100vw-2rem)]"
       >
         <SheetHeader className="border-border shrink-0 border-b px-4 py-3 sm:px-5">
           <div className="flex items-center justify-between gap-3">
@@ -157,7 +186,24 @@ function ReportAiAssistant({
           ) : null}
         </SheetHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-5">
+        <div
+          ref={messageAreaRef}
+          className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-5"
+          onScroll={() => {
+            const area = messageAreaRef.current;
+            if (!area) return;
+            followsLatestRef.current =
+              area.scrollHeight - area.scrollTop - area.clientHeight <= 80;
+          }}
+        >
+          {conversation.state === "loading_history" ? (
+            <p
+              className="text-muted-foreground mb-4 text-center text-sm"
+              role="status"
+            >
+              Carregando histórico…
+            </p>
+          ) : null}
           {!isCurrentVersion ? (
             <p className="bg-muted text-muted-foreground mb-5 rounded-xl px-3 py-2.5 text-sm leading-5">
               Este histórico pertence a uma versão anterior do relatório e está
@@ -216,6 +262,13 @@ function ReportAiAssistant({
                     >
                       {conversation.streamingText}
                     </p>
+                  ) : conversation.state === "streaming" ? (
+                    <p
+                      className="bg-muted text-muted-foreground max-w-[92%] rounded-2xl rounded-bl-md px-3.5 py-2.5 leading-6"
+                      role="status"
+                    >
+                      Analisando este relatório…
+                    </p>
                   ) : null}
                 </div>
               ) : null}
@@ -242,6 +295,7 @@ function ReportAiAssistant({
               </Button>
             </div>
           ) : null}
+          <div ref={messageEndRef} aria-hidden="true" />
         </div>
 
         <div className="border-border bg-popover shrink-0 border-t p-4 sm:p-5">
