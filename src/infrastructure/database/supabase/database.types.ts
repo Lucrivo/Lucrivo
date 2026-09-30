@@ -890,6 +890,16 @@ export type Database = {
         };
         Returns: Json;
       };
+      complete_report_ai_turn_v1: {
+        Args: {
+          p_answer: string;
+          p_cached_input_tokens: number;
+          p_input_tokens: number;
+          p_output_tokens: number;
+          p_turn_id: number;
+        };
+        Returns: string;
+      };
       create_detailed_diagnosis_report: {
         Args: {
           p_calculation_version: number;
@@ -1156,6 +1166,14 @@ export type Database = {
       current_account_is_eligible: { Args: never; Returns: boolean };
       current_courtesy_access_expires_at: { Args: never; Returns: string };
       current_user_is_admin: { Args: never; Returns: boolean };
+      fail_report_ai_turn_v1: {
+        Args: {
+          p_counts_toward_quota: boolean;
+          p_error_code: string;
+          p_turn_id: number;
+        };
+        Returns: string;
+      };
       get_admin_dashboard_v1: { Args: never; Returns: Json };
       get_admin_user_v1: { Args: { p_user_id: string }; Returns: Json };
       list_admin_recent_subscriptions_v1: {
@@ -1310,8 +1328,26 @@ export type Database = {
         };
         Returns: number;
       };
+      reserve_report_ai_turn_v1: {
+        Args: {
+          p_diagnosis_id: number;
+          p_model: string;
+          p_question: string;
+          p_report_version: number;
+          p_request_id: string;
+        };
+        Returns: Json;
+      };
       soft_delete_owned_diagnosis_v1: {
         Args: { p_diagnosis_id: number; p_expected_version: number };
+        Returns: string;
+      };
+      update_report_ai_summary_v1: {
+        Args: {
+          p_conversation_id: number;
+          p_summary: string;
+          p_summary_through_turn: number;
+        };
         Returns: string;
       };
     };
