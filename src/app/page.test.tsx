@@ -132,6 +132,13 @@ describe("Home", () => {
       ).toBeInTheDocument();
       expect(view.getByText(description)).toBeInTheDocument();
     }
+
+    expect(
+      Array.from(problem?.querySelectorAll("[data-factor]") ?? []).map((card) =>
+        card.getAttribute("data-factor"),
+      ),
+    ).toEqual(["costs", "taxes", "fees", "time", "structure", "earnings"]);
+    expect(problem?.querySelectorAll("[data-problem-card]")).toHaveLength(8);
   });
 
   it("bridges into the current pricing problem copy", async () => {

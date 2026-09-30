@@ -1,20 +1,11 @@
 import {
-  BriefcaseIcon,
   BuildingsIcon,
   ClockIcon,
   CoinsIcon,
   CreditCardIcon,
-  FactoryIcon,
   HandCoinsIcon,
   ReceiptIcon,
-  StorefrontIcon,
 } from "@phosphor-icons/react";
-
-// const businessContexts = [
-//   { label: "Revenda", icon: StorefrontIcon },
-//   { label: "Produção própria", icon: FactoryIcon },
-//   { label: "Prestação de serviço", icon: BriefcaseIcon },
-// ] as const;
 
 const pricingFactors = [
   {
@@ -162,6 +153,8 @@ function ProblemSection() {
             ) => (
               <article
                 className={`problem-card problem-card-${slug} problem-card-${tone}`}
+                data-factor={slug}
+                data-problem-card
                 key={slug}
               >
                 <div className="problem-card-meta">
@@ -188,7 +181,10 @@ function ProblemSection() {
           )}
 
           <div className="problem-conclusion">
-            <div className="problem-conclusion-primary">
+            <div
+              className="problem-conclusion-primary problem-outcome-card"
+              data-problem-card
+            >
               <p className="problem-conclusion-label">Preço com inteligência</p>
               <h3>
                 Quando você considera todos os pontos, o preço trabalha a seu
@@ -200,7 +196,10 @@ function ProblemSection() {
               </p>
             </div>
 
-            <div className="problem-conclusion-secondary">
+            <div
+              className="problem-conclusion-secondary problem-outcome-card"
+              data-problem-card
+            >
               <div className="problem-conclusion-bars" aria-hidden="true">
                 <span />
                 <span />

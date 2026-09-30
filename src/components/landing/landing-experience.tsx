@@ -128,30 +128,66 @@ export function LandingExperience({
           duration: 0.48,
           stagger: 0.08,
           ease: "power2.out",
-        })
-        .from(
-          ".problem-card, .problem-conclusion",
-          {
-            y: 22,
-            opacity: 0,
-            duration: 0.52,
-            stagger: 0.06,
-            ease: "power2.out",
-          },
-          "-=0.2",
-        )
-        .from(
-          ".problem-visual > *, .problem-conclusion-bars > *",
-          {
-            scaleY: 0.3,
-            opacity: 0,
-            duration: 0.38,
-            stagger: 0.025,
-            transformOrigin: "bottom",
-            ease: "power2.out",
-          },
-          "-=0.42",
+        });
+
+      gsap.utils.toArray<HTMLElement>("[data-problem-card]").forEach((card) => {
+        const content = Array.from(card.children).filter(
+          (child): child is HTMLElement => child instanceof HTMLElement,
         );
+
+        const setWillChange = () => {
+          content.forEach((element) => {
+            element.style.willChange = "transform, opacity";
+          });
+        };
+        const clearWillChange = () => {
+          content.forEach((element) => {
+            element.style.willChange = "auto";
+          });
+        };
+
+        const timeline = gsap.timeline({
+          scrollTrigger: {
+            trigger: card,
+            start: "top 92%",
+            end: "bottom 8%",
+            scrub: 0.55,
+            onEnter: setWillChange,
+            onEnterBack: setWillChange,
+            onLeave: clearWillChange,
+            onLeaveBack: clearWillChange,
+          },
+        });
+
+        timeline
+          .fromTo(
+            card,
+            { "--problem-scroll-progress": 0 },
+            {
+              "--problem-scroll-progress": 1,
+              duration: 0.5,
+              ease: "none",
+            },
+          )
+          .to(card, {
+            "--problem-scroll-progress": 0,
+            duration: 0.5,
+            ease: "none",
+          });
+
+        timeline
+          .fromTo(
+            content,
+            { y: 28, opacity: 0.24 },
+            { y: 0, opacity: 1, duration: 0.5, ease: "none" },
+            0,
+          )
+          .to(
+            content,
+            { y: -24, opacity: 0.34, duration: 0.5, ease: "none" },
+            0.5,
+          );
+      });
 
       gsap.utils.toArray<HTMLElement>(".scroll-visual").forEach((visual) => {
         gsap
