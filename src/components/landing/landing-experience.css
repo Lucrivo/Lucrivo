@@ -401,12 +401,12 @@ html:has(.landing-experience) {
 
 .landing-experience .problem-contexts-label span {
   height: 1px;
-  background: var(--landing-border);
+  background: oklch(0.84 0.03 255 / 0.16);
 }
 
 .landing-experience .problem-contexts-label p {
   margin: 0;
-  color: var(--landing-text-muted);
+  color: oklch(0.82 0.035 255 / 0.72);
   font-size: 0.68rem;
   font-weight: 650;
   letter-spacing: 0.16em;
@@ -426,12 +426,12 @@ html:has(.landing-experience) {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: var(--landing-text-muted);
+  color: oklch(0.84 0.035 255 / 0.82);
   font-size: 0.78rem;
 }
 
 .landing-experience .problem-contexts svg {
-  color: var(--landing-accent);
+  color: oklch(0.76 0.08 255 / 0.94);
 }
 
 .landing-experience .problem-bridge-statement {
@@ -853,9 +853,8 @@ html:has(.landing-experience) {
 
 .landing-experience .pricing-section {
   scroll-margin-top: 104px;
-  padding: clamp(88px, 9vw, 124px) var(--landing-gutter);
-  background: var(--landing-canvas);
-  color: var(--landing-text);
+  background: var(--paper);
+  color: var(--ink);
 }
 
 .landing-experience .section-heading {
@@ -1144,8 +1143,7 @@ html:has(.landing-experience) {
 }
 
 .landing-experience .business-curve-area {
-  fill: currentColor;
-  opacity: 0.08;
+  fill: url("#business-curve-fill");
 }
 
 .landing-experience .business-curve-line {
@@ -1383,82 +1381,88 @@ html:has(.landing-experience) {
 }
 
 .landing-experience .testimonial-section {
-  padding: clamp(88px, 9vw, 124px) var(--landing-gutter);
-  background: var(--landing-surface);
-  color: var(--landing-text);
+  background: oklch(0.925 0.045 255);
+  color: var(--ink);
 }
 
 .landing-experience .testimonial-shell {
   display: grid;
-  width: min(100%, var(--landing-content));
-  margin-inline: auto;
-  padding: clamp(28px, 5vw, 64px);
-  grid-template-columns: minmax(180px, 0.55fr) minmax(0, 1.45fr);
+  grid-template-columns: 0.8fr 1.2fr;
   align-items: center;
-  gap: clamp(32px, 6vw, 80px);
-  border: 1px solid var(--landing-border);
-  border-radius: 16px;
-  background: var(--landing-accent-soft);
+  gap: 9vw;
+  width: min(100%, 1200px);
+  margin: 0 auto;
 }
 
 .landing-experience .portrait-stack {
   position: relative;
-  width: min(100%, 250px);
-  aspect-ratio: 1;
-  margin-inline: auto;
+  height: 570px;
 }
 
 .landing-experience .portrait {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  aspect-ratio: 1;
+  width: min(80%, 390px);
+  aspect-ratio: 0.78;
   overflow: hidden;
-  border: 1px solid var(--landing-border);
-  border-radius: 50%;
-  opacity: 0;
-  transition: opacity 260ms ease;
+  border: 8px solid oklch(0.925 0.045 255);
+  border-radius: 22px;
+  box-shadow: 0 36px 70px oklch(0.205 0.045 258 / 0.2);
+  transition:
+    transform 550ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 400ms ease;
 }
 
 .landing-experience .portrait img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: grayscale(0.35) contrast(1.04);
+  filter: grayscale(1) contrast(1.12);
+  transition: transform 700ms ease-out;
+}
+
+.landing-experience .portrait:hover img {
+  transform: scale(1.05);
 }
 
 .landing-experience .portrait-0 {
-  inset: 0;
+  top: 30px;
+  left: 0;
+  transform: rotate(-7deg);
 }
 
 .landing-experience .portrait-1 {
-  inset: 0;
+  top: 10px;
+  left: 16%;
+  transform: rotate(4deg);
 }
 
 .landing-experience .portrait-2 {
-  inset: 0;
+  top: 50px;
+  left: 28%;
+  transform: rotate(9deg);
 }
 
 .landing-experience .portrait:not(.portrait-active) {
-  opacity: 0;
+  opacity: 0.32;
 }
 
 .landing-experience .portrait-active {
-  z-index: 1;
-  opacity: 1;
+  z-index: 3;
+  transform: translateY(-18px) rotate(-2deg);
 }
 
 .landing-experience .testimonial-copy blockquote {
   margin: 0;
-  max-width: 24ch;
-  font-size: clamp(1.65rem, 3vw, 2.5rem);
-  font-weight: 520;
-  line-height: 1.14;
-  letter-spacing: -0.035em;
+  max-width: 720px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.2rem, 4vw, 4.6rem);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.045em;
 }
 
 .landing-experience .testimonial-copy .eyebrow {
-  color: var(--landing-accent);
+  color: oklch(0.32 0.095 258);
 }
 
 .landing-experience .testimonial-person {
@@ -1469,7 +1473,7 @@ html:has(.landing-experience) {
 }
 
 .landing-experience .testimonial-person span {
-  color: var(--landing-text-muted);
+  color: oklch(0.51 0.04 258);
   font-size: 0.9rem;
 }
 
@@ -1485,10 +1489,10 @@ html:has(.landing-experience) {
   width: 48px;
   height: 48px;
   place-items: center;
-  border: 1px solid var(--landing-border);
+  border: 1px solid oklch(0.205 0.045 258 / 0.2);
   border-radius: 50%;
   background: transparent;
-  color: var(--landing-text);
+  color: var(--ink);
   cursor: pointer;
   transition:
     transform 220ms ease,
@@ -1496,43 +1500,34 @@ html:has(.landing-experience) {
 }
 
 .landing-experience .carousel-controls button:hover {
-  transform: translateY(-2px);
-  background: var(--landing-surface);
-}
-
-.landing-experience .carousel-controls button:focus-visible {
-  outline: 3px solid oklch(0.56 0.21 259 / 0.3);
-  outline-offset: 3px;
+  transform: scale(1.07);
+  background: var(--landing-primary-bright);
 }
 
 .landing-experience .carousel-controls span {
   min-width: 46px;
   text-align: center;
-  color: var(--landing-text-muted);
+  color: oklch(0.51 0.04 258);
   font-size: 0.8rem;
 }
 
 .landing-experience .pricing-heading {
-  display: grid;
-  width: min(100%, var(--landing-content));
-  margin: 0 auto clamp(48px, 6vw, 72px);
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.42fr);
-  align-items: end;
-  gap: 32px;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.35fr);
+  gap: 64px;
+  align-items: start;
 }
 
 .landing-experience .pricing-heading h2 {
-  max-width: 18ch;
-  font-size: clamp(2.6rem, 4.5vw, 4.25rem);
-  font-weight: 590;
+  max-width: 980px;
+  font-size: clamp(2.7rem, 3.5vw, 3.5rem);
   line-height: 1.02;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.04em;
 }
 
 .landing-experience .pricing-heading > div > p {
   max-width: 720px;
   margin: 22px 0 0;
-  color: var(--landing-text-muted);
+  color: oklch(0.51 0.04 258);
   font-size: 1.05rem;
   line-height: 1.6;
 }
@@ -1540,9 +1535,9 @@ html:has(.landing-experience) {
 .landing-experience .pricing-note {
   max-width: 26ch;
   margin: 8px 0 0;
-  padding-left: 18px;
-  border-left: 1px solid var(--landing-accent);
-  color: var(--landing-text-muted);
+  padding-left: 20px;
+  border-left: 1px solid oklch(0.56 0.23 259 / 0.45);
+  color: oklch(0.38 0.075 258);
   font-size: 0.92rem;
   font-weight: 650;
   line-height: 1.55;
@@ -1643,18 +1638,17 @@ html:has(.landing-experience) {
 }
 
 @media (max-width: 1100px) {
-  .landing-experience .hero-layout {
-    grid-template-columns: 1fr;
+  .landing-experience .method-panel {
+    min-height: min(500px, calc(100vh - 132px));
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 0.9fr);
   }
 
-  .landing-experience .hero-copy {
-    max-width: 760px;
+  .landing-experience .method-panel-media {
+    padding: 28px;
   }
 
-  .landing-experience .problem-bento,
-  .landing-experience .business-cards,
-  .landing-experience .method-panels {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .landing-experience .method-panel-content {
+    padding: 30px;
   }
 
   .landing-experience .problem-card-costs,
@@ -1667,17 +1661,16 @@ html:has(.landing-experience) {
   }
 
   .landing-experience .problem-conclusion {
+    border-radius: 0 0 23px 23px;
     grid-column: span 12;
   }
 
-  .landing-experience .method-panel:last-child {
-    grid-column: 1 / -1;
+  .landing-experience .problem-conclusion-primary {
+    border-bottom-left-radius: 23px;
   }
 
-  .landing-experience .method-panel,
-  .landing-experience .method-panel:nth-child(2),
-  .landing-experience .method-panel:nth-child(3) {
-    min-height: 0;
+  .landing-experience .problem-card-earnings {
+    border-bottom-left-radius: 0;
   }
 }
 
@@ -1696,17 +1689,10 @@ html:has(.landing-experience) {
     width: 46px;
     height: 46px;
     place-items: center;
-    border: 1px solid var(--landing-border);
+    border: 0;
     border-radius: 12px;
-    background: var(--landing-surface);
-    color: var(--landing-text);
-    cursor: pointer;
-  }
-
-  .landing-experience .menu-toggle:focus-visible,
-  .landing-experience .mobile-nav a:focus-visible {
-    outline: 3px solid oklch(0.56 0.21 259 / 0.28);
-    outline-offset: 2px;
+    background: var(--paper);
+    color: var(--ink);
   }
 
   .landing-experience .mobile-nav {
@@ -1718,11 +1704,10 @@ html:has(.landing-experience) {
     padding: 16px;
     flex-direction: column;
     gap: 2px;
-    border: 1px solid var(--landing-border);
-    border-radius: 16px;
-    background: var(--landing-surface);
-    box-shadow: 0 18px 44px oklch(0.2 0.04 258 / 0.12);
-    color: var(--landing-text);
+    border: 1px solid oklch(0.955 0.012 255 / 0.12);
+    border-radius: 18px;
+    background: oklch(0.205 0.038 258);
+    box-shadow: 0 30px 70px oklch(0.03 0.02 258 / 0.34);
   }
 
   .landing-experience .mobile-nav a {
@@ -1731,7 +1716,7 @@ html:has(.landing-experience) {
   }
 
   .landing-experience .mobile-nav a:hover {
-    background: var(--landing-accent-soft);
+    background: oklch(0.955 0.012 255 / 0.06);
   }
 
   .landing-experience .hero-section {
@@ -1749,8 +1734,8 @@ html:has(.landing-experience) {
   }
 
   .landing-experience .hero-visual {
-    width: min(100%, 820px);
-    margin: 0 auto;
+    width: min(92vw, 820px);
+    margin: -24px auto -16px;
   }
 
   .landing-experience .section-heading,
@@ -1763,19 +1748,68 @@ html:has(.landing-experience) {
     max-width: 600px;
   }
 
+  .landing-experience .testimonial-shell {
+    grid-template-columns: 0.8fr 1.2fr;
+    gap: 4vw;
+  }
+
   .landing-experience .pricing-note {
     max-width: 42ch;
     margin: 0;
   }
 
+  .landing-experience .business-heading {
+    grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr);
+    column-gap: 48px;
+  }
+
   .landing-experience .business-card {
     padding-inline: 24px;
+  }
+
+  .landing-experience .business-card-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .landing-experience .business-card-arrow {
+    position: absolute;
+    top: -70px;
+    right: 0;
+    width: 42px;
+    height: 42px;
   }
 }
 
 @media (max-width: 860px) {
   .landing-experience .method-panels {
-    gap: 16px;
+    padding-bottom: 0;
+    gap: 24px;
+  }
+
+  .landing-experience .method-panel,
+  .landing-experience .method-panel:nth-child(2),
+  .landing-experience .method-panel:nth-child(3) {
+    position: relative;
+    top: auto;
+    min-height: 0;
+    grid-template-columns: 1fr;
+    filter: none;
+    transform: none;
+  }
+
+  .landing-experience .method-panel-media {
+    min-height: 0;
+    padding: 20px;
+    aspect-ratio: 16 / 10;
+  }
+
+  .landing-experience .method-panel-report .method-panel-media {
+    aspect-ratio: 4 / 3;
+  }
+
+  .landing-experience .method-panel-content {
+    min-height: 360px;
   }
 
   .landing-experience .business-heading {
@@ -1788,15 +1822,37 @@ html:has(.landing-experience) {
 
   .landing-experience .business-intro {
     max-width: 64ch;
-    margin-top: 28px;
+    margin-top: 36px;
+  }
+
+  .landing-experience .business-cards {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .landing-experience .business-card,
+  .landing-experience .business-cards.has-active .business-card:not(.is-active),
+  .landing-experience .business-card.is-active {
+    min-height: 380px;
+    opacity: 1;
+    transform: none;
+  }
+
+  .landing-experience .business-card-heading {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .landing-experience .business-card-arrow {
+    position: absolute;
+    top: -70px;
+    right: 0;
+    width: 42px;
+    height: 42px;
   }
 }
 
 @media (max-width: 720px) {
-  .landing-experience {
-    --landing-gutter: 20px;
-  }
-
   .landing-experience .nav-wrap {
     top: 12px;
     width: calc(100% - 24px);
@@ -1817,16 +1873,24 @@ html:has(.landing-experience) {
   }
 
   .landing-experience .hero-kicker {
-    min-height: auto;
+    min-height: 34px;
     margin-bottom: 22px;
-    padding: 0;
+    padding: 0 12px;
     font-size: 0.6rem;
     letter-spacing: 0.1em;
   }
 
   .landing-experience .hero-copy h1 {
-    font-size: clamp(2.6rem, 12.8vw, 3.65rem);
-    line-height: 0.98;
+    font-size: clamp(2.65rem, 13.2vw, 4.2rem);
+    line-height: 0.97;
+  }
+
+  .landing-experience .hero-copy h1 span {
+    display: inline;
+  }
+
+  .landing-experience .hero-copy h1 span::after {
+    content: " ";
   }
 
   .landing-experience .hero-description {
@@ -1853,19 +1917,19 @@ html:has(.landing-experience) {
   }
 
   .landing-experience .hero-trust li {
-    min-height: 48px;
-    grid-template-columns: 32px minmax(0, 1fr);
+    min-height: 52px;
+    grid-template-columns: 44px minmax(0, 1fr);
     column-gap: 12px;
   }
 
   .landing-experience .hero-trust-icon {
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
   }
 
   .landing-experience .hero-trust-icon svg {
-    width: 23px;
-    height: 23px;
+    width: 27px;
+    height: 27px;
   }
 
   .landing-experience .hero-trust strong {
@@ -1878,9 +1942,9 @@ html:has(.landing-experience) {
   }
 
   .landing-experience .hero-visual {
-    width: 100%;
+    width: calc(100% + 36px);
     max-width: 660px;
-    margin: 0;
+    margin: -12px -18px -18px;
   }
 
   .landing-experience .chapter {
@@ -1888,7 +1952,7 @@ html:has(.landing-experience) {
   }
 
   .landing-experience .problem-bridge {
-    padding: 24px 20px 0;
+    padding: 34px 20px 64px;
   }
 
   .landing-experience .problem-section {
@@ -1912,13 +1976,13 @@ html:has(.landing-experience) {
   }
 
   .landing-experience .problem-bridge-statement {
-    margin-top: 0;
-    font-size: 1.2rem;
-    text-align: center;
+    margin-top: 52px;
+    font-size: clamp(2rem, 10vw, 3rem);
+    text-align: left;
   }
 
-  .landing-experience .problem-section .problem-content {
-    padding: 76px 20px 88px;
+  .landing-experience .problem-content {
+    padding-top: 104px;
   }
 
   .landing-experience .problem-heading {
@@ -1927,7 +1991,7 @@ html:has(.landing-experience) {
   }
 
   .landing-experience .problem-heading h2 {
-    font-size: clamp(2.35rem, 11vw, 3.35rem);
+    font-size: clamp(2.8rem, 13vw, 4.4rem);
   }
 
   .landing-experience .problem-heading > p:last-child {
@@ -1936,7 +2000,27 @@ html:has(.landing-experience) {
 
   .landing-experience .problem-bento {
     grid-template-columns: 1fr;
-    border-radius: 16px;
+    border-radius: 20px;
+  }
+
+  .landing-experience .problem-card-costs {
+    border-radius: 19px 19px 0 0;
+  }
+
+  .landing-experience .problem-card-taxes {
+    border-top-right-radius: 0;
+  }
+
+  .landing-experience .problem-conclusion {
+    border-radius: 0 0 19px 19px;
+  }
+
+  .landing-experience .problem-conclusion-primary {
+    border-bottom-left-radius: 0;
+  }
+
+  .landing-experience .problem-conclusion-secondary {
+    border-radius: 0 0 19px 19px;
   }
 
   .landing-experience .problem-card-costs,
@@ -1946,7 +2030,7 @@ html:has(.landing-experience) {
   .landing-experience .problem-card-structure,
   .landing-experience .problem-card-earnings,
   .landing-experience .problem-conclusion {
-    min-height: 280px;
+    min-height: 340px;
     grid-column: span 1;
   }
 
@@ -1972,7 +2056,7 @@ html:has(.landing-experience) {
 
   .landing-experience .problem-conclusion-primary,
   .landing-experience .problem-conclusion-secondary {
-    min-height: 280px;
+    min-height: 330px;
     padding: 24px;
   }
 
@@ -1985,7 +2069,7 @@ html:has(.landing-experience) {
   }
 
   .landing-experience .business-section {
-    padding: 80px 20px;
+    padding: 104px 16px;
   }
 
   .landing-experience .business-heading {
@@ -1993,8 +2077,8 @@ html:has(.landing-experience) {
   }
 
   .landing-experience .business-heading h2 {
-    font-size: clamp(2.35rem, 11vw, 3.35rem);
-    line-height: 1;
+    font-size: clamp(2.75rem, 13vw, 4.25rem);
+    line-height: 0.96;
   }
 
   .landing-experience .business-heading h2 br {
@@ -2006,21 +2090,16 @@ html:has(.landing-experience) {
     font-size: 1rem;
   }
 
-  .landing-experience .business-cards,
-  .landing-experience .method-panels,
-  .landing-experience .testimonial-shell,
-  .landing-experience .pricing-heading {
-    grid-template-columns: 1fr;
-  }
-
-  .landing-experience .business-card {
-    min-height: 330px;
+  .landing-experience .business-card,
+  .landing-experience .business-cards.has-active .business-card:not(.is-active),
+  .landing-experience .business-card.is-active {
+    min-height: 380px;
     padding: 24px;
   }
 
   .landing-experience .business-card-icon {
-    width: 36px;
-    height: 36px;
+    width: 50px;
+    height: 50px;
   }
 
   .landing-experience .business-card-heading {
@@ -2051,12 +2130,12 @@ html:has(.landing-experience) {
   }
 
   .landing-experience .method-section {
-    padding: 80px 20px;
+    padding-inline: 16px;
   }
 
   .landing-experience .method-heading h2 {
-    font-size: clamp(2.35rem, 11vw, 3.35rem);
-    line-height: 1;
+    font-size: clamp(2.65rem, 12.2vw, 4rem);
+    line-height: 0.98;
   }
 
   .landing-experience .method-timing {
@@ -2065,24 +2144,28 @@ html:has(.landing-experience) {
   }
 
   .landing-experience .method-panels {
-    margin-top: 44px;
+    margin-top: 58px;
   }
 
   .landing-experience .method-panel {
     padding: 12px;
   }
 
+  .landing-experience .method-panel-media {
+    padding: 14px;
+  }
+
   .landing-experience .method-panel-content {
-    min-height: 0;
-    padding: 24px 12px 14px;
+    min-height: 350px;
+    padding: 28px 16px 18px;
   }
 
   .landing-experience .method-panel-index {
-    font-size: 0.8rem;
+    font-size: 3.4rem;
   }
 
   .landing-experience .method-panel-phase {
-    padding: 0;
+    padding: 6px 10px;
     font-size: 0.7rem;
   }
 
@@ -2098,7 +2181,7 @@ html:has(.landing-experience) {
   }
 
   .landing-experience .method-fact h3 {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
   }
 
   .landing-experience .method-fact p {
@@ -2113,20 +2196,19 @@ html:has(.landing-experience) {
   }
 
   .landing-experience .testimonial-shell {
-    padding: 28px 22px;
+    grid-template-columns: 1fr;
   }
 
   .landing-experience .portrait-stack {
-    width: min(58vw, 220px);
-    height: auto;
+    height: 450px;
   }
 
   .landing-experience .portrait {
-    width: 100%;
+    width: 68%;
   }
 
   .landing-experience .testimonial-copy blockquote {
-    font-size: clamp(1.65rem, 8vw, 2.25rem);
+    font-size: clamp(2rem, 10vw, 3.2rem);
   }
 
   .landing-experience .final-cta {
@@ -2153,6 +2235,26 @@ html:has(.landing-experience) {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .landing-experience .method-panels {
+    gap: 24px;
+  }
+
+  .landing-experience .method-panel,
+  .landing-experience .method-panel:nth-child(2),
+  .landing-experience .method-panel:nth-child(3) {
+    position: relative;
+    top: auto;
+    filter: none !important;
+    transform: none !important;
+  }
+
+  .landing-experience .method-panel-media,
+  .landing-experience .method-panel-content {
+    clip-path: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
   .landing-experience,
   .landing-experience *,
   .landing-experience::before,
@@ -2165,9 +2267,40 @@ html:has(.landing-experience) {
     transition-duration: 0.01ms !important;
   }
 
-  .landing-experience .button:hover,
-  .landing-experience .business-card:hover,
-  .landing-experience .carousel-controls button:hover {
+  .landing-experience .button:hover {
+    transform: none;
+  }
+
+  .landing-experience .hero-dashboard-motion,
+  .landing-experience .hero-visual:hover .hero-dashboard-motion {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .landing-experience .problem-card:hover,
+  .landing-experience .problem-outcome-card:hover {
+    transform: none;
+  }
+
+  .landing-experience
+    .problem-conclusion-secondary:hover
+    .problem-conclusion-bars
+    span {
+    transform: none;
+  }
+
+  .landing-experience .business-card,
+  .landing-experience .business-card.is-active,
+  .landing-experience
+    .business-cards.has-active
+    .business-card:not(.is-active) {
+    opacity: 1;
+    transform: none;
+  }
+
+  .landing-experience .business-card.is-active .business-card-icon,
+  .landing-experience .business-card.is-active .business-card-arrow,
+  .landing-experience .business-card.is-active .business-curve-pulse {
     transform: none;
   }
 }
