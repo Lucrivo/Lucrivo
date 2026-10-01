@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-30
 
-**Status:** Approved for implementation planning
+**Status:** Approved visual direction; pending specification review
 
 **Surface:** Public landing page (`/`)
 
