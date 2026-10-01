@@ -1,0 +1,182 @@
+.landing-experience .paths-section {
+  position: relative;
+  overflow: hidden;
+  background: var(--ink);
+  color: oklch(0.955 0.012 255);
+}
+
+.landing-experience .paths-section::before {
+  position: absolute;
+  top: -20%;
+  left: 50%;
+  width: min(80vw, 900px);
+  aspect-ratio: 1;
+  content: "";
+  pointer-events: none;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    circle,
+    oklch(0.56 0.23 259 / 0.14),
+    transparent 60%
+  );
+}
+
+.landing-experience .paths-grid {
+  position: relative;
+  display: grid;
+  width: min(100%, 1240px);
+  margin: 0 auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.landing-experience .path-card {
+  --path-accent: var(--landing-primary-bright);
+
+  position: relative;
+  display: flex;
+  min-height: 340px;
+  padding: clamp(26px, 2.6vw, 38px);
+  overflow: hidden;
+  flex-direction: column;
+  border: 1px solid oklch(0.955 0.012 255 / 0.1);
+  border-radius: 22px;
+  background: oklch(0.19 0.035 258);
+  transition:
+    transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 240ms ease,
+    box-shadow 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.landing-experience .path-card::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  content: "";
+  background: var(--path-accent);
+  opacity: 0.85;
+  transform: scaleX(0.28);
+  transform-origin: left;
+  transition: transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.landing-experience .path-card-production {
+  --path-accent: oklch(0.82 0.16 78);
+}
+
+.landing-experience .path-card-service {
+  --path-accent: oklch(0.78 0.18 152);
+}
+
+.landing-experience .path-card-meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.landing-experience .path-card-icon {
+  display: grid;
+  width: 60px;
+  height: 60px;
+  place-items: center;
+  border: 1px solid oklch(0.955 0.012 255 / 0.16);
+  border-radius: 16px;
+  color: var(--path-accent);
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.landing-experience .path-card-index {
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  opacity: 0.5;
+}
+
+.landing-experience .path-card h3 {
+  margin: 40px 0 0;
+  font-size: clamp(1.8rem, 2.4vw, 2.5rem);
+  font-weight: 560;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.landing-experience .path-card-role {
+  margin: 14px 0 0;
+  color: var(--path-accent);
+  font-size: 0.86rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.landing-experience .path-card-description {
+  max-width: 30rem;
+  margin: 18px 0 0;
+  color: oklch(0.955 0.012 255 / 0.68);
+  font-size: 1.02rem;
+  line-height: 1.55;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .landing-experience .path-card:hover {
+    border-color: oklch(0.955 0.012 255 / 0.26);
+    box-shadow: 0 26px 48px -20px oklch(0.03 0.02 258 / 0.7);
+    transform: translateY(-6px);
+  }
+
+  .landing-experience .path-card:hover::after {
+    transform: scaleX(1);
+  }
+
+  .landing-experience .path-card:hover .path-card-icon {
+    transform: rotate(-4deg) scale(1.06);
+  }
+}
+
+.landing-experience .paths-statement {
+  position: relative;
+  width: min(100%, 860px);
+  margin: clamp(64px, 7vw, 96px) auto 0;
+  font-size: clamp(1.6rem, 2.7vw, 2.7rem);
+  font-weight: 500;
+  line-height: 1.16;
+  letter-spacing: -0.04em;
+  text-align: center;
+  text-wrap: balance;
+  color: oklch(0.955 0.012 255 / 0.72);
+}
+
+.landing-experience .paths-statement strong {
+  color: oklch(0.955 0.012 255);
+  font-weight: 600;
+}
+
+@media (max-width: 1100px) {
+  .landing-experience .paths-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-experience .path-card {
+    min-height: 0;
+  }
+
+  .landing-experience .path-card h3 {
+    margin-top: 30px;
+  }
+}
+
+@media (max-width: 720px) {
+  .landing-experience .paths-statement {
+    text-align: left;
+  }
+
+  .landing-experience .paths-statement br {
+    display: none;
+  }
+
+  .landing-experience .paths-statement strong {
+    display: block;
+    margin-top: 10px;
+  }
+}

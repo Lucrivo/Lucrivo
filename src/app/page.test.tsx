@@ -99,7 +99,7 @@ describe("Home", () => {
   it("introduces every factor that shapes a viable price", async () => {
     await renderHome();
 
-    const problem = document.querySelector("#como-funciona");
+    const problem = document.querySelector("#problema");
     expect(problem).not.toBeNull();
 
     const view = within(problem as HTMLElement);
@@ -132,12 +132,19 @@ describe("Home", () => {
       ).toBeInTheDocument();
       expect(view.getByText(description)).toBeInTheDocument();
     }
+
+    expect(
+      Array.from(problem?.querySelectorAll("[data-factor]") ?? []).map((card) =>
+        card.getAttribute("data-factor"),
+      ),
+    ).toEqual(["costs", "taxes", "fees", "time", "structure", "earnings"]);
+    expect(problem?.querySelectorAll("[data-problem-card]")).toHaveLength(8);
   });
 
   it("bridges into the current pricing problem copy", async () => {
     await renderHome();
 
-    const problem = document.querySelector("#como-funciona");
+    const problem = document.querySelector("#problema");
     const view = within(problem as HTMLElement);
 
     expect(
@@ -155,7 +162,7 @@ describe("Home", () => {
   it("closes the problem section with the approved outcome message", async () => {
     await renderHome();
 
-    const problem = document.querySelector("#como-funciona");
+    const problem = document.querySelector("#problema");
     const view = within(problem as HTMLElement);
 
     expect(
@@ -169,21 +176,246 @@ describe("Home", () => {
     ).toBeInTheDocument();
   });
 
-  it("keeps the later business-context chapter", async () => {
+  it("presents the three business paths with the same closing question", async () => {
     await renderHome();
+
+    const paths = document.querySelector("#caminhos");
+    expect(paths).not.toBeNull();
+
+    const view = within(paths as HTMLElement);
     expect(
-      screen.getByRole("heading", {
+      view.getByText("O Lucrivo se adapta ao que você faz"),
+    ).toBeInTheDocument();
+    expect(
+      view.getByRole("heading", {
+        level: 2,
         name: "Você vende, produz ou presta serviço?",
       }),
     ).toBeInTheDocument();
+
+    const businessPaths = [
+      ["Eu revendo", "Você compra pronto e revende."],
+      ["Eu produzo", "Você transforma matéria-prima em produto."],
+      ["Eu presto serviço", "Você vende seu tempo, conhecimento ou trabalho."],
+    ] as const;
+
+    for (const [title, role] of businessPaths) {
+      expect(
+        view.getByRole("heading", { level: 3, name: title }),
+      ).toBeInTheDocument();
+      expect(view.getByText(role)).toBeInTheDocument();
+    }
+
+    expect(
+      Array.from(paths?.querySelectorAll("[data-path]") ?? []).map((card) =>
+        card.getAttribute("data-path"),
+      ),
+    ).toEqual(["resale", "production", "service"]);
+    expect(
+      view.getByText("o preço que você cobra faz sentido para o seu negócio?"),
+    ).toBeInTheDocument();
+  });
+
+  it("summarizes what the diagnosis shows in five steps", async () => {
+    await renderHome();
+
+    const overview = document.querySelector("#diagnostico-resumo");
+    expect(overview).not.toBeNull();
+
+    const view = within(overview as HTMLElement);
+    expect(
+      view.getByRole("heading", {
+        level: 2,
+        name: "Seus números viram uma resposta clara.",
+      }),
+    ).toBeInTheDocument();
+
+    for (const title of [
+      "Preço",
+      "Custos",
+      "Quanto sobra",
+      "Resultado",
+      "Situação",
+    ]) {
+      expect(
+        view.getByRole("heading", { level: 3, name: title }),
+      ).toBeInTheDocument();
+    }
+
+    expect(view.getByText(/É uma ferramenta de análise\./)).toBeInTheDocument();
+  });
+
+  it("shows the real structure of a diagnosis without presenting it as a screenshot", async () => {
+    await renderHome();
+
+    const preview = document.querySelector("#previa");
+    expect(preview).not.toBeNull();
+
+    const view = within(preview as HTMLElement);
+    expect(
+      view.getByRole("heading", {
+        level: 2,
+        name: "Por dentro do seu diagnóstico.",
+      }),
+    ).toBeInTheDocument();
+
+    expect(view.queryByRole("tab")).not.toBeInTheDocument();
+    expect(view.getByText("Resultado do seu diagnóstico")).toBeInTheDocument();
+    expect(
+      view.getByRole("heading", { level: 3, name: "Diagnóstico de Produto" }),
+    ).toBeInTheDocument();
+
+    for (const question of [
+      "Estou ganhando dinheiro?",
+      "Meu preço paga todos os gastos?",
+      "O que preciso fazer agora?",
+    ]) {
+      expect(view.getByText(question)).toBeInTheDocument();
+    }
+
+    for (const number of [
+      "Preço atual",
+      "Menor preço para não ficar no prejuízo",
+      "Resultado do mês",
+      "Vendas necessárias no mês",
+    ]) {
+      expect(view.getByText(number)).toBeInTheDocument();
+    }
+
+    expect(
+      view.getByText("Exemplo explicativo com valores fictícios."),
+    ).toBeInTheDocument();
+
+    expect(
+      view.getByRole("link", { name: "Quero ver isso no meu negócio" }),
+    ).toHaveAttribute("href", "/register");
+  });
+
+  it("explains the diagnosis verdicts in the product language", async () => {
+    await renderHome();
+
+    const colors = document.querySelector("#resultado");
+    expect(colors).not.toBeNull();
+
+    const view = within(colors as HTMLElement);
+    expect(
+      view.getByRole("heading", {
+        level: 2,
+        name: "O diagnóstico mostra como a conta realmente está.",
+      }),
+    ).toBeInTheDocument();
+
+    const verdicts = [
+      [
+        "Resultado positivo",
+        "O preço deixa valor depois dos custos e gastos considerados.",
+      ],
+      [
+        "No limite",
+        "O preço paga exatamente os valores considerados, sem lucro nem prejuízo.",
+      ],
+      ["Prejuízo", "Cada venda ou o resultado estimado do mês fica negativo."],
+    ] as const;
+
+    for (const [title, description] of verdicts) {
+      expect(
+        view.getByRole("heading", { level: 3, name: title }),
+      ).toBeInTheDocument();
+      expect(view.getByText(description)).toBeInTheDocument();
+    }
+
+    expect(
+      view.getByText(
+        "Se faltar preço, rotina ou quantidade, o relatório também mostra o que precisa ser completado.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("walks through how it works in three steps", async () => {
+    await renderHome();
+
+    const how = document.querySelector("#como-funciona");
+    expect(how).not.toBeNull();
+
+    const view = within(how as HTMLElement);
+    expect(
+      view.getByRole("heading", {
+        level: 2,
+        name: /Três passos\.\s*Poucos minutos\./,
+      }),
+    ).toBeInTheDocument();
+
+    for (const title of [
+      "Informe os dados",
+      "Nós calculamos",
+      "Veja seu diagnóstico",
+    ]) {
+      expect(
+        view.getByRole("heading", { level: 3, name: title }),
+      ).toBeInTheDocument();
+    }
+
+    expect(
+      view.getByRole("link", { name: "Quero descobrir meu preço" }),
+    ).toHaveAttribute("href", "/register");
+  });
+
+  it("closes with the final call to action copy", async () => {
+    await renderHome();
+
+    const finalStep = document.querySelector("#diagnostico");
+    expect(finalStep).not.toBeNull();
+
+    const view = within(finalStep as HTMLElement);
+    expect(
+      view.getByRole("heading", {
+        level: 2,
+        name: /Antes de mudar seu preço,\s*descubra se a conta fecha\./,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      view.getByText(
+        "Se você cobra um preço, o Lucrivo pode te ajudar. Leva poucos minutos e é gratuito.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      view.getByText("Análise gratuita • Resultado personalizado"),
+    ).toBeInTheDocument();
+  });
+
+  it("exposes landing shortcuts including login", async () => {
+    await renderHome();
+
+    const nav = screen.getByRole("navigation", { name: "Navegação principal" });
+    const view = within(nav);
+
+    expect(view.getByRole("link", { name: "Como funciona" })).toHaveAttribute(
+      "href",
+      "#como-funciona",
+    );
+    expect(view.getByRole("link", { name: "Seu negócio" })).toHaveAttribute(
+      "href",
+      "#caminhos",
+    );
+    expect(view.getByRole("link", { name: "Planos" })).toHaveAttribute(
+      "href",
+      "#planos",
+    );
+    expect(view.getByRole("link", { name: "Entrar" })).toHaveAttribute(
+      "href",
+      "/login",
+    );
+    expect(
+      view.getByRole("link", { name: /Fazer diagnóstico gratuito/i }),
+    ).toHaveAttribute("href", "/register");
   });
 
   it("keeps the later landing chapters mounted", async () => {
     await renderHome();
 
-    expect(document.querySelector("#recursos")).not.toBeNull();
     expect(document.querySelector("#planos")).not.toBeNull();
     expect(document.querySelector("#diagnostico")).not.toBeNull();
+    expect(document.querySelector("#recursos")).toBeNull();
   });
 
   it("uses registration for every public plan action", async () => {
@@ -191,7 +423,20 @@ describe("Home", () => {
 
     const pricing = document.querySelector("#planos");
     expect(pricing).not.toBeNull();
-    for (const link of within(pricing as HTMLElement).getAllByRole("link")) {
+    const pricingView = within(pricing as HTMLElement);
+
+    expect(
+      pricingView.getByRole("link", { name: "Começar grátis" }),
+    ).toHaveAttribute("href", "/register");
+    expect(
+      pricingView.getByRole("link", { name: "Escolher anual" }),
+    ).toHaveAttribute("href", "/register");
+    expect(
+      pricingView.getByRole("link", { name: "Escolher mensal" }),
+    ).toHaveAttribute("href", "/register");
+    expect(pricingView.queryByText("Pagar com Pix")).not.toBeInTheDocument();
+
+    for (const link of pricingView.getAllByRole("link")) {
       expect(link).toHaveAttribute("href", "/register");
     }
 

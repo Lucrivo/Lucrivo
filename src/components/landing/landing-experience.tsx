@@ -1,77 +1,26 @@
 "use client";
 
-import { useRef, useState } from "react";
-import Image from "next/image";
-import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  ArrowUpRightIcon,
-  ListIcon,
-  XIcon,
-} from "@phosphor-icons/react";
+import { useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
+import { BusinessPathsSection } from "@/components/landing/business-paths-section";
+import { DiagnosisOverviewSection } from "@/components/landing/diagnosis-overview-section";
+import { DiagnosisPreviewSection } from "@/components/landing/diagnosis-preview-section";
+import { FinalCtaSection } from "@/components/landing/final-cta-section";
 import { HeroSection } from "@/components/landing/hero-section";
+import { HowItWorksSection } from "@/components/landing/how-it-works-section";
+import { LandingFooter } from "@/components/landing/landing-footer";
+import { LandingNav } from "@/components/landing/landing-nav";
+import { PricingSection } from "@/components/landing/pricing-section";
 import { ProblemSection } from "@/components/landing/problem-section";
-import { BillingPlans } from "@/modules/billing/components/billing-plans";
+import { ResultColorsSection } from "@/components/landing/result-colors-section";
 import type { ActiveBillingPrice } from "@/modules/billing/types";
 
 import "./landing-experience.css";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
-
-const featurePanels = [
-  {
-    title: "Preço sem achismo",
-    description:
-      "Veja se o que você cobra dá conta de tudo o que sai e ainda deixa o resultado que o negócio precisa.",
-    image: "https://picsum.photos/seed/lucrivo-atelier/1200/900",
-  },
-  {
-    title: "Desconto sob controle",
-    description:
-      "Simule cenários antes de negociar e veja até onde é possível ir sem transformar venda em prejuízo.",
-    image: "https://picsum.photos/seed/lucrivo-retail/1200/900",
-  },
-  {
-    title: "Produção bem calculada",
-    description:
-      "Entenda o custo real da produção e encontre um preço que sustente o seu trabalho.",
-    image: "https://picsum.photos/seed/lucrivo-workshop/1200/900",
-  },
-  {
-    title: "Orientação que faz sentido",
-    description:
-      "O diagnóstico organiza o cálculo e mostra o que precisa de atenção, sem planilha e sem falar contabilês.",
-    image: "https://picsum.photos/seed/lucrivo-consulting/1200/900",
-  },
-];
-
-const testimonials = [
-  {
-    quote:
-      "Eu vendia bem, mas nunca sabia o que realmente sobrava. O diagnóstico mostrou onde a margem desaparecia.",
-    name: "Marina Alves",
-    role: "Fundadora de marca autoral",
-    image: "https://picsum.photos/seed/lucrivo-marina/360/360",
-  },
-  {
-    quote:
-      "Hoje eu consigo negociar desconto sem ansiedade. Sei meu limite e consigo explicar o valor do serviço.",
-    name: "Rafael Nunes",
-    role: "Consultor independente",
-    image: "https://picsum.photos/seed/lucrivo-rafael/360/360",
-  },
-  {
-    quote:
-      "A ficha técnica trouxe clareza para a produção e finalmente conectou custo, tempo e preço de venda.",
-    name: "Camila Rocha",
-    role: "Empreendedora de alimentos",
-    image: "https://picsum.photos/seed/lucrivo-camila/360/360",
-  },
-];
 
 export function LandingExperience({
   prices,
@@ -79,9 +28,6 @@ export function LandingExperience({
   prices: ActiveBillingPrice[];
 }) {
   const root = useRef<HTMLElement>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [activeFeature, setActiveFeature] = useState(0);
-  const [testimonial, setTestimonial] = useState(0);
 
   useGSAP(
     () => {
@@ -128,30 +74,82 @@ export function LandingExperience({
           duration: 0.48,
           stagger: 0.08,
           ease: "power2.out",
-        })
-        .from(
-          ".problem-card, .problem-conclusion",
-          {
-            y: 22,
-            opacity: 0,
-            duration: 0.52,
-            stagger: 0.06,
-            ease: "power2.out",
-          },
-          "-=0.2",
-        )
-        .from(
-          ".problem-visual > *, .problem-conclusion-bars > *",
-          {
-            scaleY: 0.3,
-            opacity: 0,
-            duration: 0.38,
-            stagger: 0.025,
-            transformOrigin: "bottom",
-            ease: "power2.out",
-          },
-          "-=0.42",
+        });
+
+      gsap.utils.toArray<HTMLElement>("[data-problem-card]").forEach((card) => {
+        const content = Array.from(card.children).filter(
+          (child): child is HTMLElement => child instanceof HTMLElement,
         );
+
+        const setWillChange = () => {
+          content.forEach((element) => {
+            element.style.willChange = "transform, opacity";
+          });
+        };
+        const clearWillChange = () => {
+          content.forEach((element) => {
+            element.style.willChange = "auto";
+          });
+        };
+
+        const timeline = gsap.timeline({
+          scrollTrigger: {
+            trigger: card,
+            start: "top 92%",
+            end: "bottom 8%",
+            scrub: 0.55,
+            onEnter: setWillChange,
+            onEnterBack: setWillChange,
+            onLeave: clearWillChange,
+            onLeaveBack: clearWillChange,
+          },
+        });
+
+        timeline
+          .fromTo(
+            card,
+            { "--problem-scroll-progress": 0 },
+            {
+              "--problem-scroll-progress": 1,
+              duration: 0.5,
+              ease: "none",
+            },
+          )
+          .to(card, {
+            "--problem-scroll-progress": 0,
+            duration: 0.5,
+            ease: "none",
+          });
+
+        timeline
+          .fromTo(
+            content,
+            { y: 28, opacity: 0.24 },
+            { y: 0, opacity: 1, duration: 0.5, ease: "none" },
+            0,
+          )
+          .to(
+            content,
+            { y: -24, opacity: 0.34, duration: 0.5, ease: "none" },
+            0.5,
+          );
+      });
+
+      gsap.set("[data-reveal]", { y: 26, opacity: 0 });
+      ScrollTrigger.batch("[data-reveal]", {
+        start: "top 88%",
+        once: true,
+        onEnter: (elements) => {
+          gsap.to(elements, {
+            y: 0,
+            opacity: 1,
+            duration: 0.62,
+            stagger: 0.09,
+            ease: "power2.out",
+            overwrite: true,
+          });
+        },
+      });
 
       gsap.utils.toArray<HTMLElement>(".scroll-visual").forEach((visual) => {
         gsap
@@ -170,7 +168,7 @@ export function LandingExperience({
           )
           .to(visual, {
             scale: 0.96,
-            opacity: 0.22,
+            opacity: 0.4,
             ease: "none",
             duration: 0.45,
           });
@@ -179,250 +177,22 @@ export function LandingExperience({
     { scope: root },
   );
 
-  const nextTestimonial = () => {
-    setTestimonial((current) => (current + 1) % testimonials.length);
-  };
-
-  const previousTestimonial = () => {
-    setTestimonial(
-      (current) => (current - 1 + testimonials.length) % testimonials.length,
-    );
-  };
-
   return (
     <main
       ref={root}
       className="landing-experience page-shell w-full max-w-full overflow-x-hidden"
     >
-      <nav className="nav-wrap" aria-label="Navegação principal">
-        <a className="brand" href="#top" aria-label="Lucrivo, início">
-          lucrivo<span>.</span>
-        </a>
-
-        <div className="desktop-nav">
-          <a href="#como-funciona">Como funciona</a>
-          <a href="#recursos">Recursos</a>
-          <a href="#planos">Planos</a>
-        </div>
-
-        <a className="nav-cta" href="#diagnostico">
-          Diagnóstico grátis <ArrowUpRightIcon size={16} weight="bold" />
-        </a>
-
-        <button
-          className="menu-toggle"
-          type="button"
-          aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          {menuOpen ? <XIcon size={22} /> : <ListIcon size={22} />}
-        </button>
-
-        {menuOpen && (
-          <div className="mobile-nav">
-            <a href="#como-funciona" onClick={() => setMenuOpen(false)}>
-              Como funciona
-            </a>
-            <a href="#recursos" onClick={() => setMenuOpen(false)}>
-              Recursos
-            </a>
-            <a href="#planos" onClick={() => setMenuOpen(false)}>
-              Planos
-            </a>
-            <a href="#diagnostico" onClick={() => setMenuOpen(false)}>
-              Começar grátis
-            </a>
-          </div>
-        )}
-      </nav>
-
+      <LandingNav />
       <HeroSection />
-
       <ProblemSection />
-
-      <section id="recursos" className="features-section chapter">
-        <div className="section-heading section-heading-light">
-          <p className="eyebrow">O Lucrivo se adapta ao que você faz</p>
-          <h2>Você vende, produz ou presta serviço?</h2>
-          <p>
-            O problema é diferente. A pergunta é a mesma: o preço que você cobra
-            faz sentido para o seu negócio?
-          </p>
-        </div>
-
-        <div className="horizontal-accordion">
-          {featurePanels.map((feature, index) => (
-            <button
-              type="button"
-              className={`feature-panel ${activeFeature === index ? "is-active" : ""}`}
-              key={feature.title}
-              onMouseEnter={() => setActiveFeature(index)}
-              onFocus={() => setActiveFeature(index)}
-              onClick={() => setActiveFeature(index)}
-              aria-expanded={activeFeature === index}
-            >
-              <Image
-                src={feature.image}
-                alt=""
-                fill
-                unoptimized
-                loading={index === 0 ? "eager" : "lazy"}
-                sizes="(max-width: 720px) 100vw, 60vw"
-              />
-              <span className="feature-shade" />
-              <span className="feature-index">0{index + 1}</span>
-              <span className="feature-copy">
-                <strong>{feature.title}</strong>
-                <span>{feature.description}</span>
-              </span>
-              <ArrowUpRightIcon className="feature-arrow" size={22} />
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="method-section chapter">
-        <div className="method-layout">
-          <div className="method-title">
-            <p className="eyebrow">Três passos. Poucos minutos.</p>
-            <h2>
-              O motor calcula.
-              <br />A inteligência interpreta.
-            </h2>
-          </div>
-          <div className="method-steps">
-            <article className="scroll-visual">
-              <span>01</span>
-              <div>
-                <h3>Informe os dados</h3>
-                <p>
-                  Responda perguntas simples sobre o que você cobra e o que
-                  gasta, uma de cada vez.
-                </p>
-              </div>
-            </article>
-            <article className="scroll-visual">
-              <span>02</span>
-              <div>
-                <h3>Nós calculamos</h3>
-                <p>
-                  O motor financeiro faz as contas por você e mostra tudo
-                  pronto, sem planilha e sem termo difícil.
-                </p>
-              </div>
-            </article>
-            <article className="scroll-visual">
-              <span>03</span>
-              <div>
-                <h3>Veja seu diagnóstico</h3>
-                <p>
-                  Descubra se o seu preço faz sentido e o que precisa ser
-                  corrigido primeiro.
-                </p>
-              </div>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section className="testimonial-section chapter">
-        <div className="testimonial-shell">
-          <div className="portrait-stack" aria-hidden="true">
-            {testimonials.map((item, index) => (
-              <div
-                className={`portrait portrait-${index} ${testimonial === index ? "portrait-active" : ""}`}
-                key={item.name}
-              >
-                <Image
-                  src={item.image}
-                  alt=""
-                  fill
-                  unoptimized
-                  sizes="(max-width: 720px) 68vw, 390px"
-                />
-              </div>
-            ))}
-          </div>
-          <div className="testimonial-copy" aria-live="polite">
-            <p className="eyebrow">Clareza que muda decisões</p>
-            <blockquote>“{testimonials[testimonial].quote}”</blockquote>
-            <div className="testimonial-person">
-              <strong>{testimonials[testimonial].name}</strong>
-              <span>{testimonials[testimonial].role}</span>
-            </div>
-            <div className="carousel-controls">
-              <button
-                type="button"
-                onClick={previousTestimonial}
-                aria-label="Depoimento anterior"
-              >
-                <ArrowLeftIcon size={20} />
-              </button>
-              <span>
-                {testimonial + 1} / {testimonials.length}
-              </span>
-              <button
-                type="button"
-                onClick={nextTestimonial}
-                aria-label="Próximo depoimento"
-              >
-                <ArrowRightIcon size={20} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="planos" className="pricing-section chapter">
-        <div className="section-heading pricing-heading">
-          <div>
-            <h2>Planos para cada momento do seu negócio.</h2>
-            <p>
-              Comece gratuitamente ou escolha o acesso que acompanha a rotina e
-              o ritmo das suas decisões.
-            </p>
-          </div>
-          <p className="pricing-note">
-            Mais clareza para decidir. Sem surpresa na cobrança.
-          </p>
-        </div>
-
-        <BillingPlans prices={prices} context="public" />
-      </section>
-
-      <section id="diagnostico" className="final-cta chapter">
-        <div className="cta-noise" />
-        <p className="eyebrow">Leva poucos minutos e é gratuito</p>
-        <h2>
-          Pare de torcer para a conta fechar.
-          <br />
-          <em>Veja o que os números dizem.</em>
-        </h2>
-        <p>
-          Se você vende, produz ou presta serviços, o Lucrivo pode ajudar. Crie
-          sua conta e receba um diagnóstico personalizado, sem cartão.
-        </p>
-        <a className="button button-primary button-large" href="/register">
-          Fazer meu diagnóstico gratuito{" "}
-          <ArrowRightIcon size={20} weight="bold" />
-        </a>
-      </section>
-
-      <footer>
-        <a className="brand footer-brand" href="#top">
-          lucrivo<span>.</span>
-        </a>
-        <p>Diagnóstico de preço e rentabilidade para pequenos negócios.</p>
-        <div>
-          <a href="#como-funciona">Como funciona</a>
-          <a href="#recursos">Recursos</a>
-          <a href="#planos">Planos</a>
-        </div>
-        <small>
-          © {new Date().getFullYear()} Lucrivo. Todos os direitos reservados.
-        </small>
-      </footer>
+      <BusinessPathsSection />
+      <DiagnosisOverviewSection />
+      <DiagnosisPreviewSection />
+      <ResultColorsSection />
+      <HowItWorksSection />
+      <PricingSection prices={prices} />
+      <FinalCtaSection />
+      <LandingFooter />
     </main>
   );
 }

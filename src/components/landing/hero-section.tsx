@@ -58,8 +58,8 @@ function HeroSection() {
           </h1>
 
           <p className="hero-description hero-copy-reveal">
-            Seu preço pode parecer certo e ainda estar fazendo você perder
-            dinheiro. Descubra se ele faz sentido para a realidade do seu
+            Seu preço pode estar errado — e você pode estar perdendo dinheiro
+            sem perceber. Descubra se ele faz sentido para a realidade do seu
             negócio.
           </p>
 
