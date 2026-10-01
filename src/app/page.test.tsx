@@ -1,5 +1,4 @@
 import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { createClient, listActivePrices } = vi.hoisted(() => ({
@@ -246,7 +245,7 @@ describe("Home", () => {
     expect(view.getByText(/É uma ferramenta de análise\./)).toBeInTheDocument();
   });
 
-  it("previews the diagnosis for each business type through tabs", async () => {
+  it("shows the real structure of a diagnosis without presenting it as a screenshot", async () => {
     await renderHome();
 
     const preview = document.querySelector("#previa");
@@ -256,33 +255,35 @@ describe("Home", () => {
     expect(
       view.getByRole("heading", {
         level: 2,
-        name: "É assim que o seu diagnóstico chega.",
+        name: "Por dentro do seu diagnóstico.",
       }),
     ).toBeInTheDocument();
 
-    const tabs = view.getAllByRole("tab");
-    expect(tabs.map((tab) => tab.textContent)).toEqual([
-      "Revenda",
-      "Produção",
-      "Serviço",
-    ]);
-    expect(tabs[0]).toHaveAttribute("aria-selected", "true");
-    expect(view.getByText("Produto revendido")).toBeInTheDocument();
-    expect(view.getByText("Produto adquirido")).toBeInTheDocument();
-    expect(view.getAllByText("R$ 39,90")).toHaveLength(2);
-
-    await userEvent.click(tabs[2]);
-
-    expect(tabs[2]).toHaveAttribute("aria-selected", "true");
-    expect(view.getByText("Serviço prestado")).toBeInTheDocument();
-    expect(view.getByText("Custo por hora")).toBeInTheDocument();
+    expect(view.queryByRole("tab")).not.toBeInTheDocument();
+    expect(view.getByText("Resultado do seu diagnóstico")).toBeInTheDocument();
     expect(
-      view.getByText(
-        "O que você cobra pela hora cobre os custos e o resultado fica positivo.",
-      ),
+      view.getByRole("heading", { level: 3, name: "Diagnóstico de Produto" }),
     ).toBeInTheDocument();
+
+    for (const question of [
+      "Estou ganhando dinheiro?",
+      "Meu preço paga todos os gastos?",
+      "O que preciso fazer agora?",
+    ]) {
+      expect(view.getByText(question)).toBeInTheDocument();
+    }
+
+    for (const number of [
+      "Preço atual",
+      "Menor preço para não ficar no prejuízo",
+      "Resultado do mês",
+      "Vendas necessárias no mês",
+    ]) {
+      expect(view.getByText(number)).toBeInTheDocument();
+    }
+
     expect(
-      view.getByText("Exemplo ilustrativo com números fictícios."),
+      view.getByText("Exemplo explicativo com valores fictícios."),
     ).toBeInTheDocument();
 
     expect(
@@ -300,14 +301,20 @@ describe("Home", () => {
     expect(
       view.getByRole("heading", {
         level: 2,
-        name: "O diagnóstico diz o que a conta está fazendo.",
+        name: "O diagnóstico mostra como a conta realmente está.",
       }),
     ).toBeInTheDocument();
 
     const verdicts = [
-      ["Resultado positivo", "A conta fecha com o que você informou."],
-      ["No limite", "Cobre os custos, sem sobra."],
-      ["Prejuízo", "A venda ou o mês sai negativo."],
+      [
+        "Resultado positivo",
+        "O preço deixa valor depois dos custos e gastos considerados.",
+      ],
+      [
+        "No limite",
+        "O preço paga exatamente os valores considerados, sem lucro nem prejuízo.",
+      ],
+      ["Prejuízo", "Cada venda ou o resultado estimado do mês fica negativo."],
     ] as const;
 
     for (const [title, description] of verdicts) {
@@ -316,6 +323,12 @@ describe("Home", () => {
       ).toBeInTheDocument();
       expect(view.getByText(description)).toBeInTheDocument();
     }
+
+    expect(
+      view.getByText(
+        "Se faltar preço, rotina ou quantidade, o relatório também mostra o que precisa ser completado.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("walks through how it works in three steps", async () => {
