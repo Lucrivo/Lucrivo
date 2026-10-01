@@ -1,12 +1,12 @@
 .root {
   --plans-ink: oklch(0.18 0.045 258);
-  --plans-muted: oklch(0.49 0.045 258);
+  --plans-muted: oklch(0.42 0.04 258);
   --plans-line: oklch(0.87 0.028 255);
   --plans-surface: oklch(0.995 0.004 255);
   --plans-brand: oklch(0.57 0.23 259);
   --plans-brand-deep: oklch(0.49 0.245 264);
   --plans-brand-soft: oklch(0.94 0.045 255);
-  --plans-success: oklch(0.49 0.15 151);
+  --plans-success: oklch(0.46 0.14 151);
   --plans-success-soft: oklch(0.94 0.055 151);
   --plans-warm: oklch(0.64 0.16 60);
   --plans-warm-soft: oklch(0.95 0.045 65);
@@ -19,7 +19,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: stretch;
-  gap: 22px;
+  gap: 18px;
 }
 
 .grid[data-catalog-ready="false"] {
@@ -30,15 +30,13 @@
   position: relative;
   display: flex;
   min-width: 0;
-  min-height: 650px;
+  min-height: 580px;
   flex-direction: column;
-  padding: 34px;
+  padding: 32px 28px 28px;
   border: 1px solid var(--plans-line);
   border-radius: 16px;
   background: var(--plans-surface);
-  box-shadow:
-    0 22px 54px -34px oklch(0.18 0.09 258 / 0.4),
-    0 8px 20px -16px oklch(0.18 0.09 258 / 0.18);
+  box-shadow: 0 18px 40px -32px oklch(0.18 0.09 258 / 0.38);
   transition:
     transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -46,10 +44,8 @@
 }
 
 .card:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    0 32px 62px -34px oklch(0.18 0.09 258 / 0.48),
-    0 12px 24px -18px oklch(0.18 0.09 258 / 0.22);
+  transform: translateY(-3px);
+  box-shadow: 0 26px 50px -32px oklch(0.18 0.09 258 / 0.46);
 }
 
 .featuredCard {
@@ -60,9 +56,7 @@
     oklch(0.985 0.014 253),
     oklch(0.94 0.045 255)
   );
-  box-shadow:
-    0 30px 70px -38px oklch(0.48 0.23 260 / 0.58),
-    0 10px 24px -18px oklch(0.48 0.23 260 / 0.35);
+  box-shadow: 0 24px 56px -34px oklch(0.48 0.23 260 / 0.5);
 }
 
 .popularBadge {
@@ -70,92 +64,73 @@
   top: 0;
   left: 50%;
   display: inline-flex;
-  min-height: 34px;
+  min-height: 28px;
   align-items: center;
   gap: 7px;
-  padding: 0 15px;
+  padding: 0 12px;
   transform: translate(-50%, -50%);
   border-radius: 999px;
-  background: linear-gradient(
-    135deg,
-    var(--plans-brand),
-    var(--plans-brand-deep)
-  );
-  box-shadow: 0 10px 22px -10px oklch(0.45 0.24 260 / 0.7);
+  background: var(--plans-brand);
   color: white;
-  font-size: 0.74rem;
-  font-weight: 750;
-  letter-spacing: 0.045em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
-.popularBadge svg {
-  width: 15px;
-  height: 15px;
+.popularDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: oklch(0.92 0.08 151);
 }
 
 .planHeader {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+  display: grid;
+  gap: 4px;
 }
 
-.planIcon,
 .unavailableIcon {
   display: grid;
-  width: 60px;
-  height: 60px;
-  flex: 0 0 60px;
+  width: 40px;
+  height: 40px;
   place-items: center;
-  border-radius: 16px;
+  border-radius: 12px;
   color: var(--plans-ink);
   background: oklch(0.95 0.015 255);
 }
 
-.planIcon[data-tone="brand"] {
-  color: var(--plans-brand-deep);
-  background: oklch(0.9 0.07 254);
-}
-
-.planIcon[data-tone="warm"] {
-  color: var(--plans-warm);
-  background: var(--plans-warm-soft);
-}
-
-.planIcon svg,
 .unavailableIcon svg {
-  width: 27px;
-  height: 27px;
+  width: 20px;
+  height: 20px;
   stroke-width: 2;
 }
 
 .planName {
   margin: 0;
   color: var(--plans-ink);
-  font-size: 1rem;
-  font-weight: 780;
+  font-size: 1.05rem;
+  font-weight: 720;
   line-height: 1.2;
-  letter-spacing: 0.055em;
-  text-transform: uppercase;
 }
 
 .planTagline {
-  margin: 5px 0 0;
+  margin: 0;
   color: var(--plans-muted);
-  font-size: 0.93rem;
-  line-height: 1.35;
+  font-size: 0.9rem;
+  line-height: 1.4;
 }
 
 .priceBlock {
-  min-height: 174px;
-  padding-top: 28px;
+  min-height: 148px;
+  padding-top: 22px;
 }
 
 .planPrice {
   margin: 0;
   color: var(--plans-ink);
-  font-size: clamp(2rem, 2.75vw, 3.15rem);
+  font-size: clamp(2rem, 2.6vw, 2.85rem);
   font-weight: 720;
   line-height: 0.98;
   letter-spacing: -0.035em;
@@ -164,70 +139,57 @@
 
 .planDescription {
   max-width: 42ch;
-  margin: 18px 0 0;
+  margin: 14px 0 0;
   color: var(--plans-muted);
-  font-size: 0.95rem;
-  line-height: 1.55;
+  font-size: 0.92rem;
+  line-height: 1.5;
 }
 
 .saving {
   display: inline-flex;
   width: fit-content;
   align-items: center;
-  gap: 7px;
-  margin: 14px 0 0;
-  padding: 7px 11px;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 6px 10px;
   border-radius: 999px;
   background: var(--plans-success-soft);
-  color: oklch(0.38 0.14 151);
-  font-size: 0.77rem;
-  font-weight: 750;
+  color: oklch(0.34 0.12 151);
+  font-size: 0.76rem;
+  font-weight: 700;
   line-height: 1.3;
 }
 
 .saving svg {
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
 }
 
 .benefits {
   display: grid;
-  gap: 14px;
-  margin: 28px 0 32px;
-  padding: 25px 0 0;
+  gap: 11px;
+  margin: 22px 0 28px;
+  padding: 20px 0 0;
   border-top: 1px solid var(--plans-line);
   list-style: none;
 }
 
 .benefits li {
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
-  align-items: start;
-  gap: 11px;
-  color: oklch(0.34 0.055 258);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--plans-ink);
   font-size: 0.9rem;
-  line-height: 1.42;
+  line-height: 1.45;
 }
 
-.benefitIcon {
-  display: grid;
-  width: 28px;
-  height: 28px;
-  place-items: center;
-  border-radius: 10px;
-  background: var(--plans-success-soft);
+.benefits li svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  margin-top: 2px;
   color: var(--plans-success);
-}
-
-.benefitIcon[data-accent="brand"] {
-  background: oklch(0.9 0.06 255);
-  color: var(--plans-brand-deep);
-}
-
-.benefitIcon svg {
-  width: 15px;
-  height: 15px;
-  stroke-width: 2.5;
+  stroke-width: 2.6;
 }
 
 .planActions,
@@ -247,15 +209,15 @@
 .outlineAction {
   display: inline-flex;
   width: 100%;
-  min-height: 52px;
+  min-height: 48px;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 0 18px;
+  gap: 8px;
+  padding: 0 16px;
   border: 1px solid transparent;
   border-radius: 12px;
-  font-size: 0.91rem;
-  font-weight: 720;
+  font-size: 0.9rem;
+  font-weight: 700;
   line-height: 1.2;
   text-decoration: none;
   box-shadow: none;
@@ -267,11 +229,7 @@
 }
 
 .primaryAction {
-  background: linear-gradient(
-    135deg,
-    var(--plans-brand),
-    var(--plans-brand-deep)
-  );
+  background: var(--plans-brand);
   color: white;
   box-shadow: 0 12px 24px -14px oklch(0.45 0.24 260 / 0.75);
 }
@@ -315,6 +273,7 @@
 }
 
 .primaryAction:hover {
+  background: var(--plans-brand-deep);
   box-shadow: 0 16px 28px -14px oklch(0.45 0.24 260 / 0.82);
 }
 
@@ -351,13 +310,13 @@
 .primaryAction svg,
 .darkAction svg,
 .secondaryAction svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .actionArrow {
   margin-left: 2px;
-  font-size: 1.12rem;
+  font-size: 1.05rem;
   transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -367,9 +326,12 @@
   transform: translateX(3px);
 }
 
-.freeAction small {
+.freeAction small,
+.signupHint {
+  margin: 0;
   color: var(--plans-muted);
   font-size: 0.75rem;
+  line-height: 1.4;
   text-align: center;
 }
 
@@ -383,9 +345,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 13px;
+  gap: 10px;
   min-width: 0;
-  padding: 4px 24px;
+  padding: 4px 20px;
 }
 
 .trustRail > div + div {
@@ -393,8 +355,8 @@
 }
 
 .trustRail > div > svg {
-  width: 27px;
-  height: 27px;
+  width: 18px;
+  height: 18px;
   flex: 0 0 auto;
   color: var(--plans-brand);
 }
@@ -406,22 +368,22 @@
 
 .trustRail strong {
   color: var(--plans-ink);
-  font-size: 0.82rem;
-  font-weight: 720;
+  font-size: 0.8rem;
+  font-weight: 700;
   line-height: 1.3;
 }
 
 .trustRail small {
   color: var(--plans-muted);
-  font-size: 0.73rem;
+  font-size: 0.72rem;
   line-height: 1.35;
 }
 
 .unavailableCard {
-  min-height: 360px;
+  min-height: 320px;
   align-items: flex-start;
   justify-content: center;
-  gap: 22px;
+  gap: 18px;
   background: oklch(0.975 0.012 255);
 }
 
@@ -429,12 +391,39 @@
   max-width: 24ch;
   margin: 0;
   color: var(--plans-ink);
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   line-height: 1.2;
 }
 
 .root[data-context="account"] .card {
-  min-height: 620px;
+  min-height: 600px;
+}
+
+.root[data-context="public"] .card {
+  min-height: 0;
+}
+
+.annualPrice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  line-height: 1;
+}
+
+.installmentCount {
+  display: block;
+  font-size: 0.3em;
+  font-weight: 600;
+  line-height: 1;
+  margin-bottom: 0.35rem;
+  letter-spacing: -0.5;
+}
+
+.installmentValue {
+  display: block;
+  text-align: left;
 }
 
 @media (max-width: 1080px) {
@@ -477,7 +466,7 @@
 
 @media (max-width: 560px) {
   .grid {
-    gap: 18px;
+    gap: 16px;
   }
 
   .card {
@@ -488,26 +477,13 @@
     margin-top: 14px;
   }
 
-  .planIcon,
-  .unavailableIcon {
-    width: 52px;
-    height: 52px;
-    flex-basis: 52px;
-  }
-
-  .planIcon svg,
-  .unavailableIcon svg {
-    width: 23px;
-    height: 23px;
-  }
-
   .planPrice {
-    font-size: clamp(2rem, 11vw, 2.8rem);
+    font-size: clamp(2rem, 11vw, 2.6rem);
     white-space: normal;
   }
 
   .benefits {
-    margin-bottom: 26px;
+    margin-bottom: 24px;
   }
 
   .trustRail > div {
@@ -524,81 +500,4 @@
   .actionArrow {
     transition: none;
   }
-}
-
-:global(.dark) .root {
-  --plans-ink: oklch(0.955 0.012 255);
-  --plans-muted: oklch(0.72 0.035 255);
-  --plans-line: oklch(0.34 0.04 258 / 0.86);
-  --plans-surface: oklch(0.19 0.035 258);
-  --plans-brand: oklch(0.68 0.2 255);
-  --plans-brand-deep: oklch(0.61 0.22 260);
-  --plans-brand-soft: oklch(0.26 0.07 258);
-  --plans-success: oklch(0.73 0.14 151);
-  --plans-success-soft: oklch(0.26 0.06 151);
-  --plans-warm: oklch(0.78 0.14 70);
-  --plans-warm-soft: oklch(0.27 0.05 65);
-}
-
-:global(.dark) .featuredCard {
-  background: linear-gradient(
-    150deg,
-    oklch(0.22 0.055 258),
-    oklch(0.19 0.05 263)
-  );
-}
-
-:global(.dark) .planIcon,
-:global(.dark) .unavailableIcon {
-  background: oklch(0.25 0.038 258);
-}
-
-:global(.dark) .planIcon[data-tone="brand"],
-:global(.dark) .benefitIcon[data-accent="brand"] {
-  background: oklch(0.29 0.08 258);
-}
-
-:global(.dark) .planDescription,
-:global(.dark) .benefits li {
-  color: var(--plans-muted);
-}
-
-:global(.dark) .saving {
-  color: oklch(0.82 0.13 151);
-}
-
-:global(.dark) .outlineAction {
-  background: oklch(0.21 0.035 258);
-}
-
-:global(.dark) .secondaryAction:hover,
-:global(.dark) .outlineAction:hover {
-  background: oklch(0.27 0.06 258);
-}
-
-:global(.dark) .unavailableCard {
-  background: oklch(0.18 0.032 258);
-}
-
-.annualPrice {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  width: 100%;
-  text-align: left;
-  line-height: 1;
-}
-
-.installmentCount {
-  display: block;
-  font-size: 0.3em;
-  font-weight: 600;
-  line-height: 1;
-  margin-bottom: 0.35rem;
-  letter-spacing: -0.5;
-}
-
-.installmentValue {
-  display: block;
-  text-align: left;
 }

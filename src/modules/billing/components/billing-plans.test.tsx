@@ -57,6 +57,30 @@ describe("BillingPlans", () => {
     expect(container).toHaveTextContent(
       "IA para explicar e interpretar seus relatórios",
     );
+    expect(
+      screen.getAllByText("Vários produtos no mesmo diagnóstico detalhado"),
+    ).toHaveLength(2);
+    expect(
+      screen.queryByText(
+        "Cadastro de múltiplos produtos e controle de estoque",
+      ),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Começar grátis" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Escolher anual" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Escolher mensal" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Pagar com Pix")).not.toBeInTheDocument();
+    expect(screen.queryByText("Assinar anual")).not.toBeInTheDocument();
+    expect(
+      screen.getAllByText(
+        "Crie a conta primeiro. Cartão ou Pix na hora de assinar.",
+      ),
+    ).toHaveLength(2);
 
     for (const link of screen.getAllByRole("link")) {
       expect(link).toHaveAttribute("href", "/register");

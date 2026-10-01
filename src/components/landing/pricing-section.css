@@ -1,0 +1,57 @@
+.landing-experience .pricing-section {
+  scroll-margin-top: 104px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* Scoped under .pricing-section so these win over the shared
+   .section-heading rules regardless of stylesheet load order. */
+.landing-experience .pricing-section .pricing-heading {
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.35fr);
+  align-items: start;
+  gap: 64px;
+}
+
+.landing-experience .pricing-section .pricing-heading h2 {
+  max-width: 980px;
+  font-size: clamp(2.7rem, 3.5vw, 3.5rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+
+.landing-experience .pricing-heading > div > p {
+  max-width: 720px;
+  margin: 22px 0 0;
+  color: oklch(0.4 0.04 258);
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.landing-experience .pricing-note {
+  max-width: 26ch;
+  margin: 8px 0 0;
+  padding-left: 20px;
+  border-left: 1px solid oklch(0.56 0.23 259 / 0.45);
+  color: oklch(0.32 0.07 258);
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+@media (max-width: 980px) {
+  .landing-experience .pricing-section .pricing-heading {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .landing-experience .pricing-note {
+    max-width: 42ch;
+    margin: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .landing-experience .pricing-section {
+    scroll-margin-top: 84px;
+  }
+}

@@ -124,7 +124,7 @@ function FactorVisual({ slug }: { slug: FactorSlug }) {
 function ProblemSection() {
   return (
     <section
-      id="como-funciona"
+      id="problema"
       className="problem-section"
       aria-labelledby="problem-title"
     >

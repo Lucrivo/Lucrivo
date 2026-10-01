@@ -1,15 +1,11 @@
 import Link from "next/link";
 import {
   BadgeCheckIcon,
-  ChartNoAxesColumnIncreasingIcon,
   CheckIcon,
   CreditCardIcon,
-  CrownIcon,
-  GiftIcon,
   LockKeyholeIcon,
   QrCodeIcon,
   ReceiptTextIcon,
-  SparklesIcon,
 } from "lucide-react";
 
 import type { ActiveBillingPrice, BillingOverview } from "../types";
@@ -29,52 +25,39 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   maximumFractionDigits: 2,
 });
 
+const paidBenefits = [
+  "Diagnósticos rápidos e detalhados ilimitados",
+  "Relatórios completos ilimitados",
+  "IA para explicar e interpretar seus relatórios",
+  "Vários produtos no mesmo diagnóstico detalhado",
+] as const;
+
 function formatBRL(cents: number): string {
   return currencyFormatter.format(cents / 100).replace(/\u00a0/g, " ");
 }
 
-function Benefit({
-  icon: Icon = CheckIcon,
-  children,
-  accent = "success",
-}: {
-  icon?: typeof CheckIcon;
-  children: React.ReactNode;
-  accent?: "success" | "brand";
-}) {
+function Benefit({ children }: { children: React.ReactNode }) {
   return (
     <li>
-      <span className={styles.benefitIcon} data-accent={accent}>
-        <Icon aria-hidden="true" />
-      </span>
+      <CheckIcon aria-hidden="true" />
       <span>{children}</span>
     </li>
   );
 }
 
 function PlanHeader({
-  icon: Icon,
   name,
   tagline,
-  tone,
   Heading,
 }: {
-  icon: typeof GiftIcon;
   name: string;
   tagline: string;
-  tone: "neutral" | "brand" | "warm";
   Heading: "h2" | "h3";
 }) {
   return (
     <div className={styles.planHeader}>
-      <span className={styles.planIcon} data-tone={tone}>
-        <Icon aria-hidden="true" />
-      </span>
-
-      <div>
-        <Heading className={styles.planName}>{name}</Heading>
-        <p className={styles.planTagline}>{tagline}</p>
-      </div>
+      <Heading className={styles.planName}>{name}</Heading>
+      <p className={styles.planTagline}>{tagline}</p>
     </div>
   );
 }
@@ -133,7 +116,7 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
 
   const freeAction =
     context === "public"
-      ? "Fazer diagnóstico grátis"
+      ? "Começar grátis"
       : overview?.canCreateDiagnosis
         ? "Fazer diagnóstico"
         : "Ver meu relatório";
@@ -156,8 +139,6 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
             href="/register"
             className={featured ? styles.primaryAction : styles.darkAction}
           >
-            <CreditCardIcon aria-hidden="true" />
-
             {cardLabel}
 
             <span aria-hidden="true" className={styles.actionArrow}>
@@ -165,10 +146,9 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
             </span>
           </Link>
 
-          <Link href="/register" className={styles.secondaryAction}>
-            <QrCodeIcon aria-hidden="true" />
-            Pagar com Pix
-          </Link>
+          <p className={styles.signupHint}>
+            Crie a conta primeiro. Cartão ou Pix na hora de assinar.
+          </p>
         </div>
       );
     }
@@ -211,10 +191,8 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
       <div className={styles.grid} data-catalog-ready={catalogReady}>
         <article className={styles.card} aria-label="Plano gratuito">
           <PlanHeader
-            icon={GiftIcon}
             name="Grátis"
             tagline="Comece sem custo"
-            tone="neutral"
             Heading={Heading}
           />
 
@@ -251,15 +229,13 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
               aria-label="Plano Anual"
             >
               <div className={styles.popularBadge}>
-                <SparklesIcon aria-hidden="true" />
+                <span aria-hidden="true" className={styles.popularDot} />
                 Mais vantajoso
               </div>
 
               <PlanHeader
-                icon={CrownIcon}
                 name="Anual"
                 tagline="Melhor custo-benefício"
-                tone="warm"
                 Heading={Heading}
               />
 
@@ -291,30 +267,23 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
               </div>
 
               <ul className={styles.benefits}>
-                <Benefit>Diagnósticos rápidos e detalhados ilimitados</Benefit>
-
-                <Benefit>Relatórios completos ilimitados</Benefit>
-
-                <Benefit>
-                  IA para explicar e interpretar seus relatórios
-                </Benefit>
-
-                <Benefit>
-                  Cadastro de múltiplos produtos e controle de estoque
-                </Benefit>
-
+                {paidBenefits.map((benefit) => (
+                  <Benefit key={benefit}>{benefit}</Benefit>
+                ))}
                 <Benefit>12 meses de acesso</Benefit>
               </ul>
 
-              {checkoutActions(annual, "Assinar anual", true)}
+              {checkoutActions(
+                annual,
+                context === "public" ? "Escolher anual" : "Assinar anual",
+                true,
+              )}
             </article>
 
             <article className={styles.card} aria-label="Plano Mensal">
               <PlanHeader
-                icon={ChartNoAxesColumnIncreasingIcon}
                 name="Mensal"
                 tagline="Mais flexibilidade"
-                tone="brand"
                 Heading={Heading}
               />
 
@@ -329,20 +298,15 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
               </div>
 
               <ul className={styles.benefits}>
-                <Benefit>Diagnósticos rápidos e detalhados ilimitados</Benefit>
-
-                <Benefit>Relatórios completos ilimitados</Benefit>
-
-                <Benefit>
-                  IA para explicar e interpretar seus relatórios
-                </Benefit>
-
-                <Benefit>
-                  Cadastro de múltiplos produtos e controle de estoque
-                </Benefit>
+                {paidBenefits.map((benefit) => (
+                  <Benefit key={benefit}>{benefit}</Benefit>
+                ))}
               </ul>
 
-              {checkoutActions(monthly, "Assinar mensal")}
+              {checkoutActions(
+                monthly,
+                context === "public" ? "Escolher mensal" : "Assinar mensal",
+              )}
             </article>
           </>
         ) : (

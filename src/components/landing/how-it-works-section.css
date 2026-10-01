@@ -1,0 +1,124 @@
+.landing-experience .how-section {
+  scroll-margin-top: 104px;
+  background: var(--ink-soft);
+  color: oklch(0.955 0.012 255);
+}
+
+.landing-experience .how-layout {
+  display: grid;
+  width: min(100%, 1240px);
+  margin: 0 auto;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 9vw;
+}
+
+.landing-experience .how-title {
+  position: sticky;
+  top: 150px;
+  align-self: start;
+}
+
+.landing-experience .how-title h2 {
+  margin: 0;
+  max-width: 900px;
+  font-size: clamp(2.7rem, 5.4vw, 5.7rem);
+  font-weight: 520;
+  line-height: 0.98;
+  letter-spacing: -0.065em;
+}
+
+.landing-experience .how-steps {
+  display: flex;
+  margin: 0;
+  padding: 80px 0 100px;
+  flex-direction: column;
+  gap: 120px;
+  list-style: none;
+}
+
+.landing-experience .how-step {
+  display: grid;
+  padding-top: 26px;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 24px;
+  border-top: 1px solid oklch(0.955 0.012 255 / 0.14);
+}
+
+.landing-experience .how-step-index {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--landing-primary-bright);
+  color: var(--ink);
+  font-size: 0.74rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.landing-experience .how-step h3 {
+  margin: 0;
+  font-size: clamp(1.7rem, 2.8vw, 3rem);
+  font-weight: 540;
+  line-height: 1.05;
+  letter-spacing: -0.05em;
+}
+
+.landing-experience .how-step p {
+  max-width: 520px;
+  margin: 22px 0 0;
+  color: oklch(0.955 0.012 255 / 0.62);
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.landing-experience .how-cta {
+  display: flex;
+  width: min(100%, 1240px);
+  margin: 0 auto;
+  justify-content: center;
+}
+
+.landing-experience .how-cta .button {
+  box-shadow: 0 18px 36px -14px oklch(0.56 0.23 259 / 0.7);
+}
+
+@media (max-width: 980px) {
+  .landing-experience .how-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-experience .how-title {
+    position: relative;
+    top: auto;
+  }
+
+  .landing-experience .how-steps {
+    padding: 56px 0 72px;
+    gap: 90px;
+  }
+}
+
+@media (max-width: 720px) {
+  .landing-experience .how-section {
+    scroll-margin-top: 84px;
+  }
+
+  .landing-experience .how-title h2 {
+    font-size: clamp(2.6rem, 12vw, 4rem);
+  }
+
+  .landing-experience .how-steps {
+    gap: 64px;
+  }
+
+  .landing-experience .how-step {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .landing-experience .how-cta .button {
+    width: 100%;
+  }
+}
