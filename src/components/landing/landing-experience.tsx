@@ -6,15 +6,7 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   ArrowUpRightIcon,
-  CurrencyDollarIcon,
-  FactoryIcon,
-  HandCoinsIcon,
   ListIcon,
-  ReceiptIcon,
-  ShoppingBagIcon,
-  TargetIcon,
-  TrafficSignalIcon,
-  UserIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { gsap } from "gsap";
@@ -25,145 +17,37 @@ import { HeroSection } from "@/components/landing/hero-section";
 import { ProblemSection } from "@/components/landing/problem-section";
 import { BillingPlans } from "@/modules/billing/components/billing-plans";
 import type { ActiveBillingPrice } from "@/modules/billing/types";
-import methodCalculationImage from "@/public/lp/method-calculation.webp";
-import methodInputsImage from "@/public/lp/method-inputs.webp";
-import methodReportImage from "@/public/lp/method-report.webp";
 
 import "./landing-experience.css";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
-const businessContexts = [
+const featurePanels = [
   {
-    slug: "resale",
-    title: "Eu revendo",
-    subtitle: "Você compra pronto e revende.",
+    title: "Preço sem achismo",
     description:
-      "Descubra se o preço que você cobra faz sentido, depois de considerar tudo o que sai da sua conta.",
-    actionLabel: "Ver planos para quem revende",
-    icon: ShoppingBagIcon,
+      "Veja se o que você cobra dá conta de tudo o que sai e ainda deixa o resultado que o negócio precisa.",
+    image: "https://picsum.photos/seed/lucrivo-atelier/1200/900",
   },
   {
-    slug: "production",
-    title: "Eu produzo",
-    subtitle: "Você transforma matéria-prima em produto.",
+    title: "Desconto sob controle",
+    description:
+      "Simule cenários antes de negociar e veja até onde é possível ir sem transformar venda em prejuízo.",
+    image: "https://picsum.photos/seed/lucrivo-retail/1200/900",
+  },
+  {
+    title: "Produção bem calculada",
     description:
       "Entenda o custo real da produção e encontre um preço que sustente o seu trabalho.",
-    actionLabel: "Ver planos para quem produz",
-    icon: FactoryIcon,
+    image: "https://picsum.photos/seed/lucrivo-workshop/1200/900",
   },
   {
-    slug: "service",
-    title: "Eu presto serviço",
-    subtitle: "Você vende seu tempo, conhecimento ou trabalho.",
+    title: "Orientação que faz sentido",
     description:
-      "Descubra quanto seu serviço precisa gerar para cobrir seus custos e chegar no resultado que você quer.",
-    actionLabel: "Ver planos para quem presta serviço",
-    icon: UserIcon,
+      "O diagnóstico organiza o cálculo e mostra o que precisa de atenção, sem planilha e sem falar contabilês.",
+    image: "https://picsum.photos/seed/lucrivo-consulting/1200/900",
   },
-] as const;
-
-type BusinessContextSlug = (typeof businessContexts)[number]["slug"];
-
-const methodPanels = [
-  {
-    image: methodInputsImage,
-    imageAlt:
-      "Bancada de pequeno negócio com calculadora, celular, recibos e embalagem.",
-    phase: "Dados",
-    report: false,
-    facts: [
-      {
-        title: "Preço",
-        description: "O que você cobra hoje.",
-        icon: CurrencyDollarIcon,
-      },
-      {
-        title: "Custos",
-        description: "O que realmente sai da sua conta.",
-        icon: ReceiptIcon,
-      },
-    ],
-  },
-  {
-    image: methodCalculationImage,
-    imageAlt:
-      "Calculadora ao lado de camadas organizadas e barras crescentes em tons azuis.",
-    phase: "Cálculo",
-    report: false,
-    facts: [
-      {
-        title: "Quanto sobra",
-        description: "O que fica pra você depois dos custos.",
-        icon: HandCoinsIcon,
-      },
-      {
-        title: "Resultado",
-        description: "Um preço que faz a conta fechar.",
-        icon: TargetIcon,
-      },
-    ],
-  },
-  {
-    image: methodReportImage,
-    imageAlt:
-      "Exemplo de relatório do Lucrivo com resultado, prioridades e próximos passos.",
-    phase: "Diagnóstico",
-    report: true,
-    facts: [
-      {
-        title: "Situação",
-        description: "Se o seu preço faz sentido.",
-        icon: TrafficSignalIcon,
-      },
-    ],
-  },
-] as const;
-
-function BusinessContextVisual({ slug }: { slug: BusinessContextSlug }) {
-  if (slug === "resale") {
-    return (
-      <div className="business-card-visual business-bars" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-        <span />
-      </div>
-    );
-  }
-
-  if (slug === "production") {
-    return (
-      <div className="business-card-visual business-layers" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </div>
-    );
-  }
-
-  return (
-    <div className="business-card-visual business-curve" aria-hidden="true">
-      <svg viewBox="0 0 420 170" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="business-curve-fill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stopColor="currentColor" stopOpacity="0.24" />
-            <stop offset="1" stopColor="currentColor" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <path
-          className="business-curve-area"
-          d="M0 156C60 154 79 94 142 92C205 90 218 133 280 123C345 113 349 49 410 42L410 170L0 170Z"
-        />
-        <path
-          className="business-curve-line"
-          d="M0 156C60 154 79 94 142 92C205 90 218 133 280 123C345 113 349 49 410 42"
-        />
-        <circle className="business-curve-pulse" cx="410" cy="42" r="7" />
-      </svg>
-    </div>
-  );
-}
+];
 
 const testimonials = [
   {
@@ -196,6 +80,7 @@ export function LandingExperience({
 }) {
   const root = useRef<HTMLElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeFeature, setActiveFeature] = useState(0);
   const [testimonial, setTestimonial] = useState(0);
 
   useGSAP(
@@ -209,21 +94,24 @@ export function LandingExperience({
       gsap
         .timeline()
         .from(".hero-copy-reveal", {
-          y: 16,
+          y: 28,
           opacity: 0,
-          duration: 0.42,
-          stagger: 0.06,
-          ease: "power2.out",
+          duration: 0.78,
+          stagger: 0.08,
+          ease: "power3.out",
         })
         .from(
           ".hero-visual-reveal",
           {
-            y: 16,
+            x: 44,
+            y: 18,
+            scale: 0.96,
+            rotate: 1.5,
             opacity: 0,
-            duration: 0.48,
-            ease: "power2.out",
+            duration: 1.05,
+            ease: "power3.out",
           },
-          "-=0.24",
+          "-=0.52",
         );
 
       gsap
@@ -235,40 +123,93 @@ export function LandingExperience({
           },
         })
         .from(".problem-reveal", {
-          y: 14,
+          y: 18,
           opacity: 0,
-          duration: 0.38,
-          stagger: 0.06,
-          ease: "power2.out",
-        });
-
-      gsap
-        .timeline({
-          scrollTrigger: {
-            trigger: ".business-section",
-            start: "top 86%",
-            once: true,
-          },
-        })
-        .from(".business-heading-reveal, .business-card, .business-question", {
-          y: 16,
-          opacity: 0,
-          duration: 0.42,
+          duration: 0.48,
           stagger: 0.08,
           ease: "power2.out",
         });
 
-      gsap.from("[data-method-panel]", {
-        y: 16,
-        opacity: 0,
-        duration: 0.42,
-        stagger: 0.08,
-        ease: "power2.out",
-        scrollTrigger: {
-          trigger: ".method-panels",
-          start: "top 88%",
-          once: true,
-        },
+      gsap.utils.toArray<HTMLElement>("[data-problem-card]").forEach((card) => {
+        const content = Array.from(card.children).filter(
+          (child): child is HTMLElement => child instanceof HTMLElement,
+        );
+
+        const setWillChange = () => {
+          content.forEach((element) => {
+            element.style.willChange = "transform, opacity";
+          });
+        };
+        const clearWillChange = () => {
+          content.forEach((element) => {
+            element.style.willChange = "auto";
+          });
+        };
+
+        const timeline = gsap.timeline({
+          scrollTrigger: {
+            trigger: card,
+            start: "top 92%",
+            end: "bottom 8%",
+            scrub: 0.55,
+            onEnter: setWillChange,
+            onEnterBack: setWillChange,
+            onLeave: clearWillChange,
+            onLeaveBack: clearWillChange,
+          },
+        });
+
+        timeline
+          .fromTo(
+            card,
+            { "--problem-scroll-progress": 0 },
+            {
+              "--problem-scroll-progress": 1,
+              duration: 0.5,
+              ease: "none",
+            },
+          )
+          .to(card, {
+            "--problem-scroll-progress": 0,
+            duration: 0.5,
+            ease: "none",
+          });
+
+        timeline
+          .fromTo(
+            content,
+            { y: 28, opacity: 0.24 },
+            { y: 0, opacity: 1, duration: 0.5, ease: "none" },
+            0,
+          )
+          .to(
+            content,
+            { y: -24, opacity: 0.34, duration: 0.5, ease: "none" },
+            0.5,
+          );
+      });
+
+      gsap.utils.toArray<HTMLElement>(".scroll-visual").forEach((visual) => {
+        gsap
+          .timeline({
+            scrollTrigger: {
+              trigger: visual,
+              start: "top 92%",
+              end: "bottom 8%",
+              scrub: 1.1,
+            },
+          })
+          .fromTo(
+            visual,
+            { scale: 0.8, opacity: 0.38 },
+            { scale: 1, opacity: 1, ease: "none", duration: 0.55 },
+          )
+          .to(visual, {
+            scale: 0.96,
+            opacity: 0.22,
+            ease: "none",
+            duration: 0.45,
+          });
       });
     },
     { scope: root },
@@ -287,8 +228,7 @@ export function LandingExperience({
   return (
     <main
       ref={root}
-      data-landing-theme="light"
-      className="landing-experience page-shell w-full max-w-full"
+      className="landing-experience page-shell w-full max-w-full overflow-x-hidden"
     >
       <nav className="nav-wrap" aria-label="Navegação principal">
         <a className="brand" href="#top" aria-label="Lucrivo, início">
@@ -337,152 +277,88 @@ export function LandingExperience({
 
       <ProblemSection />
 
-      <section
-        id="recursos"
-        className="features-section business-section chapter"
-        aria-labelledby="business-title"
-      >
-        <div className="business-shell">
-          <header className="business-heading">
-            <h2
-              id="business-title"
-              className="business-heading-reveal"
-              aria-label="Você vende, produz ou presta serviço?"
+      <section id="recursos" className="features-section chapter">
+        <div className="section-heading section-heading-light">
+          <p className="eyebrow">O Lucrivo se adapta ao que você faz</p>
+          <h2>Você vende, produz ou presta serviço?</h2>
+          <p>
+            O problema é diferente. A pergunta é a mesma: o preço que você cobra
+            faz sentido para o seu negócio?
+          </p>
+        </div>
+
+        <div className="horizontal-accordion">
+          {featurePanels.map((feature, index) => (
+            <button
+              type="button"
+              className={`feature-panel ${activeFeature === index ? "is-active" : ""}`}
+              key={feature.title}
+              onMouseEnter={() => setActiveFeature(index)}
+              onFocus={() => setActiveFeature(index)}
+              onClick={() => setActiveFeature(index)}
+              aria-expanded={activeFeature === index}
             >
-              Você vende, produz
-              <br />
-              ou <span>presta serviço?</span>
-            </h2>
-            <p className="business-intro business-heading-reveal">
-              Cada tipo de negócio tem uma realidade diferente — custos,
-              desafios e formas de chegar no lucro. Mas, no fim, a pergunta que
-              importa é a mesma: se o preço que você cobra realmente faz sentido
-              para o seu negócio.
-            </p>
-          </header>
-
-          <div className="business-cards">
-            {businessContexts.map(
-              ({
-                slug,
-                title,
-                subtitle,
-                description,
-                actionLabel,
-                icon: Icon,
-              }) => (
-                <a
-                  className={`business-card business-card-${slug}`}
-                  href="#planos"
-                  aria-label={actionLabel}
-                  data-business-card={slug}
-                  key={slug}
-                >
-                  <span className="business-card-top">
-                    <span className="business-card-icon" aria-hidden="true">
-                      <Icon size={30} weight="regular" />
-                    </span>
-                  </span>
-
-                  <span className="business-card-heading">
-                    <span>
-                      <strong>{title}</strong>
-                      <small>{subtitle}</small>
-                    </span>
-                    <span className="business-card-arrow" aria-hidden="true">
-                      <ArrowRightIcon size={20} weight="bold" />
-                    </span>
-                  </span>
-
-                  <span className="business-card-description">
-                    {description}
-                  </span>
-                  <BusinessContextVisual slug={slug} />
-                </a>
-              ),
-            )}
-          </div>
-
-          <div className="business-question">
-            <p>
-              <small>O problema é diferente. A pergunta é a mesma:</small>
-              <strong>
-                o preço que você cobra faz sentido para o seu negócio?
-              </strong>
-            </p>
-          </div>
+              <Image
+                src={feature.image}
+                alt=""
+                fill
+                unoptimized
+                loading={index === 0 ? "eager" : "lazy"}
+                sizes="(max-width: 720px) 100vw, 60vw"
+              />
+              <span className="feature-shade" />
+              <span className="feature-index">0{index + 1}</span>
+              <span className="feature-copy">
+                <strong>{feature.title}</strong>
+                <span>{feature.description}</span>
+              </span>
+              <ArrowUpRightIcon className="feature-arrow" size={22} />
+            </button>
+          ))}
         </div>
       </section>
 
-      <section
-        className="method-section chapter"
-        aria-labelledby="method-title"
-      >
-        <header className="method-heading">
-          <p className="method-timing">EM POUCOS MINUTOS</p>
-          <h2 id="method-title">
-            Seus números viram uma <span>resposta clara.</span>
-          </h2>
-        </header>
-
-        <div className="method-panels">
-          {methodPanels.map(
-            ({ image, imageAlt, phase, facts, ...panel }, index) => (
-              <article
-                className={`method-panel ${panel.report ? "method-panel-report" : ""}`}
-                data-method-panel
-                key={facts[0].title}
-              >
-                <figure className="method-panel-media">
-                  <div
-                    className="method-panel-image-frame"
-                    style={{ position: "relative" }}
-                  >
-                    <Image
-                      src={image}
-                      alt={imageAlt}
-                      fill
-                      sizes="(max-width: 860px) calc(100vw - 88px), 46vw"
-                      className="method-panel-image"
-                    />
-                  </div>
-                  {panel.report ? (
-                    <figcaption>Exemplo de relatório do Lucrivo</figcaption>
-                  ) : null}
-                </figure>
-
-                <div className="method-panel-content">
-                  <div className="method-panel-meta">
-                    <span className="method-panel-index" aria-hidden="true">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <span className="method-panel-phase">{phase}</span>
-                  </div>
-
-                  <div className="method-facts">
-                    {facts.map(({ title, description, icon: Icon }) => (
-                      <div className="method-fact" key={title}>
-                        <span className="method-fact-icon" aria-hidden="true">
-                          <Icon size={30} weight="regular" />
-                        </span>
-                        <div>
-                          <h3>{title}</h3>
-                          <p>{description}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {panel.report ? (
-                    <p className="method-disclaimer">
-                      É uma ferramenta de análise. O resultado depende dos dados
-                      que você informar.
-                    </p>
-                  ) : null}
-                </div>
-              </article>
-            ),
-          )}
+      <section className="method-section chapter">
+        <div className="method-layout">
+          <div className="method-title">
+            <p className="eyebrow">Três passos. Poucos minutos.</p>
+            <h2>
+              O motor calcula.
+              <br />A inteligência interpreta.
+            </h2>
+          </div>
+          <div className="method-steps">
+            <article className="scroll-visual">
+              <span>01</span>
+              <div>
+                <h3>Informe os dados</h3>
+                <p>
+                  Responda perguntas simples sobre o que você cobra e o que
+                  gasta, uma de cada vez.
+                </p>
+              </div>
+            </article>
+            <article className="scroll-visual">
+              <span>02</span>
+              <div>
+                <h3>Nós calculamos</h3>
+                <p>
+                  O motor financeiro faz as contas por você e mostra tudo
+                  pronto, sem planilha e sem termo difícil.
+                </p>
+              </div>
+            </article>
+            <article className="scroll-visual">
+              <span>03</span>
+              <div>
+                <h3>Veja seu diagnóstico</h3>
+                <p>
+                  Descubra se o seu preço faz sentido e o que precisa ser
+                  corrigido primeiro.
+                </p>
+              </div>
+            </article>
+          </div>
         </div>
       </section>
 

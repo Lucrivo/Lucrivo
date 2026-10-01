@@ -32,6 +32,8 @@ const trustItems = [
 function HeroSection() {
   return (
     <section id="top" className="hero-section" aria-labelledby="hero-title">
+      <div className="hero-ambient" aria-hidden="true" />
+
       <div className="hero-layout">
         <div className="hero-copy">
           <p className="hero-kicker hero-copy-reveal">
@@ -39,8 +41,20 @@ function HeroSection() {
             Diagnóstico de preço e rentabilidade
           </p>
 
-          <h1 id="hero-title" className="hero-copy-reveal">
-            Você sabe se o preço que cobra <em>realmente dá lucro?</em>
+          <h1
+            id="hero-title"
+            className="hero-copy-reveal"
+            aria-label="Você sabe se o preço que cobra realmente dá lucro?"
+          >
+            <span>Você sabe se o preço</span>
+
+            <span>
+              que cobra <em>realmente</em>
+            </span>
+
+            <span>
+              <em>dá lucro?</em>
+            </span>
           </h1>
 
           <p className="hero-description hero-copy-reveal">

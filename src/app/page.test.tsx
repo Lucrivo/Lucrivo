@@ -66,21 +66,6 @@ describe("Home", () => {
     render(await Home());
   }
 
-  it("uses a fixed visual theme independent of the application theme", async () => {
-    document.documentElement.classList.add("dark");
-
-    try {
-      await renderHome();
-
-      expect(screen.getByRole("main")).toHaveAttribute(
-        "data-landing-theme",
-        "light",
-      );
-    } finally {
-      document.documentElement.classList.remove("dark");
-    }
-  });
-
   it("presents the profitability diagnosis and its next actions", async () => {
     await renderHome();
 
@@ -197,52 +182,6 @@ describe("Home", () => {
       screen.getByRole("heading", {
         name: "Você vende, produz ou presta serviço?",
       }),
-    ).toBeInTheDocument();
-
-    for (const name of [
-      "Ver planos para quem revende",
-      "Ver planos para quem produz",
-      "Ver planos para quem presta serviço",
-    ]) {
-      expect(screen.getByRole("link", { name })).toHaveAttribute(
-        "href",
-        "#planos",
-      );
-    }
-  });
-
-  it("presents the domain-approved path from numbers to a clear answer", async () => {
-    await renderHome();
-
-    const method = document.querySelector(".method-section");
-    expect(method).not.toBeNull();
-
-    const view = within(method as HTMLElement);
-    expect(view.getByText("EM POUCOS MINUTOS")).toBeInTheDocument();
-    expect(
-      view.getByRole("heading", {
-        level: 2,
-        name: "Seus números viram uma resposta clara.",
-      }),
-    ).toBeInTheDocument();
-
-    for (const [title, description] of [
-      ["Preço", "O que você cobra hoje."],
-      ["Custos", "O que realmente sai da sua conta."],
-      ["Quanto sobra", "O que fica pra você depois dos custos."],
-      ["Resultado", "Um preço que faz a conta fechar."],
-      ["Situação", "Se o seu preço faz sentido."],
-    ] as const) {
-      expect(
-        view.getByRole("heading", { level: 3, name: title }),
-      ).toBeInTheDocument();
-      expect(view.getByText(description)).toBeInTheDocument();
-    }
-
-    expect(
-      view.getByText(
-        "É uma ferramenta de análise. O resultado depende dos dados que você informar.",
-      ),
     ).toBeInTheDocument();
   });
 
