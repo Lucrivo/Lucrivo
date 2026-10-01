@@ -526,7 +526,7 @@
   }
 }
 
-:global(.dark) .root {
+:global(.dark) .root[data-context="account"] {
   --plans-ink: oklch(0.955 0.012 255);
   --plans-muted: oklch(0.72 0.035 255);
   --plans-line: oklch(0.34 0.04 258 / 0.86);
@@ -540,7 +540,7 @@
   --plans-warm-soft: oklch(0.27 0.05 65);
 }
 
-:global(.dark) .featuredCard {
+:global(.dark) .root[data-context="account"] .featuredCard {
   background: linear-gradient(
     150deg,
     oklch(0.22 0.055 258),
@@ -548,35 +548,35 @@
   );
 }
 
-:global(.dark) .planIcon,
-:global(.dark) .unavailableIcon {
+:global(.dark) .root[data-context="account"] .planIcon,
+:global(.dark) .root[data-context="account"] .unavailableIcon {
   background: oklch(0.25 0.038 258);
 }
 
-:global(.dark) .planIcon[data-tone="brand"],
-:global(.dark) .benefitIcon[data-accent="brand"] {
+:global(.dark) .root[data-context="account"] .planIcon[data-tone="brand"],
+:global(.dark) .root[data-context="account"] .benefitIcon[data-accent="brand"] {
   background: oklch(0.29 0.08 258);
 }
 
-:global(.dark) .planDescription,
-:global(.dark) .benefits li {
+:global(.dark) .root[data-context="account"] .planDescription,
+:global(.dark) .root[data-context="account"] .benefits li {
   color: var(--plans-muted);
 }
 
-:global(.dark) .saving {
+:global(.dark) .root[data-context="account"] .saving {
   color: oklch(0.82 0.13 151);
 }
 
-:global(.dark) .outlineAction {
+:global(.dark) .root[data-context="account"] .outlineAction {
   background: oklch(0.21 0.035 258);
 }
 
-:global(.dark) .secondaryAction:hover,
-:global(.dark) .outlineAction:hover {
+:global(.dark) .root[data-context="account"] .secondaryAction:hover,
+:global(.dark) .root[data-context="account"] .outlineAction:hover {
   background: oklch(0.27 0.06 258);
 }
 
-:global(.dark) .unavailableCard {
+:global(.dark) .root[data-context="account"] .unavailableCard {
   background: oklch(0.18 0.032 258);
 }
 
@@ -601,4 +601,89 @@
 .installmentValue {
   display: block;
   text-align: left;
+}
+
+.root[data-context="public"] {
+  --plans-ink: var(--landing-text, oklch(0.2 0.04 258));
+  --plans-muted: var(--landing-text-muted, oklch(0.46 0.035 258));
+  --plans-line: var(--landing-border, oklch(0.87 0.022 255));
+  --plans-surface: var(--landing-surface, oklch(0.998 0.003 255));
+  --plans-brand: var(--landing-accent, oklch(0.56 0.21 259));
+  --plans-brand-deep: oklch(0.49 0.21 261);
+  --plans-brand-soft: var(--landing-accent-soft, oklch(0.93 0.045 255));
+}
+
+.root[data-context="public"] .grid {
+  gap: 16px;
+}
+
+.root[data-context="public"] .card {
+  min-height: 600px;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+.root[data-context="public"] .card:hover {
+  transform: translateY(-2px);
+  border-color: oklch(0.72 0.08 255);
+  box-shadow: none;
+}
+
+.root[data-context="public"] .featuredCard {
+  border-color: var(--plans-brand);
+  background: var(--plans-brand-soft);
+  box-shadow: none;
+}
+
+.root[data-context="public"] .popularBadge,
+.root[data-context="public"] .primaryAction {
+  background: var(--plans-brand);
+  box-shadow: none;
+}
+
+.root[data-context="public"] .planIcon {
+  width: 50px;
+  height: 50px;
+  flex-basis: 50px;
+  border-radius: 12px;
+}
+
+.root[data-context="public"] .planIcon svg {
+  width: 23px;
+  height: 23px;
+}
+
+.root[data-context="public"] .primaryAction:hover {
+  background: var(--plans-brand-deep);
+  box-shadow: none;
+}
+
+.root[data-context="public"] .benefitIcon,
+.root[data-context="public"] .benefitIcon[data-accent="brand"] {
+  border-radius: 8px;
+  background: oklch(0.56 0.21 259 / 0.1);
+  color: var(--plans-brand-deep);
+}
+
+.root[data-context="public"] .trustRail {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--plans-line);
+}
+
+@media (max-width: 1080px) {
+  .root[data-context="public"] .grid {
+    gap: 18px;
+  }
+
+  .root[data-context="public"] .card {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .root[data-context="public"] .card {
+    padding: 26px 22px;
+  }
 }

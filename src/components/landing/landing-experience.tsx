@@ -145,12 +145,6 @@ function BusinessContextVisual({ slug }: { slug: BusinessContextSlug }) {
   return (
     <div className="business-card-visual business-curve" aria-hidden="true">
       <svg viewBox="0 0 420 170" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="business-curve-fill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stopColor="currentColor" stopOpacity="0.24" />
-            <stop offset="1" stopColor="currentColor" stopOpacity="0" />
-          </linearGradient>
-        </defs>
         <path
           className="business-curve-area"
           d="M0 156C60 154 79 94 142 92C205 90 218 133 280 123C345 113 349 49 410 42L410 170L0 170Z"
