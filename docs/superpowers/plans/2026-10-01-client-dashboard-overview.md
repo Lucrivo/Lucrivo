@@ -351,8 +351,8 @@ begin
           ) order by bucket.position
         )
         from (values
-          (1, 'direct_loss'),
-          (2, 'missing_price'),
+          (1, 'missing_price'),
+          (2, 'direct_loss'),
           (3, 'incomplete_volume'),
           (4, 'operational_loss'),
           (5, 'no_sales'),
