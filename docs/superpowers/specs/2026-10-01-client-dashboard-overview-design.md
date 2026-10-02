@@ -312,6 +312,7 @@ O JSON retornará:
 ```text
 generatedAt
 filters
+hasAnyReports
 focusReportId
 metrics
   totalReports
@@ -333,7 +334,7 @@ recentReports[]
   updatedAt
   verdict
   priority
-  isPartial
+  hasPendingData
   itemCount
   realMarginBasisPoints
   monthlyResultCents
@@ -347,6 +348,11 @@ recentReports[]
 terá as cinco prioridades aceitas, inclusive com contagem zero. As contagens, a
 seleção do foco e a lista serão calculadas sobre o mesmo conjunto filtrado
 dentro da mesma instrução para evitar divergência entre cards e lista.
+
+`hasAnyReports` será calculado antes dos filtros opcionais, mas depois de
+propriedade, legibilidade histórica e exclusão lógica. Ele existe somente para
+distinguir a conta sem histórico do recorte vazio e não será apresentado como
+uma métrica adicional.
 
 ### 9.3. Relatório em foco
 
