@@ -1176,6 +1176,20 @@ export type Database = {
       };
       get_admin_dashboard_v1: { Args: never; Returns: Json };
       get_admin_user_v1: { Args: { p_user_id: string }; Returns: Json };
+      get_client_dashboard_v1: {
+        Args: {
+          p_categories?: string[];
+          p_data_state?: string;
+          p_focus_id?: number;
+          p_from_date?: string;
+          p_modes?: string[];
+          p_priorities?: string[];
+          p_scenarios?: string[];
+          p_to_date?: string;
+          p_verdicts?: string[];
+        };
+        Returns: Json;
+      };
       list_admin_recent_subscriptions_v1: {
         Args: { p_billing_mode: string; p_period: string; p_state: string };
         Returns: Json;

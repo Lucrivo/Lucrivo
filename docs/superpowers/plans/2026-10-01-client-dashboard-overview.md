@@ -212,7 +212,7 @@ Expected: FAIL because `public.get_client_dashboard_v1(...)` does not exist.
 In the CLI-generated migration, use this signature and privilege model:
 
 ```sql
-create function public.get_client_dashboard_v1(
+create or replace function public.get_client_dashboard_v1(
   p_from_date date default null,
   p_to_date date default null,
   p_categories text[] default null,
@@ -283,7 +283,7 @@ begin
       select
         diagnosis.*,
         (
-          pg_catalog.coalesce(diagnosis.is_partial, false)
+          coalesce(diagnosis.is_partial, false)
           or diagnosis.verdict in ('incomplete_volume', 'missing_price')
         ) as has_pending_data
       from public.diagnoses as diagnosis
@@ -321,11 +321,11 @@ begin
       'filters', pg_catalog.jsonb_build_object(
         'from', p_from_date,
         'to', p_to_date,
-        'categories', pg_catalog.coalesce(to_jsonb(p_categories), '[]'::jsonb),
-        'modes', pg_catalog.coalesce(to_jsonb(p_modes), '[]'::jsonb),
-        'scenarios', pg_catalog.coalesce(to_jsonb(p_scenarios), '[]'::jsonb),
-        'verdicts', pg_catalog.coalesce(to_jsonb(p_verdicts), '[]'::jsonb),
-        'priorities', pg_catalog.coalesce(to_jsonb(p_priorities), '[]'::jsonb),
+        'categories', coalesce(to_jsonb(p_categories), '[]'::jsonb),
+        'modes', coalesce(to_jsonb(p_modes), '[]'::jsonb),
+        'scenarios', coalesce(to_jsonb(p_scenarios), '[]'::jsonb),
+        'verdicts', coalesce(to_jsonb(p_verdicts), '[]'::jsonb),
+        'priorities', coalesce(to_jsonb(p_priorities), '[]'::jsonb),
         'dataState', p_data_state
       ),
       'hasAnyReports', exists(select 1 from readable),
@@ -372,7 +372,7 @@ begin
           (4, 'margin'), (5, 'volume')
         ) as bucket(position, priority)
       ),
-      'recentReports', pg_catalog.coalesce((
+      'recentReports', coalesce((
         select pg_catalog.jsonb_agg(
           pg_catalog.jsonb_build_object(
             'id', recent.id,
