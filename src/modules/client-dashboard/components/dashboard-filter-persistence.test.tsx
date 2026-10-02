@@ -74,7 +74,7 @@ describe("DashboardFilterPersistence", () => {
     );
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Os filtros foram aplicados, mas não foi possível salvá-los.",
+      "Os filtros foram aplicados, mas não foi possível salvá-los. Tente aplicá-los novamente.",
     );
   });
 });

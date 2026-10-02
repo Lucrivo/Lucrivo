@@ -83,10 +83,10 @@ describe("client dashboard overview", () => {
     );
 
     for (const label of [
-      "Relatórios no recorte",
-      "Com resultado positivo",
-      "Com perda ou prejuízo",
-      "Com dados pendentes",
+      "Relatórios encontrados",
+      "Resultado positivo",
+      "Perda ou prejuízo",
+      "Informações pendentes",
     ]) {
       expect(screen.getByText(label)).toBeVisible();
     }
@@ -97,23 +97,27 @@ describe("client dashboard overview", () => {
       name: "Resumo dos relatórios",
     });
     expect(within(summary).getAllByRole("listitem")).toHaveLength(4);
-    expect(within(summary).getByText("Total do filtro atual")).toBeVisible();
+    expect(within(summary).getByText("Seleção atual")).toBeVisible();
     expect(
       screen.getByRole("link", {
-        name: "Filtrar por resultado positivo",
+        name: "Ver relatórios com resultado positivo",
       }),
     ).toHaveAttribute(
       "href",
       "/dashboard?category=product&verdict=positive_result",
     );
     expect(
-      screen.getByRole("link", { name: "Filtrar por perdas e prejuízos" }),
+      screen.getByRole("link", {
+        name: "Ver relatórios com perda ou prejuízo",
+      }),
     ).toHaveAttribute(
       "href",
       "/dashboard?category=product&verdict=direct_loss%2Coperational_loss",
     );
     expect(
-      screen.getByRole("link", { name: "Filtrar por dados pendentes" }),
+      screen.getByRole("link", {
+        name: "Ver relatórios com informações pendentes",
+      }),
     ).toHaveAttribute("href", "/dashboard?category=product&dataState=pending");
   });
 
@@ -142,9 +146,9 @@ describe("client dashboard overview", () => {
   it("keeps all zero-filled states in the accessible summary", () => {
     render(<DashboardDistributions dashboard={dashboardFixture(true)} />);
 
-    expect(
-      screen.getAllByText("Nenhum diagnóstico neste recorte."),
-    ).toHaveLength(2);
+    expect(screen.getAllByText("Nenhum relatório nesta seleção.")).toHaveLength(
+      2,
+    );
     expect(screen.getByText(/Resultado positivo: 0/)).toHaveClass("sr-only");
     expect(screen.getByText(/Avaliar volume: 0/)).toHaveClass("sr-only");
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();

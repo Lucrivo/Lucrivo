@@ -111,7 +111,7 @@ describe("ClientDashboard", () => {
     ).toBeVisible();
     expect(
       screen.getByText(
-        "Acompanhe seus diagnósticos e veja o que merece sua atenção primeiro.",
+        "Aqui você acompanha seus relatórios e identifica o que precisa de atenção primeiro.",
       ),
     ).toBeVisible();
     expect(screen.queryByText("Seus relatórios")).not.toBeInTheDocument();
@@ -122,7 +122,7 @@ describe("ClientDashboard", () => {
       screen.getByRole("link", { name: "Novo diagnóstico" }),
     ).toHaveAttribute("href", "/quick-diagnosis");
     expect(
-      screen.getByRole("link", { name: "Ver biblioteca completa" }),
+      screen.getByRole("link", { name: "Ver todos os relatórios" }),
     ).toHaveAttribute("href", "/reports");
     expect(container).not.toHaveTextContent("28,4%");
     expect(container).not.toHaveTextContent("R$ 15,80");
@@ -145,14 +145,17 @@ describe("ClientDashboard", () => {
       screen.getByRole("heading", { name: "Crie seu primeiro diagnóstico" }),
     ).toBeVisible();
     expect(
+      screen.getByText(
+        "Conclua um diagnóstico para ver aqui os resultados, prioridades e valores calculados pelo Lucrivo.",
+      ),
+    ).toBeVisible();
+    expect(
       screen.queryByLabelText("Filtros dos relatórios"),
     ).not.toBeInTheDocument();
-    expect(
-      screen.queryByText("Indicadores do recorte"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Resumo dos relatórios")).not.toBeInTheDocument();
   });
 
-  it("keeps filters and recovery actions for an empty filtered recorte", () => {
+  it("keeps filters and recovery actions when no report matches", () => {
     render(
       <ClientDashboard
         dashboard={dashboardFixture({
@@ -172,7 +175,7 @@ describe("ClientDashboard", () => {
     expect(screen.getByLabelText("Filtros dos relatórios")).toBeVisible();
     expect(
       screen.getByRole("heading", {
-        name: "Nenhum relatório corresponde aos filtros selecionados",
+        name: "Nenhum relatório encontrado com esses filtros",
       }),
     ).toBeVisible();
     expect(

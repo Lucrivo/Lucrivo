@@ -6,10 +6,10 @@ function ClientDashboardLoading() {
     <main
       className="mx-auto grid w-full max-w-7xl grid-cols-[minmax(0,1fr)] gap-7 pb-10"
       aria-busy="true"
-      aria-label="Carregando visão geral dos diagnósticos"
+      aria-label="Carregando seus relatórios"
     >
       <p className="sr-only" role="status">
-        Carregando visão geral dos diagnósticos...
+        Carregando seus relatórios...
       </p>
       <header className="grid gap-5 px-1 py-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end sm:py-4">
         <div className="grid max-w-2xl gap-2">
@@ -19,7 +19,7 @@ function ClientDashboardLoading() {
         <Skeleton className="h-11 w-48 max-w-full" />
       </header>
       <Skeleton className="h-40 w-full rounded-2xl" />
-      <section aria-label="Carregando indicadores" className="grid gap-4">
+      <section aria-label="Carregando resumo" className="grid gap-4">
         <div className="grid gap-2 px-1">
           <Skeleton className="h-8 w-52" />
           <Skeleton className="h-5 w-80 max-w-full" />
@@ -35,7 +35,7 @@ function ClientDashboardLoading() {
         </div>
       </section>
       <section
-        aria-label="Carregando distribuições"
+        aria-label="Carregando gráficos dos relatórios"
         className="grid gap-4 lg:grid-cols-2"
       >
         <Skeleton className="h-80 w-full rounded-xl" />

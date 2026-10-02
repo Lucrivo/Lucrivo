@@ -143,7 +143,7 @@ describe("toClientDashboardViewModel", () => {
       modeLabel: "Rápido",
       verdict: { label: "Resultado positivo", tone: "success" },
       priorityLabel: "Avaliar margem",
-      dataStateLabel: "Completo",
+      dataStateLabel: "Dados completos",
       itemCountLabel: null,
       monthlyResultLabel: "R$ 1.250,00",
       realMarginLabel: "25%",

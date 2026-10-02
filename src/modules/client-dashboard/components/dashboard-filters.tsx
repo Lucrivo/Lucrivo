@@ -78,7 +78,7 @@ const situationOptions = [
   ["all", "Todas"],
   ["positive", "Resultado positivo"],
   ["break_even", "Zero a zero"],
-  ["loss", "Com perda ou prejuízo"],
+  ["loss", "Perda ou prejuízo"],
   ["no_sales", "Mês sem vendas"],
   ["pending", "Dados incompletos"],
 ] as const;
@@ -86,7 +86,7 @@ const situationOptions = [
 const dataStateOptions = [
   ["all", "Todos"],
   ["complete", "Completos"],
-  ["pending", "Com dados pendentes"],
+  ["pending", "Dados pendentes"],
 ] as const;
 
 const scenarioOptions = {
@@ -208,7 +208,7 @@ function DashboardFilterFields({
     <>
       {scope !== "more" ? (
         <label className="grid min-w-0 gap-1.5 text-sm font-medium">
-          De
+          Data inicial
           <Input
             className="h-11"
             type="date"
@@ -220,7 +220,7 @@ function DashboardFilterFields({
       ) : null}
       {scope !== "more" ? (
         <label className="grid min-w-0 gap-1.5 text-sm font-medium">
-          Até
+          Data final
           <Input
             className="h-11"
             type="date"
@@ -491,13 +491,15 @@ function DashboardFiltersContent({
           id="dashboard-filters-title-mobile"
           className="text-lg font-semibold"
         >
-          Recorte dos relatórios
+          Filtrar relatórios
         </h2>
         <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
           <SheetTrigger
             render={<Button type="button" variant="outline" className="h-11" />}
             aria-label={
-              chips.length ? `Filtros, ${chips.length} ativos` : "Filtros"
+              chips.length
+                ? `Filtros, ${chips.length} ${chips.length === 1 ? "ativo" : "ativos"}`
+                : "Filtros"
             }
           >
             <FilterIcon aria-hidden="true" />
@@ -515,7 +517,7 @@ function DashboardFiltersContent({
             <SheetHeader>
               <SheetTitle>Filtrar relatórios</SheetTitle>
               <SheetDescription>
-                Escolha o recorte que deseja analisar.
+                Escolha quais relatórios deseja ver.
               </SheetDescription>
             </SheetHeader>
             <form onSubmit={submit} className="grid gap-4 px-4 pb-6">
@@ -536,10 +538,10 @@ function DashboardFiltersContent({
         <div className="mb-4 flex items-center justify-between gap-4">
           <div className="grid gap-1">
             <h2 id="dashboard-filters-title" className="font-semibold">
-              Recorte dos relatórios
+              Filtrar relatórios
             </h2>
             <p className="text-muted-foreground text-sm">
-              Refine os diagnósticos usados nesta visão geral.
+              Escolha quais relatórios deseja ver.
             </p>
           </div>
           <Popover>
@@ -595,8 +597,8 @@ function DashboardFiltersContent({
         className="text-muted-foreground min-h-5 px-1 text-sm"
       >
         {pending
-          ? "Atualizando resultados..."
-          : `${countFormatter.format(resultCount)} ${resultCount === 1 ? "relatório" : "relatórios"} neste filtro.`}
+          ? "Atualizando relatórios..."
+          : `${countFormatter.format(resultCount)} ${resultCount === 1 ? "relatório encontrado" : "relatórios encontrados"}.`}
       </p>
 
       {chips.length ? (
@@ -615,7 +617,7 @@ function DashboardFiltersContent({
             >
               {chip.label}
               <XIcon aria-hidden="true" />
-              <span className="sr-only">Remover filtro</span>
+              <span className="sr-only">Remover este filtro</span>
             </Link>
           ))}
           <ClearDashboardFiltersButton className="h-11" />

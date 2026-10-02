@@ -67,7 +67,7 @@ function FocusBadge() {
   return (
     <Badge variant="default">
       <FocusIcon aria-hidden="true" />
-      Em foco
+      Selecionado
     </Badge>
   );
 }
@@ -91,21 +91,21 @@ function DashboardRecentReports({
             Relatórios recentes
           </h2>
           <p className="text-muted-foreground text-sm">
-            Os cinco diagnósticos mais recentes deste filtro.
+            Os cinco relatórios mais recentes da seleção atual.
           </p>
         </div>
         <Link
           href="/reports"
           className={cn(buttonVariants({ variant: "outline" }), "h-11")}
         >
-          Ver biblioteca completa
+          Ver todos os relatórios
         </Link>
       </div>
 
       <div className="bg-card hidden overflow-hidden rounded-2xl border lg:block">
         <Table aria-label="Relatórios recentes">
           <TableCaption className="sr-only">
-            Os cinco diagnósticos mais recentes deste filtro.
+            Os cinco relatórios mais recentes da seleção atual.
           </TableCaption>
           <TableHeader>
             <TableRow>
@@ -114,7 +114,7 @@ function DashboardRecentReports({
               <TableHead>Prioridade</TableHead>
               <TableHead>Resultado</TableHead>
               <TableHead>Data</TableHead>
-              <TableHead className="text-right">Ação</TableHead>
+              <TableHead className="text-right">Abrir relatório</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -130,7 +130,7 @@ function DashboardRecentReports({
                       <div className="flex flex-wrap items-center gap-2">
                         <Link
                           href={focusHref(filters, report)}
-                          aria-label={`Ver neste dashboard: ${report.title}`}
+                          aria-label={`Ver detalhes nesta página: ${report.title}`}
                           className="hover:text-primary focus-visible:ring-ring min-w-0 rounded-sm font-semibold underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
                         >
                           {report.title}
@@ -207,7 +207,7 @@ function DashboardRecentReports({
                 <div className="grid min-w-0 flex-1 gap-1.5">
                   <Link
                     href={focusHref(filters, report)}
-                    aria-label={`Ver neste dashboard: ${report.title}`}
+                    aria-label={`Ver detalhes nesta página: ${report.title}`}
                     className="hover:text-primary focus-visible:ring-ring w-fit max-w-full rounded-sm font-semibold underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
                   >
                     {report.title}

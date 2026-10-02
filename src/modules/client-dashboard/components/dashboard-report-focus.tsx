@@ -44,8 +44,8 @@ function DashboardReportFocus({ focus }: { focus: DashboardFocusLoad }) {
                 Detalhes do relatório indisponíveis
               </h2>
               <p className="text-muted-foreground text-sm">
-                A visão geral continua disponível. Abra o relatório para tentar
-                carregar seus valores novamente.
+                O resumo continua disponível acima. Abra o relatório para tentar
+                carregar os valores novamente.
               </p>
             </div>
             <Link
@@ -72,7 +72,7 @@ function DashboardReportFocus({ focus }: { focus: DashboardFocusLoad }) {
         <div className="relative flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div className="grid gap-3">
             <p className="text-primary text-xs font-semibold tracking-[0.12em] uppercase">
-              Relatório em foco
+              Relatório selecionado
             </p>
             <div className="grid gap-1">
               <h2 id="dashboard-focus-title" className="text-2xl sm:text-3xl">

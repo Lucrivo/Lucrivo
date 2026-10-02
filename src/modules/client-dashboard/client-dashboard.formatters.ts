@@ -87,7 +87,9 @@ function toRecentReportViewModel(
     createdAtLabel: formatReportDate(report.createdAt),
     verdict: presentVerdict(report.verdict),
     priorityLabel: presentPriority(report.priority),
-    dataStateLabel: report.hasPendingData ? "Dados pendentes" : "Completo",
+    dataStateLabel: report.hasPendingData
+      ? "Dados pendentes"
+      : "Dados completos",
     itemCountLabel:
       report.itemCount === null
         ? null

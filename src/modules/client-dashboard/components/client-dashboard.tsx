@@ -24,7 +24,8 @@ function DashboardHeader({ showAction }: { showAction: boolean }) {
       <div className="grid max-w-2xl gap-2">
         <h1 className="text-balance">Olá, empreendedor</h1>
         <p className="text-muted-foreground max-w-2xl text-base leading-7">
-          Acompanhe seus diagnósticos e veja o que merece sua atenção primeiro.
+          Aqui você acompanha seus relatórios e identifica o que precisa de
+          atenção primeiro.
         </p>
       </div>
       {showAction ? (

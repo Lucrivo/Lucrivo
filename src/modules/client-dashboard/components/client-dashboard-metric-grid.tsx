@@ -47,7 +47,7 @@ function MetricSummaryItem({
         </div>
         <p className="text-muted-foreground text-sm leading-5">{description}</p>
         <span className="mt-auto flex min-h-5 items-center gap-1.5 text-sm font-medium">
-          {actionLabel ?? "Total do filtro atual"}
+          {actionLabel ?? "Seleção atual"}
           {actionLabel ? (
             <ArrowRightIcon aria-hidden="true" className="size-4" />
           ) : null}
@@ -89,10 +89,11 @@ function ClientDashboardMetricGrid({
     >
       <div className="grid gap-1 px-1">
         <h2 id="dashboard-indicators-title" className="text-2xl">
-          Indicadores do recorte
+          Resumo dos relatórios
         </h2>
         <p className="text-muted-foreground text-sm">
-          Contagens dos relatórios que correspondem aos filtros atuais.
+          Veja os resultados dos relatórios que correspondem aos filtros
+          selecionados.
         </p>
       </div>
       <ul
@@ -100,43 +101,43 @@ function ClientDashboardMetricGrid({
         className="bg-border grid gap-px overflow-hidden rounded-2xl border sm:grid-cols-2 xl:grid-cols-4"
       >
         <MetricSummaryItem
-          title="Relatórios no recorte"
+          title="Relatórios encontrados"
           value={metrics.totalReports}
           icon={ClipboardListIcon}
-          description="Diagnósticos encontrados pelos filtros"
+          description="Total de relatórios na seleção atual"
         />
         <MetricSummaryItem
-          title="Com resultado positivo"
+          title="Resultado positivo"
           value={metrics.positiveResultReports}
           icon={CircleCheckBigIcon}
-          description="Relatórios com resultado positivo"
+          description="Relatórios que indicam resultado positivo"
           href={buildClientDashboardHref(filters, {
             verdicts: ["positive_result"],
             dataState: "all",
           })}
-          actionLabel="Filtrar por resultado positivo"
+          actionLabel="Ver relatórios com resultado positivo"
         />
         <MetricSummaryItem
-          title="Com perda ou prejuízo"
+          title="Perda ou prejuízo"
           value={metrics.lossReports}
           icon={CircleAlertIcon}
-          description="Perda por venda ou prejuízo no cenário informado"
+          description="Relatórios com perda por venda ou prejuízo no cenário"
           href={buildClientDashboardHref(filters, {
             verdicts: ["direct_loss", "operational_loss"],
             dataState: "all",
           })}
-          actionLabel="Filtrar por perdas e prejuízos"
+          actionLabel="Ver relatórios com perda ou prejuízo"
         />
         <MetricSummaryItem
-          title="Com dados pendentes"
+          title="Informações pendentes"
           value={metrics.pendingDataReports}
           icon={ListChecksIcon}
-          description="Preço, volume ou preenchimento pendente"
+          description="Relatórios que ainda precisam de preço, volume ou outros dados"
           href={buildClientDashboardHref(filters, {
             verdicts: [],
             dataState: "pending",
           })}
-          actionLabel="Filtrar por dados pendentes"
+          actionLabel="Ver relatórios com informações pendentes"
         />
       </ul>
     </section>

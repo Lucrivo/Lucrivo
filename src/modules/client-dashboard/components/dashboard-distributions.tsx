@@ -85,7 +85,7 @@ function DistributionCard({
             </ul>
           ) : (
             <p className="text-muted-foreground py-6 text-center text-sm">
-              Nenhum diagnóstico neste recorte.
+              Nenhum relatório nesta seleção.
             </p>
           )}
         </CardContent>

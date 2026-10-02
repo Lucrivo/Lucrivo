@@ -87,8 +87,8 @@ function DashboardFilterPersistence({
 
   return failed ? (
     <p role="alert" className="text-destructive px-1 text-sm">
-      Os filtros foram aplicados, mas não foi possível salvá-los. Eles podem ser
-      perdidos ao sair desta página.
+      Os filtros foram aplicados, mas não foi possível salvá-los. Tente
+      aplicá-los novamente.
     </p>
   ) : null;
 }
@@ -127,7 +127,7 @@ function ClearDashboardFiltersButton({
       disabled={pending}
       onClick={clear}
     >
-      {pending ? "Limpando..." : "Limpar filtros"}
+      {pending ? "Limpando filtros..." : "Limpar filtros"}
     </Button>
   );
 }

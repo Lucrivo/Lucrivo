@@ -14,7 +14,7 @@ type DashboardRecentReportViewModel = {
   createdAtLabel: string;
   verdict: { label: string; tone: DashboardTone };
   priorityLabel: string;
-  dataStateLabel: "Completo" | "Dados pendentes";
+  dataStateLabel: "Dados completos" | "Dados pendentes";
   itemCountLabel: string | null;
   monthlyResultLabel: string | null;
   realMarginLabel: string | null;

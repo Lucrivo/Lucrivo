@@ -9,12 +9,12 @@ import { ClearDashboardFiltersButton } from "./dashboard-filter-persistence";
 const content = {
   no_history: {
     title: "Crie seu primeiro diagnóstico",
-    body: "Salve um diagnóstico para acompanhar conclusões, prioridades e valores calculados pelo Lucrivo.",
+    body: "Conclua um diagnóstico para ver aqui os resultados, prioridades e valores calculados pelo Lucrivo.",
     action: { label: "Criar primeiro diagnóstico", href: "/quick-diagnosis" },
   },
   no_results: {
-    title: "Nenhum relatório corresponde aos filtros selecionados",
-    body: "Altere ou limpe os filtros para voltar a ver seus diagnósticos.",
+    title: "Nenhum relatório encontrado com esses filtros",
+    body: "Ajuste os filtros ou limpe a seleção para ver seus relatórios novamente.",
     action: { label: "Limpar filtros", href: "/dashboard" },
     secondaryAction: { label: "Novo diagnóstico", href: "/quick-diagnosis" },
   },

@@ -35,8 +35,11 @@ describe("DashboardFilters", () => {
     );
 
     expect(screen.getByRole("status")).toHaveTextContent(
-      "12 relatórios neste filtro.",
+      "12 relatórios encontrados.",
     );
+    expect(
+      screen.getAllByRole("heading", { name: "Filtrar relatórios" }),
+    ).toHaveLength(2);
   });
 
   it("applies category and combined-loss filters through the canonical URL", async () => {
@@ -69,7 +72,7 @@ describe("DashboardFilters", () => {
       />,
     );
 
-    await user.type(screen.getByLabelText("Até"), "2026-09-30");
+    await user.type(screen.getByLabelText("Data final"), "2026-09-30");
     await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
 
     await waitFor(() =>
@@ -188,7 +191,7 @@ describe("DashboardFilters", () => {
 
     expect(screen.getByLabelText("Categoria")).toHaveClass("h-11");
     expect(
-      screen.getByRole("button", { name: "Filtros, 1 ativos" }),
+      screen.getByRole("button", { name: "Filtros, 1 ativo" }),
     ).toHaveClass("h-11");
   });
 

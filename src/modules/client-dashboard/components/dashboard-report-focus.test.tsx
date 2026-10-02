@@ -23,7 +23,7 @@ function recent(
     createdAtLabel: "01/10/2026",
     verdict: { label: "Resultado positivo", tone: "success" },
     priorityLabel: "Avaliar margem",
-    dataStateLabel: "Completo",
+    dataStateLabel: "Dados completos",
     itemCountLabel: "1 item",
     monthlyResultLabel: "R$ 1.200,00",
     realMarginLabel: "20%",
@@ -94,10 +94,10 @@ describe("DashboardRecentReports", () => {
       name: "Relatórios recentes em telas menores",
     });
     expect(within(mobileList).getAllByRole("listitem")).toHaveLength(5);
-    expect(screen.getAllByText("Em foco")).toHaveLength(2);
+    expect(screen.getAllByText("Selecionado")).toHaveLength(2);
     expect(
       within(table).getAllByRole("link", {
-        name: /Ver neste dashboard.*Diagnóstico de Produto/i,
+        name: /Ver detalhes nesta página.*Diagnóstico de Produto/i,
       })[0],
     ).toHaveAttribute("href", "/dashboard?category=product&report=42");
     expect(
@@ -132,7 +132,7 @@ describe("DashboardReportFocus", () => {
     };
     render(<DashboardReportFocus focus={focus} />);
 
-    expect(screen.getByText("Relatório em foco")).toBeVisible();
+    expect(screen.getByText("Relatório selecionado")).toBeVisible();
     expect(
       screen.getByRole("heading", { name: "Diagnóstico de Produto" }),
     ).toBeVisible();

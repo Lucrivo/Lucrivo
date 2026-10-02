@@ -16,7 +16,7 @@ export default function DashboardError({ reset }: { reset: () => void }) {
           </span>
           <div className="grid gap-2">
             <h1 className="text-2xl font-semibold tracking-tight">
-              Não foi possível carregar sua visão geral
+              Não foi possível carregar seus relatórios
             </h1>
             <p className="text-muted-foreground leading-6">
               Ocorreu uma falha temporária. Seus relatórios continuam salvos e
