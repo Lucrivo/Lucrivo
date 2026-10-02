@@ -111,4 +111,37 @@ describe("DashboardFilters", () => {
       screen.getByRole("button", { name: "Filtros, 1 ativos" }),
     ).toHaveClass("h-11");
   });
+
+  it("synchronizes the draft when canonical URL filters change", () => {
+    const { rerender } = render(
+      <DashboardFilters filters={parseClientDashboardFilters({})} />,
+    );
+
+    rerender(
+      <DashboardFilters
+        filters={parseClientDashboardFilters({ category: "product" })}
+      />,
+    );
+
+    expect(screen.getByLabelText("Categoria")).toHaveValue("product");
+  });
+
+  it("closes the mobile filter sheet after applying filters", async () => {
+    const user = userEvent.setup();
+    render(<DashboardFilters filters={parseClientDashboardFilters({})} />);
+
+    await user.click(screen.getByRole("button", { name: "Filtros" }));
+    const dialog = screen.getByRole("dialog", { name: "Filtrar relatórios" });
+    await user.selectOptions(
+      within(dialog).getByLabelText("Categoria"),
+      "product",
+    );
+    await user.click(
+      within(dialog).getByRole("button", { name: "Aplicar filtros" }),
+    );
+
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+  });
 });

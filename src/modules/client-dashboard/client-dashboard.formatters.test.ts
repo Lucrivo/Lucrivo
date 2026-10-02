@@ -80,41 +80,50 @@ const snapshot: ClientDashboardSnapshot = {
 
 describe("client dashboard presentations", () => {
   it("presents every verdict with stable Portuguese copy and semantic tone", () => {
-    expect(reportVerdicts.map((verdict) => presentVerdict(verdict).label)).toEqual(
-      [
-        "Preço não informado",
-        "Perda por venda",
-        "Volume não informado",
-        "Prejuízo no cenário informado",
-        "Mês sem vendas",
-        "Zero a zero",
-        "Resultado positivo",
-      ],
-    );
-    expect(reportVerdicts.map((verdict) => presentVerdict(verdict).tone)).toEqual(
-      ["info", "danger", "info", "danger", "info", "warning", "success"],
-    );
+    expect(
+      reportVerdicts.map((verdict) => presentVerdict(verdict).label),
+    ).toEqual([
+      "Preço não informado",
+      "Perda por venda",
+      "Volume não informado",
+      "Prejuízo no cenário informado",
+      "Mês sem vendas",
+      "Zero a zero",
+      "Resultado positivo",
+    ]);
+    expect(
+      reportVerdicts.map((verdict) => presentVerdict(verdict).tone),
+    ).toEqual([
+      "info",
+      "danger",
+      "info",
+      "danger",
+      "info",
+      "warning",
+      "success",
+    ]);
   });
 
   it("presents every priority as an action rather than severity", () => {
-    expect(reportPriorities.map((priority) => presentPriority(priority))).toEqual(
-      [
-        "Revisar custos",
-        "Completar dados",
-        "Revisar preço",
-        "Avaliar margem",
-        "Avaliar volume",
-      ],
-    );
+    expect(
+      reportPriorities.map((priority) => presentPriority(priority)),
+    ).toEqual([
+      "Revisar custos",
+      "Completar dados",
+      "Revisar preço",
+      "Avaliar margem",
+      "Avaliar volume",
+    ]);
   });
 
   it("presents all categories and analysis modes", () => {
     expect(
       (["service", "product", "production"] as const).map(presentCategory),
     ).toEqual(["Serviço", "Produto", "Produção"]);
-    expect(
-      (["quick", "detailed"] as const).map(presentAnalysisMode),
-    ).toEqual(["Rápido", "Detalhado"]);
+    expect((["quick", "detailed"] as const).map(presentAnalysisMode)).toEqual([
+      "Rápido",
+      "Detalhado",
+    ]);
   });
 });
 

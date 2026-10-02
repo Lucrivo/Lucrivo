@@ -47,8 +47,9 @@ async function getClientDashboard({
   let focusReportId: number | null;
 
   try {
-    const rpcArgs =
-      toClientDashboardRpcArgs(filters) as unknown as GeneratedDashboardRpcArgs;
+    const rpcArgs = toClientDashboardRpcArgs(
+      filters,
+    ) as unknown as GeneratedDashboardRpcArgs;
     const { data, error } = await supabase.rpc(
       "get_client_dashboard_v1",
       rpcArgs,

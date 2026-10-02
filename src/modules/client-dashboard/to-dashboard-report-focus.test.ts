@@ -163,7 +163,11 @@ function detailedReport(
 
 describe("toDashboardReportFocus quick reports", () => {
   it("selects the same semantic metrics for every quick category", () => {
-    for (const report of [serviceReport(), productReport(), productionReport()]) {
+    for (const report of [
+      serviceReport(),
+      productReport(),
+      productionReport(),
+    ]) {
       expect(
         toDashboardReportFocus(report).metrics.map((item) => item.key),
       ).toEqual(["profit", "margin", "minimum", "sales"]);
@@ -213,15 +217,15 @@ describe("toDashboardReportFocus quick reports", () => {
     const snapshot = productReport().snapshot;
     if ("analysisMode" in snapshot) throw new Error("expected quick snapshot");
 
-    expect(toDashboardReportFocus(productReport()).complementaryFacts).toContainEqual(
-      {
-        key: "discount_limit",
-        label: "Limite antes do prejuízo",
-        value: `${snapshot.results.breakEvenDiscountPercent}%`,
-        supportingText:
-          "É um limite calculado, não uma recomendação de desconto.",
-      },
-    );
+    expect(
+      toDashboardReportFocus(productReport()).complementaryFacts,
+    ).toContainEqual({
+      key: "discount_limit",
+      label: "Limite antes do prejuízo",
+      value: `${snapshot.results.breakEvenDiscountPercent}%`,
+      supportingText:
+        "É um limite calculado, não uma recomendação de desconto.",
+    });
   });
 });
 

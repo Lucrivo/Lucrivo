@@ -218,6 +218,18 @@ function salesSupportingText(
   return `${weekly} por semana${daily === null ? "" : ` e ${daily} por dia`}.`;
 }
 
+function serviceUnavailableReason(
+  snapshot: ServiceReportSnapshot,
+): string | undefined {
+  if (snapshot.results.currentPriceCents <= 0) {
+    return "Informe um preço maior que zero para calcular.";
+  }
+  if (snapshot.results.structureUnitCostCents === null) {
+    return "Informe uma rotina de trabalho válida para calcular.";
+  }
+  return undefined;
+}
+
 function sourcePriceLabel(snapshot: ServiceReportSnapshot): string {
   const labels = {
     minute: "minuto",
@@ -252,6 +264,12 @@ function toServiceNumbers(
   const plural = snapshot.unit === "hour" ? "horas" : "atendimentos";
   const singular = formatReportUnit(snapshot.unit);
   const priceHelp = normalizationHelp(snapshot);
+  const unavailableReason = serviceUnavailableReason(snapshot);
+  const salesUnavailableReason =
+    snapshot.results.monthlySalesGoal === null
+      ? (unavailableReason ??
+        "O valor que sobra por serviço precisa ser positivo para calcular a quantidade.")
+      : undefined;
   return [
     {
       key: "sales",
@@ -260,10 +278,11 @@ function toServiceNumbers(
         snapshot.results.monthlySalesGoal === null
           ? "Ainda não calculado"
           : `${snapshot.results.monthlySalesGoal} ${plural}`,
-      supportingText: salesSupportingText(
-        snapshot.results.weeklySalesGoal,
-        snapshot.results.dailySalesGoal,
-      ),
+      supportingText:
+        salesSupportingText(
+          snapshot.results.weeklySalesGoal,
+          snapshot.results.dailySalesGoal,
+        ) ?? salesUnavailableReason,
     },
     {
       key: "price",
@@ -275,17 +294,29 @@ function toServiceNumbers(
       key: "minimum",
       label: "Menor preço para não ficar no prejuízo",
       value: optionalCurrency(snapshot.results.minimumPriceCents),
+      supportingText:
+        snapshot.results.minimumPriceCents === null
+          ? unavailableReason
+          : undefined,
       help: minimumPriceHelp,
     },
     {
       key: "profit",
       label: `Resultado por ${singular}`,
       value: optionalCurrency(snapshot.results.unitProfitCents),
+      supportingText:
+        snapshot.results.unitProfitCents === null
+          ? unavailableReason
+          : undefined,
     },
     {
       key: "margin",
       label: "Quanto sobra a cada R$ 100",
       value: optionalPercentage(snapshot.results.realMarginBasisPoints),
+      supportingText:
+        snapshot.results.realMarginBasisPoints === null
+          ? unavailableReason
+          : undefined,
       help: marginHelp,
     },
   ];

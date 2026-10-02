@@ -423,10 +423,15 @@ function activeChips(
   return chips;
 }
 
-function DashboardFilters({ filters }: { filters: ClientDashboardFilters }) {
+function DashboardFiltersContent({
+  filters,
+}: {
+  filters: ClientDashboardFilters;
+}) {
   const router = useRouter();
   const initialDraft = useMemo(() => toDraft(filters), [filters]);
   const [draft, setDraft] = useState(initialDraft);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [failed, setFailed] = useState(false);
   const [pending, startTransition] = useTransition();
   const chips = activeChips(filters, initialDraft);
@@ -447,6 +452,7 @@ function DashboardFilters({ filters }: { filters: ClientDashboardFilters }) {
     startTransition(() => {
       try {
         router.replace(href, { scroll: false });
+        setMobileFiltersOpen(false);
       } catch {
         setFailed(true);
       }
@@ -462,7 +468,7 @@ function DashboardFilters({ filters }: { filters: ClientDashboardFilters }) {
         >
           Recorte dos relatórios
         </h2>
-        <Sheet>
+        <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
           <SheetTrigger
             render={<Button type="button" variant="outline" className="h-11" />}
             aria-label={
@@ -471,7 +477,11 @@ function DashboardFilters({ filters }: { filters: ClientDashboardFilters }) {
           >
             <FilterIcon aria-hidden="true" />
             Filtros
-            {chips.length ? <Badge variant="info">{chips.length}</Badge> : null}
+            {chips.length ? (
+              <Badge variant="info" className="text-foreground">
+                {chips.length}
+              </Badge>
+            ) : null}
           </SheetTrigger>
           <SheetContent
             side="right"
@@ -589,6 +599,15 @@ function DashboardFilters({ filters }: { filters: ClientDashboardFilters }) {
         </p>
       ) : null}
     </section>
+  );
+}
+
+function DashboardFilters({ filters }: { filters: ClientDashboardFilters }) {
+  return (
+    <DashboardFiltersContent
+      key={buildClientDashboardHref(filters, {})}
+      filters={filters}
+    />
   );
 }
 

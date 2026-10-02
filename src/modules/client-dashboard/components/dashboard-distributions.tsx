@@ -43,7 +43,9 @@ function DistributionCard({
       <Card className="h-full">
         <CardHeader>
           <CardTitle className="text-lg">
-            <h3 id={id}>{title}</h3>
+            <h2 id={id} className="text-lg">
+              {title}
+            </h2>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -97,12 +99,30 @@ function DashboardDistributions({
 }: {
   dashboard: ClientDashboardViewModel;
 }) {
-  const verdictEntries = dashboard.verdictCounts.map((entry) => ({
-    key: entry.verdict,
-    label: entry.label,
-    count: entry.count,
-    tone: entry.tone,
-  }));
+  const verdictOrder = [
+    "direct_loss",
+    "missing_price",
+    "incomplete_volume",
+    "operational_loss",
+    "no_sales",
+    "break_even",
+    "positive_result",
+  ] as const;
+  const verdictEntries = verdictOrder.flatMap((verdict) => {
+    const entry = dashboard.verdictCounts.find(
+      (candidate) => candidate.verdict === verdict,
+    );
+    return entry
+      ? [
+          {
+            key: entry.verdict,
+            label: entry.label,
+            count: entry.count,
+            tone: entry.tone,
+          },
+        ]
+      : [];
+  });
   const priorityEntries = dashboard.priorityCounts.map((entry) => ({
     key: entry.priority,
     label: entry.label,

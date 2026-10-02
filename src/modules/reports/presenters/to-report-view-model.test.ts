@@ -146,6 +146,24 @@ describe("toReportViewModel", () => {
     expect(model.numbers[1]?.help?.description).toContain("R$ 80,00 por hora");
   });
 
+  it("explains unavailable Service values when the price is missing", () => {
+    const model = presentService({
+      ...serviceCommand,
+      hourlyRateCents: 0,
+      source: {
+        ...serviceCommand.source,
+        currentPriceCents: 0,
+      },
+    });
+
+    for (const key of ["sales", "profit", "margin"] as const) {
+      expect(model.numbers.find((number) => number.key === key)).toMatchObject({
+        value: "Ainda não calculado",
+        supportingText: "Informe um preço maior que zero para calcular.",
+      });
+    }
+  });
+
   it("presents complete Product and Production reports objectively", () => {
     for (const model of [presentProduct(), presentProduction()]) {
       expect(

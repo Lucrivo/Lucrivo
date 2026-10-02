@@ -50,7 +50,7 @@ function DashboardReportFocus({ focus }: { focus: DashboardFocusLoad }) {
             </div>
             <Link
               href={`/reports/${focus.reportId}`}
-              className={buttonVariants({ variant: "outline" })}
+              className={buttonVariants({ variant: "outline", size: "lg" })}
             >
               Abrir relatório
               <ArrowUpRightIcon aria-hidden="true" />
@@ -87,7 +87,10 @@ function DashboardReportFocus({ focus }: { focus: DashboardFocusLoad }) {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Badge variant={badgeVariant[report.verdict.tone]}>
+              <Badge
+                variant={badgeVariant[report.verdict.tone]}
+                className="text-foreground"
+              >
                 {report.verdict.label}
               </Badge>
               <Badge variant="outline">{report.priorityLabel}</Badge>
@@ -95,7 +98,7 @@ function DashboardReportFocus({ focus }: { focus: DashboardFocusLoad }) {
           </div>
           <Link
             href={report.openHref}
-            className={buttonVariants({ variant: "outline" })}
+            className={buttonVariants({ variant: "outline", size: "lg" })}
           >
             Abrir relatório completo
             <ArrowUpRightIcon aria-hidden="true" />

@@ -23,12 +23,7 @@ import type {
 } from "./client-dashboard.types";
 
 const quickFocusKeys = ["profit", "margin", "minimum", "sales"] as const;
-const detailedFocusKeys = [
-  "result",
-  "margin",
-  "break_even",
-  "sales",
-] as const;
+const detailedFocusKeys = ["result", "margin", "break_even", "sales"] as const;
 
 function selectMetrics(
   numbers: ReportNumberViewModel[],
@@ -123,7 +118,8 @@ function analyzedOfferFact(
 
 function toQuickFocus(report: OwnedReport): DashboardReportFocusViewModel {
   const snapshot = report.snapshot;
-  if (isDetailedReportSnapshot(snapshot)) throw new Error("quick_report_expected");
+  if (isDetailedReportSnapshot(snapshot))
+    throw new Error("quick_report_expected");
 
   const presented = toReportViewModel({
     id: report.id,

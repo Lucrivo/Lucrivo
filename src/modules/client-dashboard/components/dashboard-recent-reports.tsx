@@ -42,12 +42,12 @@ function DashboardRecentReports({
             Relatórios recentes
           </h2>
           <p className="text-muted-foreground text-sm">
-            Os seis diagnósticos mais recentes deste recorte.
+            Até seis diagnósticos recentes deste recorte.
           </p>
         </div>
         <Link
           href="/reports"
-          className={buttonVariants({ variant: "outline" })}
+          className={cn(buttonVariants({ variant: "outline" }), "h-11")}
         >
           Ver biblioteca completa
         </Link>
@@ -73,7 +73,9 @@ function DashboardRecentReports({
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="grid min-w-0 gap-2">
                     <div className="flex flex-wrap gap-2">
-                      <Badge variant="info">{report.categoryLabel}</Badge>
+                      <Badge variant="info" className="text-foreground">
+                        {report.categoryLabel}
+                      </Badge>
                       <Badge variant="outline">{report.scenarioLabel}</Badge>
                       <Badge variant="outline">{report.modeLabel}</Badge>
                     </div>
@@ -86,7 +88,10 @@ function DashboardRecentReports({
                         Em foco
                       </Badge>
                     ) : null}
-                    <Badge variant={badgeVariant[report.verdict.tone]}>
+                    <Badge
+                      variant={badgeVariant[report.verdict.tone]}
+                      className="text-foreground"
+                    >
                       {report.verdict.label}
                     </Badge>
                   </div>
@@ -105,7 +110,14 @@ function DashboardRecentReports({
                 </div>
 
                 {report.monthlyResultLabel || report.realMarginLabel ? (
-                  <dl className="bg-muted/45 grid grid-cols-2 gap-px overflow-hidden rounded-lg border">
+                  <dl
+                    className={cn(
+                      "bg-muted/45 grid gap-px overflow-hidden rounded-lg border",
+                      report.monthlyResultLabel && report.realMarginLabel
+                        ? "grid-cols-2"
+                        : "grid-cols-1",
+                    )}
+                  >
                     {report.monthlyResultLabel ? (
                       <div className="bg-card grid gap-1 p-3">
                         <dt className="text-muted-foreground text-xs">
@@ -137,6 +149,7 @@ function DashboardRecentReports({
                     className={buttonVariants({
                       variant: selected ? "secondary" : "outline",
                       size: "sm",
+                      className: "h-11",
                     })}
                     aria-label={`Ver neste dashboard: ${report.title}`}
                   >
@@ -145,7 +158,11 @@ function DashboardRecentReports({
                   </Link>
                   <Link
                     href={report.openHref}
-                    className={buttonVariants({ variant: "ghost", size: "sm" })}
+                    className={buttonVariants({
+                      variant: "ghost",
+                      size: "sm",
+                      className: "h-11",
+                    })}
                     aria-label={`Abrir relatório: ${report.title}`}
                   >
                     Abrir relatório

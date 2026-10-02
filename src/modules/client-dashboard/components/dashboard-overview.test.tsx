@@ -121,6 +121,9 @@ describe("client dashboard overview", () => {
     expect(within(situations!).getByText(/Preço não informado: 1/)).toHaveClass(
       "sr-only",
     );
+    const visibleSituationLabels = within(situations!).getAllByRole("listitem");
+    expect(visibleSituationLabels[0]).toHaveTextContent("Perda por venda");
+    expect(visibleSituationLabels[1]).toHaveTextContent("Preço não informado");
 
     for (const progress of screen.getAllByRole("progressbar")) {
       expect(progress).toHaveAttribute("aria-valuemin", "0");

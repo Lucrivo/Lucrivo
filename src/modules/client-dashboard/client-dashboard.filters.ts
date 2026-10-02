@@ -42,10 +42,7 @@ const categoryScenarios = {
   production: ["manufacturing"],
 } as const satisfies Record<DashboardCategory, readonly ReportScenario[]>;
 
-type DashboardSearchParams = Record<
-  string,
-  string | string[] | undefined
->;
+type DashboardSearchParams = Record<string, string | string[] | undefined>;
 type DashboardCategory = (typeof dashboardCategories)[number];
 type DashboardMode = (typeof dashboardModes)[number];
 type DashboardDataState = (typeof dashboardDataStates)[number];
@@ -200,8 +197,7 @@ function buildClientDashboardHref(
   if (next.modes.length > 0) params.set("mode", next.modes.join(","));
   if (next.scenarios.length > 0)
     params.set("scenario", next.scenarios.join(","));
-  if (next.verdicts.length > 0)
-    params.set("verdict", next.verdicts.join(","));
+  if (next.verdicts.length > 0) params.set("verdict", next.verdicts.join(","));
   if (next.priorities.length > 0)
     params.set("priority", next.priorities.join(","));
   if (next.dataState !== "all") params.set("dataState", next.dataState);
