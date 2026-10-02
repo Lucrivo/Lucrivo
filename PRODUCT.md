@@ -66,11 +66,14 @@ com motivo explícito, quando faltam volumes, o volume total é zero ou a
 contribuição mensal total não é positiva.
 
 Os diagnósticos confirmados podem ser reabertos na biblioteca privada de
-relatórios. Relatórios gerados durante uma assinatura continuam disponíveis
-depois do fim do acesso. Clientes com plano pago podem editar os dados com uma
-prévia calculada em tempo real e escolher entre substituir o relatório atual ou
-salvar uma nova cópia. A substituição é atômica: preserva o identificador e a
-data de criação, incrementa a versão uma vez e remove integralmente o registro
+relatórios. A visão geral privada permite filtrar esse histórico, apresenta
+contagens por situação e prioridade e detalha os valores persistidos de um único
+relatório em foco, sem somar ou calcular médias financeiras entre diagnósticos.
+Relatórios gerados durante uma assinatura continuam disponíveis depois do fim
+do acesso. Clientes com plano pago podem editar os dados com uma prévia
+calculada em tempo real e escolher entre substituir o relatório atual ou salvar
+uma nova cópia. A substituição é atômica: preserva o identificador e a data de
+criação, incrementa a versão uma vez e remove integralmente o registro
 temporário usado na validação. A exclusão explícita é lógica e o remove da
 biblioteca. Snapshots legados continuam sendo lidos com as regras da versão em
 que foram criados.
@@ -86,6 +89,8 @@ que foram criados.
 - Cálculos financeiros determinísticos separados por categoria de negócio.
 - Relatórios privados com resumo executivo, números principais, explicações e
   simulação de desconto.
+- Visão geral privada e filtrável com contagens dos diagnósticos e valores de um
+  único relatório em foco.
 - Histórico paginado de diagnósticos pertencentes ao usuário autenticado.
 - Edição de relatórios compatíveis para assinantes pagos, com substituição ou
   salvamento de uma nova cópia.
