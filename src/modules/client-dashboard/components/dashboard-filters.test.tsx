@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { parseClientDashboardFilters } from "../client-dashboard.filters";
 
@@ -9,15 +9,44 @@ const { replace } = vi.hoisted(() => ({ replace: vi.fn() }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace }),
 }));
-
 import { DashboardFilters } from "./dashboard-filters";
 
 describe("DashboardFilters", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ href: "/dashboard" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("announces the current result count next to the filters", () => {
+    render(
+      <DashboardFilters
+        filters={parseClientDashboardFilters({})}
+        resultCount={12}
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "12 relatórios neste filtro.",
+    );
+  });
 
   it("applies category and combined-loss filters through the canonical URL", async () => {
     const user = userEvent.setup();
-    render(<DashboardFilters filters={parseClientDashboardFilters({})} />);
+    render(
+      <DashboardFilters
+        filters={parseClientDashboardFilters({})}
+        resultCount={0}
+      />,
+    );
 
     await user.selectOptions(screen.getByLabelText("Categoria"), "product");
     await user.selectOptions(screen.getByLabelText("Situação"), "loss");
@@ -33,7 +62,12 @@ describe("DashboardFilters", () => {
 
   it("converts the inclusive final date to an exclusive URL boundary", async () => {
     const user = userEvent.setup();
-    render(<DashboardFilters filters={parseClientDashboardFilters({})} />);
+    render(
+      <DashboardFilters
+        filters={parseClientDashboardFilters({})}
+        resultCount={0}
+      />,
+    );
 
     await user.type(screen.getByLabelText("Até"), "2026-09-30");
     await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
@@ -52,20 +86,64 @@ describe("DashboardFilters", () => {
           to: "2026-10-01",
           report: "42",
         })}
+        resultCount={1}
       />,
     );
 
     expect(
       screen.getByRole("link", { name: /Até 30\/09\/2026/ }),
-    ).toHaveAttribute("href", "/dashboard");
+    ).toHaveAttribute("href", "/dashboard?dataState=all");
     expect(
-      screen.getByRole("link", { name: "Limpar filtros" }),
-    ).toHaveAttribute("href", "/dashboard");
+      screen.getByRole("button", { name: "Limpar filtros" }),
+    ).toBeVisible();
+  });
+
+  it("keeps an all-filters selection explicit instead of restoring the cookie", async () => {
+    const user = userEvent.setup();
+    render(
+      <DashboardFilters
+        filters={parseClientDashboardFilters({ category: "product" })}
+        resultCount={1}
+      />,
+    );
+
+    await user.selectOptions(screen.getByLabelText("Categoria"), "all");
+    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
+
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith("/dashboard?dataState=all", {
+        scroll: false,
+      }),
+    );
+  });
+
+  it("deletes the saved preference before clearing active filters", async () => {
+    const user = userEvent.setup();
+    render(
+      <DashboardFilters
+        filters={parseClientDashboardFilters({ category: "product" })}
+        resultCount={1}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Limpar filtros" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/dashboard/filters",
+      expect.objectContaining({ method: "DELETE" }),
+    );
+    expect(replace).toHaveBeenCalledWith("/dashboard", { scroll: false });
   });
 
   it("maps incomplete data to dataState and keeps its control synchronized", async () => {
     const user = userEvent.setup();
-    render(<DashboardFilters filters={parseClientDashboardFilters({})} />);
+    render(
+      <DashboardFilters
+        filters={parseClientDashboardFilters({})}
+        resultCount={0}
+      />,
+    );
 
     await user.selectOptions(screen.getByLabelText("Situação"), "pending");
     expect(screen.getByLabelText("Estado dos dados")).toHaveValue("pending");
@@ -87,6 +165,7 @@ describe("DashboardFilters", () => {
           mode: "detailed",
           scenario: "resale",
         })}
+        resultCount={1}
       />,
     );
 
@@ -103,6 +182,7 @@ describe("DashboardFilters", () => {
     render(
       <DashboardFilters
         filters={parseClientDashboardFilters({ category: "product" })}
+        resultCount={1}
       />,
     );
 
@@ -114,12 +194,16 @@ describe("DashboardFilters", () => {
 
   it("synchronizes the draft when canonical URL filters change", () => {
     const { rerender } = render(
-      <DashboardFilters filters={parseClientDashboardFilters({})} />,
+      <DashboardFilters
+        filters={parseClientDashboardFilters({})}
+        resultCount={0}
+      />,
     );
 
     rerender(
       <DashboardFilters
         filters={parseClientDashboardFilters({ category: "product" })}
+        resultCount={1}
       />,
     );
 
@@ -128,7 +212,12 @@ describe("DashboardFilters", () => {
 
   it("closes the mobile filter sheet after applying filters", async () => {
     const user = userEvent.setup();
-    render(<DashboardFilters filters={parseClientDashboardFilters({})} />);
+    render(
+      <DashboardFilters
+        filters={parseClientDashboardFilters({})}
+        resultCount={0}
+      />,
+    );
 
     await user.click(screen.getByRole("button", { name: "Filtros" }));
     const dialog = screen.getByRole("dialog", { name: "Filtrar relatórios" });

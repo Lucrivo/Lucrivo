@@ -93,20 +93,27 @@ describe("client dashboard overview", () => {
     expect(
       screen.queryByText(/na meta|margem boa|saudável/i),
     ).not.toBeInTheDocument();
+    const summary = screen.getByRole("list", {
+      name: "Resumo dos relatórios",
+    });
+    expect(within(summary).getAllByRole("listitem")).toHaveLength(4);
+    expect(within(summary).getByText("Total do filtro atual")).toBeVisible();
     expect(
-      screen.getByRole("link", { name: "Ver resultados positivos" }),
+      screen.getByRole("link", {
+        name: "Filtrar por resultado positivo",
+      }),
     ).toHaveAttribute(
       "href",
       "/dashboard?category=product&verdict=positive_result",
     );
     expect(
-      screen.getByRole("link", { name: "Ver perdas e prejuízos" }),
+      screen.getByRole("link", { name: "Filtrar por perdas e prejuízos" }),
     ).toHaveAttribute(
       "href",
       "/dashboard?category=product&verdict=direct_loss%2Coperational_loss",
     );
     expect(
-      screen.getByRole("link", { name: "Ver dados pendentes" }),
+      screen.getByRole("link", { name: "Filtrar por dados pendentes" }),
     ).toHaveAttribute("href", "/dashboard?category=product&dataState=pending");
   });
 

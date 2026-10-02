@@ -1,16 +1,25 @@
 import Link from "next/link";
-import { ArrowUpRightIcon, CalendarDaysIcon, FocusIcon } from "lucide-react";
+import { ArrowUpRightIcon, FocusIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import {
-  buildClientDashboardHref,
+  buildExplicitClientDashboardHref,
   type ClientDashboardFilters,
 } from "@/modules/client-dashboard/client-dashboard.filters";
 import type {
   ClientDashboardViewModel,
+  DashboardRecentReportViewModel,
   DashboardTone,
 } from "@/modules/client-dashboard/client-dashboard.types";
 
@@ -25,6 +34,44 @@ const badgeVariant = {
   React.ComponentProps<typeof Badge>["variant"]
 >;
 
+function typeLabel(report: DashboardRecentReportViewModel) {
+  return [
+    report.categoryLabel,
+    report.scenarioLabel,
+    report.modeLabel,
+    report.itemCountLabel,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function focusHref(
+  filters: ClientDashboardFilters,
+  report: DashboardRecentReportViewModel,
+) {
+  return buildExplicitClientDashboardHref(filters, { reportId: report.id });
+}
+
+function VerdictBadge({ report }: { report: DashboardRecentReportViewModel }) {
+  return (
+    <Badge
+      variant={badgeVariant[report.verdict.tone]}
+      className="text-foreground"
+    >
+      {report.verdict.label}
+    </Badge>
+  );
+}
+
+function FocusBadge() {
+  return (
+    <Badge variant="default">
+      <FocusIcon aria-hidden="true" />
+      Em foco
+    </Badge>
+  );
+}
+
 function DashboardRecentReports({
   reports,
   focusReportId,
@@ -34,6 +81,8 @@ function DashboardRecentReports({
   focusReportId: number | null;
   filters: ClientDashboardFilters;
 }) {
+  const visibleReports = reports.slice(0, 5);
+
   return (
     <section aria-labelledby="dashboard-recent-title" className="grid gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3 px-1">
@@ -42,7 +91,7 @@ function DashboardRecentReports({
             Relatórios recentes
           </h2>
           <p className="text-muted-foreground text-sm">
-            Até seis diagnósticos recentes deste recorte.
+            Os cinco diagnósticos mais recentes deste filtro.
           </p>
         </div>
         <Link
@@ -53,127 +102,172 @@ function DashboardRecentReports({
         </Link>
       </div>
 
-      <ol
-        aria-label="Relatórios recentes"
-        className="grid gap-3 xl:grid-cols-2"
+      <div className="bg-card hidden overflow-hidden rounded-2xl border lg:block">
+        <Table aria-label="Relatórios recentes">
+          <TableCaption className="sr-only">
+            Os cinco diagnósticos mais recentes deste filtro.
+          </TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Relatório</TableHead>
+              <TableHead>Situação</TableHead>
+              <TableHead>Prioridade</TableHead>
+              <TableHead>Resultado</TableHead>
+              <TableHead>Data</TableHead>
+              <TableHead className="text-right">Ação</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {visibleReports.map((report) => {
+              const selected = report.id === focusReportId;
+              return (
+                <TableRow
+                  key={report.id}
+                  data-state={selected ? "selected" : undefined}
+                >
+                  <TableCell className="max-w-80 py-4 whitespace-normal">
+                    <div className="grid min-w-0 gap-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                          href={focusHref(filters, report)}
+                          aria-label={`Ver neste dashboard: ${report.title}`}
+                          className="hover:text-primary focus-visible:ring-ring min-w-0 rounded-sm font-semibold underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                        >
+                          {report.title}
+                        </Link>
+                        {selected ? <FocusBadge /> : null}
+                      </div>
+                      <span className="text-muted-foreground text-sm leading-5">
+                        {typeLabel(report)}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-4 whitespace-normal">
+                    <div className="grid justify-items-start gap-1.5">
+                      <VerdictBadge report={report} />
+                      <span className="text-muted-foreground text-sm">
+                        {report.dataStateLabel}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-4 whitespace-normal">
+                    {report.priorityLabel}
+                  </TableCell>
+                  <TableCell className="py-4 whitespace-normal">
+                    <div className="grid gap-1">
+                      <span className="font-medium tabular-nums">
+                        {report.monthlyResultLabel ?? "Indisponível"}
+                      </span>
+                      {report.realMarginLabel ? (
+                        <span className="text-muted-foreground text-sm tabular-nums">
+                          Margem {report.realMarginLabel}
+                        </span>
+                      ) : null}
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-4 tabular-nums">
+                    {report.createdAtLabel}
+                  </TableCell>
+                  <TableCell className="py-4 text-right">
+                    <Link
+                      href={report.openHref}
+                      className={buttonVariants({
+                        variant: "outline",
+                        size: "sm",
+                        className: "h-11",
+                      })}
+                      aria-label={`Abrir relatório: ${report.title}`}
+                    >
+                      Abrir
+                      <ArrowUpRightIcon aria-hidden="true" />
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+
+      <ul
+        aria-label="Relatórios recentes em telas menores"
+        className="bg-card divide-border grid divide-y overflow-hidden rounded-2xl border lg:hidden"
       >
-        {reports.slice(0, 6).map((report) => {
+        {visibleReports.map((report) => {
           const selected = report.id === focusReportId;
           return (
-            <li key={report.id} className="min-w-0">
-              <Card
-                role="article"
-                aria-label={`${report.title} — ${report.scenarioLabel}`}
-                size="sm"
-                className={cn(
-                  "h-full gap-4 p-4",
-                  selected && "border-primary/45 ring-primary/10 ring-2",
-                )}
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="grid min-w-0 gap-2">
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="info" className="text-foreground">
-                        {report.categoryLabel}
-                      </Badge>
-                      <Badge variant="outline">{report.scenarioLabel}</Badge>
-                      <Badge variant="outline">{report.modeLabel}</Badge>
-                    </div>
-                    <h3 className="text-lg font-semibold">{report.title}</h3>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-end gap-2">
-                    {selected ? (
-                      <Badge variant="default">
-                        <FocusIcon aria-hidden="true" />
-                        Em foco
-                      </Badge>
-                    ) : null}
-                    <Badge
-                      variant={badgeVariant[report.verdict.tone]}
-                      className="text-foreground"
-                    >
-                      {report.verdict.label}
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                  <span className="flex items-center gap-1.5">
-                    <CalendarDaysIcon aria-hidden="true" className="size-3.5" />
-                    {report.createdAtLabel}
-                  </span>
-                  <span>{report.priorityLabel}</span>
-                  <span>{report.dataStateLabel}</span>
-                  {report.itemCountLabel ? (
-                    <span>{report.itemCountLabel}</span>
-                  ) : null}
-                </div>
-
-                {report.monthlyResultLabel || report.realMarginLabel ? (
-                  <dl
-                    className={cn(
-                      "bg-muted/45 grid gap-px overflow-hidden rounded-lg border",
-                      report.monthlyResultLabel && report.realMarginLabel
-                        ? "grid-cols-2"
-                        : "grid-cols-1",
-                    )}
-                  >
-                    {report.monthlyResultLabel ? (
-                      <div className="bg-card grid gap-1 p-3">
-                        <dt className="text-muted-foreground text-xs">
-                          Resultado mensal
-                        </dt>
-                        <dd className="font-semibold tabular-nums">
-                          {report.monthlyResultLabel}
-                        </dd>
-                      </div>
-                    ) : null}
-                    {report.realMarginLabel ? (
-                      <div className="bg-card grid gap-1 p-3">
-                        <dt className="text-muted-foreground text-xs">
-                          Margem real
-                        </dt>
-                        <dd className="font-semibold tabular-nums">
-                          {report.realMarginLabel}
-                        </dd>
-                      </div>
-                    ) : null}
-                  </dl>
-                ) : null}
-
-                <div className="mt-auto flex flex-wrap justify-end gap-2">
+            <li
+              key={report.id}
+              className={cn(
+                "grid min-w-0 gap-4 p-4",
+                selected && "bg-primary/5",
+              )}
+            >
+              <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+                <div className="grid min-w-0 flex-1 gap-1.5">
                   <Link
-                    href={buildClientDashboardHref(filters, {
-                      reportId: report.id,
-                    })}
-                    className={buttonVariants({
-                      variant: selected ? "secondary" : "outline",
-                      size: "sm",
-                      className: "h-11",
-                    })}
+                    href={focusHref(filters, report)}
                     aria-label={`Ver neste dashboard: ${report.title}`}
+                    className="hover:text-primary focus-visible:ring-ring w-fit max-w-full rounded-sm font-semibold underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
                   >
-                    <FocusIcon aria-hidden="true" />
-                    Ver neste dashboard
+                    {report.title}
                   </Link>
-                  <Link
-                    href={report.openHref}
-                    className={buttonVariants({
-                      variant: "ghost",
-                      size: "sm",
-                      className: "h-11",
-                    })}
-                    aria-label={`Abrir relatório: ${report.title}`}
-                  >
-                    Abrir relatório
-                    <ArrowUpRightIcon aria-hidden="true" />
-                  </Link>
+                  <span className="text-muted-foreground text-sm leading-5">
+                    {typeLabel(report)}
+                  </span>
                 </div>
-              </Card>
+                <div className="flex flex-wrap items-center gap-2">
+                  {selected ? <FocusBadge /> : null}
+                  <VerdictBadge report={report} />
+                </div>
+              </div>
+
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                <div className="grid gap-1">
+                  <dt className="text-muted-foreground">Prioridade</dt>
+                  <dd>{report.priorityLabel}</dd>
+                </div>
+                <div className="grid gap-1">
+                  <dt className="text-muted-foreground">Data</dt>
+                  <dd className="tabular-nums">{report.createdAtLabel}</dd>
+                </div>
+                <div className="grid gap-1">
+                  <dt className="text-muted-foreground">Resultado</dt>
+                  <dd className="font-medium tabular-nums">
+                    {report.monthlyResultLabel ?? "Indisponível"}
+                  </dd>
+                </div>
+                {report.realMarginLabel ? (
+                  <div className="grid gap-1">
+                    <dt className="text-muted-foreground">Margem</dt>
+                    <dd className="font-medium tabular-nums">
+                      {report.realMarginLabel}
+                    </dd>
+                  </div>
+                ) : null}
+              </dl>
+
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="text-muted-foreground text-sm">
+                  {report.dataStateLabel}
+                </span>
+                <Link
+                  href={report.openHref}
+                  className={buttonVariants({
+                    variant: "outline",
+                    size: "sm",
+                    className: "h-11",
+                  })}
+                  aria-label={`Abrir relatório: ${report.title}`}
+                >
+                  Abrir relatório
+                  <ArrowUpRightIcon aria-hidden="true" />
+                </Link>
+              </div>
             </li>
           );
         })}
-      </ol>
+      </ul>
     </section>
   );
 }

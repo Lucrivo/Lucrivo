@@ -26,6 +26,7 @@ import {
 import { cn } from "@/lib/utils";
 import {
   buildClientDashboardHref,
+  buildExplicitClientDashboardHref,
   nextCalendarDate,
   previousCalendarDate,
   type ClientDashboardFilters,
@@ -38,6 +39,11 @@ import type {
   ReportScenario,
   ReportVerdict,
 } from "@/modules/reports/types";
+
+import {
+  ClearDashboardFiltersButton,
+  DashboardFilterPersistence,
+} from "./dashboard-filter-persistence";
 
 type Situation =
   "all" | "positive" | "break_even" | "loss" | "no_sales" | "pending";
@@ -52,6 +58,8 @@ type FilterDraft = {
   scenario: ReportScenario | "all";
   priority: ReportPriority | "all";
 };
+
+const countFormatter = new Intl.NumberFormat("pt-BR");
 
 const categoryOptions = [
   ["all", "Todos"],
@@ -420,13 +428,30 @@ function activeChips(
         "Prioridade",
       href: buildClientDashboardHref(filters, { priorities: [] }),
     });
-  return chips;
+  return chips.map((chip) => ({
+    ...chip,
+    href:
+      chip.href === "/dashboard"
+        ? buildExplicitClientDashboardHref(filters, {
+            from: null,
+            to: null,
+            categories: [],
+            modes: [],
+            scenarios: [],
+            verdicts: [],
+            priorities: [],
+            dataState: "all",
+          })
+        : chip.href,
+  }));
 }
 
 function DashboardFiltersContent({
   filters,
+  resultCount,
 }: {
   filters: ClientDashboardFilters;
+  resultCount: number;
 }) {
   const router = useRouter();
   const initialDraft = useMemo(() => toDraft(filters), [filters]);
@@ -439,7 +464,7 @@ function DashboardFiltersContent({
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFailed(false);
-    const href = buildClientDashboardHref(filters, {
+    const href = buildExplicitClientDashboardHref(filters, {
       from: draft.from || null,
       to: draft.until ? nextCalendarDate(draft.until) : null,
       categories: draft.category === "all" ? [] : [draft.category],
@@ -563,6 +588,17 @@ function DashboardFiltersContent({
         </form>
       </div>
 
+      <p
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="text-muted-foreground min-h-5 px-1 text-sm"
+      >
+        {pending
+          ? "Atualizando resultados..."
+          : `${countFormatter.format(resultCount)} ${resultCount === 1 ? "relatório" : "relatórios"} neste filtro.`}
+      </p>
+
       {chips.length ? (
         <div
           className="flex flex-wrap items-center gap-2"
@@ -582,15 +618,7 @@ function DashboardFiltersContent({
               <span className="sr-only">Remover filtro</span>
             </Link>
           ))}
-          <Link
-            href="/dashboard"
-            className={cn(
-              buttonVariants({ variant: "ghost", size: "sm" }),
-              "h-11",
-            )}
-          >
-            Limpar filtros
-          </Link>
+          <ClearDashboardFiltersButton className="h-11" />
         </div>
       ) : null}
       {failed ? (
@@ -602,12 +630,24 @@ function DashboardFiltersContent({
   );
 }
 
-function DashboardFilters({ filters }: { filters: ClientDashboardFilters }) {
+function DashboardFilters({
+  filters,
+  resultCount,
+  persistFilters = false,
+}: {
+  filters: ClientDashboardFilters;
+  resultCount: number;
+  persistFilters?: boolean;
+}) {
   return (
-    <DashboardFiltersContent
-      key={buildClientDashboardHref(filters, {})}
-      filters={filters}
-    />
+    <>
+      <DashboardFiltersContent
+        key={buildClientDashboardHref(filters, {})}
+        filters={filters}
+        resultCount={resultCount}
+      />
+      <DashboardFilterPersistence enabled={persistFilters} filters={filters} />
+    </>
   );
 }
 

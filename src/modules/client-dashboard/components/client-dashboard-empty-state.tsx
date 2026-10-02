@@ -4,6 +4,8 @@ import { FileChartColumnIcon, FilterXIcon, PlusIcon } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
+import { ClearDashboardFiltersButton } from "./dashboard-filter-persistence";
+
 const content = {
   no_history: {
     title: "Crie seu primeiro diagnóstico",
@@ -35,13 +37,17 @@ function ClientDashboardEmptyState({ kind }: { kind: keyof typeof content }) {
           <p className="text-muted-foreground leading-6">{state.body}</p>
         </div>
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
-          <Link
-            href={state.action.href}
-            className={buttonVariants({ size: "lg" })}
-          >
-            {kind === "no_history" ? <PlusIcon aria-hidden="true" /> : null}
-            {state.action.label}
-          </Link>
+          {kind === "no_results" ? (
+            <ClearDashboardFiltersButton size="lg" variant="default" />
+          ) : (
+            <Link
+              href={state.action.href}
+              className={buttonVariants({ size: "lg" })}
+            >
+              <PlusIcon aria-hidden="true" />
+              {state.action.label}
+            </Link>
+          )}
           {"secondaryAction" in state ? (
             <Link
               href={state.secondaryAction.href}

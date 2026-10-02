@@ -71,7 +71,7 @@ const focusedReport: DashboardReportFocusViewModel = {
 };
 
 describe("DashboardRecentReports", () => {
-  it("renders at most six recent reports with focus and direct actions", () => {
+  it("renders at most five recent reports as a table and a compact mobile list", () => {
     const reports = [42, 41, 40, 39, 38, 37, 36].map((id, index) =>
       recent(id, {
         createdAtLabel: `${String(7 - index).padStart(2, "0")}/10/2026`,
@@ -85,19 +85,23 @@ describe("DashboardRecentReports", () => {
       />,
     );
 
-    const list = screen.getByRole("list", { name: "Relatórios recentes" });
-    expect(within(list).getAllByRole("article")).toHaveLength(6);
-    expect(within(list).getAllByRole("article")[0]).toHaveTextContent(
+    const table = screen.getByRole("table", { name: "Relatórios recentes" });
+    expect(within(table).getAllByRole("row")).toHaveLength(6);
+    expect(within(table).getAllByRole("row")[1]).toHaveTextContent(
       "07/10/2026",
     );
-    expect(screen.getByText("Em foco")).toBeVisible();
+    const mobileList = screen.getByRole("list", {
+      name: "Relatórios recentes em telas menores",
+    });
+    expect(within(mobileList).getAllByRole("listitem")).toHaveLength(5);
+    expect(screen.getAllByText("Em foco")).toHaveLength(2);
     expect(
-      screen.getAllByRole("link", {
+      within(table).getAllByRole("link", {
         name: /Ver neste dashboard.*Diagnóstico de Produto/i,
       })[0],
     ).toHaveAttribute("href", "/dashboard?category=product&report=42");
     expect(
-      screen.getAllByRole("link", {
+      within(table).getAllByRole("link", {
         name: /Abrir relatório.*Diagnóstico de Produto/i,
       })[0],
     ).toHaveAttribute("href", "/reports/42");
@@ -114,9 +118,9 @@ describe("DashboardRecentReports", () => {
       />,
     );
 
-    expect(screen.queryByText("Resultado mensal")).not.toBeInTheDocument();
-    expect(screen.queryByText("Margem real")).not.toBeInTheDocument();
-    expect(screen.queryByText(/^0$/)).not.toBeInTheDocument();
+    expect(screen.queryByText("R$ 0,00")).not.toBeInTheDocument();
+    expect(screen.queryByText("0%")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Indisponível")).toHaveLength(2);
   });
 });
 

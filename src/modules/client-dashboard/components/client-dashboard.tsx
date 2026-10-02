@@ -44,10 +44,12 @@ function ClientDashboard({
   dashboard,
   focus,
   filters,
+  persistFilters = false,
 }: {
   dashboard: ClientDashboardViewModel;
   focus: DashboardFocusLoad;
   filters: ClientDashboardFilters;
+  persistFilters?: boolean;
 }) {
   if (!dashboard.hasAnyReports) {
     return (
@@ -63,7 +65,11 @@ function ClientDashboard({
       <main className="mx-auto grid w-full max-w-7xl grid-cols-[minmax(0,1fr)] gap-7 pb-10">
         <DashboardHeader showAction />
         <div data-dashboard-section="filters">
-          <DashboardFilters filters={filters} />
+          <DashboardFilters
+            filters={filters}
+            resultCount={dashboard.metrics.totalReports}
+            persistFilters={persistFilters}
+          />
         </div>
         <ClientDashboardEmptyState kind="no_results" />
       </main>
@@ -74,7 +80,11 @@ function ClientDashboard({
     <main className="mx-auto grid w-full max-w-7xl grid-cols-[minmax(0,1fr)] gap-7 pb-10">
       <DashboardHeader showAction />
       <div data-dashboard-section="filters">
-        <DashboardFilters filters={filters} />
+        <DashboardFilters
+          filters={filters}
+          resultCount={dashboard.metrics.totalReports}
+          persistFilters={persistFilters}
+        />
       </div>
       <div data-dashboard-section="indicators">
         <ClientDashboardMetricGrid dashboard={dashboard} filters={filters} />

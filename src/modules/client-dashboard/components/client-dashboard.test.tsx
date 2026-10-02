@@ -176,7 +176,7 @@ describe("ClientDashboard", () => {
       }),
     ).toBeVisible();
     expect(
-      screen.getAllByRole("link", { name: "Limpar filtros" }),
+      screen.getAllByRole("button", { name: "Limpar filtros" }),
     ).not.toHaveLength(0);
     expect(
       screen.getAllByRole("link", { name: "Novo diagnóstico" }),

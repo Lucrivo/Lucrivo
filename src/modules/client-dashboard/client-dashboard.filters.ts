@@ -58,6 +58,7 @@ type ClientDashboardFilters = {
   dataState: DashboardDataState;
   reportId: number | null;
 };
+type StoredClientDashboardFilters = Omit<ClientDashboardFilters, "reportId">;
 
 type GeneratedDashboardRpcArgs =
   Database["public"]["Functions"]["get_client_dashboard_v1"]["Args"];
@@ -110,17 +111,44 @@ function compatibleScenarios(
 function normalizeClientDashboardFilters(
   filters: ClientDashboardFilters,
 ): ClientDashboardFilters {
+  const categories = dashboardCategories.filter((category) =>
+    filters.categories.includes(category),
+  );
   const hasValidRange =
     filters.from === null || filters.to === null || filters.from < filters.to;
-  const allowedScenarios = compatibleScenarios(filters.categories);
+  const allowedScenarios = compatibleScenarios(categories);
 
   return {
     ...filters,
     from: hasValidRange ? filters.from : null,
     to: hasValidRange ? filters.to : null,
-    scenarios: filters.scenarios.filter((scenario) =>
-      allowedScenarios.has(scenario),
+    categories,
+    modes: dashboardModes.filter((mode) => filters.modes.includes(mode)),
+    scenarios: dashboardScenarios.filter(
+      (scenario) =>
+        filters.scenarios.includes(scenario) && allowedScenarios.has(scenario),
     ),
+    verdicts: dashboardVerdicts.filter((verdict) =>
+      filters.verdicts.includes(verdict),
+    ),
+    priorities: dashboardPriorities.filter((priority) =>
+      filters.priorities.includes(priority),
+    ),
+  };
+}
+
+function toStoredClientDashboardFilters(
+  filters: ClientDashboardFilters,
+): StoredClientDashboardFilters {
+  return {
+    from: filters.from,
+    to: filters.to,
+    categories: filters.categories,
+    modes: filters.modes,
+    scenarios: filters.scenarios,
+    verdicts: filters.verdicts,
+    priorities: filters.priorities,
+    dataState: filters.dataState,
   };
 }
 
@@ -207,6 +235,18 @@ function buildClientDashboardHref(
   return `/dashboard${query ? `?${query}` : ""}`;
 }
 
+function buildExplicitClientDashboardHref(
+  filters: ClientDashboardFilters,
+  patch: Partial<ClientDashboardFilters>,
+): string {
+  const href = buildClientDashboardHref(filters, patch);
+  if (href === "/dashboard") return "/dashboard?dataState=all";
+  if (href.startsWith("/dashboard?report=")) {
+    return href.replace("/dashboard?", "/dashboard?dataState=all&");
+  }
+  return href;
+}
+
 function moveCalendarDate(value: string, days: number): string {
   const parsed = parseCalendarDate(value);
   if (!parsed) throw new Error("invalid_calendar_date");
@@ -225,6 +265,7 @@ function previousCalendarDate(value: string): string {
 
 export {
   buildClientDashboardHref,
+  buildExplicitClientDashboardHref,
   dashboardCategories,
   dashboardDataStates,
   dashboardModes,
@@ -232,8 +273,10 @@ export {
   dashboardScenarios,
   dashboardVerdicts,
   nextCalendarDate,
+  normalizeClientDashboardFilters,
   parseClientDashboardFilters,
   previousCalendarDate,
+  toStoredClientDashboardFilters,
   toClientDashboardRpcArgs,
   type ClientDashboardFilters,
   type ClientDashboardRpcArgs,
@@ -241,4 +284,5 @@ export {
   type DashboardDataState,
   type DashboardMode,
   type DashboardSearchParams,
+  type StoredClientDashboardFilters,
 };

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildClientDashboardHref,
+  buildExplicitClientDashboardHref,
   nextCalendarDate,
   parseClientDashboardFilters,
   previousCalendarDate,
@@ -156,6 +157,17 @@ describe("dashboard filter serialization", () => {
         verdicts: ["direct_loss", "operational_loss"],
       }),
     ).toBe("/dashboard?verdict=direct_loss%2Coperational_loss");
+  });
+
+  it("marks an empty filter set as explicit when persistence must not restore it", () => {
+    const filters = parseClientDashboardFilters({});
+
+    expect(buildExplicitClientDashboardHref(filters, {})).toBe(
+      "/dashboard?dataState=all",
+    );
+    expect(buildExplicitClientDashboardHref(filters, { reportId: 7 })).toBe(
+      "/dashboard?dataState=all&report=7",
+    );
   });
 });
 
