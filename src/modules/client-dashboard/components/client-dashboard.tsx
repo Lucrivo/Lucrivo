@@ -12,6 +12,7 @@ import { ClientDashboardEmptyState } from "./client-dashboard-empty-state";
 import { ClientDashboardMetricGrid } from "./client-dashboard-metric-grid";
 import { DashboardDistributions } from "./dashboard-distributions";
 import { DashboardFilters } from "./dashboard-filters";
+import { DashboardFocusScroll } from "./dashboard-focus-navigation";
 import { DashboardRecentReports } from "./dashboard-recent-reports";
 import { DashboardReportFocus } from "./dashboard-report-focus";
 
@@ -100,7 +101,8 @@ function ClientDashboard({
           filters={filters}
         />
       </div>
-      <div data-dashboard-section="report-focus">
+      <div data-dashboard-section="report-focus" className="scroll-mt-24">
+        <DashboardFocusScroll focusReportId={dashboard.focusReportId} />
         <DashboardReportFocus focus={focus} />
       </div>
     </main>

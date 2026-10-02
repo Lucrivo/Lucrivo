@@ -610,6 +610,7 @@ function DashboardFiltersContent({
             <Link
               key={`${chip.label}-${chip.href}`}
               href={chip.href}
+              scroll={false}
               className={cn(
                 buttonVariants({ variant: "secondary", size: "sm" }),
                 "h-11 gap-1.5 rounded-full px-3",

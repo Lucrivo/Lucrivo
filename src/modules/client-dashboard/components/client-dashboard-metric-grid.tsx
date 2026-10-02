@@ -61,6 +61,7 @@ function MetricSummaryItem({
       {href && actionLabel ? (
         <Link
           href={href}
+          scroll={false}
           aria-label={actionLabel}
           className="hover:bg-primary/5 focus-visible:ring-ring block h-full transition-colors focus-visible:ring-3 focus-visible:outline-none"
         >

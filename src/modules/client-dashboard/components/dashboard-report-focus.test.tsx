@@ -94,12 +94,21 @@ describe("DashboardRecentReports", () => {
       name: "Relatórios recentes em telas menores",
     });
     expect(within(mobileList).getAllByRole("listitem")).toHaveLength(5);
-    expect(screen.getAllByText("Selecionado")).toHaveLength(2);
+    expect(
+      screen.getAllByRole("button", {
+        name: /Relatório selecionado: Diagnóstico de Produto/,
+      }),
+    ).toHaveLength(2);
     expect(
       within(table).getAllByRole("link", {
         name: /Ver detalhes nesta página.*Diagnóstico de Produto/i,
       })[0],
     ).toHaveAttribute("href", "/dashboard?category=product&report=42");
+    expect(
+      within(table).getAllByRole("link", {
+        name: "Selecionar relatório: Diagnóstico de Produto",
+      })[0],
+    ).toHaveAttribute("href", "/dashboard?category=product&report=41");
     expect(
       within(table).getAllByRole("link", {
         name: /Abrir relatório.*Diagnóstico de Produto/i,

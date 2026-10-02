@@ -87,10 +87,7 @@ function DashboardReportFocus({ focus }: { focus: DashboardFocusLoad }) {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Badge
-                variant={badgeVariant[report.verdict.tone]}
-                className="text-foreground"
-              >
+              <Badge variant={badgeVariant[report.verdict.tone]}>
                 {report.verdict.label}
               </Badge>
               <Badge variant="outline">{report.priorityLabel}</Badge>
