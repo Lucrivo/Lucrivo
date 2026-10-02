@@ -107,6 +107,18 @@ describe("ClientDashboard", () => {
       "grid-cols-[minmax(0,1fr)]",
     );
     expect(
+      screen.getByRole("heading", { name: "Olá, empreendedor" }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Acompanhe seus diagnósticos e veja o que merece sua atenção primeiro.",
+      ),
+    ).toBeVisible();
+    expect(screen.queryByText("Seus relatórios")).not.toBeInTheDocument();
+    expect(
+      container.querySelector('[data-dashboard-section="header"]'),
+    ).not.toHaveClass("bg-card", "rounded-3xl", "border", "shadow-sm");
+    expect(
       screen.getByRole("link", { name: "Novo diagnóstico" }),
     ).toHaveAttribute("href", "/quick-diagnosis");
     expect(

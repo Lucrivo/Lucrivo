@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardLoading() {
@@ -11,13 +11,13 @@ export default function DashboardLoading() {
       <p className="sr-only" role="status">
         Carregando visão geral dos diagnósticos...
       </p>
-      <Card className="rounded-3xl px-3 py-4">
-        <CardHeader className="gap-4">
-          <Skeleton className="h-6 w-36" />
-          <Skeleton className="h-11 w-3/5" />
-          <Skeleton className="h-5 w-2/5" />
-        </CardHeader>
-      </Card>
+      <header className="grid gap-5 px-1 py-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end sm:py-4">
+        <div className="grid max-w-2xl gap-2">
+          <Skeleton className="h-10 w-64 max-w-full" />
+          <Skeleton className="h-6 w-lg max-w-full" />
+        </div>
+        <Skeleton className="h-11 w-48 max-w-full" />
+      </header>
       <Skeleton className="h-40 w-full rounded-2xl" />
       <section
         aria-label="Carregando indicadores"

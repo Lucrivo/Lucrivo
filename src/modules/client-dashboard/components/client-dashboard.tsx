@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { LayoutDashboardIcon, PlusIcon } from "lucide-react";
+import { PlusIcon } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import type { ClientDashboardFilters } from "@/modules/client-dashboard/client-dashboard.filters";
 import type {
@@ -20,35 +19,23 @@ function DashboardHeader({ showAction }: { showAction: boolean }) {
   return (
     <header
       data-dashboard-section="header"
-      className="border-primary/15 bg-card relative overflow-hidden rounded-3xl border px-5 py-6 shadow-sm sm:px-8 sm:py-8"
+      className="flex flex-col justify-between gap-5 px-1 py-2 sm:flex-row sm:items-end sm:py-4"
     >
-      <div
-        aria-hidden="true"
-        className="from-primary/9 absolute inset-y-0 right-0 w-2/5 bg-linear-to-l to-transparent"
-      />
-      <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
-        <div className="grid max-w-2xl gap-3">
-          <Badge variant="info" className="text-foreground">
-            <LayoutDashboardIcon aria-hidden="true" />
-            Seus relatórios
-          </Badge>
-          <div className="grid gap-2">
-            <h1>Visão geral dos seus diagnósticos</h1>
-            <p className="text-muted-foreground max-w-xl leading-6">
-              Entenda as situações e prioridades dos relatórios que você salvou.
-            </p>
-          </div>
-        </div>
-        {showAction ? (
-          <Link
-            href="/quick-diagnosis"
-            className={buttonVariants({ size: "lg" })}
-          >
-            <PlusIcon aria-hidden="true" />
-            Novo diagnóstico
-          </Link>
-        ) : null}
+      <div className="grid max-w-2xl gap-2">
+        <h1 className="text-balance">Olá, empreendedor</h1>
+        <p className="text-muted-foreground max-w-2xl text-base leading-7">
+          Acompanhe seus diagnósticos e veja o que merece sua atenção primeiro.
+        </p>
       </div>
+      {showAction ? (
+        <Link
+          href="/quick-diagnosis"
+          className={buttonVariants({ size: "lg" })}
+        >
+          <PlusIcon aria-hidden="true" />
+          Novo diagnóstico
+        </Link>
+      ) : null}
     </header>
   );
 }
