@@ -1,7 +1,8 @@
 import { toDetailedReportViewModel } from "@/modules/reports/presenters/to-detailed-report-view-model";
-import { toReportViewModel } from "@/modules/reports/presenters/to-report-view-model";
 import { isDetailedReportSnapshot } from "@/modules/reports/schemas/report-snapshot.schema";
 import type { OwnedReport } from "@/modules/reports/services/get-report.service";
+
+import { buildQuickReportAiContext } from "./build-quick-report-ai-context";
 
 function serializeSafeContext(value: unknown): string {
   return JSON.stringify(value, (key, nestedValue: unknown) =>
@@ -9,7 +10,7 @@ function serializeSafeContext(value: unknown): string {
   );
 }
 
-function buildReportAiContext(report: OwnedReport): string {
+function buildLegacyDetailedReportAiContext(report: OwnedReport): string {
   const base = {
     reportId: report.id,
     reportVersion: report.version,
@@ -58,15 +59,14 @@ function buildReportAiContext(report: OwnedReport): string {
     });
   }
 
-  const visible = toReportViewModel(report);
+  throw new Error("legacy_detailed_context_requires_detailed_snapshot");
+}
 
-  return serializeSafeContext({
-    ...base,
-    identity: visible.identity,
-    executiveSummary: visible.executiveSummary,
-    numbers: visible.numbers,
-    sections: visible.sections,
-  });
+function buildReportAiContext(report: OwnedReport): string {
+  if (isDetailedReportSnapshot(report.snapshot)) {
+    return buildLegacyDetailedReportAiContext(report);
+  }
+  return serializeSafeContext(buildQuickReportAiContext(report));
 }
 
 export { buildReportAiContext };

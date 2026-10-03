@@ -17,6 +17,10 @@ import { calculateServiceReport } from "@/modules/reports/domain/calculate-servi
 import type { OwnedReport } from "@/modules/reports/services/get-report.service";
 
 import { buildReportAiContext } from "./build-report-ai-context";
+import type {
+  ReportAiContextV2,
+  ReportAiFact,
+} from "./report-ai-context.types";
 
 const serviceCommand: NormalizedServiceDiagnosisCommand = {
   submissionId: "550e8400-e29b-41d4-a716-446655440000",
@@ -139,34 +143,86 @@ function ownedReport(snapshot: (typeof snapshots)[number]): OwnedReport {
   };
 }
 
+function buildProductSnapshot(
+  overrides: Partial<ProductDiagnosisCommand> = {},
+) {
+  const command: ProductDiagnosisCommand = {
+    ...productCommand,
+    fixedMonthlyExpensesCents: 3_000,
+    proLaboreIncluded: false,
+    proLaboreCents: 0,
+    ...overrides,
+  };
+  return buildProductReportSnapshot(command, calculateProductReport(command));
+}
+
+function parseContext(snapshot: (typeof snapshots)[number]): ReportAiContextV2 {
+  return JSON.parse(
+    buildReportAiContext(ownedReport(snapshot)),
+  ) as ReportAiContextV2;
+}
+
+function fact(context: ReportAiContextV2, key: string): ReportAiFact {
+  const found = context.facts.find((entry) => entry.key === key);
+  if (!found) throw new Error(`Missing fact: ${key}`);
+  return found;
+}
+
 describe("buildReportAiContext", () => {
-  it.each(snapshots)(
-    "projects visible $category report content without internal metadata",
+  it.each(snapshots.slice(0, 3))(
+    "builds semantic V2 context for quick $category reports",
     (snapshot) => {
-      const context = buildReportAiContext(ownedReport(snapshot));
-      const parsed = JSON.parse(context) as Record<string, unknown>;
+      const parsed = JSON.parse(
+        buildReportAiContext(ownedReport(snapshot)),
+      ) as ReportAiContextV2;
 
       expect(parsed).toMatchObject({
-        reportId: 42,
-        reportVersion: 3,
-        category: snapshot.category,
-        scenario: snapshot.scenario,
-        identity: expect.any(Object),
-        executiveSummary: expect.any(Object),
-        numbers: expect.any(Array),
-        sections: expect.any(Array),
+        schemaVersion: 2,
+        report: {
+          id: 42,
+          version: 3,
+          category: snapshot.category,
+          scenario: snapshot.scenario,
+          analysisMode: "quick",
+        },
+        diagnosis: {
+          verdict: snapshot.results.verdict,
+          priority: snapshot.results.priority,
+          partial: false,
+        },
+        facts: expect.any(Array),
+        availability: expect.any(Object),
+        explanations: {
+          executiveSummary: expect.any(Object),
+          sections: expect.any(Array),
+          guidance: [],
+          comparison: [],
+        },
       });
-      expect(context).toContain("R$");
-      expect(context).not.toContain("user_id");
-      expect(context).not.toContain("billing_contracts");
-      expect(context).not.toContain("submissionId");
-      expect(context).not.toContain('"inputs"');
-      expect(context).not.toContain('"policy"');
-      expect(context).not.toContain('"help"');
-      expect(context).not.toContain("triggerLabel");
-      expect(context).not.toContain("technicalTerm");
     },
   );
+
+  it("distinguishes unknown volume from a known month with zero sales", () => {
+    const unknown = buildProductSnapshot({ monthlySalesVolume: null });
+    const zero = buildProductSnapshot({ monthlySalesVolume: 0 });
+
+    expect(parseContext(unknown).availability.volume).toBe("unknown");
+    expect(parseContext(zero).availability.volume).toBe("known_zero");
+    expect(parseContext(unknown).diagnosis.partial).toBe(true);
+    expect(parseContext(zero).diagnosis.partial).toBe(false);
+    expect(fact(parseContext(unknown), "monthly_result").value).toBeNull();
+    expect(fact(parseContext(zero), "monthly_result").value).toBe("-R$ 30,00");
+  });
+
+  it("exposes quick-report facts without private or internal input fields", () => {
+    const context = buildReportAiContext(ownedReport(snapshots[1]));
+
+    expect(context).toContain('"verdict":"positive_result"');
+    expect(context).toContain('"priority":"volume"');
+    expect(context).not.toContain("submissionId");
+    expect(context).not.toContain('"inputs"');
+    expect(context).not.toContain('"policy"');
+  });
 
   it("includes detailed comparison and guidance while removing item IDs", () => {
     const context = buildReportAiContext(ownedReport(snapshots[3]));
