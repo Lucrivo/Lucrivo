@@ -45,8 +45,6 @@ vi.mock("@/modules/client-dashboard/components/client-dashboard", () => ({
   ),
 }));
 
-
-
 describe("DashboardPage", () => {
   const supabase = { rpc: vi.fn() };
   const filters: ClientDashboardFilters = {
