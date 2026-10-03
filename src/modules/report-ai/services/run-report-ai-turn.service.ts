@@ -8,10 +8,8 @@ import type {
   ReportAiUsage,
 } from "@/infrastructure/ai/openai/report-ai.gateway";
 
-import {
-  buildReportAiMessages,
-  REPORT_AI_INSTRUCTIONS,
-} from "../domain/build-report-ai-prompt";
+import { buildReportAiMessages } from "../domain/build-report-ai-prompt";
+import { REPORT_AI_INSTRUCTIONS } from "../domain/report-ai-policy";
 import type { ReportAiStreamEvent } from "../report-ai.types";
 import {
   completeReportAiTurn,
