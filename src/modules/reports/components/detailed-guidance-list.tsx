@@ -36,7 +36,7 @@ function DetailedGuidanceList({
           Outros pontos para acompanhar
         </h2>
       </div>
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid gap-3 @4xl/page:grid-cols-2">
         {guidance.map((entry) => {
           const presentation = toneStyles[entry.tone];
           const Icon = presentation.icon;
@@ -44,7 +44,7 @@ function DetailedGuidanceList({
             <Card key={entry.key} className={presentation.className}>
               <CardContent className="flex gap-3 py-1">
                 <Icon aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
-                <div className="grid gap-1">
+                <div className="grid min-w-0 gap-1">
                   <h3 className="font-semibold">{entry.title}</h3>
                   <p className="text-muted-foreground text-sm leading-6">
                     {entry.body}

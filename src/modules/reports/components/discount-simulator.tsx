@@ -204,7 +204,7 @@ function DiscountSimulator({
             className="accent-primary h-6 w-full cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
           />
 
-          <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <dl className="grid grid-cols-2 gap-3 @4xl/page:grid-cols-4">
             <div className="border-border/70 bg-card grid min-w-0 gap-1 rounded-xl border p-3">
               <dt className="text-muted-foreground text-xs">Preço atual</dt>
               <dd className="font-semibold break-words tabular-nums">

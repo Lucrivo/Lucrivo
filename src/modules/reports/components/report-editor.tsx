@@ -109,7 +109,7 @@ function ReportEditor({
           </div>
         ) : null}
 
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
+        <div className="grid items-start gap-6 @4xl/page:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]">
           <div className="min-w-0">
             {draft.kind === "detailed" ? (
               isDetailedReportSnapshot(preview.snapshot) ? (
@@ -129,7 +129,7 @@ function ReportEditor({
               />
             )}
           </div>
-          <aside className="min-w-0 lg:sticky lg:top-6">
+          <aside className="@container min-w-0 @4xl/page:sticky @4xl/page:top-6">
             <ReportPreview
               snapshot={preview.snapshot}
               invalid={preview.status === "invalid"}
@@ -137,7 +137,7 @@ function ReportEditor({
           </aside>
         </div>
 
-        <div className="border-border flex flex-col-reverse gap-2 border-t pt-5 sm:flex-row sm:justify-end">
+        <div className="border-border flex flex-col-reverse gap-2 border-t pt-5 @xl/page:flex-row @xl/page:justify-end">
           <Button
             type="button"
             variant="ghost"

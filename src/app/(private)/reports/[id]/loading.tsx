@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function ReportLoading() {
   return (
     <main
-      className="mx-auto grid w-full max-w-7xl gap-7"
+      className="mx-auto grid w-full max-w-7xl min-w-0 gap-7"
       aria-busy="true"
       aria-label="Preparando relatório"
     >
@@ -19,7 +19,7 @@ export default function ReportLoading() {
         </CardHeader>
       </Card>
       <Skeleton className="h-[34rem] rounded-3xl sm:h-[28rem]" />
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)]">
+      <div className="grid items-start gap-6 @4xl/page:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)]">
         <Skeleton className="h-72 rounded-xl" />
         <section aria-label="Carregando análise" className="grid gap-4">
           <Skeleton className="mb-2 h-16 w-2/3" />

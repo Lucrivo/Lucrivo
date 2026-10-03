@@ -50,13 +50,13 @@ function ReportPreview({
           </p>
         )}
       </CardHeader>
-      <CardContent className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+      <CardContent className="grid gap-3 @min-[24rem]:grid-cols-3">
         {metrics.map(([label, value, format]) => (
           <div key={label} className="bg-muted/50 grid gap-1 rounded-xl p-3">
             <span className="text-muted-foreground text-xs font-medium">
               {label}
             </span>
-            <strong className="text-base tabular-nums">
+            <strong className="min-w-0 text-base wrap-break-word tabular-nums">
               {value === null
                 ? "Ainda não calculado"
                 : format === "percentage"

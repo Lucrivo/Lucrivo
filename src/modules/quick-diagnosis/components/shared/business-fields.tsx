@@ -50,27 +50,18 @@ function FixedExpensesField(binding: FieldBinding) {
 
 function MonthlyVolumeField(binding: FieldBinding) {
   return (
-    <div className="grid gap-2">
-      <StepField
-        {...toStepFieldProps(binding)}
-        label="Quantas unidades você vende por mês?"
-        suffix="unidades"
-        inputMode="numeric"
-      />
-      <div className="grid gap-2">
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground text-xs font-medium">
-            Opcional
-          </span>
-        </div>
-        <p className="text-muted-foreground text-sm leading-6">
-          Se você já vende este item, informe a média mensal. Digite 0 se não
-          vendeu nenhuma unidade. Se ainda não sabe ou quer descobrir quanto
-          precisa vender, deixe em branco — o resultado será parcial e a meta
-          aparecerá apenas como referência.
-        </p>
-      </div>
-    </div>
+    <StepField
+      {...toStepFieldProps(binding)}
+      label="Quantas unidades você vende por mês?"
+      suffix="unidades"
+      inputMode="numeric"
+      help={{
+        triggerLabel: "Por que é opcional?",
+        title: "Quantidade vendida no mês",
+        description:
+          "Se você já vende este item, informe a média mensal. Digite 0 se não vendeu nenhuma unidade. Se ainda não sabe ou quer descobrir quanto precisa vender, deixe em branco — o resultado será parcial e a meta aparecerá apenas como referência.",
+      }}
+    />
   );
 }
 
@@ -82,8 +73,8 @@ function OwnerCompensationFields({
 }: OwnerCompensationFieldsProps) {
   return (
     <div className="grid gap-5">
-      <div className="border-border bg-background flex items-center justify-between gap-5 rounded-xl border p-4 shadow-xs">
-        <div className="grid gap-1">
+      <div className="border-border bg-background flex items-start justify-between gap-4 rounded-xl border p-4 shadow-xs">
+        <div className="grid min-w-0 gap-1">
           <Label htmlFor={switchId}>
             Você quer incluir o valor que recebe pelo seu trabalho?
           </Label>
@@ -95,7 +86,7 @@ function OwnerCompensationFields({
           id={switchId}
           checked={included}
           onCheckedChange={onIncludedChange}
-          className="motion-reduce:transition-none [&_[data-slot=switch-thumb]]:motion-reduce:transform-none"
+          className="shrink-0 motion-reduce:transition-none [&_[data-slot=switch-thumb]]:motion-reduce:transform-none"
         />
       </div>
 
@@ -119,7 +110,7 @@ function OwnerCompensationFields({
 
 function SalesFeesFields({ tax, card }: SalesFeesFieldsProps) {
   return (
-    <div className="grid gap-5 sm:grid-cols-2">
+    <div className="grid gap-5 @xl/page:grid-cols-2">
       <StepField
         {...toStepFieldProps(tax)}
         label="Qual porcentagem da venda vai para impostos?"

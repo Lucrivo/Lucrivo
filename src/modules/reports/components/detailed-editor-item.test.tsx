@@ -163,6 +163,9 @@ describe("DetailedReportEditorFields", () => {
     expect(
       screen.getByLabelText("Quantas unidades você vende por mês?"),
     ).toBeVisible();
+    await user.click(
+      screen.getByRole("button", { name: "Por que é opcional?" }),
+    );
     expect(
       screen.getByText(
         /Digite 0 se não vendeu nenhuma unidade[\s\S]*deixe em branco[\s\S]*resultado será parcial/i,

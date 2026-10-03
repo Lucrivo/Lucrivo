@@ -24,7 +24,7 @@ function EditorField({
 }) {
   const errorId = `${id}-error`;
   return (
-    <div className="grid gap-2">
+    <div className="grid min-w-0 gap-2">
       <Label htmlFor={id}>{label}</Label>
       <Input
         id={id}
@@ -91,7 +91,7 @@ function QuickReportEditorFields({
     const values = draft.values;
     return (
       <div className="grid gap-5">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 @xl/page:grid-cols-2">
           <div className="grid gap-2">
             <Label htmlFor="pricingMethod">Como você cobra</Label>
             <select
@@ -162,7 +162,7 @@ function QuickReportEditorFields({
           onChange={(value) => update("hasMaterialCost", value)}
         />
         {values.hasMaterialCost ? (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 @xl/page:grid-cols-2">
             <EditorField
               id="materialCost"
               label="Custo do material (R$)"
@@ -189,7 +189,7 @@ function QuickReportEditorFields({
           </div>
         ) : null}
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 @xl/page:grid-cols-2">
           <BooleanField
             id="paysRevenueTax"
             label="Pago imposto sobre o valor recebido"
@@ -229,7 +229,7 @@ function QuickReportEditorFields({
     const values = draft.values;
     return (
       <div className="grid gap-5">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 @xl/page:grid-cols-2">
           <EditorField
             id="purchaseUnitCost"
             label="Custo por unidade (R$)"
@@ -302,7 +302,7 @@ function QuickReportEditorFields({
         checked={values.costCompositionEnabled}
         onChange={(value) => update("costCompositionEnabled", value)}
       />
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 @xl/page:grid-cols-2">
         {values.costCompositionEnabled ? (
           <>
             {[

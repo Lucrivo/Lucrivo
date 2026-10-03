@@ -68,20 +68,20 @@ function DetailedEditorItem({
       value={item.id}
       className="border-border bg-card overflow-hidden rounded-xl border shadow-xs"
     >
-      <div className="flex items-start gap-1 p-2 sm:items-center sm:gap-2">
+      <div className="flex min-w-0 items-start gap-1 p-2 sm:items-center sm:gap-2">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger
               render={
                 <AccordionTrigger
                   aria-label={"Abrir " + summary.name}
-                  className="min-h-14 min-w-0 px-2 hover:no-underline sm:px-3"
+                  className="min-h-14 min-w-0 flex-1 px-2 hover:no-underline sm:px-3"
                 />
               }
             >
               <span
                 data-slot="detailed-editor-item-summary"
-                className="grid min-w-0 flex-1 gap-2 sm:grid-cols-[minmax(10rem,1fr)_auto_auto_auto] sm:items-center sm:gap-4"
+                className="grid min-w-0 flex-1 gap-2 @2xl/page:grid-cols-[minmax(0,1fr)_auto_auto_auto] @2xl/page:items-center @2xl/page:gap-4"
               >
                 <span
                   data-slot="detailed-editor-item-name"
@@ -89,7 +89,7 @@ function DetailedEditorItem({
                 >
                   {summary.name}
                 </span>
-                <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 sm:contents">
+                <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 @2xl/page:contents">
                   <span
                     data-slot="detailed-editor-item-sale"
                     className="text-muted-foreground font-normal whitespace-nowrap"
@@ -109,8 +109,14 @@ function DetailedEditorItem({
                     </strong>
                   </span>
                 </span>
-                <span data-slot="detailed-editor-item-status">
-                  <Badge variant={badgeVariant}>
+                <span
+                  data-slot="detailed-editor-item-status"
+                  className="min-w-0"
+                >
+                  <Badge
+                    variant={badgeVariant}
+                    className="h-auto max-w-full whitespace-normal"
+                  >
                     {summary.pendingCount > 0
                       ? summary.pendingCount +
                         " pendência" +
@@ -139,7 +145,7 @@ function DetailedEditorItem({
         />
       </div>
       <AccordionContent className="border-border grid gap-5 border-t px-4 pt-5 pb-5 sm:px-5">
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid min-w-0 gap-4">
           <EditorField
             id={`${base}.name`}
             label="Nome"
@@ -148,21 +154,23 @@ function DetailedEditorItem({
             error={errors[`${base}.name`]}
             onChange={(value) => onChange("name", value)}
           />
-          <UnitSalePriceField
-            field={`${base}.unitSalePrice`}
-            value={item.unitSalePrice}
-            errors={errors}
-            onChange={(value) => onChange("unitSalePrice", value)}
-          />
-          <MonthlyVolumeField
-            field={`${base}.monthlySalesVolume`}
-            value={item.monthlySalesVolume}
-            errors={errors}
-            onChange={(value) => onChange("monthlySalesVolume", value)}
-          />
+          <div className="grid min-w-0 gap-4 @xl/page:grid-cols-2">
+            <UnitSalePriceField
+              field={`${base}.unitSalePrice`}
+              value={item.unitSalePrice}
+              errors={errors}
+              onChange={(value) => onChange("unitSalePrice", value)}
+            />
+            <MonthlyVolumeField
+              field={`${base}.monthlySalesVolume`}
+              value={item.monthlySalesVolume}
+              errors={errors}
+              onChange={(value) => onChange("monthlySalesVolume", value)}
+            />
+          </div>
         </div>
         {item.kind !== "manufacturing" ? (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid min-w-0 gap-4 @xl/page:grid-cols-2">
             <ProductDirectCostField
               kind={item.kind}
               field={`${base}.purchaseUnitCost`}
@@ -240,7 +248,7 @@ function ProductionItemFields({
 
   return (
     <div className="grid gap-5">
-      <div className="grid gap-2 md:max-w-sm">
+      <div className="grid min-w-0 gap-2 @xl/page:max-w-sm">
         <Label htmlFor={`${base}.costMode`}>Forma de informar o custo</Label>
         <select
           id={`${base}.costMode`}
@@ -269,7 +277,7 @@ function ProductionItemFields({
         </select>
       </div>
       {item.costMode === "summarized" ? (
-        <div className="md:max-w-sm">
+        <div className="@xl/page:max-w-sm">
           <ProductionUnitCostField
             field={`${base}.productionUnitCost`}
             value={item.productionUnitCost}
@@ -279,7 +287,7 @@ function ProductionItemFields({
         </div>
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid min-w-0 gap-4 @xl/page:grid-cols-2 @4xl/page:grid-cols-3">
             <EditorField
               id={`${base}.recipeYield`}
               label="Rendimento da receita"

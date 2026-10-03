@@ -16,7 +16,7 @@ function ReportNumbers({
   const regularNumbers = featuredNumber ? numbers.slice(1) : numbers;
 
   return (
-    <aside aria-label={title} className="lg:sticky lg:top-24">
+    <aside aria-label={title} className="@4xl/page:sticky @4xl/page:top-24">
       <Card className="border-border/70 shadow-xs">
         <CardHeader className="border-b pb-4">
           <CardTitle>

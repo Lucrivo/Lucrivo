@@ -97,7 +97,8 @@ describe("detailed common steps", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("separates the item name and shared optional-volume guidance", () => {
+  it("separates the item name and shared optional-volume guidance", async () => {
+    const user = userEvent.setup();
     const state = productState();
     const { rerender } = render(
       <DetailedItemNameStep state={state} dispatch={vi.fn()} />,
@@ -112,7 +113,9 @@ describe("detailed common steps", () => {
     expect(
       screen.getByLabelText("Quantas unidades você vende por mês?"),
     ).toBeEnabled();
-    expect(screen.getByText("Opcional")).toBeVisible();
+    await user.click(
+      screen.getByRole("button", { name: "Por que é opcional?" }),
+    );
     expect(
       screen.getByText(/Digite 0 se não vendeu nenhuma unidade/),
     ).toBeVisible();

@@ -33,9 +33,9 @@ function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
     >
       <AccordionTrigger
         aria-label={`Abrir detalhes de ${item.name}`}
-        className="min-h-16 gap-4 px-4 py-4 hover:no-underline sm:px-5"
+        className="min-h-16 min-w-0 gap-4 px-4 py-4 hover:no-underline sm:px-5"
       >
-        <span className="grid min-w-0 flex-1 gap-3 text-left md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:items-center">
+        <span className="grid min-w-0 flex-1 gap-3 text-left @3xl/page:grid-cols-[minmax(0,1fr)_auto_auto_auto] @3xl/page:items-center">
           <span className="grid min-w-0 gap-1">
             <span className="truncate text-lg font-semibold">{item.name}</span>
             <span className="text-muted-foreground font-normal">
@@ -56,6 +56,7 @@ function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
           </span>
           <Badge
             variant={item.statusTone === "critical" ? "destructive" : "success"}
+            className="h-auto max-w-full justify-self-start whitespace-normal @3xl/page:justify-self-end"
           >
             {item.statusTone === "critical" ? (
               <TriangleAlertIcon aria-hidden="true" />
@@ -80,7 +81,7 @@ function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
           </p>
         ) : null}
 
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid min-w-0 gap-5 @3xl/page:grid-cols-2">
           <section aria-labelledby={`${item.id}-sale`} className="grid gap-3">
             <h4 id={`${item.id}-sale`} className="text-base font-semibold">
               Venda e resultado
@@ -124,7 +125,7 @@ function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
           </section>
         </div>
 
-        <dl className="grid gap-4 sm:grid-cols-2">
+        <dl className="grid min-w-0 gap-4 @xl/page:grid-cols-2">
           <div className="border-border/70 bg-background/70 grid min-w-0 gap-1 rounded-xl border p-4">
             <dt className="text-muted-foreground text-sm">
               Menor preço para não ficar no prejuízo

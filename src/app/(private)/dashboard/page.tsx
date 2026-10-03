@@ -1,39 +1,17 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
 
-import { requireUser } from "@/modules/auth/services/require-user";
 import {
   CLIENT_DASHBOARD_FILTER_COOKIE,
   hasExplicitClientDashboardFilters,
   resolveClientDashboardFilters,
 } from "@/modules/client-dashboard/client-dashboard-filter-cookie";
 import {
-  type ClientDashboardFilters,
-  type DashboardSearchParams,
+  type DashboardSearchParams
 } from "@/modules/client-dashboard/client-dashboard.filters";
-import { ClientDashboard } from "@/modules/client-dashboard/components/client-dashboard";
 import { ClientDashboardLoading } from "@/modules/client-dashboard/components/client-dashboard-loading";
-import { getClientDashboard } from "@/modules/client-dashboard/get-client-dashboard.service";
+import { ClientDashboardRouteContent } from "@/modules/client-dashboard/components/client-dashboard-route-content";
 
-async function ClientDashboardRouteContent({
-  filters,
-  persistFilters = false,
-}: {
-  filters: ClientDashboardFilters;
-  persistFilters?: boolean;
-}) {
-  const { userId, supabase } = await requireUser();
-  const result = await getClientDashboard({ supabase, userId, filters });
-
-  return (
-    <ClientDashboard
-      dashboard={result.dashboard}
-      focus={result.focus}
-      filters={filters}
-      persistFilters={persistFilters}
-    />
-  );
-}
 
 export default async function DashboardPage({
   searchParams,
@@ -56,5 +34,3 @@ export default async function DashboardPage({
     </Suspense>
   );
 }
-
-export { ClientDashboardRouteContent };

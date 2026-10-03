@@ -50,7 +50,7 @@ function StepField<Field extends string>({
     .join(" ");
 
   return (
-    <div className="grid content-start gap-2">
+    <div className="grid min-w-0 content-start gap-2">
       <Label htmlFor={field} className={labelClassName}>
         {label}
       </Label>

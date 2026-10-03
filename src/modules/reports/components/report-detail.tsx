@@ -20,7 +20,7 @@ function ReportDetail({
   management?: ReactNode;
 }) {
   return (
-    <main className="mx-auto grid w-full max-w-7xl gap-7 pb-10">
+    <main className="mx-auto grid w-full max-w-7xl min-w-0 gap-7 pb-10">
       <header className="border-primary/15 bg-card relative overflow-hidden rounded-3xl border px-5 py-6 shadow-sm sm:px-8 sm:py-8">
         <div
           aria-hidden="true"
@@ -58,7 +58,7 @@ function ReportDetail({
               <p className="text-primary text-xs font-semibold tracking-[0.18em] uppercase">
                 {viewModel.language.reportEyebrow}
               </p>
-              <h1>{viewModel.identity.title}</h1>
+              <h1 className="wrap-break-word">{viewModel.identity.title}</h1>
               <p className="text-muted-foreground flex items-center gap-2 text-sm">
                 <CalendarDaysIcon aria-hidden="true" className="size-4" />
                 Gerado em {viewModel.identity.createdAtLabel}
@@ -75,7 +75,7 @@ function ReportDetail({
         priorityEyebrow={viewModel.language.priorityEyebrow}
       />
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)]">
+      <div className="grid items-start gap-6 @4xl/page:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)]">
         <ReportNumbers
           numbers={viewModel.numbers}
           title={viewModel.language.numbersTitle}

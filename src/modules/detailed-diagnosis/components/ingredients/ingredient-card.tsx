@@ -167,7 +167,7 @@ function IngredientCard({
           </form>
         ) : null}
         <AccordionContent className="px-4 pb-4 sm:px-5">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid min-w-0 gap-4 @xl/page:grid-cols-2 @4xl/page:grid-cols-3">
             <StepField
               field={fieldPaths.quantity}
               label="Quantidade usada"

@@ -3,6 +3,8 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ClientDashboardFilters } from "@/modules/client-dashboard/client-dashboard.filters";
+import DashboardPage from "./page";
+import { ClientDashboardRouteContent } from "@/modules/client-dashboard/components/client-dashboard-route-content";
 
 const {
   cookies,
@@ -43,7 +45,7 @@ vi.mock("@/modules/client-dashboard/components/client-dashboard", () => ({
   ),
 }));
 
-import DashboardPage, { ClientDashboardRouteContent } from "./page";
+
 
 describe("DashboardPage", () => {
   const supabase = { rpc: vi.fn() };

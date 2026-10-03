@@ -172,12 +172,14 @@ describe("Product diagnosis steps", () => {
     rerender(
       <MonthlyVolumeStep values={values} errors={{}} onChange={onChange} />,
     );
+    await user.click(
+      screen.getByRole("button", { name: "Por que é opcional?" }),
+    );
     expect(
       screen.getByText(
         /Se você já vende este item, informe a média mensal[\s\S]*Digite 0[\s\S]*deixe em branco[\s\S]*resultado será parcial/i,
       ),
     ).toBeVisible();
-    expect(screen.getByText("Opcional")).toBeVisible();
     expect(
       screen.getByLabelText("Quantas unidades você vende por mês?"),
     ).toHaveValue("");

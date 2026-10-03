@@ -39,7 +39,12 @@ describe("shared diagnosis fields", () => {
     ).toBeVisible();
 
     rerender(<MonthlyVolumeField {...binding("monthlySalesVolume")} />);
-    expect(screen.getByText("Opcional")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Por que é opcional?" }),
+    ).toBeVisible();
+    await user.click(
+      screen.getByRole("button", { name: "Por que é opcional?" }),
+    );
     expect(
       screen.getByText(/Digite 0 se não vendeu nenhuma unidade/),
     ).toBeVisible();
