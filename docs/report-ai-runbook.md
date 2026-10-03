@@ -134,6 +134,24 @@ Não elimine `report_ai_conversations` nem `report_ai_turns` durante o rollback.
 As migrations de remoção, se algum dia forem necessárias, exigem plano próprio
 de retenção, exportação e aprovação.
 
+## Avaliação da política
+
+A política de produção está versionada no código por
+`REPORT_AI_POLICY_VERSION`. Testes automatizados validam contrato e segurança;
+a qualidade probabilística deve ser revisada com fixtures fictícias antes de
+alterar política ou modelo.
+
+Com uma chave exclusiva de desenvolvimento em `.env.local`, execute:
+
+```bash
+pnpm report-ai:eval -- --allow-cost
+```
+
+O comando realiza chamadas pagas e só funciona com a flag explícita. Os
+resultados ficam em `.report-ai-evals/`, que não entra no Git. Revise cada caso
+pelos comportamentos obrigatórios e proibidos e marque o resultado no artefato
+local. Nunca substitua as fixtures por perguntas, respostas ou snapshots reais.
+
 ## Checklist de aceite local
 
 Com uma chave de desenvolvimento e a stack local:
@@ -149,6 +167,8 @@ Com uma chave de desenvolvimento e a stack local:
    conversa.
 7. Inspecione a saída da aplicação e confirme que nenhum prompt, resposta ou
    segredo foi registrado.
+8. Aprove os casos de avaliação de perda direta, relatório parcial, mercado e
+   desconto antes do rollout.
 
 Registre somente passa/falha, IDs e latência. Não cole conteúdo de conversa no
 repositório, logs ou tickets.
