@@ -156,6 +156,24 @@ function buildProductSnapshot(
   return buildProductReportSnapshot(command, calculateProductReport(command));
 }
 
+function buildDetailedSnapshot({
+  monthlySalesVolume = 10,
+}: {
+  monthlySalesVolume?: number | null;
+} = {}) {
+  const command: DetailedDiagnosisCommand = {
+    ...detailedCommand,
+    items: detailedCommand.items.map((item) => ({
+      ...item,
+      monthlySalesVolume,
+    })),
+  };
+  return buildDetailedReportSnapshot(
+    command,
+    calculateDetailedDiagnosis(command),
+  );
+}
+
 function parseContext(snapshot: (typeof snapshots)[number]): ReportAiContextV2 {
   return JSON.parse(
     buildReportAiContext(ownedReport(snapshot)),
@@ -165,6 +183,18 @@ function parseContext(snapshot: (typeof snapshots)[number]): ReportAiContextV2 {
 function fact(context: ReportAiContextV2, key: string): ReportAiFact {
   const found = context.facts.find((entry) => entry.key === key);
   if (!found) throw new Error(`Missing fact: ${key}`);
+  return found;
+}
+
+function itemFact(
+  context: ReportAiContextV2,
+  itemName: string,
+  key: string,
+): ReportAiFact {
+  const found = context.items
+    ?.find(({ name }) => name === itemName)
+    ?.facts.find((entry) => entry.key === key);
+  if (!found) throw new Error(`Missing item fact: ${itemName}/${key}`);
   return found;
 }
 
@@ -224,21 +254,54 @@ describe("buildReportAiContext", () => {
     expect(context).not.toContain('"policy"');
   });
 
-  it("includes detailed comparison and guidance while removing item IDs", () => {
-    const context = buildReportAiContext(ownedReport(snapshots[3]));
-    const parsed = JSON.parse(context) as {
-      comparison: unknown[];
-      items: unknown[];
-      secondaryGuidance: unknown[];
-    };
+  it("builds detailed business and item facts without duplicating business costs", () => {
+    const context = parseContext(snapshots[3]);
 
-    expect(parsed.comparison).not.toHaveLength(0);
-    expect(parsed.items).not.toHaveLength(0);
-    expect(parsed.secondaryGuidance).not.toHaveLength(0);
-    expect(context).toContain("Bolo de festa");
-    expect(context).toContain("Farinha");
-    expect(context).not.toContain("33333333-3333-4333-8333-333333333333");
-    expect(context).not.toContain("44444444-4444-4444-8444-444444444444");
-    expect(context).not.toContain("discountSimulationBase");
+    expect(context).toMatchObject({
+      schemaVersion: 2,
+      report: { analysisMode: "detailed", unit: "mix" },
+      diagnosis: {
+        verdict: snapshots[3].results.verdict,
+        priority: snapshots[3].results.priority,
+        partial: snapshots[3].results.isPartial,
+      },
+    });
+    expect(fact(context, "effective_fixed_cost").scope).toBe("business");
+    expect(context.items).toHaveLength(1);
+    expect(context.items?.[0]).toMatchObject({
+      name: "Bolo de festa",
+      directLoss: false,
+      facts: expect.any(Array),
+    });
+    expect(
+      context.items?.[0]?.facts.some(
+        ({ key }) => key === "effective_fixed_cost",
+      ),
+    ).toBe(false);
+  });
+
+  it("names missing-volume items and keeps dependent facts unavailable", () => {
+    const partialSnapshot = buildDetailedSnapshot({
+      monthlySalesVolume: null,
+    });
+    const context = parseContext(partialSnapshot);
+
+    expect(context.diagnosis.partial).toBe(true);
+    expect(context.availability.volume).toBe("unknown");
+    expect(context.availability.reasons).toContain(
+      "Informe as vendas mensais de Bolo de festa para completar o resultado do conjunto.",
+    );
+    expect(
+      itemFact(context, "Bolo de festa", "total_unit_cost").value,
+    ).toBeNull();
+    expect(fact(context, "monthly_result").value).toBeNull();
+  });
+
+  it("removes item and ingredient identifiers from detailed context", () => {
+    const serialized = buildReportAiContext(ownedReport(snapshots[3]));
+    expect(serialized).toContain("Bolo de festa");
+    expect(serialized).toContain("Farinha");
+    expect(serialized).not.toContain("33333333-3333-4333-8333-333333333333");
+    expect(serialized).not.toContain("44444444-4444-4444-8444-444444444444");
   });
 });
