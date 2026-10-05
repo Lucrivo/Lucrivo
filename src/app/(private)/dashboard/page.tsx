@@ -6,12 +6,9 @@ import {
   hasExplicitClientDashboardFilters,
   resolveClientDashboardFilters,
 } from "@/modules/client-dashboard/client-dashboard-filter-cookie";
-import {
-  type DashboardSearchParams
-} from "@/modules/client-dashboard/client-dashboard.filters";
+import { type DashboardSearchParams } from "@/modules/client-dashboard/client-dashboard.filters";
 import { ClientDashboardLoading } from "@/modules/client-dashboard/components/client-dashboard-loading";
 import { ClientDashboardRouteContent } from "@/modules/client-dashboard/components/client-dashboard-route-content";
-
 
 export default async function DashboardPage({
   searchParams,

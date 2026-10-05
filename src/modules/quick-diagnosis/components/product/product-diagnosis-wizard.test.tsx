@@ -69,7 +69,7 @@ describe("ProductDiagnosisWizard", () => {
 
     await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    expect(screen.getByText("3 de 8")).toBeInTheDocument();
+    expect(await screen.findByText("3 de 8")).toBeInTheDocument();
     await user.click(
       screen.getByRole("radio", { name: "Produto para revenda" }),
     );
@@ -84,13 +84,13 @@ describe("ProductDiagnosisWizard", () => {
       "100",
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    expect(screen.getByText("4 de 8")).toBeInTheDocument();
+    expect(await screen.findByText("4 de 8")).toBeInTheDocument();
     await user.type(
       screen.getByLabelText("Gastos que existem todo mês"),
       "1000",
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    expect(screen.getByText("5 de 8")).toBeInTheDocument();
+    expect(await screen.findByText("5 de 8")).toBeInTheDocument();
     if (volume) {
       await user.type(
         screen.getByRole("textbox", {
@@ -100,7 +100,7 @@ describe("ProductDiagnosisWizard", () => {
       );
     }
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    expect(screen.getByText("6 de 8")).toBeInTheDocument();
+    expect(await screen.findByText("6 de 8")).toBeInTheDocument();
     if (compensation) {
       await user.click(
         screen.getByRole("switch", {
@@ -115,7 +115,7 @@ describe("ProductDiagnosisWizard", () => {
       );
     }
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    expect(screen.getByText("7 de 8")).toBeInTheDocument();
+    expect(await screen.findByText("7 de 8")).toBeInTheDocument();
     await user.type(
       screen.getByLabelText("Qual porcentagem da venda vai para impostos?"),
       "6,25",
@@ -127,7 +127,7 @@ describe("ProductDiagnosisWizard", () => {
       "3,50",
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    expect(screen.getByText("8 de 8")).toBeInTheDocument();
+    expect(await screen.findByText("8 de 8")).toBeInTheDocument();
 
     return user;
   }

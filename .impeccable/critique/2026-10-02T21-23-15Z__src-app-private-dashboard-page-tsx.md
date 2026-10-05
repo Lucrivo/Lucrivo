@@ -2,7 +2,7 @@
 target: dashboard do cliente e quatro mudanças propostas
 total_score: 27
 max_score: 40
-na_heuristics: 
+na_heuristics:
 p0_count: 0
 p1_count: 2
 target_identity: "file:/home/pereira/projetos/Lucrivo/src/app/(private)/dashboard/page.tsx"
@@ -11,23 +11,24 @@ target_path: /home/pereira/projetos/Lucrivo/src/app/(private)/dashboard/page.tsx
 timestamp: 2026-10-02T21-23-15Z
 slug: src-app-private-dashboard-page-tsx
 ---
+
 # Crítica de design — Dashboard do cliente
 
 ## Saúde do design
 
-| # | Heurística | Nota | Achado principal |
-|---|---|---:|---|
-| 1 | Visibilidade do estado | 3 | Há loading, “Aplicando...”, `aria-busy`, vazios, erro e “Em foco”; falta anunciar claramente quando os resultados terminaram de atualizar. |
-| 2 | Correspondência com o mundo real | 3 | O português é claro em geral, mas “recorte”, “modalidade”, “cenário” e “estado dos dados” exigem tradução mental. |
-| 3 | Controle e liberdade | 3 | Chips removíveis, “Limpar filtros” e navegação explícita dão boa reversibilidade. |
-| 4 | Consistência e padrões | 3 | Componentes e ações são coerentes; a mesma gramática de card é aplicada a conteúdos com importâncias diferentes. |
-| 5 | Prevenção de erros | 3 | Combinações incompatíveis são normalizadas; o intervalo de datas inválido não recebe orientação visível. |
-| 6 | Reconhecimento em vez de memória | 3 | Rótulos, filtros ativos e foco selecionado ficam visíveis. |
-| 7 | Flexibilidade e eficiência | 2 | “Mais filtros” ajuda, mas aplicar e aguardar uma navegação deixa a exploração lenta. |
-| 8 | Estética e design minimalista | 2 | Há uma sucessão longa de painéis, seis cards recentes e muitas ações concorrentes. |
-| 9 | Recuperação de erros | 3 | O erro global tranquiliza; a falha de filtros é genérica e pode não refletir falhas assíncronas reais. |
-| 10 | Ajuda e documentação | 2 | Existem descrições curtas, mas pouca orientação sobre termos e sobre o que merece atenção primeiro. |
-| **Total** |  | **27/40** | **Aceitável — boa base, mas requer melhoria relevante de UX** |
+| #         | Heurística                       |      Nota | Achado principal                                                                                                                           |
+| --------- | -------------------------------- | --------: | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1         | Visibilidade do estado           |         3 | Há loading, “Aplicando...”, `aria-busy`, vazios, erro e “Em foco”; falta anunciar claramente quando os resultados terminaram de atualizar. |
+| 2         | Correspondência com o mundo real |         3 | O português é claro em geral, mas “recorte”, “modalidade”, “cenário” e “estado dos dados” exigem tradução mental.                          |
+| 3         | Controle e liberdade             |         3 | Chips removíveis, “Limpar filtros” e navegação explícita dão boa reversibilidade.                                                          |
+| 4         | Consistência e padrões           |         3 | Componentes e ações são coerentes; a mesma gramática de card é aplicada a conteúdos com importâncias diferentes.                           |
+| 5         | Prevenção de erros               |         3 | Combinações incompatíveis são normalizadas; o intervalo de datas inválido não recebe orientação visível.                                   |
+| 6         | Reconhecimento em vez de memória |         3 | Rótulos, filtros ativos e foco selecionado ficam visíveis.                                                                                 |
+| 7         | Flexibilidade e eficiência       |         2 | “Mais filtros” ajuda, mas aplicar e aguardar uma navegação deixa a exploração lenta.                                                       |
+| 8         | Estética e design minimalista    |         2 | Há uma sucessão longa de painéis, seis cards recentes e muitas ações concorrentes.                                                         |
+| 9         | Recuperação de erros             |         3 | O erro global tranquiliza; a falha de filtros é genérica e pode não refletir falhas assíncronas reais.                                     |
+| 10        | Ajuda e documentação             |         2 | Existem descrições curtas, mas pouca orientação sobre termos e sobre o que merece atenção primeiro.                                        |
+| **Total** |                                  | **27/40** | **Aceitável — boa base, mas requer melhoria relevante de UX**                                                                              |
 
 ## Veredito de especificidade
 

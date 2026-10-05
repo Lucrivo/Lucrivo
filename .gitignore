@@ -13,6 +13,9 @@
 /.playwright-mcp/
 /.superpowers/
 
+# local report AI evaluations
+/.report-ai-evals/
+
 # environment variables
 .env
 .env.local

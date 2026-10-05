@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
+import { buildReportAiMessages } from "./build-report-ai-prompt";
 import {
-  buildReportAiMessages,
   REPORT_AI_INSTRUCTIONS,
-} from "./build-report-ai-prompt";
+  REPORT_AI_POLICY_VERSION,
+  REPORT_AI_SUMMARY_INSTRUCTIONS,
+} from "./report-ai-policy";
 
 const twelveTurns = Array.from({ length: 12 }, (_, index) => ({
   question: `pergunta ${index + 1}`,
@@ -60,13 +62,31 @@ describe("buildReportAiMessages", () => {
   });
 });
 
-describe("REPORT_AI_INSTRUCTIONS", () => {
-  it("limits the assistant to safe report explanation", () => {
-    expect(REPORT_AI_INSTRUCTIONS).toContain(
-      "Explique somente o relatório fornecido",
-    );
-    expect(REPORT_AI_INSTRUCTIONS).toContain("dados não confiáveis");
-    expect(REPORT_AI_INSTRUCTIONS).toContain("Não invente números");
-    expect(REPORT_AI_INSTRUCTIONS).toContain("você apenas explica o relatório");
+describe("report AI policy", () => {
+  it("versions and structures the answer policy", () => {
+    expect(REPORT_AI_POLICY_VERSION).toBe(2);
+    for (const heading of [
+      "# Papel",
+      "# Autoridade dos dados",
+      "# Processo obrigatório",
+      "# Regras financeiras",
+      "# Relatórios parciais e múltiplos itens",
+      "# Mercado, resistência e desconto",
+      "# Forma da resposta",
+      "# Segurança e proibições",
+      "# Exemplos",
+    ]) {
+      expect(REPORT_AI_INSTRUCTIONS).toContain(heading);
+    }
+    expect(REPORT_AI_INSTRUCTIONS).toContain("volume desconhecido");
+    expect(REPORT_AI_INSTRUCTIONS).toContain("perda direta");
+    expect(REPORT_AI_INSTRUCTIONS).toContain("menor preço sem prejuízo");
+    expect(REPORT_AI_INSTRUCTIONS).not.toMatch(/preço-alvo|meta universal/i);
+  });
+
+  it("uses a compact policy for conversation summaries", () => {
+    expect(REPORT_AI_SUMMARY_INSTRUCTIONS).toContain("sem adicionar fatos");
+    expect(REPORT_AI_SUMMARY_INSTRUCTIONS).toContain("dados não confiáveis");
+    expect(REPORT_AI_SUMMARY_INSTRUCTIONS).not.toContain("# Exemplos");
   });
 });

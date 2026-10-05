@@ -8,10 +8,11 @@ import type {
   ReportAiUsage,
 } from "@/infrastructure/ai/openai/report-ai.gateway";
 
+import { buildReportAiMessages } from "../domain/build-report-ai-prompt";
 import {
-  buildReportAiMessages,
   REPORT_AI_INSTRUCTIONS,
-} from "../domain/build-report-ai-prompt";
+  REPORT_AI_SUMMARY_INSTRUCTIONS,
+} from "../domain/report-ai-policy";
 import type { ReportAiStreamEvent } from "../report-ai.types";
 import {
   completeReportAiTurn,
@@ -270,7 +271,7 @@ async function* runReportAiTurn(
       });
       if (batchResult.status === "success") {
         const summaryResult = await input.gateway.summarize({
-          instructions: `${REPORT_AI_INSTRUCTIONS}\nResuma os turnos fornecidos sem adicionar fatos.`,
+          instructions: REPORT_AI_SUMMARY_INSTRUCTIONS,
           messages: [
             {
               role: "user",

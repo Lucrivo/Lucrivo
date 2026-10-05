@@ -20,6 +20,7 @@
     "seed:local": "psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -X -v ON_ERROR_STOP=1 -f supabase/seed.sql",
     "seed:verify-local": "tsx scripts/demo-seed/verify-local.ts",
     "seed:staging": "tsx scripts/demo-seed/apply-staging.ts",
+    "report-ai:eval": "tsx scripts/report-ai-eval.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "next typegen && tsc --noEmit",

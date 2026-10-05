@@ -291,4 +291,16 @@ describe("POST /api/reports/:id/ai/messages", () => {
     expect(result.body).toEqual({ error: "service_unavailable" });
     expect(result.text).not.toContain("sk-private-test");
   });
+
+  it("does not start a turn when V2 context construction fails", async () => {
+    buildReportAiContext.mockImplementationOnce(() => {
+      throw new Error("invalid V2 context");
+    });
+
+    const result = await post();
+
+    expect(result.response.status).toBe(503);
+    expect(result.body).toEqual({ error: "service_unavailable" });
+    expect(runReportAiTurn).not.toHaveBeenCalled();
+  });
 });

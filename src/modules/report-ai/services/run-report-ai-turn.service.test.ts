@@ -76,7 +76,38 @@ const input = {
   requestId: "10000000-0000-4000-8000-000000000001",
   question: "Explique a margem",
   model: "gpt-6-luna",
-  reportContext: '{"margem":"baixa"}',
+  reportContext: JSON.stringify({
+    schemaVersion: 2,
+    report: {
+      id: 42,
+      version: 3,
+      category: "product",
+      scenario: "resale",
+      unit: "unit",
+      analysisMode: "quick",
+    },
+    diagnosis: {
+      verdict: "positive_result",
+      priority: "volume",
+      partial: false,
+    },
+    facts: [],
+    availability: {
+      volume: "known_positive",
+      completeCostAvailable: true,
+      monthlyResultAvailable: true,
+      minimumPriceAvailable: true,
+      requiredVolumeAvailable: true,
+      discountSimulationAvailable: true,
+      reasons: [],
+    },
+    explanations: {
+      executiveSummary: {},
+      sections: [],
+      guidance: [],
+      comparison: [],
+    },
+  }),
 };
 
 describe("runReportAiTurn", () => {
@@ -126,10 +157,10 @@ describe("runReportAiTurn", () => {
     );
     expect(fakeGateway.streamAnswer).toHaveBeenCalledWith(
       expect.objectContaining({
-        instructions: expect.stringContaining("Assistente Lucrivo"),
+        instructions: expect.stringContaining("# Processo obrigatório"),
         messages: expect.arrayContaining([
           expect.objectContaining({
-            content: expect.stringContaining("DADOS_DO_RELATORIO_INICIO"),
+            content: expect.stringContaining('"schemaVersion":2'),
           }),
         ]),
         signal: expect.any(AbortSignal),
@@ -416,6 +447,14 @@ describe("runReportAiTurn", () => {
         outputTokens: 100,
       }),
     );
+    expect(fakeGateway.summarize).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instructions: expect.stringContaining("sem adicionar fatos"),
+      }),
+    );
+    expect(
+      vi.mocked(fakeGateway.summarize).mock.calls[0]?.[0].instructions,
+    ).not.toContain("# Exemplos");
   });
 
   it("keeps a valid answer when optional summary generation fails", async () => {

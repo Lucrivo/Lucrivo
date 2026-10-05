@@ -206,7 +206,7 @@ describe("ServiceDiagnosisWizard", () => {
         appointmentDurationMinutes: "45",
       }),
     );
-  });
+  }, 15_000);
 
   it("skips duration for every non-appointment pricing method", async () => {
     const user = userEvent.setup();

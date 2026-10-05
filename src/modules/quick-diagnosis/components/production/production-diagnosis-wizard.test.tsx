@@ -72,20 +72,24 @@ describe("ProductionDiagnosisWizard", () => {
     const compensation = options?.compensation ?? true;
 
     expect(screen.getByText("2 de 8")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", {
-        name: "Que tipo de resultado você quer ver?",
-      }),
-    ).toHaveFocus();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "Que tipo de resultado você quer ver?",
+        }),
+      ).toHaveFocus(),
+    );
 
     await user.click(screen.getByRole("radio", { name: "Diagnóstico rápido" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    expect(screen.getByText("3 de 8")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", {
-        name: "Quanto custa produzir e por quanto você vende?",
-      }),
-    ).toHaveFocus();
+    expect(await screen.findByText("3 de 8")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "Quanto custa produzir e por quanto você vende?",
+        }),
+      ).toHaveFocus(),
+    );
 
     if (mode === "composed") {
       await user.click(
@@ -110,24 +114,28 @@ describe("ProductionDiagnosisWizard", () => {
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
-    expect(screen.getByText("4 de 8")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", {
-        name: "Quais gastos você tem todo mês?",
-      }),
-    ).toHaveFocus();
+    expect(await screen.findByText("4 de 8")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "Quais gastos você tem todo mês?",
+        }),
+      ).toHaveFocus(),
+    );
     await user.type(
       screen.getByLabelText("Gastos que existem todo mês"),
       "1000",
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
-    expect(screen.getByText("5 de 8")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", {
-        name: "Quantas unidades você vende por mês?",
-      }),
-    ).toHaveFocus();
+    expect(await screen.findByText("5 de 8")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "Quantas unidades você vende por mês?",
+        }),
+      ).toHaveFocus(),
+    );
     if (volume) {
       await user.type(
         screen.getByRole("textbox", {
@@ -138,12 +146,14 @@ describe("ProductionDiagnosisWizard", () => {
     }
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
-    expect(screen.getByText("6 de 8")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", {
-        name: "Quanto você quer receber por mês?",
-      }),
-    ).toHaveFocus();
+    expect(await screen.findByText("6 de 8")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "Quanto você quer receber por mês?",
+        }),
+      ).toHaveFocus(),
+    );
     if (compensation) {
       await user.click(
         screen.getByRole("switch", {
@@ -159,12 +169,14 @@ describe("ProductionDiagnosisWizard", () => {
     }
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
-    expect(screen.getByText("7 de 8")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", {
-        name: "O que é descontado de cada venda?",
-      }),
-    ).toHaveFocus();
+    expect(await screen.findByText("7 de 8")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "O que é descontado de cada venda?",
+        }),
+      ).toHaveFocus(),
+    );
     await user.type(
       screen.getByLabelText("Qual porcentagem da venda vai para impostos?"),
       "6,25",
@@ -177,12 +189,14 @@ describe("ProductionDiagnosisWizard", () => {
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
-    expect(screen.getByText("8 de 8")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", {
-        name: "Confira as informações da produção",
-      }),
-    ).toHaveFocus();
+    expect(await screen.findByText("8 de 8")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "Confira as informações da produção",
+        }),
+      ).toHaveFocus(),
+    );
 
     return user;
   }
