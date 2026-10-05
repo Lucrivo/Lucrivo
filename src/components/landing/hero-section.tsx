@@ -5,10 +5,11 @@ import {
   ChartBarIcon,
   ChatCircleTextIcon,
   CreditCardIcon,
-  PlayCircleIcon,
   TableIcon,
+  TagIcon,
 } from "@phosphor-icons/react";
 
+import { GuaranteeNote } from "@/components/landing/guarantee-note";
 import heroImage from "@/public/lp/hero-image.png";
 
 const trustItems = [
@@ -29,7 +30,7 @@ const trustItems = [
   },
 ] as const;
 
-function HeroSection() {
+function HeroSection({ monthlyPriceLabel }: { monthlyPriceLabel: string }) {
   return (
     <section id="top" className="hero-section" aria-labelledby="hero-title">
       <div className="hero-ambient" aria-hidden="true" />
@@ -65,15 +66,17 @@ function HeroSection() {
 
           <div className="hero-actions hero-copy-reveal">
             <a className="button button-primary" href="/register">
-              Fazer diagnóstico gratuito
+              Assinar agora por {monthlyPriceLabel}/mês
               <ArrowRightIcon aria-hidden="true" size={18} weight="bold" />
             </a>
 
-            <a className="button button-secondary" href="#como-funciona">
-              <PlayCircleIcon aria-hidden="true" size={19} weight="bold" />
-              Conhecer o Lucrivo
+            <a className="button button-secondary" href="#planos">
+              <TagIcon aria-hidden="true" size={19} weight="bold" />
+              Ver planos
             </a>
           </div>
+
+          <GuaranteeNote className="hero-guarantee hero-copy-reveal" />
 
           <ul
             className="hero-trust hero-copy-reveal"

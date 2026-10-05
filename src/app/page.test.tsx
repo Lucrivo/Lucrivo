@@ -80,11 +80,13 @@ describe("Home", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      view.getByRole("link", { name: /Fazer diagnóstico gratuito/i }),
+      view.getByRole("link", { name: "Assinar agora por R$ 49,90/mês" }),
     ).toHaveAttribute("href", "/register");
-    expect(
-      view.getByRole("link", { name: /Conhecer o Lucrivo/i }),
-    ).toHaveAttribute("href", "#como-funciona");
+    expect(view.getByRole("link", { name: "Ver planos" })).toHaveAttribute(
+      "href",
+      "#planos",
+    );
+    expect(view.getByText("7 dias de garantia.")).toBeInTheDocument();
     expect(
       view.getByRole("img", {
         name: "Painel ilustrativo do Lucrivo com indicadores financeiros.",
@@ -216,35 +218,6 @@ describe("Home", () => {
     ).toBeInTheDocument();
   });
 
-  it("summarizes what the diagnosis shows in five steps", async () => {
-    await renderHome();
-
-    const overview = document.querySelector("#diagnostico-resumo");
-    expect(overview).not.toBeNull();
-
-    const view = within(overview as HTMLElement);
-    expect(
-      view.getByRole("heading", {
-        level: 2,
-        name: "Seus números viram uma resposta clara.",
-      }),
-    ).toBeInTheDocument();
-
-    for (const title of [
-      "Preço",
-      "Custos",
-      "Quanto sobra",
-      "Resultado",
-      "Situação",
-    ]) {
-      expect(
-        view.getByRole("heading", { level: 3, name: title }),
-      ).toBeInTheDocument();
-    }
-
-    expect(view.getByText(/É uma ferramenta de análise\./)).toBeInTheDocument();
-  });
-
   it("shows the real structure of a diagnosis without presenting it as a screenshot", async () => {
     await renderHome();
 
@@ -291,73 +264,143 @@ describe("Home", () => {
     ).toHaveAttribute("href", "/register");
   });
 
-  it("explains the diagnosis verdicts in the product language", async () => {
+  it("places pricing right after the preview, followed by guarantee and FAQ", async () => {
     await renderHome();
 
-    const colors = document.querySelector("#resultado");
-    expect(colors).not.toBeNull();
+    const sectionIds = Array.from(
+      document.querySelectorAll("main > section[id]"),
+    ).map((section) => section.id);
 
-    const view = within(colors as HTMLElement);
+    expect(sectionIds).toEqual([
+      "top",
+      "problema",
+      "caminhos",
+      "previa",
+      "planos",
+      "garantia",
+      "duvidas",
+      "diagnostico",
+    ]);
+  });
+
+  it("keeps the paused chapters out of the composition", async () => {
+    await renderHome();
+
+    expect(document.querySelector("#como-funciona")).toBeNull();
+    expect(document.querySelector("#diagnostico-resumo")).toBeNull();
+    expect(document.querySelector("#resultado")).toBeNull();
+    expect(document.querySelector("#recursos")).toBeNull();
+    expect(document.querySelector('a[href="#como-funciona"]')).toBeNull();
+  });
+
+  it("presents the 7-day guarantee with its three steps", async () => {
+    await renderHome();
+
+    const guarantee = document.querySelector("#garantia");
+    expect(guarantee).not.toBeNull();
+
+    const view = within(guarantee as HTMLElement);
     expect(
-      view.getByRole("heading", {
-        level: 2,
-        name: "O diagnóstico mostra como a conta realmente está.",
-      }),
+      view.getByRole("img", { name: "Garantia de 7 dias" }),
+    ).toBeInTheDocument();
+    expect(
+      view.getByRole("heading", { level: 2, name: "Você não arrisca nada." }),
+    ).toBeInTheDocument();
+    expect(
+      view.getByText(
+        "Assine e use a Lucrivo com os seus produtos por 7 dias. Se achar que não vale a pena, é só pedir e devolvemos todo o seu dinheiro. Você não precisa explicar o motivo.",
+      ),
     ).toBeInTheDocument();
 
-    const verdicts = [
+    const steps = [
+      ["Assine", "Pague R$ 49,90 com cartão ou Pix. O acesso libera na hora."],
       [
-        "Resultado positivo",
-        "O preço deixa valor depois dos custos e gastos considerados.",
+        "Use por 7 dias",
+        "Coloque seus produtos e veja o resultado de cada um.",
       ],
-      [
-        "No limite",
-        "O preço paga exatamente os valores considerados, sem lucro nem prejuízo.",
-      ],
-      ["Prejuízo", "Cada venda ou o resultado estimado do mês fica negativo."],
     ] as const;
 
-    for (const [title, description] of verdicts) {
+    for (const [title, description] of steps) {
       expect(
         view.getByRole("heading", { level: 3, name: title }),
       ).toBeInTheDocument();
       expect(view.getByText(description)).toBeInTheDocument();
     }
 
+    const refundStep = view
+      .getByRole("heading", { level: 3, name: "Não gostou? Peça de volta" })
+      .closest("li");
+    expect(refundStep?.querySelector("p")?.textContent).toBe(
+      "Mande um email para atendimento@lucrivo.com.br e devolvemos o valor pelo mesmo meio que você pagou.",
+    );
     expect(
-      view.getByText(
-        "Se faltar preço, rotina ou quantidade, o relatório também mostra o que precisa ser completado.",
-      ),
+      within(refundStep as HTMLElement).getByRole("link", {
+        name: "atendimento@lucrivo.com.br",
+      }),
+    ).toHaveAttribute("href", "mailto:atendimento@lucrivo.com.br");
+    expect(
+      view.getByText("Sem letra miúda. Sem pergunta. Sem complicação."),
     ).toBeInTheDocument();
   });
 
-  it("walks through how it works in three steps", async () => {
+  it("answers the frequent questions in an accordion with the first four open", async () => {
     await renderHome();
 
-    const how = document.querySelector("#como-funciona");
-    expect(how).not.toBeNull();
+    const faq = document.querySelector("#duvidas");
+    expect(faq).not.toBeNull();
 
-    const view = within(how as HTMLElement);
+    const view = within(faq as HTMLElement);
     expect(
-      view.getByRole("heading", {
-        level: 2,
-        name: /Três passos\.\s*Poucos minutos\./,
-      }),
+      view.getByRole("heading", { level: 2, name: "Ficou alguma dúvida?" }),
     ).toBeInTheDocument();
 
-    for (const title of [
-      "Informe os dados",
-      "Nós calculamos",
-      "Veja seu diagnóstico",
+    for (const group of [
+      "Sobre a assinatura",
+      "Sobre pagamento e garantia",
+      "Sobre seus dados e suporte",
     ]) {
       expect(
-        view.getByRole("heading", { level: 3, name: title }),
+        view.getByRole("heading", { level: 3, name: group }),
       ).toBeInTheDocument();
     }
 
+    const items = Array.from(faq?.querySelectorAll("details") ?? []);
+    expect(items).toHaveLength(15);
+    expect(items.map((item) => item.open)).toEqual([
+      ...Array<boolean>(4).fill(true),
+      ...Array<boolean>(11).fill(false),
+    ]);
+
     expect(
-      view.getByRole("link", { name: "Quero descobrir meu preço" }),
+      items.map((item) => item.querySelector("summary")?.textContent),
+    ).toEqual([
+      "Já fiz o diagnóstico grátis. Por que assinar?",
+      "R$ 49,90 não é caro?",
+      "Funciona para o meu tipo de negócio?",
+      "Preciso entender de conta ou de imposto?",
+      "E se eu não souber algum número?",
+      "Não tenho muito tempo. Vou conseguir usar?",
+      "Como funciona a garantia?",
+      "Tem fidelidade?",
+      "O que acontece depois dos 30 dias?",
+      "Posso pagar com Pix?",
+      "Quando consigo usar?",
+      "Meus dados do diagnóstico grátis continuam lá?",
+      "Meus números ficam seguros?",
+      "Funciona no celular?",
+      "E se eu tiver dúvida usando?",
+    ]);
+
+    expect(
+      view.getByText(
+        "A assinatura renova todo mês por R$ 49,90. Se não quiser continuar, é só cancelar antes da próxima cobrança.",
+      ),
+    ).toBeInTheDocument();
+    expect(view.getByText(/Não achou sua dúvida\?/)).toBeInTheDocument();
+    expect(
+      view.getByRole("link", { name: "Quero assinar por R$ 49,90/mês" }),
     ).toHaveAttribute("href", "/register");
+    expect(view.getByText("Garantia de 7 dias.")).toBeInTheDocument();
   });
 
   it("closes with the final call to action copy", async () => {
@@ -375,11 +418,57 @@ describe("Home", () => {
     ).toBeInTheDocument();
     expect(
       view.getByText(
-        "Se você cobra um preço, o Lucrivo pode te ajudar. Leva poucos minutos e é gratuito.",
+        /Se você cobra um preço, o Lucrivo pode te ajudar\. Assine, use por\s*7\s*dias e, se não valer a pena, devolvemos tudo\./,
       ),
     ).toBeInTheDocument();
+    expect(view.getByText("Risco zero por 7 dias.")).toBeInTheDocument();
     expect(
-      view.getByText("Análise gratuita • Resultado personalizado"),
+      view.getByText("Assinatura mensal · Sem fidelidade"),
+    ).toBeInTheDocument();
+
+    const proof = view.getByRole("list", { name: "O que está incluso" });
+    expect(
+      within(proof)
+        .getAllByRole("listitem")
+        .map((item) => item.textContent),
+    ).toEqual([
+      "Cartão ou Pix",
+      "Acesso liberado na hora",
+      "Todos os seus produtos",
+    ]);
+  });
+
+  it("offers navigation, account, contact and social links in the footer", async () => {
+    await renderHome();
+
+    const footer = screen.getByRole("contentinfo");
+    const view = within(footer);
+
+    for (const [label, href] of [
+      ["Seu negócio", "#caminhos"],
+      ["Prévia do diagnóstico", "#previa"],
+      ["Planos", "#planos"],
+      ["Garantia", "#garantia"],
+      ["Dúvidas", "#duvidas"],
+      ["Criar conta", "/register"],
+      ["Entrar", "/login"],
+      ["atendimento@lucrivo.com.br", "mailto:atendimento@lucrivo.com.br"],
+    ] as const) {
+      expect(view.getByRole("link", { name: label })).toHaveAttribute(
+        "href",
+        href,
+      );
+    }
+
+    const social = view.getByRole("list", { name: "Redes sociais" });
+    expect(
+      within(social)
+        .getAllByRole("link")
+        .map((link) => link.getAttribute("aria-label")),
+    ).toEqual(["Instagram", "TikTok", "YouTube"]);
+
+    expect(
+      view.getByText(/© \d{4} Lucrivo\. Todos os direitos reservados\./),
     ).toBeInTheDocument();
   });
 
@@ -389,10 +478,6 @@ describe("Home", () => {
     const nav = screen.getByRole("navigation", { name: "Navegação principal" });
     const view = within(nav);
 
-    expect(view.getByRole("link", { name: "Como funciona" })).toHaveAttribute(
-      "href",
-      "#como-funciona",
-    );
     expect(view.getByRole("link", { name: "Seu negócio" })).toHaveAttribute(
       "href",
       "#caminhos",
@@ -401,21 +486,22 @@ describe("Home", () => {
       "href",
       "#planos",
     );
+    expect(view.getByRole("link", { name: "Garantia" })).toHaveAttribute(
+      "href",
+      "#garantia",
+    );
+    expect(view.getByRole("link", { name: "Dúvidas" })).toHaveAttribute(
+      "href",
+      "#duvidas",
+    );
     expect(view.getByRole("link", { name: "Entrar" })).toHaveAttribute(
       "href",
       "/login",
     );
-    expect(
-      view.getByRole("link", { name: /Fazer diagnóstico gratuito/i }),
-    ).toHaveAttribute("href", "/register");
-  });
-
-  it("keeps the later landing chapters mounted", async () => {
-    await renderHome();
-
-    expect(document.querySelector("#planos")).not.toBeNull();
-    expect(document.querySelector("#diagnostico")).not.toBeNull();
-    expect(document.querySelector("#recursos")).toBeNull();
+    expect(view.getByRole("link", { name: /Assinar agora/i })).toHaveAttribute(
+      "href",
+      "/register",
+    );
   });
 
   it("uses registration for every public plan action", async () => {
@@ -444,9 +530,25 @@ describe("Home", () => {
     expect(finalStep).not.toBeNull();
     expect(
       within(finalStep as HTMLElement).getByRole("link", {
-        name: "Fazer meu diagnóstico gratuito",
+        name: "Garantir meu acesso por R$ 49,90/mês",
       }),
     ).toHaveAttribute("href", "/register");
+  });
+
+  it("reflects the live monthly price in the offer buttons", async () => {
+    listActivePrices.mockResolvedValue({
+      status: "success",
+      prices: [{ ...prices[0], amountCents: 5990 }, prices[1]],
+    });
+    await renderHome();
+
+    expect(
+      screen.getByRole("link", { name: "Assinar agora por R$ 59,90/mês" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Quero assinar por R$ 59,90/mês" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("R$ 59,90 não é caro?")).toBeInTheDocument();
   });
 
   it("keeps free available without inventing prices after a catalog failure", async () => {
@@ -458,5 +560,8 @@ describe("Home", () => {
       screen.getByText("Planos pagos temporariamente indisponíveis"),
     ).toBeInTheDocument();
     expect(screen.queryByText("R$ 49,90/mês")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Assinar agora por R$ 49,90/mês" }),
+    ).toHaveAttribute("href", "/register");
   });
 });

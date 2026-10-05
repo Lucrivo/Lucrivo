@@ -4,9 +4,10 @@ import { useState } from "react";
 import { ArrowUpRightIcon, ListIcon, XIcon } from "@phosphor-icons/react";
 
 const navLinks = [
-  { href: "#como-funciona", label: "Como funciona" },
   { href: "#caminhos", label: "Seu negócio" },
   { href: "#planos", label: "Planos" },
+  { href: "#garantia", label: "Garantia" },
+  { href: "#duvidas", label: "Dúvidas" },
 ] as const;
 
 function LandingNav() {
@@ -31,7 +32,7 @@ function LandingNav() {
           Entrar
         </a>
         <a className="nav-cta" href="/register">
-          Fazer diagnóstico gratuito{" "}
+          Assinar agora{" "}
           <ArrowUpRightIcon aria-hidden="true" size={16} weight="bold" />
         </a>
       </div>
@@ -61,7 +62,7 @@ function LandingNav() {
             href="/register"
             onClick={() => setMenuOpen(false)}
           >
-            Fazer diagnóstico gratuito
+            Assinar agora
           </a>
         </div>
       )}

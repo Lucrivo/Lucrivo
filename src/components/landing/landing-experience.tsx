@@ -6,16 +6,16 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
 import { BusinessPathsSection } from "@/components/landing/business-paths-section";
-import { DiagnosisOverviewSection } from "@/components/landing/diagnosis-overview-section";
 import { DiagnosisPreviewSection } from "@/components/landing/diagnosis-preview-section";
+import { FaqSection } from "@/components/landing/faq-section";
 import { FinalCtaSection } from "@/components/landing/final-cta-section";
+import { GuaranteeSection } from "@/components/landing/guarantee-section";
 import { HeroSection } from "@/components/landing/hero-section";
-import { HowItWorksSection } from "@/components/landing/how-it-works-section";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { LandingNav } from "@/components/landing/landing-nav";
+import { resolveMonthlyPriceLabel } from "@/components/landing/landing-offer";
 import { PricingSection } from "@/components/landing/pricing-section";
 import { ProblemSection } from "@/components/landing/problem-section";
-import { ResultColorsSection } from "@/components/landing/result-colors-section";
 import type { ActiveBillingPrice } from "@/modules/billing/types";
 
 import "./landing-experience.css";
@@ -28,6 +28,7 @@ export function LandingExperience({
   prices: ActiveBillingPrice[];
 }) {
   const root = useRef<HTMLElement>(null);
+  const monthlyPriceLabel = resolveMonthlyPriceLabel(prices);
 
   useGSAP(
     () => {
@@ -183,15 +184,14 @@ export function LandingExperience({
       className="landing-experience page-shell w-full max-w-full overflow-x-hidden"
     >
       <LandingNav />
-      <HeroSection />
+      <HeroSection monthlyPriceLabel={monthlyPriceLabel} />
       <ProblemSection />
       <BusinessPathsSection />
-      <DiagnosisOverviewSection />
       <DiagnosisPreviewSection />
-      <ResultColorsSection />
-      <HowItWorksSection />
       <PricingSection prices={prices} />
-      <FinalCtaSection />
+      <GuaranteeSection monthlyPriceLabel={monthlyPriceLabel} />
+      <FaqSection monthlyPriceLabel={monthlyPriceLabel} />
+      <FinalCtaSection monthlyPriceLabel={monthlyPriceLabel} />
       <LandingFooter />
     </main>
   );

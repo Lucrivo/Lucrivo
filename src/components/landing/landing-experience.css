@@ -318,6 +318,33 @@ html:has(.landing-experience) {
   box-shadow: 0 18px 36px -14px oklch(0.56 0.23 259 / 0.7);
 }
 
+.landing-experience .guarantee-note {
+  --guarantee-note-icon: oklch(0.74 0.17 151);
+
+  display: flex;
+  margin: 0;
+  align-items: flex-start;
+  gap: 8px;
+  color: oklch(0.88 0.03 255 / 0.74);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.landing-experience .guarantee-note svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--guarantee-note-icon);
+}
+
+.landing-experience .guarantee-note strong {
+  color: oklch(0.97 0.01 255);
+  font-weight: 680;
+}
+
+.landing-experience .hero-guarantee {
+  margin-top: 16px;
+}
+
 .landing-experience .hero-trust {
   display: grid;
   margin: 34px 0 0;
@@ -1173,50 +1200,6 @@ html:has(.landing-experience) {
   padding: 0 30px;
 }
 
-.landing-experience .landing-footer {
-  display: grid;
-  padding: 72px max(5vw, 24px) 42px;
-  align-items: start;
-  grid-template-columns: 0.7fr 1.4fr 1fr;
-  gap: 32px;
-  border-top: 1px solid oklch(0.955 0.012 255 / 0.1);
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.landing-experience .footer-brand {
-  font-size: 1.8rem;
-}
-
-.landing-experience .landing-footer p {
-  max-width: 400px;
-  margin: 3px 0 0;
-  color: oklch(0.955 0.012 255 / 0.48);
-}
-
-.landing-experience .landing-footer > div {
-  display: flex;
-  justify-content: flex-end;
-  gap: 24px;
-  color: oklch(0.955 0.012 255 / 0.66);
-  font-size: 0.84rem;
-}
-
-.landing-experience .landing-footer a {
-  transition: color 220ms ease;
-}
-
-.landing-experience .landing-footer a:hover {
-  color: var(--landing-primary-bright);
-}
-
-.landing-experience .landing-footer small {
-  margin-top: 70px;
-  grid-column: 1 / -1;
-  color: oklch(0.955 0.012 255 / 0.32);
-  font-size: 0.72rem;
-}
-
 @media (max-width: 1100px) {
   .landing-experience .problem-card-costs,
   .landing-experience .problem-card-taxes,
@@ -1546,20 +1529,6 @@ html:has(.landing-experience) {
 
   .landing-experience .section-lead {
     margin-top: 20px;
-  }
-
-  .landing-experience .landing-footer {
-    grid-template-columns: 1fr;
-  }
-
-  .landing-experience .landing-footer > div {
-    justify-content: flex-start;
-    flex-wrap: wrap;
-  }
-
-  .landing-experience .landing-footer small {
-    grid-column: auto;
-    margin-top: 30px;
   }
 }
 
