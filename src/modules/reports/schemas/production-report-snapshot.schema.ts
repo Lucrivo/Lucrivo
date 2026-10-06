@@ -83,6 +83,7 @@ const productionReportSnapshotSchema = z
     calculationVersion: z.literal(PRODUCTION_CALCULATION_VERSION),
     contentVersion: z.union([
       z.literal(4),
+      z.literal(5),
       z.literal(PRODUCTION_CONTENT_VERSION),
     ]),
     category: z.literal("production"),

@@ -1,42 +1,9 @@
-import {
-  CircleCheckIcon,
-  CircleHelpIcon,
-  OctagonAlertIcon,
-  TriangleAlertIcon,
-} from "lucide-react";
-
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 import type { ReportSectionViewModel } from "../presenters/to-report-view-model";
-
-const tonePresentation = {
-  neutral: {
-    icon: CircleHelpIcon,
-    badge: "info" as const,
-    border: "border-info/30",
-    surface: "bg-info/4",
-  },
-  positive: {
-    icon: CircleCheckIcon,
-    badge: "success" as const,
-    border: "border-success/30",
-    surface: "bg-success/4",
-  },
-  warning: {
-    icon: TriangleAlertIcon,
-    badge: "warning" as const,
-    border: "border-warning/35",
-    surface: "bg-warning/5",
-  },
-  critical: {
-    icon: OctagonAlertIcon,
-    badge: "destructive" as const,
-    border: "border-destructive/30",
-    surface: "bg-destructive/4",
-  },
-};
+import { tonePresentation } from "./report-tone";
 
 function ReportSectionCard({ section }: { section: ReportSectionViewModel }) {
   const presentation = tonePresentation[section.tone];

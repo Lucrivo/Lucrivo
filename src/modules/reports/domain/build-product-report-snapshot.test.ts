@@ -23,14 +23,14 @@ function build(input: ProductDiagnosisCommand) {
 }
 
 describe("buildProductReportSnapshot", () => {
-  it("builds the Product 3/3/5 contract with direct summary language", () => {
+  it("builds the Product 3/3/6 contract with direct summary language", () => {
     const snapshot = build(command);
     const content = JSON.stringify(snapshot);
 
     expect(snapshot).toMatchObject({
       schemaVersion: 3,
       calculationVersion: 3,
-      contentVersion: 5,
+      contentVersion: 6,
       results: {
         minimumPriceCents: 3_871,
         unitProfitCents: 1_515,
@@ -90,7 +90,7 @@ describe("buildProductReportSnapshot", () => {
     });
   });
 
-  it("shows only the monthly quantity when volume is unknown", () => {
+  it("describes the break-even reference when volume is unknown", () => {
     const snapshot = build({ ...command, monthlySalesVolume: null });
     const content = JSON.stringify(snapshot);
 
@@ -105,15 +105,19 @@ describe("buildProductReportSnapshot", () => {
       unitCostCents: null,
       minimumPriceCents: null,
     });
-    expect(content).toContain("Faturamento necessário no mês");
-    expect(content).toContain("e o valor informado para você");
+    expect(content).toContain("ponto de equilíbrio");
+    expect(content).toMatch(/114 vendas/);
+    expect(content).toMatch(/por semana/);
     expect(
       snapshot.sections.find(({ key }) => key === "margin_diagnosis"),
     ).toMatchObject({
       title: "Quanto sobra no mês",
-      emphasisValue: "Ainda não calculado",
+      emphasisValue: "R$ 0,00",
+      tone: "neutral",
     });
-    expect(content).not.toMatch(/por semana|por dia/);
+    expect(snapshot.executiveSummary.verdict.label).toBe(
+      "Equilíbrio como referência",
+    );
   });
 
   it("omits the withdrawal clause when pro-labore is disabled", () => {

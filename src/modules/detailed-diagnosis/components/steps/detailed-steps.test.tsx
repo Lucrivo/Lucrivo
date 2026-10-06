@@ -424,7 +424,7 @@ describe("detailed item completion and review", () => {
     expect(screen.getByText("Volume ainda não informado")).toBeVisible();
     expect(screen.getByText("Nenhuma venda no mês")).toBeVisible();
     expect(screen.getByText("37 unidades por mês")).toBeVisible();
-    expect(screen.getByText(/resultado será parcial/i)).toBeVisible();
+    expect(screen.getByText(/ponto de equilíbrio como referência/i)).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Gerar diagnóstico detalhado" }),
     ).toBeEnabled();

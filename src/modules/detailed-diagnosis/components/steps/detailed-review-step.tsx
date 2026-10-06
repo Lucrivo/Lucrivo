@@ -30,11 +30,12 @@ function DetailedReviewStep({
             className="mt-0.5 size-4 shrink-0"
           />
           <p>
-            O resultado será parcial porque falta o volume de{" "}
+            Falta o volume de{" "}
             {partialItems
               .map((item) => item.name.trim() || "um item")
               .join(", ")}
-            . Você ainda pode gerar o diagnóstico.
+            . Usaremos o ponto de equilíbrio como referência. Você ainda pode
+            gerar o diagnóstico.
           </p>
         </div>
       ) : null}

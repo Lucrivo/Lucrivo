@@ -33,12 +33,14 @@ describe("buildProductionExecutiveSummary", () => {
     );
   });
 
-  it("keeps complete price unavailable without volume", () => {
+  it("uses the break-even price as the complete-price reference without volume", () => {
     const summary = buildProductionExecutiveSummary(
       calculateProductionReport({ ...command, monthlySalesVolume: null }),
     );
-    expect(summary.facts[1].referenceValue).toBe("Ainda não calculado");
-    expect(summary.answers[1].answer).toMatch(/falta uma quantidade/i);
+    expect(summary.facts[0].currentValue).toBe("R$ 0,00 no ponto de equilíbrio");
+    expect(summary.facts[1].referenceValue).not.toBe("Ainda não calculado");
+    expect(summary.answers[1].answer).toMatch(/preço de equilíbrio/i);
+    expect(summary.verdict.label).toBe("Equilíbrio como referência");
   });
 
   it("contains no target-based or margin-quality language", () => {

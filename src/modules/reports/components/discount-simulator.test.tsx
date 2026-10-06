@@ -96,4 +96,30 @@ describe("DiscountSimulator", () => {
     );
     expect(screen.getAllByText("Indisponível")).toHaveLength(3);
   });
+
+  it("shows required sales in break-even reference mode", () => {
+    render(
+      <DiscountSimulator
+        base={base}
+        context={{
+          category: "product",
+          breakEvenReference: {
+            effectiveFixedCostCents: 500_000,
+            directUnitCostCents: 4_000,
+            referenceVolume: 100,
+          },
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByText("Vendas necessárias com este desconto"),
+    ).toBeVisible();
+    expect(screen.queryByText("Resultado por unidade")).not.toBeInTheDocument();
+    expect(screen.getByText("100 vendas")).toBeVisible();
+    fireEvent.change(screen.getByRole("slider", { name: "Desconto simulado" }), {
+      target: { value: "0" },
+    });
+    expect(screen.getByText("84 vendas")).toBeVisible();
+  });
 });

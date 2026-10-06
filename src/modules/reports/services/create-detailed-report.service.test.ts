@@ -130,7 +130,7 @@ describe("createDetailedReport", () => {
       }),
       p_schema_version: 1,
       p_calculation_version: 1,
-      p_content_version: 2,
+      p_content_version: 3,
       p_monthly_gross_revenue_cents: snapshot.results.monthlyGrossRevenueCents,
       p_monthly_result_cents: snapshot.results.monthlyResultCents,
       p_real_margin_basis_points: snapshot.results.finalMarginBasisPoints,

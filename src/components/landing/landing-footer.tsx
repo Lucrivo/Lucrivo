@@ -15,7 +15,6 @@ import "./landing-footer.css";
 
 const socialIcons: Record<SocialLinkId, typeof InstagramLogoIcon> = {
   instagram: InstagramLogoIcon,
-  tiktok: TiktokLogoIcon,
   youtube: YoutubeLogoIcon,
 };
 
@@ -59,7 +58,7 @@ function LandingFooter() {
 
                 return (
                   <li key={id}>
-                    <a href={href} aria-label={label} title={label}>
+                    <a href={href} aria-label={label} title={label} target="_blank">
                       <Icon aria-hidden="true" size={20} weight="fill" />
                     </a>
                   </li>

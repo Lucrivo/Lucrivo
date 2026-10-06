@@ -10,6 +10,14 @@ import type {
   DashboardFocusLoad,
   DashboardTone,
 } from "@/modules/client-dashboard/client-dashboard.types";
+import type { ReportTone } from "@/modules/reports/types";
+
+const indicatorStatusTone = {
+  positive: "success",
+  critical: "danger",
+  warning: "warning",
+  neutral: "info",
+} as const satisfies Record<ReportTone, DashboardTone>;
 
 const badgeVariant = {
   success: "success",
@@ -110,8 +118,22 @@ function DashboardReportFocus({ focus }: { focus: DashboardFocusLoad }) {
             title={metric.label}
             value={metric.value}
             valueClassName="tabular-nums"
-            description={metric.supportingText}
-            className={cn(metric.value === "Indisponível" && "bg-muted/25")}
+            status={{
+              label: metric.toneLabel,
+              tone: indicatorStatusTone[metric.tone],
+            }}
+            details={
+              metric.supportingText ? (
+                <p className="text-muted-foreground text-xs leading-5">
+                  {metric.supportingText}
+                </p>
+              ) : null
+            }
+            className={cn(
+              (metric.value === "Indisponível" ||
+                metric.value === "Ainda não calculado") &&
+                "bg-muted/25",
+            )}
           />
         ))}
       </div>

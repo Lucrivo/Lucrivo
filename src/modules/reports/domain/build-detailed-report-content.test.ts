@@ -72,7 +72,7 @@ describe("buildDetailedReportContent", () => {
     });
   });
 
-  it("shows one unknown item's monthly quantity without a weekly split", () => {
+  it("describes the single-item break-even reference when volume is unknown", () => {
     const partial = {
       ...command,
       items: [{ ...command.items[0], monthlySalesVolume: null }],
@@ -87,7 +87,10 @@ describe("buildDetailedReportContent", () => {
       emphasisLabel: "Faturamento necessário no mês",
       emphasisValue: "R$ 6.258,90",
     });
-    expect(sales?.body).not.toMatch(/por semana|por dia/);
+    expect(sales?.body).toMatch(/por semana/);
+    expect(content.executiveSummary.verdict.label).toBe(
+      "Equilíbrio como referência",
+    );
   });
 
   it("explains why a multi-item partial quantity is unavailable", () => {

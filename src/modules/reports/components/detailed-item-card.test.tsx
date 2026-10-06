@@ -73,6 +73,25 @@ describe("DetailedItemCard", () => {
     expect(within(card).getByTestId("discount-simulator")).toBeVisible();
   });
 
+  it("shows the item break-even reference when volume is unknown", () => {
+    const card = renderItem({
+      ...item,
+      volumeLabel:
+        "Sem quantidade informada · equilíbrio com 4 unidades no mês",
+      breakEvenReferenceLabel:
+        "Para não ter prejuízo vendendo só este item: 4 unidades por mês.",
+      unitProfitLabel: "R$ 0,00 no equilíbrio",
+      realMarginLabel: "0% no equilíbrio",
+    });
+
+    expect(
+      within(card).getByText(
+        "Para não ter prejuízo vendendo só este item: 4 unidades por mês.",
+      ),
+    ).toBeVisible();
+    expect(within(card).getByText("R$ 0,00 no equilíbrio")).toBeVisible();
+  });
+
   it("explains incomplete full-cost rows without showing a direct-cost floor", () => {
     const reason = "Informe uma quantidade para dividir os gastos do mês.";
     const card = renderItem({

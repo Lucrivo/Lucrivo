@@ -72,7 +72,7 @@ describe("createProductionReport", () => {
       p_card_fee_rate_basis_points: 200,
       p_schema_version: 3,
       p_calculation_version: 3,
-      p_content_version: 5,
+      p_content_version: 6,
       p_scenario: "manufacturing",
       p_current_price_cents: snapshot.results.currentPriceCents,
       p_real_margin_basis_points: snapshot.results.realMarginBasisPoints,

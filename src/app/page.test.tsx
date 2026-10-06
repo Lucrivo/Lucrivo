@@ -246,13 +246,15 @@ describe("Home", () => {
       expect(view.getByText(question)).toBeInTheDocument();
     }
 
-    for (const number of [
-      "Preço atual",
+    expect(view.getByText("Entenda o resultado")).toBeInTheDocument();
+    for (const indicator of [
+      "Preço de venda",
       "Menor preço para não ficar no prejuízo",
-      "Resultado do mês",
       "Vendas necessárias no mês",
+      "Margem de lucro",
+      "Desconto máximo sem prejuízo",
     ]) {
-      expect(view.getByText(number)).toBeInTheDocument();
+      expect(view.getByText(indicator)).toBeInTheDocument();
     }
 
     expect(

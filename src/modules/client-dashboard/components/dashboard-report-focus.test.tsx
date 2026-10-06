@@ -43,15 +43,35 @@ const focusedReport: DashboardReportFocusViewModel = {
   verdict: { label: "Resultado positivo", tone: "success" },
   priorityLabel: "Avaliar margem",
   metrics: [
-    { key: "profit", label: "Lucro por unidade", value: "R$ 12,00" },
-    { key: "margin", label: "Margem real", value: "20%" },
+    {
+      key: "sales",
+      label: "Vendas necessárias no mês",
+      value: "100",
+      tone: "positive",
+      toneLabel: "Resultado positivo",
+    },
     {
       key: "minimum",
-      label: "Preço mínimo",
+      label: "Menor preço para não ficar no prejuízo",
       value: "Indisponível",
+      tone: "neutral",
+      toneLabel: "Informação",
       supportingText: "Falta uma quantidade para completar o cálculo.",
     },
-    { key: "sales", label: "Vendas para se pagar", value: "100" },
+    {
+      key: "margin",
+      label: "Margem de lucro",
+      value: "20%",
+      tone: "positive",
+      toneLabel: "Resultado positivo",
+    },
+    {
+      key: "discount",
+      label: "Desconto máximo sem prejuízo",
+      value: "8%",
+      tone: "positive",
+      toneLabel: "Resultado positivo",
+    },
   ],
   complementaryFacts: [
     {
@@ -148,13 +168,13 @@ describe("DashboardReportFocus", () => {
     expect(
       screen.getByText(/criado em 30\/09\/2026.*atualizado em 01\/10\/2026/),
     ).toBeVisible();
-    expect(screen.getByText("Resultado positivo")).toBeVisible();
+    expect(screen.getAllByText("Resultado positivo").length).toBeGreaterThan(0);
     expect(screen.getByText("Avaliar margem")).toBeVisible();
     for (const label of [
-      "Lucro por unidade",
-      "Margem real",
-      "Preço mínimo",
-      "Vendas para se pagar",
+      "Vendas necessárias no mês",
+      "Menor preço para não ficar no prejuízo",
+      "Margem de lucro",
+      "Desconto máximo sem prejuízo",
     ]) {
       expect(screen.getByText(label)).toBeVisible();
     }

@@ -3,8 +3,26 @@ import type {
   DetailedDiagnosisCommand,
 } from "@/modules/detailed-diagnosis/types";
 
-import { formatBasisPoints, formatCurrency } from "../formatters";
+import {
+  formatBasisPoints,
+  formatCurrency,
+  formatIntegerVolume,
+} from "../formatters";
 import type { ReportExecutiveSummary, ReportSection } from "../types";
+import {
+  BREAK_EVEN_REFERENCE_PRIORITY_BODY,
+  BREAK_EVEN_REFERENCE_VERDICT,
+  scenarioImmediateAction,
+  scenarioMinimumPriceBody,
+  scenarioMonthlyBody,
+  scenarioPriceSufficiencyAnswer,
+  scenarioProfitabilityAnswer,
+  scenarioSalesGoalBody,
+} from "./break-even-scenario-copy";
+import {
+  deriveDetailedBreakEvenScenario,
+  type DetailedBreakEvenScenario,
+} from "./detailed-break-even-scenario";
 import { calculateBreakEvenRevenue } from "./unit-economics";
 
 type DetailedReportContent = {
@@ -26,11 +44,7 @@ function verdictContent(
         body: "Há itens que deixam um valor negativo antes dos gastos mensais.",
         tone: "critical",
       },
-      incomplete_volume: {
-        label: "Falta informar as vendas",
-        body: "O resultado mensal depende das quantidades ainda não informadas.",
-        tone: "neutral",
-      },
+      incomplete_volume: BREAK_EVEN_REFERENCE_VERDICT,
       no_sales: {
         label: "Sem vendas no mês",
         body: "O mês informado teve volume zero e manteve os gastos mensais.",
@@ -73,8 +87,7 @@ function directLossNames(
 function priorityBody(calculation: DetailedDiagnosisCalculation): string {
   return {
     direct_loss: "Revise primeiro os itens que geram perda por venda.",
-    incomplete_volume:
-      "Informe as quantidades restantes para completar o resultado.",
+    incomplete_volume: BREAK_EVEN_REFERENCE_PRIORITY_BODY,
     no_sales: "Defina uma referência de vendas para o próximo mês.",
     operational_loss:
       "Revise primeiro os preços e os gastos considerados no mês.",
@@ -83,15 +96,29 @@ function priorityBody(calculation: DetailedDiagnosisCalculation): string {
   }[calculation.verdict];
 }
 
+function missingVolumeNames(
+  command: DetailedDiagnosisCommand,
+  calculation: DetailedDiagnosisCalculation,
+): string[] {
+  const ids = new Set(calculation.missingVolumeItemIds);
+  return command.items
+    .filter((item) => ids.has(item.id))
+    .map((item) => item.name);
+}
+
 function immediateAction(
   command: DetailedDiagnosisCommand,
   calculation: DetailedDiagnosisCalculation,
+  scenario: DetailedBreakEvenScenario,
 ): string {
   if (calculation.verdict === "direct_loss") {
     return `Revise primeiro os preços e custos de ${joinNames(directLossNames(command, calculation))} antes de aumentar as vendas.`;
   }
   if (calculation.verdict === "incomplete_volume") {
-    return "Informe as quantidades restantes para completar o resultado do conjunto.";
+    if (scenario.consolidated) {
+      return scenarioImmediateAction(scenario.consolidated, "unidades");
+    }
+    return `Use a referência de equilíbrio de cada item como ponto de partida e informe as quantidades de ${joinNames(missingVolumeNames(command, calculation))} para ver o resultado do conjunto.`;
   }
   if (calculation.verdict === "no_sales") {
     return command.items.length === 1
@@ -107,9 +134,25 @@ function immediateAction(
   return "Acompanhe o lucro do conjunto e verifique se algum item individual merece ajuste.";
 }
 
+function itemReferenceList(
+  command: DetailedDiagnosisCommand,
+  scenario: DetailedBreakEvenScenario,
+): string {
+  return command.items
+    .flatMap((item) => {
+      const reference = scenario.byItem.get(item.id);
+      if (!reference) return [];
+      return [
+        `${item.name}: ${formatIntegerVolume(reference.referenceVolume)} unidades`,
+      ];
+    })
+    .join(" · ");
+}
+
 function profitabilityAnswer(
   command: DetailedDiagnosisCommand,
   calculation: DetailedDiagnosisCalculation,
+  scenario: DetailedBreakEvenScenario,
 ): string {
   const result = calculation.monthlyResultCents;
   const lossNames = directLossNames(command, calculation);
@@ -119,7 +162,18 @@ function profitabilityAnswer(
       : "";
 
   if (result === null) {
-    return `Ainda não dá para calcular se há lucro no conjunto porque faltam quantidades.${itemWarning}`;
+    if (scenario.consolidated) {
+      const contribution = calculation.items[0]?.unitContributionCents ?? 0;
+      return scenarioProfitabilityAnswer(
+        scenario.consolidated,
+        contribution,
+        "unidades",
+      );
+    }
+    const references = itemReferenceList(command, scenario);
+    return references
+      ? `Depende de quanto você vende. Sem as quantidades de todos os itens, mostramos quanto cada item precisaria vender sozinho para pagar os gastos do mês: ${references}.${itemWarning}`
+      : `Ainda não dá para calcular se há lucro no conjunto porque faltam quantidades.${itemWarning}`;
   }
   if (calculation.verdict === "no_sales") {
     return result < 0
@@ -138,13 +192,16 @@ function profitabilityAnswer(
 function priceSufficiencyAnswer(
   command: DetailedDiagnosisCommand,
   calculation: DetailedDiagnosisCalculation,
+  scenario: DetailedBreakEvenScenario,
 ): string {
   const lossNames = directLossNames(command, calculation);
   if (lossNames.length > 0) {
     return `Não completamente. Há itens que não cobrem seus próprios custos e cobranças: ${joinNames(lossNames)}.`;
   }
   if (calculation.verdict === "incomplete_volume") {
-    return "Ainda não dá para confirmar. Sem todas as quantidades, os gastos mensais não podem ser distribuídos corretamente entre os itens.";
+    return scenario.consolidated
+      ? scenarioPriceSufficiencyAnswer(scenario.consolidated, "unidades")
+      : "Sim, desde que as vendas alcancem o equilíbrio. Sem todas as quantidades, a referência é quanto cada item precisaria vender sozinho para pagar os gastos do mês.";
   }
   if (calculation.verdict === "no_sales") {
     return "Ainda não dá para confirmar. Sem vendas, não existe uma proporção segura para distribuir os gastos mensais entre os itens.";
@@ -161,18 +218,25 @@ function priceSufficiencyAnswer(
 function minimumPriceSection(
   command: DetailedDiagnosisCommand,
   calculation: DetailedDiagnosisCalculation,
+  scenario: DetailedBreakEvenScenario,
 ): ReportSection {
   const inputById = new Map(command.items.map((item) => [item.id, item]));
   const values = calculation.items.map((item) => {
     const name = inputById.get(item.itemId)?.name ?? "Item";
+    const reference = scenario.byItem.get(item.itemId);
+    if (item.breakEvenUnitPriceCents === null && reference) {
+      return `${name}: ${reference.breakEvenPriceCents === null ? "Ainda não calculado" : formatCurrency(reference.breakEvenPriceCents)} vendendo ${formatIntegerVolume(reference.referenceVolume)} unidades`;
+    }
     return `${name}: ${item.breakEvenUnitPriceCents === null ? "Ainda não calculado" : formatCurrency(item.breakEvenUnitPriceCents)}`;
   });
   return {
     key: "break_even",
     title: "Menores preços para não ficar no prejuízo",
-    body: calculation.isPartial
-      ? `Não dividimos os gastos do mês porque faltam quantidades. ${values.join(" · ")}`
-      : `Cada valor inclui o custo direto, a parte dos gastos do mês e as cobranças da venda. ${values.join(" · ")}`,
+    body: scenario.consolidated
+      ? scenarioMinimumPriceBody(scenario.consolidated, "unidades")
+      : calculation.isPartial
+        ? `Para os itens sem quantidade, o preço mostrado é o preço de equilíbrio vendendo apenas aquele item. ${values.join(" · ")}`
+        : `Cada valor inclui o custo direto, a parte dos gastos do mês e as cobranças da venda. ${values.join(" · ")}`,
     emphasisLabel: "Itens analisados",
     emphasisValue: String(values.length),
     tone: calculation.items.some((item) => item.directLoss)
@@ -186,7 +250,7 @@ function saleSection(calculation: DetailedDiagnosisCalculation): ReportSection {
     return {
       key: "hidden_cost",
       title: "Custo e resultado por unidade",
-      body: "Quanto esta unidade custa e o valor deixado por venda continuam disponíveis. Parte dos gastos do mês, custo completo por unidade e resultado por venda precisam das quantidades de todos os itens.",
+      body: "Quanto esta unidade custa e o valor deixado por venda continuam disponíveis. Custo completo e resultado por venda usam a quantidade de equilíbrio como referência até que as quantidades de todos os itens sejam informadas.",
       emphasisLabel: "Valores completos",
       emphasisValue: "Ainda não calculado",
       tone: "neutral",
@@ -204,18 +268,33 @@ function saleSection(calculation: DetailedDiagnosisCalculation): ReportSection {
 
 function monthlySection(
   calculation: DetailedDiagnosisCalculation,
+  scenario: DetailedBreakEvenScenario,
 ): ReportSection {
   const result = calculation.monthlyResultCents;
   const margin =
     calculation.finalMarginBasisPoints === null
       ? "Ainda não calculado"
       : formatBasisPoints(calculation.finalMarginBasisPoints);
+  if (result === null && scenario.consolidated) {
+    return {
+      key: "margin_diagnosis",
+      title: "Quanto sobra no mês",
+      body: scenarioMonthlyBody(
+        scenario.consolidated,
+        calculation.items[0]?.unitContributionCents ?? 0,
+        "unidades",
+      ),
+      emphasisLabel: "No ponto de equilíbrio",
+      emphasisValue: formatCurrency(0),
+      tone: "neutral",
+    };
+  }
   return {
     key: "margin_diagnosis",
     title: "Quanto sobra no mês",
     body:
       result === null
-        ? "Faltam quantidades para calcular quanto sobra no conjunto sem inventar uma proporção entre os itens."
+        ? "Sem as quantidades de todos os itens não dá para somar o resultado do conjunto sem inventar uma proporção. Cada item sem quantidade mostra quanto precisaria vender sozinho para chegar ao equilíbrio."
         : `O cálculo considera ${formatCurrency(calculation.monthlyNetRevenueCents ?? 0)} recebidos depois de impostos e cartão, menos os custos dos itens e os gastos mensais. Quanto sobra a cada R$ 100: ${margin}.`,
     emphasisLabel:
       result === null
@@ -262,11 +341,15 @@ function detailedBreakEvenRevenue(
 function salesSection(
   command: DetailedDiagnosisCommand,
   calculation: DetailedDiagnosisCalculation,
+  scenario: DetailedBreakEvenScenario,
 ): ReportSection {
   const breakEvenRevenueCents = detailedBreakEvenRevenue(command, calculation);
   if (breakEvenRevenueCents === null) {
+    const references = itemReferenceList(command, scenario);
     const body = calculation.isPartial
-      ? "Informe as quantidades de todos os itens para calcular uma referência de faturamento sem inventar a proporção entre eles."
+      ? references
+        ? `Sem as quantidades de todos os itens, a referência de equilíbrio é por item, vendendo apenas aquele item: ${references}.`
+        : "Informe as quantidades de todos os itens para calcular uma referência de faturamento sem inventar a proporção entre eles."
       : calculation.verdict === "no_sales"
         ? "Informe uma quantidade vendida maior que zero para calcular o faturamento necessário com a proporção entre os itens."
         : "No preço atual, as vendas ainda não deixam um valor positivo suficiente para calcular o faturamento necessário.";
@@ -282,8 +365,9 @@ function salesSection(
   return {
     key: "sales_goal",
     title: "Quanto você precisa vender",
-    body:
-      command.items.length === 1
+    body: scenario.consolidated
+      ? scenarioSalesGoalBody(scenario.consolidated, "unidades")
+      : command.items.length === 1
         ? "No preço atual, esta é a referência de faturamento mensal necessária para que o valor deixado pelas vendas pague os gastos mensais."
         : "Mantendo a proporção informada entre os itens, esta é a referência de faturamento mensal necessária para que o valor deixado pelas vendas pague os gastos mensais.",
     emphasisLabel: "Faturamento necessário no mês",
@@ -296,7 +380,8 @@ function buildDetailedReportContent(
   command: DetailedDiagnosisCommand,
   calculation: DetailedDiagnosisCalculation,
 ): DetailedReportContent {
-  const action = immediateAction(command, calculation);
+  const scenario = deriveDetailedBreakEvenScenario(command, calculation);
+  const action = immediateAction(command, calculation, scenario);
   const summaryPriorityBody = priorityBody(calculation);
   const priorityLabel = {
     cost: "Custos dos itens",
@@ -318,11 +403,16 @@ function buildDetailedReportContent(
         {
           key: "margin",
           currentLabel: "Resultado do mês",
-          currentValue: optionalCurrency(calculation.monthlyResultCents),
+          currentValue:
+            calculation.monthlyResultCents === null && scenario.consolidated
+              ? "R$ 0,00 no ponto de equilíbrio"
+              : optionalCurrency(calculation.monthlyResultCents),
           referenceLabel: "Quanto sobra a cada R$ 100",
           referenceValue:
             calculation.finalMarginBasisPoints === null
-              ? "Ainda não calculado"
+              ? scenario.consolidated
+                ? "0% no ponto de equilíbrio"
+                : "Ainda não calculado"
               : formatBasisPoints(calculation.finalMarginBasisPoints),
         },
         {
@@ -330,7 +420,11 @@ function buildDetailedReportContent(
           currentLabel: "Faturamento atual",
           currentValue: optionalCurrency(calculation.monthlyGrossRevenueCents),
           referenceLabel: "Faturamento que paga os gastos",
-          referenceValue: optionalCurrency(calculation.breakEvenRevenueCents),
+          referenceValue: optionalCurrency(
+            calculation.breakEvenRevenueCents ??
+              scenario.consolidated?.breakEvenRevenueCents ??
+              null,
+          ),
         },
       ],
       priority: { label: priorityLabel, body: summaryPriorityBody },
@@ -338,12 +432,12 @@ function buildDetailedReportContent(
         {
           key: "profitability",
           question: "Estou ganhando dinheiro?",
-          answer: profitabilityAnswer(command, calculation),
+          answer: profitabilityAnswer(command, calculation, scenario),
         },
         {
           key: "price_sufficiency",
           question: "Meus preços pagam todos os gastos?",
-          answer: priceSufficiencyAnswer(command, calculation),
+          answer: priceSufficiencyAnswer(command, calculation, scenario),
         },
         {
           key: "immediate_action",
@@ -353,10 +447,10 @@ function buildDetailedReportContent(
       ],
     },
     sections: [
-      minimumPriceSection(command, calculation),
+      minimumPriceSection(command, calculation, scenario),
       saleSection(calculation),
-      monthlySection(calculation),
-      salesSection(command, calculation),
+      monthlySection(calculation, scenario),
+      salesSection(command, calculation, scenario),
     ],
   };
 }

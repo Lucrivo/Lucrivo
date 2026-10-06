@@ -12,8 +12,14 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+import { calculateSalesGoalAtPrice } from "../domain/break-even-scenario";
 import { multiplyDivideRound } from "../domain/integer-math";
-import { formatBasisPoints, formatCurrency } from "../formatters";
+import {
+  formatBasisPoints,
+  formatCurrency,
+  formatIntegerVolume,
+} from "../formatters";
+import type { ReportDiscountBreakEvenReference } from "../presenters/to-report-view-model";
 import type { ReportDiscountSimulationBase } from "../types";
 
 type DiscountSimulationStatus =
@@ -21,6 +27,7 @@ type DiscountSimulationStatus =
 
 type DiscountSimulationContext = {
   category: "service" | "product" | "production";
+  breakEvenReference?: ReportDiscountBreakEvenReference | null;
 };
 
 type DiscountSimulation = {
@@ -111,10 +118,15 @@ function simulateDiscount(
   };
 }
 
-function safetyMessage(simulation: DiscountSimulation): string {
+function safetyMessage(
+  simulation: DiscountSimulation,
+  scenarioMode: boolean,
+): string {
   switch (simulation.status) {
     case "unavailable":
-      return "Para calcular um desconto seguro, primeiro precisamos de uma quantidade para dividir os gastos do mês.";
+      return scenarioMode
+        ? "Sem a quantidade vendida, usamos o ponto de equilíbrio como referência. Informe quantas vendas costuma fazer para ver o resultado exato."
+        : "Para calcular um desconto seguro, primeiro precisamos de uma quantidade para dividir os gastos do mês.";
     case "positive_result":
       return `Lucro estimado: com este desconto, o preço ainda paga os valores considerados e gera ${formatCurrency(simulation.unitProfitCents ?? 0)} de lucro por venda.`;
     case "break_even":
@@ -146,6 +158,17 @@ function DiscountSimulator({
   const presentation = statusPresentation[simulation.status];
   const StatusIcon = presentation.icon;
   const unitLabel = context.category === "service" ? "serviço" : "unidade";
+  const scenarioMode = Boolean(context.breakEvenReference);
+  const requiredVolume =
+    context.breakEvenReference && simulation.discountedPriceCents !== null
+      ? calculateSalesGoalAtPrice({
+          effectiveFixedCostCents:
+            context.breakEvenReference.effectiveFixedCostCents,
+          directUnitCostCents: context.breakEvenReference.directUnitCostCents,
+          totalFeeBasisPoints: base.totalFeeBasisPoints,
+          priceCents: simulation.discountedPriceCents,
+        })
+      : null;
 
   return (
     <Card
@@ -227,10 +250,16 @@ function DiscountSimulator({
             </div>
             <div className="border-border/70 bg-card grid min-w-0 gap-1 rounded-xl border p-3">
               <dt className="text-muted-foreground text-xs">
-                Resultado por {unitLabel}
+                {scenarioMode
+                  ? "Vendas necessárias com este desconto"
+                  : `Resultado por ${unitLabel}`}
               </dt>
               <dd className="font-semibold break-words tabular-nums">
-                {optionalCurrency(simulation.unitProfitCents)}
+                {scenarioMode
+                  ? requiredVolume === null
+                    ? "Indisponível"
+                    : `${formatIntegerVolume(requiredVolume)} ${context.category === "production" ? "unidades" : "vendas"}`
+                  : optionalCurrency(simulation.unitProfitCents)}
               </dd>
             </div>
           </dl>
@@ -246,7 +275,7 @@ function DiscountSimulator({
             )}
           >
             <StatusIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-            {safetyMessage(simulation)}
+            {safetyMessage(simulation, scenarioMode)}
           </p>
         </div>
       </CardContent>

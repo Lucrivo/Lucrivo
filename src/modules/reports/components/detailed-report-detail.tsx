@@ -13,8 +13,10 @@ import { DetailedGuidanceList } from "./detailed-guidance-list";
 import { DetailedItemBreakdown } from "./detailed-item-breakdown";
 import { DetailedItemCard } from "./detailed-item-card";
 import { ReportExecutiveSummary } from "./report-executive-summary";
-import { ReportNumbers } from "./report-numbers";
+import { ReportIndicators } from "./report-indicators";
 import { ReportSectionCard } from "./report-section-card";
+
+const detailedSectionKeys = new Set(["break_even", "sales_goal"]);
 
 function DetailedReportDetail({
   id,
@@ -81,30 +83,29 @@ function DetailedReportDetail({
         priorityEyebrow="Comece por aqui"
       />
 
-      <div className="grid items-start gap-6 @4xl/page:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)]">
-        <ReportNumbers
-          numbers={viewModel.numbers}
-          title="Seus números"
-          description="Valores calculados com todos os itens e gastos que você informou."
-        />
-        <section
-          aria-labelledby="detailed-analysis-title"
-          className="grid gap-4"
-        >
-          <div className="mb-1 grid gap-2 px-1">
-            <h2 id="detailed-analysis-title" className="text-2xl">
-              Como chegamos a esse resultado
-            </h2>
-            <p className="text-muted-foreground max-w-2xl text-sm leading-6">
-              Veja os preços mínimos por item, o resultado do mês e o
-              faturamento necessário.
-            </p>
-          </div>
-          {viewModel.sections.map((section) => (
+      <section
+        aria-labelledby="detailed-analysis-title"
+        className="grid gap-4"
+      >
+        <div className="mb-1 grid gap-2 px-1">
+          <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
+            Entenda o resultado
+          </p>
+          <h2 id="detailed-analysis-title" className="text-2xl">
+            Como chegamos a esse resultado
+          </h2>
+          <p className="text-muted-foreground max-w-2xl text-sm leading-6">
+            Os indicadores abaixo reagem ao que você informou: quanto precisa
+            vender, qual é o faturamento de equilíbrio e quanto sobra.
+          </p>
+        </div>
+        <ReportIndicators indicators={viewModel.indicators} />
+        {viewModel.sections
+          .filter((section) => detailedSectionKeys.has(section.key))
+          .map((section) => (
             <ReportSectionCard key={section.key} section={section} />
           ))}
-        </section>
-      </div>
+      </section>
 
       <section aria-labelledby="item-details-title" className="grid gap-4">
         <div className="grid gap-2 px-1">

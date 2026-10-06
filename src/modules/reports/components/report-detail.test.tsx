@@ -81,53 +81,51 @@ describe("ReportDetail", () => {
     expect(document.body.textContent).not.toMatch(/preço-alvo|meta de margem/i);
   });
 
-  it("keeps the summary before numbers and analysis", () => {
+  it("keeps the summary before indicators and the simulator", () => {
     render(<ReportDetail viewModel={serviceViewModel} />);
     const summary = screen.getByRole("region", { name: "Comece por aqui" });
-    const numbers = screen.getByRole("complementary", { name: "Seus números" });
     const analysis = screen.getByRole("region", {
       name: "Como chegamos a esse resultado",
     });
+    const indicators = screen.getByTestId("report-indicators");
 
     expect(
-      summary.compareDocumentPosition(numbers) &
+      summary.compareDocumentPosition(analysis) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(
-      numbers.compareDocumentPosition(analysis) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    expect(within(analysis).getByTestId("report-indicators")).toBe(indicators);
+    expect(within(analysis).getByTestId("discount-simulator")).toBeVisible();
   });
 
-  it("replaces the persisted simulator section with the objective control", () => {
+  it("replaces persisted sections with indicators and the objective simulator", () => {
     render(<ReportDetail viewModel={serviceViewModel} />);
     const sections = screen.getAllByTestId("report-section");
 
-    expect(sections).toHaveLength(4);
+    expect(sections).toHaveLength(1);
     expect(
-      within(sections.at(-1)!).getByRole("heading", {
+      within(sections[0]!).getByRole("heading", {
         name: "Quanto de desconto posso dar sem ter prejuízo?",
       }),
     ).toBeVisible();
     expect(
       screen.getByRole("slider", { name: "Desconto simulado" }),
     ).toBeEnabled();
+    expect(screen.getByText("Entenda o resultado")).toBeVisible();
   });
 
-  it("disables the simulator when a Product volume is unknown", () => {
+  it("uses the break-even reference when a Product volume is unknown", () => {
     render(<ReportDetail viewModel={productViewModel} />);
 
     expect(
       screen.getByRole("heading", { name: "Diagnóstico de Produto" }),
     ).toBeVisible();
-    expect(screen.getAllByText("Ainda não calculado").length).toBeGreaterThan(
-      0,
-    );
+    expect(
+      screen.getByText(/quantidade de equilíbrio como referência/i),
+    ).toBeVisible();
+    expect(screen.getByText(/Referência de equilíbrio/)).toBeVisible();
     expect(
       screen.getByRole("slider", { name: "Desconto simulado" }),
-    ).toBeDisabled();
-    expect(screen.getByTestId("discount-safety")).toHaveTextContent(
-      "precisamos de uma quantidade para dividir os gastos do mês",
-    );
+    ).toBeEnabled();
+    expect(screen.getByText("Vendas necessárias com este desconto")).toBeVisible();
   });
 });

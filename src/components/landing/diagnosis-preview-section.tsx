@@ -24,17 +24,28 @@ const reportQuestions = [
   },
 ] as const;
 
-type ReportNumber = {
+type ReportIndicator = {
   label: string;
   value: string;
-  tone?: "positive";
+  tone?: "positive" | "neutral";
+  featured?: boolean;
 };
 
-const reportNumbers: ReadonlyArray<ReportNumber> = [
-  { label: "Preço atual", value: "R$ 55,00" },
-  { label: "Menor preço para não ficar no prejuízo", value: "R$ 38,71" },
-  { label: "Resultado do mês", value: "R$ 3.030,00", tone: "positive" },
-  { label: "Vendas necessárias no mês", value: "114 vendas" },
+const reportIndicators: ReadonlyArray<ReportIndicator> = [
+  {
+    label: "Vendas necessárias no mês",
+    value: "114 vendas",
+    tone: "neutral",
+    featured: true,
+  },
+  { label: "Preço de venda", value: "R$ 55,00", tone: "neutral" },
+  {
+    label: "Menor preço para não ficar no prejuízo",
+    value: "R$ 38,71",
+    tone: "positive",
+  },
+  { label: "Margem de lucro", value: "12%", tone: "positive" },
+  { label: "Desconto máximo sem prejuízo", value: "30%", tone: "positive" },
 ];
 
 const reportHighlights = [
@@ -138,13 +149,17 @@ function DiagnosisPreviewSection() {
           </ol>
 
           <section
-            className="preview-numbers"
-            aria-labelledby="preview-numbers-title"
+            className="preview-indicators"
+            aria-labelledby="preview-indicators-title"
           >
-            <h4 id="preview-numbers-title">Seus números</h4>
+            <h4 id="preview-indicators-title">Entenda o resultado</h4>
             <dl>
-              {reportNumbers.map(({ label, value, tone }) => (
-                <div key={label} data-tone={tone}>
+              {reportIndicators.map(({ label, value, tone, featured }) => (
+                <div
+                  key={label}
+                  data-tone={tone}
+                  data-featured={featured ? "true" : undefined}
+                >
                   <dt>{label}</dt>
                   <dd>{value}</dd>
                 </div>

@@ -68,34 +68,24 @@ describe("toDetailedReportViewModel", () => {
     });
   });
 
-  it("does not invent complete values when the item volume is unknown", () => {
+  it("uses the break-even reference when the item volume is unknown", () => {
     const model = present({
       ...baseCommand,
       items: [{ ...baseCommand.items[0]!, monthlySalesVolume: null }],
     });
 
     expect(model.items[0]).toMatchObject({
-      fixedAllocationLabel: "Ainda não calculado",
-      totalUnitCostLabel: "Ainda não calculado",
-      unitProfitLabel: "Ainda não calculado",
-      realMarginLabel: "Ainda não calculado",
-      breakEvenLabel: "Ainda não calculado",
-      completeCostUnavailableReason:
-        "Informe uma quantidade para dividir os gastos do mês.",
-      breakEvenUnavailableReason:
-        "Informe uma quantidade para dividir os gastos do mês.",
-      discountSimulationBase: {
-        unitCostCents: null,
-        minimumPriceCents: null,
-      },
+      unitProfitLabel: "R$ 0,00 no equilíbrio",
+      realMarginLabel: "0% no equilíbrio",
+      breakEvenReferenceLabel:
+        "Para não ter prejuízo vendendo só este item: 4 unidades por mês.",
     });
-    expect([
-      model.items[0]?.fixedAllocationLabel,
-      model.items[0]?.totalUnitCostLabel,
-      model.items[0]?.unitProfitLabel,
-      model.items[0]?.realMarginLabel,
-      model.items[0]?.breakEvenLabel,
-    ]).not.toContain("R$ 0,00");
+    expect(model.items[0]?.fixedAllocationLabel).not.toBe(
+      "Ainda não calculado",
+    );
+    expect(model.items[0]?.totalUnitCostLabel).not.toBe("Ainda não calculado");
+    expect(model.items[0]?.breakEvenLabel).not.toBe("Ainda não calculado");
+    expect(model.items[0]?.discountSimulationBase.unitCostCents).not.toBeNull();
     expect(model.comparison[0]).toMatchObject({
       amountCents: 2_800,
       contextLabel: "por unidade",
@@ -103,17 +93,21 @@ describe("toDetailedReportViewModel", () => {
     });
   });
 
-  it("shows a single-item unknown-volume goal without weekly or daily text", () => {
+  it("shows a single-item unknown-volume goal with the break-even reference", () => {
     const model = present({
       ...baseCommand,
       items: [{ ...baseCommand.items[0]!, monthlySalesVolume: null }],
     });
+    const sales = model.indicators.find(({ key }) => key === "sales");
 
-    expect(model.numbers[0]).toEqual({
+    expect(sales).toMatchObject({
       key: "sales",
       label: "Unidades necessárias no mês",
       value: "4 unidades",
+      featured: true,
     });
+    expect(sales?.supportingText).toMatch(/Referência de equilíbrio/);
+    expect(sales?.supportingText).toMatch(/por semana/);
   });
 
   it("keeps the combined goal unavailable without an observed item mix", () => {
@@ -130,23 +124,48 @@ describe("toDetailedReportViewModel", () => {
         },
       ],
     });
+    const sales = model.indicators.find(({ key }) => key === "sales");
 
-    expect(model.numbers[0]).toEqual({
+    expect(sales).toMatchObject({
       key: "sales",
       label: "Unidades necessárias no mês",
       value: "Indisponível",
       supportingText:
         "Para calcular uma quantidade única, informe as vendas mensais de todos os itens.",
     });
+    expect(model.items[0]?.breakEvenReferenceLabel).toMatch(
+      /vendendo só este item/,
+    );
+  });
+
+  it("keeps the persisted narrative on older detailed content versions", () => {
+    const command = {
+      ...baseCommand,
+      items: [{ ...baseCommand.items[0]!, monthlySalesVolume: null }],
+    };
+    const snapshot = buildDetailedReportSnapshot(
+      command,
+      calculateDetailedDiagnosis(command),
+    );
+    const historical = toDetailedReportViewModel({
+      id: 169,
+      createdAt: "2026-09-17T15:00:00.000Z",
+      snapshot: { ...snapshot, contentVersion: 2 },
+    });
+
+    expect(historical.items[0]?.breakEvenReferenceLabel).toBeUndefined();
+    expect(historical.items[0]?.fixedAllocationLabel).toBe(
+      "Ainda não calculado",
+    );
   });
 
   it("uses help descriptions that explain the value in everyday language", () => {
     const model = present();
-    const descriptions = model.numbers
+    const descriptions = model.indicators
       .flatMap(({ help }) => (help ? [help.description] : []))
       .join(" ");
 
     expect(descriptions).not.toMatch(/rateio|contribuição/i);
-    expect(descriptions).toMatch(/pagar os gastos|quanto fica/i);
+    expect(descriptions).toMatch(/pagar os gastos|pagar tudo|ficam com você/i);
   });
 });

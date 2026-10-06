@@ -221,6 +221,18 @@ const reportAiBehaviorCases: readonly ReportAiBehaviorCase[] = [
           value: null,
           scope: "month",
         },
+        {
+          key: "break_even_reference_volume",
+          label: "Referência de equilíbrio no mês",
+          value: "72 unidades",
+          scope: "month",
+        },
+        {
+          key: "break_even_price",
+          label: "Preço de equilíbrio",
+          value: "R$ 55,00",
+          scope: "unit",
+        },
       ],
       availability: {
         volume: "unknown",
@@ -228,13 +240,13 @@ const reportAiBehaviorCases: readonly ReportAiBehaviorCase[] = [
         monthlyResultAvailable: false,
         minimumPriceAvailable: false,
         reasons: [
-          "Informe a quantidade vendida no mês para completar o resultado.",
+          "Sem a quantidade vendida, o relatório mostra o ponto de equilíbrio como referência, nunca como resultado do mês.",
         ],
       },
     },
     question: "Quanto lucrei no mês?",
     requiredBehaviors: [
-      "Explicar o fato unitário conhecido e pedir o volume mensal.",
+      "Tratar o ponto de equilíbrio como referência e não como resultado do mês.",
     ],
     forbiddenBehaviors: ["Tratar o volume desconhecido como zero."],
     forbiddenPatterns: [/você vendeu zero/i, /nenhuma venda/i],

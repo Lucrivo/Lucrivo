@@ -1,4 +1,4 @@
-import type { ReportNumberViewModel } from "@/modules/reports/presenters/to-report-view-model";
+import type { ReportIndicatorViewModel } from "@/modules/reports/presenters/to-report-view-model";
 import type { ReportPriority, ReportVerdict } from "@/modules/reports/types";
 
 import type { ClientDashboardSnapshot } from "./client-dashboard.schema";
@@ -43,7 +43,7 @@ type DashboardReportFocusViewModel = {
   updatedAtLabel: string | null;
   verdict: { label: string; tone: DashboardTone };
   priorityLabel: string;
-  metrics: ReportNumberViewModel[];
+  metrics: ReportIndicatorViewModel[];
   complementaryFacts: DashboardComplementaryFact[];
   openHref: string;
 };

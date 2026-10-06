@@ -101,7 +101,7 @@ describe("DetailedReportDetail", () => {
     ).toBeVisible();
   });
 
-  it("shows a single-item goal but keeps complete costs and discount unavailable", async () => {
+  it("shows a single-item goal and the item break-even reference", async () => {
     const user = userEvent.setup();
     render(
       <DetailedReportDetail
@@ -111,13 +111,12 @@ describe("DetailedReportDetail", () => {
       />,
     );
 
-    const numbers = screen.getByRole("complementary", { name: "Seus números" });
-    const featured = numbers.querySelector<HTMLElement>(
-      '[data-slot="featured-report-number"]',
+    const featured = document.querySelector<HTMLElement>(
+      '[data-featured="true"]',
     );
     expect(featured).not.toBeNull();
     expect(within(featured!).getByText(/unidades$/)).toBeVisible();
-    expect(featured).not.toHaveTextContent(/semana|dia/);
+    expect(screen.getByText("Entenda o resultado")).toBeVisible();
 
     const trigger = screen.getByRole("button", {
       name: "Abrir detalhes de Bolo de festa",
@@ -125,16 +124,11 @@ describe("DetailedReportDetail", () => {
     const item = trigger.closest<HTMLElement>('[data-slot="accordion-item"]');
     expect(item).not.toBeNull();
     expect(
-      within(item!).getAllByText("Ainda não calculado").length,
-    ).toBeGreaterThanOrEqual(5);
-    expect(
-      within(item!).getAllByText(
-        "Informe uma quantidade para dividir os gastos do mês.",
-      ).length,
-    ).toBeGreaterThan(0);
+      within(item!).getByText(/Para não ter prejuízo vendendo só este item/),
+    ).toBeVisible();
     expect(
       within(item!).getByRole("slider", { name: "Desconto simulado" }),
-    ).toBeDisabled();
+    ).toBeEnabled();
     await user.click(
       within(item!).getByText("Ver memória de cálculo da produção"),
     );

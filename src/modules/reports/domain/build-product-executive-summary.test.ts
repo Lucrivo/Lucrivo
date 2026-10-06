@@ -57,9 +57,9 @@ describe("buildProductExecutiveSummary", () => {
     {
       name: "missing volume",
       input: { monthlySalesVolume: null },
-      first: /^Ainda não dá para calcular se há lucro no mês\./,
-      second: /^Ainda não dá para confirmar\./,
-      third: /Informe quantas vendas/,
+      first: /^Depende de quanto você vende\./,
+      second: /^Sim, se você vender pelo menos/,
+      third: /Confira se/,
     },
     {
       name: "no sales",
@@ -125,13 +125,15 @@ describe("buildProductExecutiveSummary", () => {
     );
   });
 
-  it("keeps complete price unavailable without volume", () => {
+  it("uses the break-even price as the complete-price reference without volume", () => {
     const summary = buildProductExecutiveSummary(
       calculateProductReport({ ...command, monthlySalesVolume: null }),
       "resale",
     );
-    expect(summary.facts[1].referenceValue).toBe("Ainda não calculado");
-    expect(summary.answers[1].answer).toMatch(/falta uma quantidade/i);
+    expect(summary.facts[0].currentValue).toBe("R$ 0,00 no ponto de equilíbrio");
+    expect(summary.facts[1].referenceValue).not.toBe("Ainda não calculado");
+    expect(summary.answers[1].answer).toMatch(/preço de equilíbrio/i);
+    expect(summary.verdict.label).toBe("Equilíbrio como referência");
   });
 
   it("contains no target-based or margin-quality language", () => {

@@ -91,7 +91,7 @@ const recentReportSchema = z
         ? {
             schemaVersion: DETAILED_REPORT_SCHEMA_VERSION,
             calculationVersion: DETAILED_REPORT_CALCULATION_VERSION,
-            contentVersions: [1, DETAILED_REPORT_CONTENT_VERSION],
+            contentVersions: [1, 2, DETAILED_REPORT_CONTENT_VERSION],
           }
         : report.businessCategory === "service"
           ? {
@@ -103,12 +103,12 @@ const recentReportSchema = z
             ? {
                 schemaVersion: PRODUCT_REPORT_SCHEMA_VERSION,
                 calculationVersion: PRODUCT_CALCULATION_VERSION,
-                contentVersions: [4, PRODUCT_CONTENT_VERSION],
+                contentVersions: [4, 5, PRODUCT_CONTENT_VERSION],
               }
             : {
                 schemaVersion: PRODUCTION_REPORT_SCHEMA_VERSION,
                 calculationVersion: PRODUCTION_CALCULATION_VERSION,
-                contentVersions: [4, PRODUCTION_CONTENT_VERSION],
+                contentVersions: [4, 5, PRODUCTION_CONTENT_VERSION],
               };
 
     if (

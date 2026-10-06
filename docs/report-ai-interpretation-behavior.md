@@ -454,9 +454,10 @@ A IA nunca deve:
 
 ### 14.4. Relatório parcial
 
-> O preço e o custo variável permitem ver quanto esta venda deixa para ajudar a
-> pagar o mês. Como o volume não foi informado, ainda não é possível distribuir
-> os gastos mensais nem afirmar o resultado final do período.
+> Sem a quantidade vendida, o relatório mostra o ponto de equilíbrio como
+> referência, não o resultado do mês. No preço atual, essa quantidade pagaria
+> os gastos sem lucro nem prejuízo; o resultado exato só aparece quando você
+> informa as vendas.
 
 ### 14.5. Orientação apoiada por categoria
 

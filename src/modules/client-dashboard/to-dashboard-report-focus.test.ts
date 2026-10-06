@@ -170,7 +170,7 @@ describe("toDashboardReportFocus quick reports", () => {
     ]) {
       expect(
         toDashboardReportFocus(report).metrics.map((item) => item.key),
-      ).toEqual(["profit", "margin", "minimum", "sales"]);
+      ).toEqual(["sales", "minimum", "margin", "discount"]);
     }
 
     expect(toDashboardReportFocus(productReport())).toMatchObject({
@@ -197,20 +197,19 @@ describe("toDashboardReportFocus quick reports", () => {
     });
   });
 
-  it("preserves unavailable Product values instead of inventing zero", () => {
+  it("uses the break-even reference instead of inventing a monthly result", () => {
     const focus = toDashboardReportFocus(
       productReport({ ...productCommand, monthlySalesVolume: null }),
     );
-    const selected = focus.metrics.filter(({ key }) =>
-      ["profit", "margin", "minimum"].includes(key),
-    );
+    const margin = focus.metrics.find(({ key }) => key === "margin");
+    const sales = focus.metrics.find(({ key }) => key === "sales");
 
-    expect(selected.map(({ value }) => value)).toEqual([
+    expect(margin).toMatchObject({ value: "0%", tone: "neutral" });
+    expect(sales?.tone).toBe("neutral");
+    expect(sales?.supportingText).toMatch(/Referência de equilíbrio/);
+    expect(focus.metrics.find(({ key }) => key === "minimum")?.value).not.toBe(
       "Ainda não calculado",
-      "Ainda não calculado",
-      "Ainda não calculado",
-    ]);
-    expect(JSON.stringify(selected)).not.toContain("R$ 0,00");
+    );
   });
 
   it("shows the calculated discount limit with its mandatory warning", () => {
@@ -234,10 +233,10 @@ describe("toDashboardReportFocus detailed reports", () => {
     const focus = toDashboardReportFocus(detailedReport());
 
     expect(focus.metrics.map((item) => item.key)).toEqual([
-      "result",
-      "margin",
-      "break_even",
       "sales",
+      "break_even",
+      "margin",
+      "revenue",
     ]);
     expect(focus.complementaryFacts).toEqual(
       expect.arrayContaining([
@@ -273,7 +272,7 @@ describe("toDashboardReportFocus detailed reports", () => {
       id: report.id,
       createdAt: report.createdAt,
       snapshot,
-    }).numbers.find(({ key }) => key === "sales");
+    }).indicators.find(({ key }) => key === "sales");
     const focused = toDashboardReportFocus(report).metrics.find(
       ({ key }) => key === "sales",
     );

@@ -9,16 +9,24 @@ import {
 } from "../formatters";
 import { calculateDetailedSalesGoal } from "../domain/calculate-detailed-sales-goal";
 import {
+  deriveDetailedBreakEvenScenario,
+  type DetailedBreakEvenScenario,
+} from "../domain/detailed-break-even-scenario";
+import {
   DETAILED_REPORT_CONTENT_VERSION,
   type CurrentDetailedReportSnapshot,
   type ExecutiveSummaryAnswer,
   type ReportDiscountSimulationBase,
+  type ReportTone,
 } from "../types";
-import { getReportLanguageProfile } from "./report-language";
+import {
+  getReportLanguageProfile,
+  type ReportLanguageProfile,
+} from "./report-language";
 import { toComfortableReportAnswers } from "./to-comfortable-report-answers";
 import type {
   ReportExecutiveSummaryViewModel,
-  ReportNumberViewModel,
+  ReportIndicatorViewModel,
   ReportSectionViewModel,
 } from "./to-report-view-model";
 
@@ -57,6 +65,8 @@ type DetailedItemViewModel = {
   marginLabel: string;
   breakEvenLabel: string;
   breakEvenUnavailableReason?: string;
+  /** Present when the item has no volume: break-even selling only this item. */
+  breakEvenReferenceLabel?: string;
   technicalDetails: DetailedTechnicalDetailsViewModel | null;
   discountSimulationBase: ReportDiscountSimulationBase;
 };
@@ -79,7 +89,7 @@ type DetailedReportViewModel = {
     createdAtLabel: string;
   };
   executiveSummary: ReportExecutiveSummaryViewModel;
-  numbers: ReportNumberViewModel[];
+  indicators: ReportIndicatorViewModel[];
   sections: ReportSectionViewModel[];
   comparison: DetailedComparisonEntryViewModel[];
   items: DetailedItemViewModel[];
@@ -92,18 +102,30 @@ type DetailedReportViewModel = {
 };
 
 const breakEvenHelp: PlainLanguageHelpContent = {
-  title: "Quanto precisa entrar para cobrir os gastos?",
+  triggerLabel: "Como calculamos?",
+  title: "Faturamento de equilíbrio",
   description:
-    "É a estimativa de faturamento mensal necessária para pagar os gastos do mês com os valores deixados pelas vendas.",
+    "É quanto precisa entrar no mês para que o valor deixado pelas vendas pague os gastos do mês. Nesse ponto não há lucro nem prejuízo.",
   technicalTerm: "faturamento de equilíbrio",
 };
 
 const marginHelp: PlainLanguageHelpContent = {
-  title: "Quanto sobra a cada R$ 100?",
+  triggerLabel: "Entenda esse valor",
+  title: "Margem de lucro",
   description:
-    "Mostra quanto fica depois dos custos dos itens, impostos, cartão e gastos mensais usados neste diagnóstico.",
-  technicalTerm: "margem real",
+    "A margem de lucro mostra quanto sobra de cada R$ 100 vendidos depois de pagar tudo: os custos dos itens, impostos, cartão e os gastos do mês. Uma margem de 20% significa que, de cada R$ 100, R$ 20 ficam com você. Se for negativa, você está pagando para vender.",
+  technicalTerm: "margem de lucro real",
 };
+
+const salesHelp: PlainLanguageHelpContent = {
+  triggerLabel: "Como calculamos?",
+  title: "Quantidade de equilíbrio",
+  description:
+    "Dividimos os gastos do mês pelo valor que as vendas deixam depois dos custos dos itens, impostos e cartão. Vendendo essa quantidade você paga tudo; cada venda a mais vira lucro.",
+  technicalTerm: "ponto de equilíbrio",
+};
+
+const UNAVAILABLE = "Ainda não calculado";
 
 const surplusHelp: PlainLanguageHelpContent = {
   title: "O que cada venda deixa para o mês?",
@@ -150,17 +172,165 @@ function toDetailedSummaryAnswers(snapshot: CurrentDetailedReportSnapshot) {
 }
 
 function optionalCurrency(value: number | null): string {
-  return value === null ? "Ainda não calculado" : formatCurrency(value);
+  return value === null ? UNAVAILABLE : formatCurrency(value);
 }
 
 function optionalPercentage(value: number | null): string {
-  return value === null ? "Ainda não calculado" : formatBasisPoints(value);
+  return value === null ? UNAVAILABLE : formatBasisPoints(value);
 }
 
 function unavailableReason(snapshot: CurrentDetailedReportSnapshot): string {
   return snapshot.results.isPartial
-    ? "Informe uma quantidade para dividir os gastos do mês."
+    ? "Depende das quantidades ainda não informadas; veja a referência de equilíbrio de cada item."
     : "As informações atuais não permitem calcular este valor.";
+}
+
+function resultTone(result: number | null): ReportTone {
+  if (result === null) return "neutral";
+  if (result > 0) return "positive";
+  if (result < 0) return "critical";
+  return "warning";
+}
+
+function sectionBody(
+  snapshot: CurrentDetailedReportSnapshot,
+  key: CurrentDetailedReportSnapshot["sections"][number]["key"],
+): string | undefined {
+  return snapshot.sections.find((section) => section.key === key)?.body;
+}
+
+function toDetailedIndicators(
+  snapshot: CurrentDetailedReportSnapshot,
+  scenario: DetailedBreakEvenScenario,
+  language: ReportLanguageProfile,
+): ReportIndicatorViewModel[] {
+  const results = snapshot.results;
+  const reason = unavailableReason(snapshot);
+  const salesGoal = calculateDetailedSalesGoal(
+    snapshot.inputs,
+    results,
+    snapshot.policy,
+  );
+  const totalVolume = results.isPartial
+    ? null
+    : snapshot.inputs.items.reduce(
+        (sum, item) => sum + (item.monthlySalesVolume ?? 0),
+        0,
+      );
+  const consolidated = scenario.consolidated;
+
+  const salesTone: ReportTone = !salesGoal.available
+    ? results.isPartial
+      ? "neutral"
+      : "critical"
+    : totalVolume === null
+      ? "neutral"
+      : totalVolume >= salesGoal.monthly
+        ? "positive"
+        : "critical";
+  const salesSupporting = salesGoal.available
+    ? [
+        totalVolume === null
+          ? "Referência de equilíbrio"
+          : `Você informou ${formatIntegerVolume(totalVolume)} unidades no mês`,
+        salesGoal.weekly !== null && salesGoal.daily !== null
+          ? `${formatIntegerVolume(salesGoal.weekly)} por semana e ${formatIntegerVolume(salesGoal.daily)} por dia`
+          : consolidated
+            ? `${formatIntegerVolume(consolidated.weeklyGoal)} por semana e ${formatIntegerVolume(consolidated.dailyGoal)} por dia`
+            : undefined,
+        salesGoal.basedOnKnownMix
+          ? "mantendo a proporção informada entre os itens"
+          : undefined,
+      ]
+        .filter((part): part is string => Boolean(part))
+        .join(" · ")
+    : salesGoal.reason;
+
+  const breakEvenRevenueCents =
+    results.breakEvenRevenueCents ??
+    consolidated?.breakEvenRevenueCents ??
+    null;
+  const breakEvenTone: ReportTone =
+    breakEvenRevenueCents === null
+      ? "neutral"
+      : results.monthlyGrossRevenueCents === null
+        ? "neutral"
+        : results.monthlyGrossRevenueCents >= breakEvenRevenueCents
+          ? "positive"
+          : "critical";
+
+  const marginValue =
+    results.finalMarginBasisPoints !== null
+      ? formatBasisPoints(results.finalMarginBasisPoints)
+      : consolidated
+        ? "0%"
+        : UNAVAILABLE;
+  const marginSupporting = consolidated
+    ? `No ponto de equilíbrio nada sobra · cada unidade deixa ${formatCurrency(results.items[0]?.unitContributionCents ?? 0)} para pagar os gastos do mês`
+    : results.monthlyResultCents === null
+      ? reason
+      : results.monthlyResultCents > 0
+        ? `Lucro de ${formatCurrency(results.monthlyResultCents)} no mês.`
+        : results.monthlyResultCents < 0
+          ? `Prejuízo de ${formatCurrency(Math.abs(results.monthlyResultCents))} no mês.`
+          : "Sem lucro nem prejuízo no mês.";
+
+  const drafts: Array<Omit<ReportIndicatorViewModel, "toneLabel">> = [
+    {
+      key: "sales",
+      label: "Unidades necessárias no mês",
+      value: salesGoal.available
+        ? `${formatIntegerVolume(salesGoal.monthly)} unidades`
+        : "Indisponível",
+      tone: salesTone,
+      description: sectionBody(snapshot, "sales_goal"),
+      supportingText: salesSupporting,
+      help: salesHelp,
+      featured: true,
+    },
+    {
+      key: "break_even",
+      label: "Faturamento para cobrir os gastos",
+      value: optionalCurrency(breakEvenRevenueCents),
+      tone: breakEvenTone,
+      description: sectionBody(snapshot, "break_even"),
+      supportingText:
+        breakEvenRevenueCents === null
+          ? reason
+          : results.monthlyGrossRevenueCents === null
+            ? consolidated
+              ? "Referência de equilíbrio no preço atual."
+              : undefined
+            : results.monthlyGrossRevenueCents >= breakEvenRevenueCents
+              ? `Você fatura ${formatCurrency(results.monthlyGrossRevenueCents - breakEvenRevenueCents)} acima desse ponto.`
+              : `Faltam ${formatCurrency(breakEvenRevenueCents - results.monthlyGrossRevenueCents)} para chegar a esse ponto.`,
+      help: breakEvenHelp,
+    },
+    {
+      key: "margin",
+      label: "Margem de lucro",
+      value: marginValue,
+      tone: consolidated ? "neutral" : resultTone(results.monthlyResultCents),
+      description: sectionBody(snapshot, "margin_diagnosis"),
+      supportingText: marginSupporting,
+      help: marginHelp,
+    },
+    {
+      key: "revenue",
+      label: "Quanto entraria neste cenário",
+      value: optionalCurrency(results.monthlyGrossRevenueCents),
+      tone: "neutral",
+      supportingText:
+        results.monthlyGrossRevenueCents === null
+          ? reason
+          : `Custos do mês: ${optionalCurrency(results.monthlyCostCents)}.`,
+    },
+  ];
+
+  return drafts.map((draft) => ({
+    ...draft,
+    toneLabel: language.toneLabels[draft.tone],
+  }));
 }
 
 function technicalDetails(
@@ -208,84 +378,33 @@ function toDetailedReportViewModel({
   const reason = unavailableReason(snapshot);
   const totalFeeBasisPoints =
     snapshot.inputs.taxRateBasisPoints + snapshot.inputs.cardFeeRateBasisPoints;
-  const salesGoal = calculateDetailedSalesGoal(
-    snapshot.inputs,
-    snapshot.results,
-    snapshot.policy,
-  );
-
-  const number = (
-    key: ReportNumberViewModel["key"],
-    label: string,
-    value: string,
-    help?: PlainLanguageHelpContent,
-  ): ReportNumberViewModel => ({
-    key,
-    label,
-    value,
-    ...(value === "Ainda não calculado" ? { supportingText: reason } : {}),
-    ...(help ? { help } : {}),
-  });
-
-  const salesNumber: ReportNumberViewModel = salesGoal.available
-    ? {
-        key: "sales",
-        label: "Unidades necessárias no mês",
-        value: `${formatIntegerVolume(salesGoal.monthly)} unidades`,
-        ...(salesGoal.basedOnKnownMix &&
-        salesGoal.weekly !== null &&
-        salesGoal.daily !== null
-          ? {
-              supportingText: `Estimativa mantendo a proporção informada entre os itens. ${formatIntegerVolume(salesGoal.weekly)} por semana e ${formatIntegerVolume(salesGoal.daily)} por dia.`,
-            }
-          : {}),
-      }
-    : {
-        key: "sales",
-        label: "Unidades necessárias no mês",
-        value: "Indisponível",
-        supportingText: salesGoal.reason,
-      };
-
-  const numbers: ReportNumberViewModel[] = [
-    salesNumber,
-    number(
-      "revenue",
-      "Quanto entraria neste cenário",
-      optionalCurrency(snapshot.results.monthlyGrossRevenueCents),
-    ),
-    number(
-      "costs",
-      "Custos do mês",
-      optionalCurrency(snapshot.results.monthlyCostCents),
-    ),
-    number(
-      "result",
-      "Resultado do mês estimado",
-      optionalCurrency(snapshot.results.monthlyResultCents),
-    ),
-    number(
-      "margin",
-      "Quanto sobra a cada R$ 100",
-      optionalPercentage(snapshot.results.finalMarginBasisPoints),
-      marginHelp,
-    ),
-    number(
-      "break_even",
-      "Quanto precisa vender para cobrir os gastos",
-      optionalCurrency(snapshot.results.breakEvenRevenueCents),
-      breakEvenHelp,
-    ),
-  ];
+  // Older copy versions keep their persisted narrative, so the break-even
+  // reference only applies to snapshots written with the current content.
+  const scenario: DetailedBreakEvenScenario =
+    snapshot.contentVersion === DETAILED_REPORT_CONTENT_VERSION
+      ? deriveDetailedBreakEvenScenario(
+          snapshot.inputs,
+          snapshot.results,
+          snapshot.policy,
+        )
+      : { consolidated: null, byItem: new Map() };
+  const indicators = toDetailedIndicators(snapshot, scenario, language);
 
   const items: DetailedItemViewModel[] = snapshot.inputs.items.flatMap(
     (item) => {
       const result = resultById.get(item.id);
       if (!result) return [];
+      const reference = scenario.byItem.get(item.id);
       const completeCostUnavailableReason =
-        result.totalUnitCostCents === null ? reason : undefined;
+        result.totalUnitCostCents === null
+          ? reference
+            ? `Referência vendendo ${formatIntegerVolume(reference.referenceVolume)} unidades deste item por mês.`
+            : reason
+          : undefined;
+      const breakEvenPriceCents =
+        result.breakEvenUnitPriceCents ?? reference?.breakEvenPriceCents ?? null;
       const breakEvenUnavailableReason =
-        result.breakEvenUnitPriceCents === null
+        breakEvenPriceCents === null
           ? (completeCostUnavailableReason ??
             "As cobranças informadas impedem este cálculo.")
           : undefined;
@@ -296,7 +415,9 @@ function toDetailedReportViewModel({
           name: item.name,
           volumeLabel:
             item.monthlySalesVolume === null
-              ? "Vendas mensais ainda não informadas"
+              ? reference
+                ? `Sem quantidade informada · equilíbrio com ${formatIntegerVolume(reference.referenceVolume)} unidades no mês`
+                : "Vendas mensais ainda não informadas"
               : `${formatIntegerVolume(item.monthlySalesVolume)} unidades vendidas no mês`,
           statusLabel: result.directLoss
             ? "Perda por venda"
@@ -306,10 +427,20 @@ function toDetailedReportViewModel({
           variableCostLabel: formatCurrency(result.variableUnitCostCents),
           feeLabel: formatCurrency(result.feeAmountCents),
           netRevenueLabel: formatCurrency(result.netUnitRevenueCents),
-          fixedAllocationLabel: optionalCurrency(result.fixedAllocationCents),
-          totalUnitCostLabel: optionalCurrency(result.totalUnitCostCents),
-          unitProfitLabel: optionalCurrency(result.unitProfitCents),
-          realMarginLabel: optionalPercentage(result.realMarginBasisPoints),
+          fixedAllocationLabel: optionalCurrency(
+            result.fixedAllocationCents ??
+              reference?.fixedAllocationCents ??
+              null,
+          ),
+          totalUnitCostLabel: optionalCurrency(
+            result.totalUnitCostCents ?? reference?.totalUnitCostCents ?? null,
+          ),
+          unitProfitLabel: reference
+            ? `${formatCurrency(0)} no equilíbrio`
+            : optionalCurrency(result.unitProfitCents),
+          realMarginLabel: reference
+            ? "0% no equilíbrio"
+            : optionalPercentage(result.realMarginBasisPoints),
           ...(completeCostUnavailableReason
             ? { completeCostUnavailableReason }
             : {}),
@@ -318,14 +449,20 @@ function toDetailedReportViewModel({
             result.monthlyContributionCents,
           ),
           marginLabel: optionalPercentage(result.contributionMarginBasisPoints),
-          breakEvenLabel: optionalCurrency(result.breakEvenUnitPriceCents),
+          breakEvenLabel: optionalCurrency(breakEvenPriceCents),
           ...(breakEvenUnavailableReason ? { breakEvenUnavailableReason } : {}),
+          ...(reference
+            ? {
+                breakEvenReferenceLabel: `Para não ter prejuízo vendendo só este item: ${formatIntegerVolume(reference.referenceVolume)} unidades por mês.`,
+              }
+            : {}),
           technicalDetails: technicalDetails(item),
           discountSimulationBase: {
             originalPriceCents: item.unitSalePriceCents,
-            unitCostCents: result.totalUnitCostCents,
+            unitCostCents:
+              result.totalUnitCostCents ?? reference?.totalUnitCostCents ?? null,
             totalFeeBasisPoints,
-            minimumPriceCents: result.breakEvenUnitPriceCents,
+            minimumPriceCents: breakEvenPriceCents,
           },
         },
       ];
@@ -380,7 +517,7 @@ function toDetailedReportViewModel({
       facts: snapshot.executiveSummary.facts,
       answers: toDetailedSummaryAnswers(snapshot),
     },
-    numbers,
+    indicators,
     sections: snapshot.sections
       .filter(({ key }) => key !== "hidden_cost")
       .map((section) => ({

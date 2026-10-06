@@ -16,24 +16,46 @@ import {
   type ProductionReportCalculation,
   type ReportSection,
 } from "../types";
+import {
+  deriveQuickBreakEvenScenario,
+  type BreakEvenScenario,
+} from "./break-even-scenario";
+import {
+  scenarioDiscountBody,
+  scenarioMinimumPriceBody,
+  scenarioMonthlyBody,
+  scenarioSalesGoalBody,
+} from "./break-even-scenario-copy";
 import { buildProductionExecutiveSummary } from "./build-production-executive-summary";
 import { calculateBreakEvenRevenue } from "./unit-economics";
 
 function minimumPriceSection(
   calculation: ProductionReportCalculation,
+  scenario: BreakEvenScenario | null,
 ): ReportSection {
+  if (scenario?.breakEvenPriceCents != null) {
+    return {
+      key: "break_even",
+      title: "Menor preço para não ficar no prejuízo",
+      body: scenarioMinimumPriceBody(scenario, "unidades"),
+      emphasisLabel: "Preço de equilíbrio",
+      emphasisValue: formatCurrency(scenario.breakEvenPriceCents),
+      tone: "neutral",
+    };
+  }
   if (calculation.minimumPriceCents === null) {
     return {
       key: "break_even",
       title: "Menor preço para não ficar no prejuízo",
       body:
-        calculation.monthlySalesVolumeUsed === null ||
-        calculation.monthlySalesVolumeUsed === 0
-          ? "Para calcular o custo completo e o menor preço, precisamos de uma quantidade maior que zero para dividir os gastos do mês."
-          : "As cobranças informadas não permitem calcular este valor.",
+        calculation.monthlySalesVolumeUsed === null
+          ? "No preço atual, cada unidade vendida perde dinheiro antes dos gastos do mês. Não existe quantidade que leve ao equilíbrio: revise o preço ou o custo."
+          : calculation.monthlySalesVolumeUsed === 0
+            ? "Para calcular o custo completo e o menor preço, precisamos de uma quantidade maior que zero para dividir os gastos do mês."
+            : "As cobranças informadas não permitem calcular este valor.",
       emphasisLabel: "Menor preço completo",
       emphasisValue: "Ainda não calculado",
-      tone: "neutral",
+      tone: calculation.monthlySalesVolumeUsed === null ? "critical" : "neutral",
     };
   }
   return {
@@ -82,15 +104,33 @@ function saleSection(
 
 function monthlySection(
   calculation: ProductionReportCalculation,
+  scenario: BreakEvenScenario | null,
 ): ReportSection {
+  if (scenario) {
+    return {
+      key: "margin_diagnosis",
+      title: "Quanto sobra no mês",
+      body: scenarioMonthlyBody(
+        scenario,
+        calculation.unitContributionCents,
+        "unidades",
+      ),
+      emphasisLabel: "No ponto de equilíbrio",
+      emphasisValue: formatCurrency(0),
+      tone: "neutral",
+    };
+  }
   if (calculation.monthlyResultCents === null) {
     return {
       key: "margin_diagnosis",
       title: "Quanto sobra no mês",
-      body: "O cálculo depende da quantidade vendida no mês. Informe esse valor para ver quanto sobra depois dos custos e gastos considerados.",
+      body:
+        calculation.unitContributionCents <= 0
+          ? `Cada unidade vendida perde ${formatCurrency(Math.abs(calculation.unitContributionCents))} antes dos gastos do mês, então o resultado fica negativo em qualquer quantidade.`
+          : "O cálculo depende da quantidade vendida no mês. Informe esse valor para ver quanto sobra depois dos custos e gastos considerados.",
       emphasisLabel: "Valor no mês",
       emphasisValue: "Ainda não calculado",
-      tone: "neutral",
+      tone: calculation.unitContributionCents <= 0 ? "critical" : "neutral",
     };
   }
   const margin =
@@ -120,6 +160,7 @@ function monthlySection(
 function salesSection(
   command: ProductionDiagnosisCommand,
   calculation: ProductionReportCalculation,
+  scenario: BreakEvenScenario | null,
 ): ReportSection {
   const breakEvenRevenueCents = calculateBreakEvenRevenue(
     calculation.effectiveFixedCostCents,
@@ -134,6 +175,16 @@ function salesSection(
       emphasisLabel: "Faturamento necessário no mês",
       emphasisValue: "Ainda não calculado",
       tone: "critical",
+    };
+  }
+  if (scenario) {
+    return {
+      key: "sales_goal",
+      title: "Quanto você precisa vender",
+      body: scenarioSalesGoalBody(scenario, "unidades"),
+      emphasisLabel: "Faturamento necessário no mês",
+      emphasisValue: formatCurrency(breakEvenRevenueCents),
+      tone: "neutral",
     };
   }
   const withdrawal = command.proLaboreIncluded
@@ -151,7 +202,18 @@ function salesSection(
 
 function discountSection(
   calculation: ProductionReportCalculation,
+  scenario: BreakEvenScenario | null,
 ): ReportSection {
+  if (scenario?.breakEvenDiscountPercent != null) {
+    return {
+      key: "discount_simulator",
+      title: "Como um desconto muda o resultado",
+      body: scenarioDiscountBody(scenario, "unidades"),
+      emphasisLabel: "Limite antes do prejuízo",
+      emphasisValue: `${scenario.breakEvenDiscountPercent}%`,
+      tone: "neutral",
+    };
+  }
   const available = calculation.minimumPriceCents !== null;
   return {
     key: "discount_simulator",
@@ -172,6 +234,7 @@ function buildProductionReportSnapshot(
   command: ProductionDiagnosisCommand,
   calculation: ProductionReportCalculation,
 ): CurrentProductionReportSnapshot {
+  const scenario = deriveQuickBreakEvenScenario(calculation);
   return parseCurrentProductionReportSnapshot({
     schemaVersion: PRODUCTION_REPORT_SCHEMA_VERSION,
     calculationVersion: PRODUCTION_CALCULATION_VERSION,
@@ -204,11 +267,11 @@ function buildProductionReportSnapshot(
     results: { ...calculation },
     executiveSummary: buildProductionExecutiveSummary(calculation),
     sections: [
-      minimumPriceSection(calculation),
+      minimumPriceSection(calculation, scenario),
       saleSection(command, calculation),
-      monthlySection(calculation),
-      salesSection(command, calculation),
-      discountSection(calculation),
+      monthlySection(calculation, scenario),
+      salesSection(command, calculation, scenario),
+      discountSection(calculation, scenario),
     ],
     discountSimulationBase: {
       originalPriceCents: calculation.currentPriceCents,

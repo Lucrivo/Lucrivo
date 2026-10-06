@@ -2,81 +2,82 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
-import type { ReportNumberViewModel } from "../presenters/to-report-view-model";
-import { ReportNumbers } from "./report-numbers";
+import type { ReportIndicatorViewModel } from "../presenters/to-report-view-model";
+import { ReportIndicators } from "./report-indicators";
 
-const numbers: ReportNumberViewModel[] = [
-  { key: "price", label: "Preço atual", value: "R$ 80,00" },
+const indicators: ReportIndicatorViewModel[] = [
+  {
+    key: "price",
+    label: "Preço de venda",
+    value: "R$ 80,00",
+    tone: "neutral",
+    toneLabel: "Informação",
+  },
   {
     key: "minimum",
     label: "Menor preço para não ficar no prejuízo",
     value: "R$ 50,21",
+    tone: "positive",
+    toneLabel: "Resultado positivo",
   },
   {
-    key: "profit",
-    label: "Resultado por hora",
-    value: "R$ 27,41",
+    key: "sales",
+    label: "Vendas necessárias no mês",
+    value: "72 vendas",
+    tone: "positive",
+    toneLabel: "Resultado positivo",
+    supportingText: "17 por semana e 3 por dia.",
+    featured: true,
   },
   {
     key: "margin",
-    label: "Quanto sobra a cada R$ 100",
+    label: "Margem de lucro",
     value: "34,26%",
+    tone: "positive",
+    toneLabel: "Resultado positivo",
+    supportingText: "Lucro de R$ 27,41 no mês.",
+  },
+  {
+    key: "discount",
+    label: "Desconto máximo sem prejuízo",
+    value: "12%",
+    tone: "positive",
+    toneLabel: "Resultado positivo",
   },
 ];
 
-describe("ReportNumbers", () => {
-  it("renders objective labeled values without target numbers", () => {
-    render(
-      <ReportNumbers
-        numbers={numbers}
-        title="Seus números"
-        description="Valores calculados com o que você informou."
-      />,
-    );
-    const rail = screen.getByRole("complementary", { name: "Seus números" });
+describe("ReportIndicators", () => {
+  it("renders labeled values with tone and features the sales card", () => {
+    render(<ReportIndicators indicators={indicators} />);
+    const grid = screen.getByTestId("report-indicators");
 
     expect(
-      Array.from(rail.querySelectorAll("dt")).map((term) => term.textContent),
-    ).toEqual(numbers.map(({ label }) => label));
-    expect(rail.textContent).not.toMatch(/meta|preço-alvo/i);
-  });
-
-  it("features a sales goal and keeps its explanation visible", () => {
-    render(
-      <ReportNumbers
-        numbers={[
-          {
-            key: "sales",
-            label: "Vendas necessárias no mês",
-            value: "72 vendas",
-            supportingText: "17 por semana e 3 por dia.",
-          },
-          ...numbers,
-        ]}
-        title="Seus números"
-        description="Valores calculados com o que você informou."
-      />,
-    );
-
-    const featured = document.querySelector<HTMLElement>(
-      '[data-slot="featured-report-number"]',
+      Array.from(grid.querySelectorAll("[data-testid=report-indicator]")).map(
+        (card) => card.getAttribute("data-indicator-key"),
+      ),
+    ).toEqual(["sales", "price", "minimum", "margin", "discount"]);
+    const featured = grid.querySelector<HTMLElement>(
+      '[data-featured="true"]',
     );
     expect(featured).not.toBeNull();
     expect(within(featured!).getByText("72 vendas")).toBeVisible();
     expect(
       within(featured!).getByText("17 por semana e 3 por dia."),
     ).toBeVisible();
+    expect(grid.textContent).not.toMatch(/meta|preço-alvo/i);
   });
 
   it("shows why a complete value is unavailable and opens help by keyboard", async () => {
     const user = userEvent.setup();
     render(
-      <ReportNumbers
-        numbers={[
+      <ReportIndicators
+        indicators={[
           {
             key: "minimum",
             label: "Menor preço para não ficar no prejuízo",
             value: "Ainda não calculado",
+            tone: "neutral",
+            toneLabel: "Informação",
             supportingText:
               "Informe uma quantidade maior que zero para dividir os gastos do mês.",
             help: {
@@ -87,8 +88,6 @@ describe("ReportNumbers", () => {
             },
           },
         ]}
-        title="Seus números"
-        description="Valores calculados com o que você informou."
       />,
     );
 
@@ -116,20 +115,22 @@ describe("ReportNumbers", () => {
   it("keeps long financial values readable", () => {
     render(
       <div className="w-64">
-        <ReportNumbers
-          numbers={[
+        <ReportIndicators
+          indicators={[
             {
               key: "minimum",
               label: "Menor preço para não ficar no prejuízo",
               value: "R$ 1.234.567.890,00",
+              tone: "neutral",
+              toneLabel: "Informação",
             },
           ]}
-          title="Seus números"
-          description="Valores calculados com o que você informou."
         />
       </div>,
     );
 
-    expect(screen.getByText("R$ 1.234.567.890,00")).toHaveClass("break-words");
+    expect(screen.getByText("R$ 1.234.567.890,00")).toHaveClass(
+      "wrap-break-word",
+    );
   });
 });

@@ -242,6 +242,17 @@ describe("buildReportAiContext", () => {
     expect(parseContext(zero).diagnosis.partial).toBe(false);
     expect(fact(parseContext(unknown), "monthly_result").value).toBeNull();
     expect(fact(parseContext(zero), "monthly_result").value).toBe("-R$ 30,00");
+    expect(parseContext(unknown).availability.reasons).toContain(
+      "Sem a quantidade vendida, o relatório mostra o ponto de equilíbrio como referência, nunca como resultado do mês.",
+    );
+    expect(
+      fact(parseContext(unknown), "break_even_reference_volume").value,
+    ).not.toBeNull();
+    expect(
+      parseContext(zero).facts.some(
+        ({ key }) => key === "break_even_reference_volume",
+      ),
+    ).toBe(false);
   });
 
   it("exposes quick-report facts without private or internal input fields", () => {
@@ -289,7 +300,7 @@ describe("buildReportAiContext", () => {
     expect(context.diagnosis.partial).toBe(true);
     expect(context.availability.volume).toBe("unknown");
     expect(context.availability.reasons).toContain(
-      "Informe as vendas mensais de Bolo de festa para completar o resultado do conjunto.",
+      "Sem as vendas mensais de Bolo de festa, o relatório mostra o ponto de equilíbrio desse item como referência, nunca como resultado do mês.",
     );
     expect(
       itemFact(context, "Bolo de festa", "total_unit_cost").value,

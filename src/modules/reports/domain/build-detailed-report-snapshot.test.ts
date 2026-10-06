@@ -32,12 +32,12 @@ function build(input: DetailedDiagnosisCommand) {
 }
 
 describe("buildDetailedReportSnapshot", () => {
-  it("builds the Detailed 1/1/2 contract with direct summary language", () => {
+  it("builds the Detailed 1/1/3 contract with direct summary language", () => {
     const snapshot = build(command);
     expect(snapshot).toMatchObject({
       schemaVersion: 1,
       calculationVersion: 1,
-      contentVersion: 2,
+      contentVersion: 3,
       policy: { concentrationThresholdBasisPoints: 4_500 },
       results: {
         verdict: "positive_result",
@@ -55,7 +55,7 @@ describe("buildDetailedReportSnapshot", () => {
     expect(parseDetailedReportSnapshot(snapshot)).toEqual(snapshot);
   });
 
-  it("shows a single-item monthly goal without inventing routine splits", () => {
+  it("describes the single-item break-even reference when volume is unknown", () => {
     const snapshot = build({
       ...command,
       items: [{ ...command.items[0], monthlySalesVolume: null }],
@@ -65,7 +65,10 @@ describe("buildDetailedReportSnapshot", () => {
       title: "Quanto você precisa vender",
       emphasisLabel: "Faturamento necessário no mês",
     });
-    expect(sales?.body).not.toMatch(/por semana|por dia/);
+    expect(sales?.body).toMatch(/por semana/);
+    expect(snapshot.executiveSummary.verdict.label).toBe(
+      "Equilíbrio como referência",
+    );
     expect(snapshot.results.items[0]).toMatchObject({
       fixedAllocationCents: null,
       totalUnitCostCents: null,

@@ -1,3 +1,6 @@
+import { deriveDetailedBreakEvenScenario } from "@/modules/reports/domain/detailed-break-even-scenario";
+import { formatIntegerVolume } from "@/modules/reports/formatters";
+
 import type {
   DetailedDiagnosisCalculation,
   DetailedDiagnosisCommand,
@@ -23,14 +26,27 @@ function missingVolumeGuidance(
   calculation: DetailedDiagnosisCalculation,
 ): DetailedGuidance | null {
   if (!calculation.isPartial) return null;
+  const scenario = deriveDetailedBreakEvenScenario(command, calculation);
+  const references = command.items
+    .flatMap((item) => {
+      const reference = scenario.byItem.get(item.id);
+      return reference
+        ? [`${item.name}: ${formatIntegerVolume(reference.referenceVolume)} unidades`]
+        : [];
+    })
+    .join(" · ");
+  const names = namesFor(command, calculation.missingVolumeItemIds);
   return {
     key: "missing_volume",
     tone: "neutral",
-    title: "Faltam quantidades de alguns itens",
+    title:
+      command.items.length === 1
+        ? "Equilíbrio como referência"
+        : "Equilíbrio como referência para itens sem quantidade",
     body:
       command.items.length === 1
-        ? `Informe a quantidade mensal de ${namesFor(command, calculation.missingVolumeItemIds)} para dividir os gastos do mês. A quantidade necessária no preço atual continua disponível.`
-        : `Informe a quantidade mensal de ${namesFor(command, calculation.missingVolumeItemIds)}. Uma quantidade única para o conjunto exigiria inventar uma proporção entre os itens.`,
+        ? `Sem a quantidade de ${names}, mostramos quanto precisa vender para não ter prejuízo${references ? ` (${references})` : ""}. Informe a quantidade mensal para ver o resultado exato.`
+        : `${references ? `Vendendo apenas aquele item, o equilíbrio seria: ${references}. ` : ""}Informe a quantidade mensal de ${names} para calcular o resultado do conjunto sem inventar uma proporção entre os itens.`,
     itemIds: calculation.missingVolumeItemIds,
   };
 }
