@@ -71,6 +71,11 @@ const focusedReport: DashboardReportFocusViewModel = {
       value: "8%",
       tone: "positive",
       toneLabel: "Resultado positivo",
+      help: {
+        title: "Desconto máximo sem prejuízo",
+        description:
+          "É um limite calculado, não uma recomendação de desconto.",
+      },
     },
   ],
   complementaryFacts: [
@@ -78,13 +83,6 @@ const focusedReport: DashboardReportFocusViewModel = {
       key: "analyzed_items",
       label: "Ofertas analisadas",
       value: "1 produto analisado",
-    },
-    {
-      key: "discount_limit",
-      label: "Limite antes do prejuízo",
-      value: "8%",
-      supportingText:
-        "É um limite calculado, não uma recomendação de desconto.",
     },
   ],
   openHref: "/reports/42",
@@ -182,10 +180,11 @@ describe("DashboardReportFocus", () => {
       screen.getByText("Falta uma quantidade para completar o cálculo."),
     ).toBeVisible();
     expect(
-      screen.getByText(
-        "É um limite calculado, não uma recomendação de desconto.",
-      ),
+      screen.getByRole("button", {
+        name: "Entenda Desconto máximo sem prejuízo",
+      }),
     ).toBeVisible();
+    expect(screen.queryByText("Limite antes do prejuízo")).not.toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Abrir relatório completo" }),
     ).toHaveAttribute("href", "/reports/42");
@@ -210,5 +209,23 @@ describe("DashboardReportFocus", () => {
     expect(
       screen.getByRole("link", { name: "Abrir relatório" }),
     ).toHaveAttribute("href", "/reports/42");
+  });
+
+  it("dims unavailable metrics from their semantic state instead of their copy", () => {
+    const sales = {
+      ...focusedReport.metrics[0]!,
+      value: "Sem meta única",
+      unavailable: true,
+    };
+    const report = {
+      ...focusedReport,
+      metrics: [sales, ...focusedReport.metrics.slice(1)],
+    };
+
+    render(<DashboardReportFocus focus={{ status: "ready", report }} />);
+
+    expect(
+      screen.getByText("Sem meta única").closest("div.relative"),
+    ).toHaveClass("bg-muted/25");
   });
 });

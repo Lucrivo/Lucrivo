@@ -118,6 +118,7 @@ function DashboardReportFocus({ focus }: { focus: DashboardFocusLoad }) {
             title={metric.label}
             value={metric.value}
             valueClassName="tabular-nums"
+            helpText={metric.help?.description}
             status={{
               label: metric.toneLabel,
               tone: indicatorStatusTone[metric.tone],
@@ -129,11 +130,7 @@ function DashboardReportFocus({ focus }: { focus: DashboardFocusLoad }) {
                 </p>
               ) : null
             }
-            className={cn(
-              (metric.value === "Indisponível" ||
-                metric.value === "Ainda não calculado") &&
-                "bg-muted/25",
-            )}
+            className={cn(metric.unavailable && "bg-muted/25")}
           />
         ))}
       </div>

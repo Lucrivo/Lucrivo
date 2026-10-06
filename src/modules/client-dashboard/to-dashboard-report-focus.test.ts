@@ -212,19 +212,16 @@ describe("toDashboardReportFocus quick reports", () => {
     );
   });
 
-  it("shows the calculated discount limit with its mandatory warning", () => {
-    const snapshot = productReport().snapshot;
-    if ("analysisMode" in snapshot) throw new Error("expected quick snapshot");
+  it("keeps the discount warning in metric help without duplicating the value", () => {
+    const focus = toDashboardReportFocus(productReport());
+    const discount = focus.metrics.find(({ key }) => key === "discount");
 
-    expect(
-      toDashboardReportFocus(productReport()).complementaryFacts,
-    ).toContainEqual({
-      key: "discount_limit",
-      label: "Limite antes do prejuízo",
-      value: `${snapshot.results.breakEvenDiscountPercent}%`,
-      supportingText:
-        "É um limite calculado, não uma recomendação de desconto.",
-    });
+    expect(discount?.help?.description).toContain(
+      "não uma recomendação de desconto",
+    );
+    expect(focus.complementaryFacts.map(({ key }) => key)).not.toContain(
+      "discount_limit",
+    );
   });
 });
 

@@ -26,8 +26,7 @@ type DashboardComplementaryFact = {
     | "direct_loss_items"
     | "missing_volume_items"
     | "analyzed_items"
-    | "updated_at"
-    | "discount_limit";
+    | "updated_at";
   label: string;
   value: string;
   supportingText?: string;

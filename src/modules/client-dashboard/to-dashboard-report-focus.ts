@@ -128,18 +128,8 @@ function toQuickFocus(report: OwnedReport): DashboardReportFocusViewModel {
   });
   const complementaryFacts: DashboardComplementaryFact[] = [
     analyzedOfferFact(snapshot.category),
+    ...updatedFact(report),
   ];
-
-  if (snapshot.results.breakEvenDiscountPercent !== null) {
-    complementaryFacts.push({
-      key: "discount_limit",
-      label: "Limite antes do prejuízo",
-      value: `${snapshot.results.breakEvenDiscountPercent}%`,
-      supportingText:
-        "É um limite calculado, não uma recomendação de desconto.",
-    });
-  }
-  complementaryFacts.push(...updatedFact(report));
 
   return {
     id: report.id,
