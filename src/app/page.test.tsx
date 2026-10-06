@@ -463,11 +463,32 @@ describe("Home", () => {
     }
 
     const social = view.getByRole("list", { name: "Redes sociais" });
+    const socialView = within(social);
+    const socialLinks = [
+      ["Instagram", "https://www.instagram.com/somoslucrivo/"],
+      ["YouTube", "https://www.youtube.com/@somoslucrivo"],
+    ] as const;
+
     expect(
-      within(social)
+      socialView
         .getAllByRole("link")
         .map((link) => link.getAttribute("aria-label")),
-    ).toEqual(["Instagram", "TikTok", "YouTube"]);
+    ).toEqual(socialLinks.map(([label]) => label));
+
+    for (const [label, href] of socialLinks) {
+      expect(socialView.getByRole("link", { name: label })).toHaveAttribute(
+        "href",
+        href,
+      );
+      expect(socialView.getByRole("link", { name: label })).toHaveAttribute(
+        "target",
+        "_blank",
+      );
+      expect(socialView.getByRole("link", { name: label })).toHaveAttribute(
+        "rel",
+        "noopener noreferrer",
+      );
+    }
 
     expect(
       view.getByText(/© \d{4} Lucrivo\. Todos os direitos reservados\./),

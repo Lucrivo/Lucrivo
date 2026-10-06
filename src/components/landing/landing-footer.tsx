@@ -1,8 +1,4 @@
-import {
-  InstagramLogoIcon,
-  TiktokLogoIcon,
-  YoutubeLogoIcon,
-} from "@phosphor-icons/react";
+import { InstagramLogoIcon, YoutubeLogoIcon } from "@phosphor-icons/react";
 
 import {
   GUARANTEE_DAYS,
@@ -63,6 +59,7 @@ function LandingFooter() {
                       aria-label={label}
                       title={label}
                       target="_blank"
+                      rel="noopener noreferrer"
                     >
                       <Icon aria-hidden="true" size={20} weight="fill" />
                     </a>

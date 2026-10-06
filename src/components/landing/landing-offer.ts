@@ -13,7 +13,7 @@ const SOCIAL_LINKS = [
   {
     id: "instagram",
     label: "Instagram",
-    href: "https://www.instagram.com/somoslucrivo?stkn=aTR0NGp6M2tjbHM0",
+    href: "https://www.instagram.com/somoslucrivo/",
   },
   {
     id: "youtube",
