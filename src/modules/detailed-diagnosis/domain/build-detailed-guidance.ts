@@ -31,7 +31,9 @@ function missingVolumeGuidance(
     .flatMap((item) => {
       const reference = scenario.byItem.get(item.id);
       return reference
-        ? [`${item.name}: ${formatIntegerVolume(reference.referenceVolume)} unidades`]
+        ? [
+            `${item.name}: ${formatIntegerVolume(reference.referenceVolume)} unidades`,
+          ]
         : [];
     })
     .join(" · ");
@@ -215,8 +217,7 @@ function bestUnitResultGuidance(
     ),
   );
   const hasLowerResult = candidates.some(
-    (item) =>
-      (item.unitProfitCents ?? Number.MIN_SAFE_INTEGER) < bestResult,
+    (item) => (item.unitProfitCents ?? Number.MIN_SAFE_INTEGER) < bestResult,
   );
   if (!hasLowerResult) return null;
 

@@ -37,7 +37,10 @@ function DetailedReportDetail({
       : viewModel.sections;
   const legacyDetails =
     legacySections.length > 0 ? (
-      <section aria-labelledby="legacy-calculation-title" className="grid gap-4">
+      <section
+        aria-labelledby="legacy-calculation-title"
+        className="grid gap-4"
+      >
         <div className="grid gap-2 px-1">
           <h2 id="legacy-calculation-title" className="text-2xl">
             Detalhes preservados deste relatório
@@ -105,10 +108,7 @@ function DetailedReportDetail({
         priorityEyebrow="Comece por aqui"
       />
 
-      <section
-        aria-labelledby="detailed-analysis-title"
-        className="grid gap-4"
-      >
+      <section aria-labelledby="detailed-analysis-title" className="grid gap-4">
         <div className="mb-1 grid gap-2 px-1">
           <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
             Entenda o resultado

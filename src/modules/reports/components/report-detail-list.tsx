@@ -1,10 +1,6 @@
 import type { ReportIndicatorDetail } from "../presenters/to-report-view-model";
 
-function ReportDetailList({
-  details,
-}: {
-  details: ReportIndicatorDetail[];
-}) {
+function ReportDetailList({ details }: { details: ReportIndicatorDetail[] }) {
   if (details.length === 0) return null;
 
   return (
@@ -18,9 +14,7 @@ function ReportDetailList({
           <dd className="text-muted-foreground grid min-w-0 gap-1 break-words sm:text-right">
             <span>{detail.value}</span>
             {detail.supportingText ? (
-              <span className="text-xs leading-5">
-                {detail.supportingText}
-              </span>
+              <span className="text-xs leading-5">{detail.supportingText}</span>
             ) : null}
           </dd>
         </div>

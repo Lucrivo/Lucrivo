@@ -150,7 +150,11 @@ function buildProductExecutiveSummary(
       "Acompanhe o lucro, quanto ele representa a cada R$ 100 e a quantidade vendida.",
   }[calculation.verdict];
   const profitability = profitabilityAnswer(calculation, scenario);
-  const priceAnswer = priceSufficiencyAnswer(calculation, productKind, scenario);
+  const priceAnswer = priceSufficiencyAnswer(
+    calculation,
+    productKind,
+    scenario,
+  );
   const priorityLabel = {
     cost: productKind === "digital" ? "Custo por venda" : "Custo de compra",
     data: "Quantidade vendida",

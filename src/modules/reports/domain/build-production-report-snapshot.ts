@@ -55,7 +55,8 @@ function minimumPriceSection(
             : "As cobranças informadas não permitem calcular este valor.",
       emphasisLabel: "Menor preço completo",
       emphasisValue: "Ainda não calculado",
-      tone: calculation.monthlySalesVolumeUsed === null ? "critical" : "neutral",
+      tone:
+        calculation.monthlySalesVolumeUsed === null ? "critical" : "neutral",
     };
   }
   return {

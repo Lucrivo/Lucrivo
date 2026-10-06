@@ -56,9 +56,7 @@ describe("ReportIndicators", () => {
         (card) => card.getAttribute("data-indicator-key"),
       ),
     ).toEqual(["sales", "price", "minimum", "margin", "discount"]);
-    const featured = grid.querySelector<HTMLElement>(
-      '[data-featured="true"]',
-    );
+    const featured = grid.querySelector<HTMLElement>('[data-featured="true"]');
     expect(featured).not.toBeNull();
     expect(within(featured!).getByText("72 vendas")).toBeVisible();
     expect(

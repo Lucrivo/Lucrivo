@@ -125,9 +125,7 @@ describe("calculateSalesGoalAtPrice", () => {
     expect(calculateSalesGoalAtPrice({ ...base, priceCents: 10_000 })).toBe(
       100,
     );
-    expect(calculateSalesGoalAtPrice({ ...base, priceCents: 9_000 })).toBe(
-      122,
-    );
+    expect(calculateSalesGoalAtPrice({ ...base, priceCents: 9_000 })).toBe(122);
     expect(calculateSalesGoalAtPrice({ ...base, priceCents: 4_400 })).toBe(
       null,
     );

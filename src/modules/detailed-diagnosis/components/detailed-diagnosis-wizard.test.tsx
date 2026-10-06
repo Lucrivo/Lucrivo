@@ -145,7 +145,9 @@ describe("DetailedDiagnosisWizard", () => {
       screen.getByRole("button", { name: "Revisar diagnóstico" }),
     );
 
-    expect(screen.getByText(/ponto de equilíbrio como referência/i)).toBeVisible();
+    expect(
+      screen.getByText(/ponto de equilíbrio como referência/i),
+    ).toBeVisible();
     const submit = screen.getByRole("button", {
       name: "Gerar diagnóstico detalhado",
     });

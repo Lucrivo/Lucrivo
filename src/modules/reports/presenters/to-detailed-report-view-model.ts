@@ -369,7 +369,7 @@ function toDetailedIndicators(
         ? { details: isolatedReferences }
         : completeSalesDetails.length > 0 && currentContent
           ? { details: completeSalesDetails }
-        : {}),
+          : {}),
     },
     {
       key: "break_even",
@@ -506,7 +506,9 @@ function toDetailedReportViewModel({
             : reason
           : undefined;
       const breakEvenPriceCents =
-        result.breakEvenUnitPriceCents ?? reference?.breakEvenPriceCents ?? null;
+        result.breakEvenUnitPriceCents ??
+        reference?.breakEvenPriceCents ??
+        null;
       const breakEvenUnavailableReason =
         breakEvenPriceCents === null
           ? (completeCostUnavailableReason ??
@@ -564,7 +566,9 @@ function toDetailedReportViewModel({
           discountSimulationBase: {
             originalPriceCents: item.unitSalePriceCents,
             unitCostCents:
-              result.totalUnitCostCents ?? reference?.totalUnitCostCents ?? null,
+              result.totalUnitCostCents ??
+              reference?.totalUnitCostCents ??
+              null,
             totalFeeBasisPoints,
             minimumPriceCents: breakEvenPriceCents,
           },

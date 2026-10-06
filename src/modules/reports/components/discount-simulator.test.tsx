@@ -120,9 +120,12 @@ describe("DiscountSimulator", () => {
     ).toBeVisible();
     expect(screen.queryByText("Resultado por unidade")).not.toBeInTheDocument();
     expect(screen.getByText("100 vendas")).toBeVisible();
-    fireEvent.change(screen.getByRole("slider", { name: "Desconto simulado" }), {
-      target: { value: "0" },
-    });
+    fireEvent.change(
+      screen.getByRole("slider", { name: "Desconto simulado" }),
+      {
+        target: { value: "0" },
+      },
+    );
     expect(screen.getByText("84 vendas")).toBeVisible();
   });
 });

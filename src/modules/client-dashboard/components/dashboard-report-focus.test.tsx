@@ -73,8 +73,7 @@ const focusedReport: DashboardReportFocusViewModel = {
       toneLabel: "Resultado positivo",
       help: {
         title: "Desconto máximo sem prejuízo",
-        description:
-          "É um limite calculado, não uma recomendação de desconto.",
+        description: "É um limite calculado, não uma recomendação de desconto.",
       },
     },
   ],
@@ -184,7 +183,9 @@ describe("DashboardReportFocus", () => {
         name: "Entenda Desconto máximo sem prejuízo",
       }),
     ).toBeVisible();
-    expect(screen.queryByText("Limite antes do prejuízo")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Limite antes do prejuízo"),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Abrir relatório completo" }),
     ).toHaveAttribute("href", "/reports/42");

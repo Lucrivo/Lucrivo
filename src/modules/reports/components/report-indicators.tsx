@@ -33,9 +33,7 @@ function ReportIndicatorCard({
       <CardHeader className="gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="grid min-w-0 gap-1">
-            <h3 className="text-[0.9375rem] font-medium">
-              {indicator.label}
-            </h3>
+            <h3 className="text-[0.9375rem] font-medium">{indicator.label}</h3>
             {indicator.help ? <PlainLanguageHelp {...indicator.help} /> : null}
           </div>
           <Badge variant={presentation.badge}>
@@ -46,9 +44,7 @@ function ReportIndicatorCard({
       </CardHeader>
       <CardContent className="grid gap-3 px-5 pb-5 sm:px-6 sm:pb-6">
         <p
-          data-value-state={
-            indicator.unavailable ? "unavailable" : "available"
-          }
+          data-value-state={indicator.unavailable ? "unavailable" : "available"}
           className={cn(
             "leading-tight font-semibold wrap-break-word tabular-nums",
             indicator.unavailable

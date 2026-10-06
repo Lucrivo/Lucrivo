@@ -227,14 +227,12 @@ describe("toDetailedReportViewModel", () => {
       {
         id: baseCommand.items[0]!.id,
         label: "Caneca",
-        supportingText:
-          "Referência considerando este item vendido sozinho.",
+        supportingText: "Referência considerando este item vendido sozinho.",
       },
       {
         id: "22222222-2222-4222-8222-222222222222",
         label: "Copo",
-        supportingText:
-          "Referência considerando este item vendido sozinho.",
+        supportingText: "Referência considerando este item vendido sozinho.",
       },
     ]);
   });

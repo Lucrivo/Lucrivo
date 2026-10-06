@@ -370,7 +370,9 @@ function withToneLabels(
   }));
 }
 
-function toServiceIndicators(snapshot: ServiceReportSnapshot): IndicatorDraft[] {
+function toServiceIndicators(
+  snapshot: ServiceReportSnapshot,
+): IndicatorDraft[] {
   const results = snapshot.results;
   const plural = snapshot.unit === "hour" ? "horas" : "atendimentos";
   const singular = formatReportUnit(snapshot.unit);
@@ -563,7 +565,9 @@ function toUnitIndicators(
       key: "sales",
       label: "Vendas necessárias no mês",
       value:
-        goal === null ? UNAVAILABLE : `${formatIntegerVolume(goal)} ${unitWord}`,
+        goal === null
+          ? UNAVAILABLE
+          : `${formatIntegerVolume(goal)} ${unitWord}`,
       tone: salesTone,
       description: sectionBody(snapshot, "sales_goal"),
       supportingText: salesSupporting,
@@ -597,7 +601,10 @@ function toUnitIndicators(
 function toDiscountSimulation(
   snapshot: QuickReportSnapshot,
   scenario: BreakEvenScenario | null,
-): Pick<ReportViewModel, "discountSimulationBase" | "discountSimulationContext"> {
+): Pick<
+  ReportViewModel,
+  "discountSimulationBase" | "discountSimulationContext"
+> {
   if (snapshot.category === "service" || !scenario) {
     return {
       discountSimulationBase: snapshot.discountSimulationBase,

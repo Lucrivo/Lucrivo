@@ -130,7 +130,9 @@ describe("buildProductExecutiveSummary", () => {
       calculateProductReport({ ...command, monthlySalesVolume: null }),
       "resale",
     );
-    expect(summary.facts[0].currentValue).toBe("R$ 0,00 no ponto de equilíbrio");
+    expect(summary.facts[0].currentValue).toBe(
+      "R$ 0,00 no ponto de equilíbrio",
+    );
     expect(summary.facts[1].referenceValue).not.toBe("Ainda não calculado");
     expect(summary.answers[1].answer).toMatch(/preço de equilíbrio/i);
     expect(summary.verdict.label).toBe("Equilíbrio como referência");

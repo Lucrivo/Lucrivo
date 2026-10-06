@@ -249,23 +249,26 @@ describe("toReportViewModel", () => {
       () =>
         presentProduction({ ...productionCommand, monthlySalesVolume: null }),
     ],
-  ])("derives a break-even reference for unknown-volume %s reports", (_name, build) => {
-    const model = build();
-    const minimum = model.indicators.find(({ key }) => key === "minimum");
-    const margin = model.indicators.find(({ key }) => key === "margin");
-    const sales = model.indicators.find(({ key }) => key === "sales");
+  ])(
+    "derives a break-even reference for unknown-volume %s reports",
+    (_name, build) => {
+      const model = build();
+      const minimum = model.indicators.find(({ key }) => key === "minimum");
+      const margin = model.indicators.find(({ key }) => key === "margin");
+      const sales = model.indicators.find(({ key }) => key === "sales");
 
-    expect(minimum?.value).not.toBe("Ainda não calculado");
-    expect(minimum?.supportingText).toMatch(/Referência com/);
-    expect(margin).toMatchObject({
-      value: "0%",
-      tone: "neutral",
-    });
-    expect(margin?.supportingText).toMatch(/No ponto de equilíbrio/);
-    expect(sales?.tone).toBe("neutral");
-    expect(sales?.supportingText).toMatch(/Referência de equilíbrio/);
-    expect(model.discountSimulationContext.breakEvenReference).not.toBeNull();
-  });
+      expect(minimum?.value).not.toBe("Ainda não calculado");
+      expect(minimum?.supportingText).toMatch(/Referência com/);
+      expect(margin).toMatchObject({
+        value: "0%",
+        tone: "neutral",
+      });
+      expect(margin?.supportingText).toMatch(/No ponto de equilíbrio/);
+      expect(sales?.tone).toBe("neutral");
+      expect(sales?.supportingText).toMatch(/Referência de equilíbrio/);
+      expect(model.discountSimulationContext.breakEvenReference).not.toBeNull();
+    },
+  );
 
   it("does not apply the scenario to a known month without sales", () => {
     const model = presentProduct({ ...productCommand, monthlySalesVolume: 0 });

@@ -126,6 +126,8 @@ describe("ReportDetail", () => {
     expect(
       screen.getByRole("slider", { name: "Desconto simulado" }),
     ).toBeEnabled();
-    expect(screen.getByText("Vendas necessárias com este desconto")).toBeVisible();
+    expect(
+      screen.getByText("Vendas necessárias com este desconto"),
+    ).toBeVisible();
   });
 });

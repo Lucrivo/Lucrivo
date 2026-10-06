@@ -10,8 +10,16 @@ const FALLBACK_MONTHLY_PRICE_LABEL = "R$ 49,90";
 
 // Placeholder destinations until the final profile URLs are provided.
 const SOCIAL_LINKS = [
-  { id: "instagram", label: "Instagram", href: "https://www.instagram.com/somoslucrivo?stkn=aTR0NGp6M2tjbHM0" },
-  { id: "youtube", label: "YouTube", href: "https://www.youtube.com/@somoslucrivo" },
+  {
+    id: "instagram",
+    label: "Instagram",
+    href: "https://www.instagram.com/somoslucrivo?stkn=aTR0NGp6M2tjbHM0",
+  },
+  {
+    id: "youtube",
+    label: "YouTube",
+    href: "https://www.youtube.com/@somoslucrivo",
+  },
 ] as const;
 
 type SocialLinkId = (typeof SOCIAL_LINKS)[number]["id"];
