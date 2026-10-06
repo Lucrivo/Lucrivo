@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 import type { ReportSectionViewModel } from "../presenters/to-report-view-model";
+import { ReportDetailList } from "./report-detail-list";
 import { tonePresentation } from "./report-tone";
 
 function ReportSectionCard({ section }: { section: ReportSectionViewModel }) {
@@ -42,6 +43,9 @@ function ReportSectionCard({ section }: { section: ReportSectionViewModel }) {
               {section.emphasisValue}
             </dd>
           </dl>
+        ) : null}
+        {section.details ? (
+          <ReportDetailList details={section.details} />
         ) : null}
       </CardContent>
     </Card>

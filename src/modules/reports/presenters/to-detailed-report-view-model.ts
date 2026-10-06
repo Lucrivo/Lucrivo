@@ -91,6 +91,7 @@ type DetailedReportViewModel = {
   };
   executiveSummary: ReportExecutiveSummaryViewModel;
   indicators: ReportIndicatorViewModel[];
+  minimumPriceSection: ReportSectionViewModel | null;
   sections: ReportSectionViewModel[];
   comparison: DetailedComparisonEntryViewModel[];
   items: DetailedItemViewModel[];
@@ -239,7 +240,7 @@ function toDetailedIndicators(
       : totalVolume >= salesGoal.monthly
         ? "positive"
         : "critical";
-  const salesSupporting = salesGoal.available
+  const persistedSalesSupporting = salesGoal.available
     ? [
         totalVolume === null
           ? "Referência de equilíbrio"
@@ -256,6 +257,47 @@ function toDetailedIndicators(
         .filter((part): part is string => Boolean(part))
         .join(" · ")
     : salesGoal.reason;
+  const weeklyGoal = salesGoal.available
+    ? (salesGoal.weekly ?? consolidated?.weeklyGoal ?? null)
+    : null;
+  const dailyGoal = salesGoal.available
+    ? (salesGoal.daily ?? consolidated?.dailyGoal ?? null)
+    : null;
+  const requiredPace =
+    weeklyGoal !== null && dailyGoal !== null
+      ? `${formatIntegerVolume(weeklyGoal)} por semana ou ${formatIntegerVolume(dailyGoal)} por dia`
+      : undefined;
+  const currentSalesSupporting = salesGoal.available
+    ? totalVolume === null
+      ? [
+          "Referência de equilíbrio para este item vendido sozinho.",
+          requiredPace ? `Ritmo médio necessário: ${requiredPace}.` : undefined,
+        ]
+          .filter((part): part is string => Boolean(part))
+          .join(" ")
+      : snapshot.inputs.items.length > 1
+        ? "Quantidade total necessária para que as vendas cubram os gastos do mês, mantendo a proporção informada entre os itens."
+        : "Quantidade necessária para que as vendas cubram os gastos do mês."
+    : salesGoal.reason;
+  const completeSalesDetails: ReportIndicatorDetail[] =
+    salesGoal.available && totalVolume !== null
+      ? [
+          {
+            id: "reported-volume",
+            label: "Quantidade informada",
+            value: `${formatIntegerVolume(totalVolume)} unidades no mês`,
+          },
+          ...(requiredPace
+            ? [
+                {
+                  id: "required-pace",
+                  label: "Ritmo médio necessário",
+                  value: requiredPace,
+                },
+              ]
+            : []),
+        ]
+      : [];
 
   const breakEvenRevenueCents =
     results.breakEvenRevenueCents ??
@@ -299,6 +341,10 @@ function toDetailedIndicators(
     results.monthlyGrossRevenueCents === null
       ? reason
       : `Custos do mês: ${optionalCurrency(results.monthlyCostCents)}.`;
+  const breakEvenExplanation =
+    "É quanto precisa entrar em vendas no mês para pagar os custos dos itens e os gastos mensais considerados.";
+  const revenueExplanation =
+    "É o faturamento estimado usando os preços e as quantidades informadas.";
 
   const drafts: Array<Omit<ReportIndicatorViewModel, "toneLabel">> = [
     {
@@ -313,12 +359,16 @@ function toDetailedIndicators(
       supportingText:
         !salesGoal.available && partialMix && currentContent
           ? "Faltam quantidades para definir a proporção do conjunto."
-          : salesSupporting,
+          : currentContent
+            ? currentSalesSupporting
+            : persistedSalesSupporting,
       help: salesHelp,
       featured: true,
       unavailable: !salesGoal.available,
       ...(partialMix && isolatedReferences.length > 0
         ? { details: isolatedReferences }
+        : completeSalesDetails.length > 0 && currentContent
+          ? { details: completeSalesDetails }
         : {}),
     },
     {
@@ -329,7 +379,17 @@ function toDetailedIndicators(
       supportingText:
         breakEvenRevenueCents === null && partialMix && currentContent
           ? "O faturamento de equilíbrio do conjunto depende da proporção entre os itens."
-          : breakEvenSupporting,
+          : currentContent && breakEvenRevenueCents !== null
+            ? breakEvenExplanation
+            : breakEvenSupporting,
+      ...(currentContent
+        ? {
+            description:
+              breakEvenRevenueCents === null
+                ? breakEvenExplanation
+                : breakEvenSupporting,
+          }
+        : {}),
       help: breakEvenHelp,
       unavailable: breakEvenRevenueCents === null,
     },
@@ -356,7 +416,17 @@ function toDetailedIndicators(
           ? partialMix
             ? "Informe todas as quantidades para somar quanto entra no mês."
             : "Informe a quantidade mensal para calcular quanto entra no mês."
-          : revenueSupporting,
+          : currentContent
+            ? revenueExplanation
+            : revenueSupporting,
+      ...(currentContent
+        ? {
+            description:
+              results.monthlyGrossRevenueCents === null
+                ? revenueExplanation
+                : revenueSupporting,
+          }
+        : {}),
       unavailable: results.monthlyGrossRevenueCents === null,
     },
   ];
@@ -502,6 +572,38 @@ function toDetailedReportViewModel({
       ];
     },
   );
+  const minimumPriceTone: ReportTone = snapshot.results.items.some(
+    (item) => item.directLoss,
+  )
+    ? "critical"
+    : "neutral";
+  const minimumPriceSection: ReportSectionViewModel | null =
+    snapshot.contentVersion === DETAILED_REPORT_CONTENT_VERSION
+      ? {
+          key: "break_even",
+          title: "Menores preços para não ficar no prejuízo",
+          body: snapshot.results.isPartial
+            ? "Cada valor mostra o menor preço de venda para pagar o custo do item, as cobranças da venda e os gastos mensais considerados. Quando falta a quantidade, a referência considera o item vendido sozinho."
+            : "Cada valor mostra o menor preço de venda para pagar o custo do item, as cobranças da venda e sua parte dos gastos do mês.",
+          emphasisLabel: null,
+          emphasisValue: null,
+          tone: minimumPriceTone,
+          toneLabel: language.toneLabels[minimumPriceTone],
+          details: items.map((item) => ({
+            id: item.id,
+            label: item.name,
+            value: item.breakEvenLabel,
+            ...(scenario.byItem.has(item.id)
+              ? {
+                  supportingText:
+                    "Referência considerando este item vendido sozinho.",
+                }
+              : item.breakEvenUnavailableReason
+                ? { supportingText: item.breakEvenUnavailableReason }
+                : {}),
+          })),
+        }
+      : null;
 
   const comparison = snapshot.results.items
     .flatMap<DetailedComparisonEntryViewModel>((result) => {
@@ -552,6 +654,7 @@ function toDetailedReportViewModel({
       answers: toDetailedSummaryAnswers(snapshot),
     },
     indicators,
+    minimumPriceSection,
     sections: snapshot.sections
       .filter(({ key }) => key !== "hidden_cost")
       .map((section) => ({

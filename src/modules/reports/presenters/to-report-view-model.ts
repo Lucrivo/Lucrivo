@@ -47,6 +47,7 @@ type ReportIndicatorDetail = {
   id: string;
   label: string;
   value: string;
+  supportingText?: string;
 };
 
 type ReportIndicatorViewModel = {
@@ -84,6 +85,7 @@ type ReportExecutiveSummaryViewModel = Omit<
 
 type ReportSectionViewModel = QuickReportSnapshot["sections"][number] & {
   toneLabel: string;
+  details?: ReportIndicatorDetail[];
 };
 
 /** Data the simulator needs to show how many sales a discount requires. */

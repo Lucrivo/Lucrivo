@@ -153,7 +153,7 @@ describe("DetailedReportDetail", () => {
     expect(comparison).not.toHaveTextContent(/lucro por unidade/i);
   });
 
-  it("does not repeat persisted calculation sections for current reports", () => {
+  it("shows structured minimum prices without restoring the repeated sales section", () => {
     render(
       <DetailedReportDetail
         id={168}
@@ -162,13 +162,23 @@ describe("DetailedReportDetail", () => {
       />,
     );
 
-    const persistedSections = screen
+    const currentSections = screen
       .queryAllByTestId("report-section")
       .filter(
         (section) =>
           within(section).queryByTestId("discount-simulator") === null,
       );
-    expect(persistedSections).toHaveLength(0);
+    expect(currentSections).toHaveLength(1);
+    expect(
+      within(currentSections[0]!).getByRole("heading", {
+        name: "Menores preços para não ficar no prejuízo",
+      }),
+    ).toBeVisible();
+    expect(within(currentSections[0]!).getByText("Caneca")).toBeVisible();
+    expect(within(currentSections[0]!).getByText("R$ 32,00")).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { name: "Quanto você precisa vender" }),
+    ).not.toBeInTheDocument();
   });
 
   it("preserves legacy narrative once outside the indicators", () => {

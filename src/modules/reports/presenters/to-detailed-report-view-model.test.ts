@@ -66,6 +66,81 @@ describe("toDetailedReportViewModel", () => {
       contextLabel: "no mês",
       statusLabel: "Resultado estimado do item",
     });
+    expect(model.minimumPriceSection).toMatchObject({
+      title: "Menores preços para não ficar no prejuízo",
+      details: [
+        {
+          id: baseCommand.items[0]!.id,
+          label: "Caneca",
+          value: "R$ 27,00",
+        },
+      ],
+    });
+  });
+
+  it("explains a complete mix goal with separate current and required rhythms", () => {
+    const model = present({
+      ...baseCommand,
+      items: [
+        baseCommand.items[0]!,
+        {
+          ...baseCommand.items[0]!,
+          id: "22222222-2222-4222-8222-222222222222",
+          position: 1,
+          name: "Copo",
+        },
+      ],
+    });
+    const sales = model.indicators.find(({ key }) => key === "sales");
+
+    expect(sales).toMatchObject({
+      value: "4 unidades",
+      supportingText:
+        "Quantidade total necessária para que as vendas cubram os gastos do mês, mantendo a proporção informada entre os itens.",
+      details: [
+        {
+          id: "reported-volume",
+          label: "Quantidade informada",
+          value: "40 unidades no mês",
+        },
+        {
+          id: "required-pace",
+          label: "Ritmo médio necessário",
+          value: "1 por semana ou 1 por dia",
+        },
+      ],
+    });
+    expect(model.minimumPriceSection?.details).toEqual([
+      {
+        id: baseCommand.items[0]!.id,
+        label: "Caneca",
+        value: "R$ 24,50",
+      },
+      {
+        id: "22222222-2222-4222-8222-222222222222",
+        label: "Copo",
+        value: "R$ 24,50",
+      },
+    ]);
+  });
+
+  it("explains break-even and revenue without repeating margin help", () => {
+    const model = present();
+    const byKey = new Map(
+      model.indicators.map((indicator) => [indicator.key, indicator]),
+    );
+
+    expect(byKey.get("break_even")).toMatchObject({
+      supportingText:
+        "É quanto precisa entrar em vendas no mês para pagar os custos dos itens e os gastos mensais considerados.",
+      description: expect.stringMatching(/Você fatura/),
+    });
+    expect(byKey.get("revenue")).toMatchObject({
+      supportingText:
+        "É o faturamento estimado usando os preços e as quantidades informadas.",
+      description: "Custos do mês: R$ 540,00.",
+    });
+    expect(byKey.get("margin")?.description).toBeUndefined();
   });
 
   it("uses the break-even reference when the item volume is unknown", () => {
@@ -148,6 +223,20 @@ describe("toDetailedReportViewModel", () => {
     expect(model.items.every((item) => item.breakEvenReferenceLabel)).toBe(
       true,
     );
+    expect(model.minimumPriceSection?.details).toMatchObject([
+      {
+        id: baseCommand.items[0]!.id,
+        label: "Caneca",
+        supportingText:
+          "Referência considerando este item vendido sozinho.",
+      },
+      {
+        id: "22222222-2222-4222-8222-222222222222",
+        label: "Copo",
+        supportingText:
+          "Referência considerando este item vendido sozinho.",
+      },
+    ]);
   });
 
   it("uses a specific explanation for each unavailable consolidated value", () => {
@@ -177,9 +266,13 @@ describe("toDetailedReportViewModel", () => {
     expect(byKey.get("revenue")?.supportingText).toBe(
       "Informe todas as quantidades para somar quanto entra no mês.",
     );
-    expect(
-      model.indicators.every(({ description }) => description === undefined),
-    ).toBe(true);
+    expect(byKey.get("break_even")?.description).toBe(
+      "É quanto precisa entrar em vendas no mês para pagar os custos dos itens e os gastos mensais considerados.",
+    );
+    expect(byKey.get("revenue")?.description).toBe(
+      "É o faturamento estimado usando os preços e as quantidades informadas.",
+    );
+    expect(byKey.get("margin")?.description).toBeUndefined();
   });
 
   it("keeps the persisted narrative on older detailed content versions", () => {
@@ -211,6 +304,7 @@ describe("toDetailedReportViewModel", () => {
         ({ description }) => description === undefined,
       ),
     ).toBe(true);
+    expect(historical.minimumPriceSection).toBeNull();
   });
 
   it("uses help descriptions that explain the value in everyday language", () => {

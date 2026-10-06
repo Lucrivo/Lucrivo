@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 import type { ReportIndicatorViewModel } from "../presenters/to-report-view-model";
+import { ReportDetailList } from "./report-detail-list";
 import { tonePresentation } from "./report-tone";
 
 function ReportIndicatorCard({
@@ -15,21 +16,6 @@ function ReportIndicatorCard({
 }) {
   const presentation = tonePresentation[indicator.tone];
   const ToneIcon = presentation.icon;
-  const details = indicator.details?.length ? (
-    <dl className="border-border/70 divide-border bg-background/70 grid divide-y rounded-xl border px-4">
-      {indicator.details.map((detail) => (
-        <div
-          key={detail.id}
-          className="grid min-w-0 gap-1 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-baseline sm:gap-4"
-        >
-          <dt className="font-medium break-words">{detail.label}</dt>
-          <dd className="text-muted-foreground break-words sm:text-right">
-            {detail.value}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  ) : null;
 
   return (
     <Card
@@ -82,7 +68,9 @@ function ReportIndicatorCard({
             {indicator.description}
           </p>
         ) : null}
-        {details}
+        {indicator.details ? (
+          <ReportDetailList details={indicator.details} />
+        ) : null}
       </CardContent>
     </Card>
   );

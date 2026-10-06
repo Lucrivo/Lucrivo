@@ -122,6 +122,9 @@ function DetailedReportDetail({
           </p>
         </div>
         <ReportIndicators indicators={viewModel.indicators} />
+        {viewModel.minimumPriceSection ? (
+          <ReportSectionCard section={viewModel.minimumPriceSection} />
+        ) : null}
       </section>
 
       {legacyDetails}
