@@ -27,7 +27,7 @@ const tonePresentation = {
     badge: "warning" as const,
     border: "border-warning/35",
     surface: "bg-warning/5",
-    value: "text-warning-foreground",
+    value: "text-warning-foreground dark:text-warning",
   },
   critical: {
     icon: OctagonAlertIcon,

@@ -40,7 +40,7 @@ function ReportPreview({
           </Badge>
         </div>
         {invalid ? (
-          <p className="text-warning-foreground flex gap-2 text-sm leading-5">
+          <p className="text-warning-foreground dark:text-warning flex gap-2 text-sm leading-5">
             <AlertCircleIcon aria-hidden="true" className="mt-0.5 size-4" />
             Revise os campos destacados para atualizar esta simulação.
           </p>

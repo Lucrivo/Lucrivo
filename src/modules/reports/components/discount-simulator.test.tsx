@@ -74,6 +74,9 @@ describe("DiscountSimulator", () => {
     expect(screen.getByTestId("discount-safety")).toHaveTextContent(
       "sem gerar lucro nem prejuízo",
     );
+    expect(screen.getByTestId("discount-safety")).toHaveClass(
+      "dark:text-warning",
+    );
     fireEvent.change(slider, { target: { value: "50" } });
     expect(screen.getByTestId("discount-safety")).toHaveTextContent(
       "Prejuízo estimado",

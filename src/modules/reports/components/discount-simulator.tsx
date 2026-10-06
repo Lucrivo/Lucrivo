@@ -49,7 +49,8 @@ const statusPresentation = {
   },
   break_even: {
     icon: TriangleAlertIcon,
-    className: "border-warning/35 bg-warning/12 text-warning-foreground",
+    className:
+      "border-warning/35 bg-warning/12 text-warning-foreground dark:text-warning",
   },
   loss: {
     icon: OctagonAlertIcon,

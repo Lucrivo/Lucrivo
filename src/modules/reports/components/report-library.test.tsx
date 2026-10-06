@@ -135,7 +135,9 @@ describe("ReportListCard", () => {
     expect(within(card).getByText("Revenda")).toBeInTheDocument();
     const verdict = within(card).getByText("Equilíbrio como referência");
     expect(verdict).toBeInTheDocument();
-    expect(verdict.closest('[data-slot="badge"]')).toHaveClass("text-info");
+    expect(verdict.closest('[data-slot="badge"]')).toHaveClass(
+      "text-foreground",
+    );
     expect(within(card).getByText("Resultado por unidade")).toBeInTheDocument();
     expect(within(card).queryByText("Lucro por venda")).not.toBeInTheDocument();
   });
@@ -153,7 +155,7 @@ describe("ReportListCard", () => {
 
     const verdict = screen.getByText("Prejuízo por venda");
     expect(verdict.closest('[data-slot="badge"]')).toHaveClass(
-      "text-destructive",
+      "text-foreground",
     );
   });
 

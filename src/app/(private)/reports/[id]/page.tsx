@@ -24,7 +24,7 @@ function UnavailableReport() {
     <main className="mx-auto flex w-full max-w-2xl flex-1 items-center py-10">
       <Card className="border-warning/30 bg-warning/5 w-full shadow-md">
         <CardHeader className="items-center gap-4 text-center">
-          <span className="bg-warning/15 text-warning-foreground flex size-12 items-center justify-center rounded-2xl">
+          <span className="bg-warning/15 text-warning-foreground dark:text-warning flex size-12 items-center justify-center rounded-2xl">
             <FileWarningIcon aria-hidden="true" />
           </span>
           <div className="grid gap-2">

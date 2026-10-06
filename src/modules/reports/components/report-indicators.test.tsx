@@ -122,6 +122,24 @@ describe("ReportIndicators", () => {
     expect(screen.getByText("4 unidades se vendido sozinho")).toBeVisible();
   });
 
+  it("keeps warning values readable in dark mode", () => {
+    render(
+      <ReportIndicators
+        indicators={[
+          {
+            key: "discount",
+            label: "Desconto máximo sem prejuízo",
+            value: "0%",
+            tone: "warning",
+            toneLabel: "Atenção",
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("0%")).toHaveClass("dark:text-warning");
+  });
+
   it("shows why a complete value is unavailable and opens help by keyboard", async () => {
     const user = userEvent.setup();
     render(
