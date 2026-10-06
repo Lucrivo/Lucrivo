@@ -108,9 +108,49 @@ describe("toDetailedReportViewModel", () => {
     });
     expect(sales?.supportingText).toMatch(/Referência de equilíbrio/);
     expect(sales?.supportingText).toMatch(/por semana/);
+    expect(sales?.details).toBeUndefined();
   });
 
-  it("keeps the combined goal unavailable without an observed item mix", () => {
+  it("shows every isolated reference without inventing one mix goal", () => {
+    const model = present({
+      ...baseCommand,
+      items: [
+        { ...baseCommand.items[0]!, monthlySalesVolume: null },
+        {
+          ...baseCommand.items[0]!,
+          id: "22222222-2222-4222-8222-222222222222",
+          position: 1,
+          name: "Copo",
+          monthlySalesVolume: null,
+        },
+      ],
+    });
+    const sales = model.indicators.find(({ key }) => key === "sales");
+
+    expect(sales).toMatchObject({
+      value: "Sem meta única",
+      unavailable: true,
+      supportingText:
+        "Faltam quantidades para definir a proporção do conjunto.",
+      details: [
+        {
+          id: baseCommand.items[0]!.id,
+          label: "Caneca",
+          value: "4 unidades se vendido sozinho",
+        },
+        {
+          id: "22222222-2222-4222-8222-222222222222",
+          label: "Copo",
+          value: "4 unidades se vendido sozinho",
+        },
+      ],
+    });
+    expect(model.items.every((item) => item.breakEvenReferenceLabel)).toBe(
+      true,
+    );
+  });
+
+  it("uses a specific explanation for each unavailable consolidated value", () => {
     const model = present({
       ...baseCommand,
       items: [
@@ -124,18 +164,22 @@ describe("toDetailedReportViewModel", () => {
         },
       ],
     });
-    const sales = model.indicators.find(({ key }) => key === "sales");
-
-    expect(sales).toMatchObject({
-      key: "sales",
-      label: "Unidades necessárias no mês",
-      value: "Indisponível",
-      supportingText:
-        "Para calcular uma quantidade única, informe as vendas mensais de todos os itens.",
-    });
-    expect(model.items[0]?.breakEvenReferenceLabel).toMatch(
-      /vendendo só este item/,
+    const byKey = new Map(
+      model.indicators.map((indicator) => [indicator.key, indicator]),
     );
+
+    expect(byKey.get("break_even")?.supportingText).toBe(
+      "O faturamento de equilíbrio do conjunto depende da proporção entre os itens.",
+    );
+    expect(byKey.get("margin")?.supportingText).toBe(
+      "Informe todas as quantidades para calcular quanto sobra no conjunto.",
+    );
+    expect(byKey.get("revenue")?.supportingText).toBe(
+      "Informe todas as quantidades para somar quanto entra no mês.",
+    );
+    expect(
+      model.indicators.every(({ description }) => description === undefined),
+    ).toBe(true);
   });
 
   it("keeps the persisted narrative on older detailed content versions", () => {
@@ -157,6 +201,16 @@ describe("toDetailedReportViewModel", () => {
     expect(historical.items[0]?.fixedAllocationLabel).toBe(
       "Ainda não calculado",
     );
+    expect(historical.sections.map(({ key }) => key)).toEqual([
+      "break_even",
+      "margin_diagnosis",
+      "sales_goal",
+    ]);
+    expect(
+      historical.indicators.every(
+        ({ description }) => description === undefined,
+      ),
+    ).toBe(true);
   });
 
   it("uses help descriptions that explain the value in everyday language", () => {

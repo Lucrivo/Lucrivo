@@ -43,6 +43,12 @@ type ReportIndicatorKey =
   | "revenue"
   | "break_even";
 
+type ReportIndicatorDetail = {
+  id: string;
+  label: string;
+  value: string;
+};
+
 type ReportIndicatorViewModel = {
   key: ReportIndicatorKey;
   label: string;
@@ -53,6 +59,8 @@ type ReportIndicatorViewModel = {
   supportingText?: string;
   help?: PlainLanguageHelpContent;
   featured?: boolean;
+  unavailable?: boolean;
+  details?: ReportIndicatorDetail[];
 };
 
 type ReportExecutiveSummaryAnswerViewModel = ExecutiveSummaryAnswer & {
@@ -137,7 +145,7 @@ const discountHelp = {
   triggerLabel: "Entenda esse valor",
   title: "Desconto máximo sem prejuízo",
   description:
-    "É o maior desconto que ainda deixa o preço acima do preço de equilíbrio. Use o simulador para testar outros valores.",
+    "É o maior desconto que ainda deixa o preço acima do preço de equilíbrio. É um limite calculado, não uma recomendação de desconto. Use o simulador para testar outros valores.",
 } as const satisfies PlainLanguageHelpContent;
 
 const digitalCostHelp = {
@@ -388,6 +396,7 @@ function toServiceIndicators(snapshot: ServiceReportSnapshot): IndicatorDraft[] 
       description: sectionBody(snapshot, "break_even"),
       supportingText: comparison?.text ?? unavailableReason,
       help: minimumPriceHelp,
+      unavailable: results.minimumPriceCents === null,
     },
     {
       key: "sales",
@@ -405,6 +414,7 @@ function toServiceIndicators(snapshot: ServiceReportSnapshot): IndicatorDraft[] 
           : periodGoalText(results.weeklySalesGoal, results.dailySalesGoal),
       help: salesGoalHelp,
       featured: true,
+      unavailable: results.monthlySalesGoal === null,
     },
     {
       key: "margin",
@@ -421,6 +431,7 @@ function toServiceIndicators(snapshot: ServiceReportSnapshot): IndicatorDraft[] 
               ? `Prejuízo de ${formatCurrency(Math.abs(results.unitProfitCents))} por ${singular}.`
               : `Sem lucro nem prejuízo por ${singular}.`,
       help: marginHelp,
+      unavailable: results.realMarginBasisPoints === null,
     },
     {
       key: "discount",
@@ -433,6 +444,7 @@ function toServiceIndicators(snapshot: ServiceReportSnapshot): IndicatorDraft[] 
       description: sectionBody(snapshot, "discount_simulator"),
       supportingText: "Teste outros valores no simulador abaixo.",
       help: discountHelp,
+      unavailable: results.breakEvenDiscountPercent === null,
     },
   ];
 }
@@ -543,6 +555,7 @@ function toUnitIndicators(
             ? "Informe uma quantidade maior que zero para dividir os gastos do mês."
             : undefined)),
       help: minimumPriceHelp,
+      unavailable: minimumPriceCents === null,
     },
     {
       key: "sales",
@@ -554,6 +567,7 @@ function toUnitIndicators(
       supportingText: salesSupporting,
       help: salesGoalHelp,
       featured: true,
+      unavailable: goal === null,
     },
     {
       key: "margin",
@@ -563,6 +577,7 @@ function toUnitIndicators(
       description: sectionBody(snapshot, "margin_diagnosis"),
       supportingText: marginSupporting,
       help: marginHelp,
+      unavailable: results.realMarginBasisPoints === null && scenario === null,
     },
     {
       key: "discount",
@@ -572,6 +587,7 @@ function toUnitIndicators(
       description: sectionBody(snapshot, "discount_simulator"),
       supportingText: "Teste outros valores no simulador abaixo.",
       help: discountHelp,
+      unavailable: discountPercent === null,
     },
   ];
 }
@@ -681,6 +697,7 @@ export {
   type ReportDiscountBreakEvenReference,
   type ReportDiscountSimulationContext,
   type ReportExecutiveSummaryViewModel,
+  type ReportIndicatorDetail,
   type ReportIndicatorKey,
   type ReportIndicatorViewModel,
   type ReportSectionViewModel,

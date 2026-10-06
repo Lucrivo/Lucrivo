@@ -26,6 +26,7 @@ import {
 import { toComfortableReportAnswers } from "./to-comfortable-report-answers";
 import type {
   ReportExecutiveSummaryViewModel,
+  ReportIndicatorDetail,
   ReportIndicatorViewModel,
   ReportSectionViewModel,
 } from "./to-report-view-model";
@@ -192,13 +193,6 @@ function resultTone(result: number | null): ReportTone {
   return "warning";
 }
 
-function sectionBody(
-  snapshot: CurrentDetailedReportSnapshot,
-  key: CurrentDetailedReportSnapshot["sections"][number]["key"],
-): string | undefined {
-  return snapshot.sections.find((section) => section.key === key)?.body;
-}
-
 function toDetailedIndicators(
   snapshot: CurrentDetailedReportSnapshot,
   scenario: DetailedBreakEvenScenario,
@@ -218,6 +212,23 @@ function toDetailedIndicators(
         0,
       );
   const consolidated = scenario.consolidated;
+  const currentContent =
+    snapshot.contentVersion === DETAILED_REPORT_CONTENT_VERSION;
+  const isolatedReferences: ReportIndicatorDetail[] = currentContent
+    ? snapshot.inputs.items.flatMap((item) => {
+        const reference = scenario.byItem.get(item.id);
+        return reference
+          ? [
+              {
+                id: item.id,
+                label: item.name,
+                value: `${formatIntegerVolume(reference.referenceVolume)} unidades se vendido sozinho`,
+              },
+            ]
+          : [];
+      })
+    : [];
+  const partialMix = results.isPartial && snapshot.inputs.items.length > 1;
 
   const salesTone: ReportTone = !salesGoal.available
     ? results.isPartial
@@ -274,6 +285,20 @@ function toDetailedIndicators(
         : results.monthlyResultCents < 0
           ? `Prejuízo de ${formatCurrency(Math.abs(results.monthlyResultCents))} no mês.`
           : "Sem lucro nem prejuízo no mês.";
+  const breakEvenSupporting =
+    breakEvenRevenueCents === null
+      ? reason
+      : results.monthlyGrossRevenueCents === null
+        ? consolidated
+          ? "Referência de equilíbrio no preço atual."
+          : undefined
+        : results.monthlyGrossRevenueCents >= breakEvenRevenueCents
+          ? `Você fatura ${formatCurrency(results.monthlyGrossRevenueCents - breakEvenRevenueCents)} acima desse ponto.`
+          : `Faltam ${formatCurrency(breakEvenRevenueCents - results.monthlyGrossRevenueCents)} para chegar a esse ponto.`;
+  const revenueSupporting =
+    results.monthlyGrossRevenueCents === null
+      ? reason
+      : `Custos do mês: ${optionalCurrency(results.monthlyCostCents)}.`;
 
   const drafts: Array<Omit<ReportIndicatorViewModel, "toneLabel">> = [
     {
@@ -281,39 +306,45 @@ function toDetailedIndicators(
       label: "Unidades necessárias no mês",
       value: salesGoal.available
         ? `${formatIntegerVolume(salesGoal.monthly)} unidades`
-        : "Indisponível",
+        : partialMix && currentContent
+          ? "Sem meta única"
+          : "Indisponível",
       tone: salesTone,
-      description: sectionBody(snapshot, "sales_goal"),
-      supportingText: salesSupporting,
+      supportingText:
+        !salesGoal.available && partialMix && currentContent
+          ? "Faltam quantidades para definir a proporção do conjunto."
+          : salesSupporting,
       help: salesHelp,
       featured: true,
+      unavailable: !salesGoal.available,
+      ...(partialMix && isolatedReferences.length > 0
+        ? { details: isolatedReferences }
+        : {}),
     },
     {
       key: "break_even",
       label: "Faturamento para cobrir os gastos",
       value: optionalCurrency(breakEvenRevenueCents),
       tone: breakEvenTone,
-      description: sectionBody(snapshot, "break_even"),
       supportingText:
-        breakEvenRevenueCents === null
-          ? reason
-          : results.monthlyGrossRevenueCents === null
-            ? consolidated
-              ? "Referência de equilíbrio no preço atual."
-              : undefined
-            : results.monthlyGrossRevenueCents >= breakEvenRevenueCents
-              ? `Você fatura ${formatCurrency(results.monthlyGrossRevenueCents - breakEvenRevenueCents)} acima desse ponto.`
-              : `Faltam ${formatCurrency(breakEvenRevenueCents - results.monthlyGrossRevenueCents)} para chegar a esse ponto.`,
+        breakEvenRevenueCents === null && partialMix && currentContent
+          ? "O faturamento de equilíbrio do conjunto depende da proporção entre os itens."
+          : breakEvenSupporting,
       help: breakEvenHelp,
+      unavailable: breakEvenRevenueCents === null,
     },
     {
       key: "margin",
       label: "Margem de lucro",
       value: marginValue,
       tone: consolidated ? "neutral" : resultTone(results.monthlyResultCents),
-      description: sectionBody(snapshot, "margin_diagnosis"),
-      supportingText: marginSupporting,
+      supportingText:
+        results.monthlyResultCents === null && !consolidated && currentContent
+          ? "Informe todas as quantidades para calcular quanto sobra no conjunto."
+          : marginSupporting,
       help: marginHelp,
+      unavailable:
+        results.finalMarginBasisPoints === null && consolidated === null,
     },
     {
       key: "revenue",
@@ -321,9 +352,12 @@ function toDetailedIndicators(
       value: optionalCurrency(results.monthlyGrossRevenueCents),
       tone: "neutral",
       supportingText:
-        results.monthlyGrossRevenueCents === null
-          ? reason
-          : `Custos do mês: ${optionalCurrency(results.monthlyCostCents)}.`,
+        results.monthlyGrossRevenueCents === null && currentContent
+          ? partialMix
+            ? "Informe todas as quantidades para somar quanto entra no mês."
+            : "Informe a quantidade mensal para calcular quanto entra no mês."
+          : revenueSupporting,
+      unavailable: results.monthlyGrossRevenueCents === null,
     },
   ];
 
