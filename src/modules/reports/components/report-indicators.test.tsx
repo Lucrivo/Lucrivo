@@ -65,6 +65,61 @@ describe("ReportIndicators", () => {
       within(featured!).getByText("17 por semana e 3 por dia."),
     ).toBeVisible();
     expect(grid.textContent).not.toMatch(/meta|preço-alvo/i);
+    expect(grid).toHaveAttribute("data-layout", "featured-with-four");
+    expect(
+      Array.from(grid.querySelectorAll("[data-testid=report-indicator]"))
+        .slice(1)
+        .every((card) => card.classList.contains("xl:col-span-4")),
+    ).toBe(true);
+  });
+
+  it("balances a featured indicator with three regular indicators", () => {
+    render(
+      <ReportIndicators
+        indicators={indicators.filter(({ key }) => key !== "price")}
+      />,
+    );
+
+    const cards = screen.getAllByTestId("report-indicator");
+    expect(screen.getByTestId("report-indicators")).toHaveAttribute(
+      "data-layout",
+      "featured-with-three",
+    );
+    expect(cards[0]).toHaveClass("xl:col-span-8");
+    expect(cards[1]).toHaveClass("xl:col-span-4");
+    expect(cards[2]).toHaveClass("xl:col-span-6");
+    expect(cards[3]).toHaveClass("xl:col-span-6");
+  });
+
+  it("renders unavailable values below calculated values in the hierarchy", () => {
+    render(
+      <ReportIndicators
+        indicators={[
+          {
+            key: "sales",
+            label: "Unidades necessárias no mês",
+            value: "Sem meta única",
+            tone: "neutral",
+            toneLabel: "Informação",
+            unavailable: true,
+            details: [
+              {
+                id: "caneca",
+                label: "Caneca",
+                value: "4 unidades se vendido sozinho",
+              },
+            ],
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Sem meta única")).toHaveAttribute(
+      "data-value-state",
+      "unavailable",
+    );
+    expect(screen.getByText("Caneca")).toBeVisible();
+    expect(screen.getByText("4 unidades se vendido sozinho")).toBeVisible();
   });
 
   it("shows why a complete value is unavailable and opens help by keyboard", async () => {

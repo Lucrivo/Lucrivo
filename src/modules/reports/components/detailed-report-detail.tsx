@@ -8,15 +8,16 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import { toDetailedReportViewModel } from "../presenters/to-detailed-report-view-model";
-import type { CurrentDetailedReportSnapshot } from "../types";
+import {
+  DETAILED_REPORT_CONTENT_VERSION,
+  type CurrentDetailedReportSnapshot,
+} from "../types";
 import { DetailedGuidanceList } from "./detailed-guidance-list";
 import { DetailedItemBreakdown } from "./detailed-item-breakdown";
 import { DetailedItemCard } from "./detailed-item-card";
 import { ReportExecutiveSummary } from "./report-executive-summary";
 import { ReportIndicators } from "./report-indicators";
 import { ReportSectionCard } from "./report-section-card";
-
-const detailedSectionKeys = new Set(["break_even", "sales_goal"]);
 
 function DetailedReportDetail({
   id,
@@ -30,6 +31,27 @@ function DetailedReportDetail({
   management?: ReactNode;
 }) {
   const viewModel = toDetailedReportViewModel({ id, createdAt, snapshot });
+  const legacySections =
+    snapshot.contentVersion === DETAILED_REPORT_CONTENT_VERSION
+      ? []
+      : viewModel.sections;
+  const legacyDetails =
+    legacySections.length > 0 ? (
+      <section aria-labelledby="legacy-calculation-title" className="grid gap-4">
+        <div className="grid gap-2 px-1">
+          <h2 id="legacy-calculation-title" className="text-2xl">
+            Detalhes preservados deste relatório
+          </h2>
+          <p className="text-muted-foreground max-w-3xl text-sm leading-6">
+            Estes textos foram gravados com as regras vigentes quando o
+            relatório foi criado.
+          </p>
+        </div>
+        {legacySections.map((section) => (
+          <ReportSectionCard key={section.key} section={section} />
+        ))}
+      </section>
+    ) : null;
 
   return (
     <main className="mx-auto grid w-full max-w-7xl min-w-0 gap-7 pb-10">
@@ -100,12 +122,9 @@ function DetailedReportDetail({
           </p>
         </div>
         <ReportIndicators indicators={viewModel.indicators} />
-        {viewModel.sections
-          .filter((section) => detailedSectionKeys.has(section.key))
-          .map((section) => (
-            <ReportSectionCard key={section.key} section={section} />
-          ))}
       </section>
+
+      {legacyDetails}
 
       <section aria-labelledby="item-details-title" className="grid gap-4">
         <div className="grid gap-2 px-1">

@@ -152,4 +152,46 @@ describe("DetailedReportDetail", () => {
     expect(comparison).toHaveTextContent("Ajuda a pagar os gastos do mês");
     expect(comparison).not.toHaveTextContent(/lucro por unidade/i);
   });
+
+  it("does not repeat persisted calculation sections for current reports", () => {
+    render(
+      <DetailedReportDetail
+        id={168}
+        createdAt="2026-09-17T15:00:00.000Z"
+        snapshot={snapshotFor(productCommand)}
+      />,
+    );
+
+    const persistedSections = screen
+      .queryAllByTestId("report-section")
+      .filter(
+        (section) =>
+          within(section).queryByTestId("discount-simulator") === null,
+      );
+    expect(persistedSections).toHaveLength(0);
+  });
+
+  it("preserves legacy narrative once outside the indicators", () => {
+    const snapshot = snapshotFor(productCommand);
+    render(
+      <DetailedReportDetail
+        id={168}
+        createdAt="2026-09-17T15:00:00.000Z"
+        snapshot={{ ...snapshot, contentVersion: 2 }}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Detalhes preservados deste relatório",
+      }),
+    ).toBeVisible();
+    const persistedSections = screen
+      .getAllByTestId("report-section")
+      .filter(
+        (section) =>
+          within(section).queryByTestId("discount-simulator") === null,
+      );
+    expect(persistedSections).toHaveLength(3);
+  });
 });
