@@ -83,4 +83,99 @@ describe("buildDetailedGuidance", () => {
       guidance.find(({ key }) => key === "best_unit_contribution"),
     ).toMatchObject({ itemIds: [twoItems.items[1].id] });
   });
+
+  it("does not single out the first item when every comparison is tied", () => {
+    const equalItems: DetailedDiagnosisCommand = {
+      ...command,
+      items: [
+        command.items[0]!,
+        {
+          ...command.items[0]!,
+          id: "22222222-2222-4222-8222-222222222222",
+          position: 1,
+          name: "Caderno",
+        },
+      ],
+    };
+
+    const keys = buildDetailedGuidance(
+      equalItems,
+      calculateDetailedDiagnosis(equalItems),
+    ).map(({ key }) => key);
+
+    expect(keys).not.toContain("high_volume_low_margin");
+    expect(keys).not.toContain("best_unit_contribution");
+    expect(keys).not.toContain("concentration");
+  });
+
+  it("lists every highest-volume item with a strictly lower margin", () => {
+    const tiedHighestVolume: DetailedDiagnosisCommand = {
+      ...command,
+      items: [
+        command.items[0]!,
+        {
+          ...command.items[0]!,
+          id: "22222222-2222-4222-8222-222222222222",
+          position: 1,
+          name: "Caderno",
+        },
+        {
+          ...command.items[0]!,
+          id: "33333333-3333-4333-8333-333333333333",
+          position: 2,
+          name: "Garrafa",
+          unitSalePriceCents: 8_000,
+          monthlySalesVolume: 50,
+        },
+      ],
+    };
+
+    const guidance = buildDetailedGuidance(
+      tiedHighestVolume,
+      calculateDetailedDiagnosis(tiedHighestVolume),
+    ).find(({ key }) => key === "high_volume_low_margin");
+
+    expect(guidance).toMatchObject({
+      title: "Os itens mais vendidos deixam menos proporcionalmente",
+      itemIds: [
+        "11111111-1111-4111-8111-111111111111",
+        "22222222-2222-4222-8222-222222222222",
+      ],
+    });
+  });
+
+  it("lists tied best unit results only when another item is strictly lower", () => {
+    const tiedBest: DetailedDiagnosisCommand = {
+      ...command,
+      items: [
+        command.items[0]!,
+        {
+          ...command.items[0]!,
+          id: "22222222-2222-4222-8222-222222222222",
+          position: 1,
+          name: "Caderno",
+        },
+        {
+          ...command.items[0]!,
+          id: "33333333-3333-4333-8333-333333333333",
+          position: 2,
+          name: "Garrafa",
+          unitSalePriceCents: 4_500,
+        },
+      ],
+    };
+
+    const guidance = buildDetailedGuidance(
+      tiedBest,
+      calculateDetailedDiagnosis(tiedBest),
+    ).find(({ key }) => key === "best_unit_contribution");
+
+    expect(guidance).toMatchObject({
+      title: "Estes itens deixam mais depois dos valores considerados",
+      itemIds: [
+        "11111111-1111-4111-8111-111111111111",
+        "22222222-2222-4222-8222-222222222222",
+      ],
+    });
+  });
 });

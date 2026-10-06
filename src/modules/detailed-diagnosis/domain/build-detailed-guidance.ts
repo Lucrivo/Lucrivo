@@ -134,17 +134,16 @@ function concentrationGuidance(
     (sum, item) => sum + BigInt(item.monthlyContributionCents ?? 0),
     BigInt(0),
   );
-  const leading = positiveItems.reduce<DetailedItemCalculation | null>(
-    (best, item) =>
-      best === null ||
-      (item.monthlyContributionCents ?? 0) >
-        (best.monthlyContributionCents ?? 0)
-        ? item
-        : best,
-    null,
+  const highestContribution = Math.max(
+    ...positiveItems.map((item) => item.monthlyContributionCents ?? 0),
   );
+  const leaders = positiveItems.filter(
+    (item) => item.monthlyContributionCents === highestContribution,
+  );
+  if (leaders.length !== 1) return null;
+  const [leading] = leaders;
   if (
-    leading === null ||
+    !leading ||
     BigInt(leading.monthlyContributionCents ?? 0) * BigInt(10_000) <=
       total * BigInt(CONCENTRATION_THRESHOLD_BASIS_POINTS)
   ) {
@@ -172,21 +171,34 @@ function highVolumeLowerResultGuidance(
   const volumeById = new Map(
     command.items.map((item) => [item.id, item.monthlySalesVolume ?? 0]),
   );
-  const highestVolume = comparable.reduce((highest, item) =>
-    (volumeById.get(item.itemId) ?? 0) > (volumeById.get(highest.itemId) ?? 0)
-      ? item
-      : highest,
+  const highestVolume = Math.max(
+    ...comparable.map((item) => volumeById.get(item.itemId) ?? 0),
   );
   const lowestMargin = Math.min(
     ...comparable.map((item) => item.realMarginBasisPoints ?? 0),
   );
-  if (highestVolume.realMarginBasisPoints !== lowestMargin) return null;
+  const hasHigherMargin = comparable.some(
+    (item) => (item.realMarginBasisPoints ?? 0) > lowestMargin,
+  );
+  const lowerMarginLeaders = comparable.filter(
+    (item) =>
+      (volumeById.get(item.itemId) ?? 0) === highestVolume &&
+      item.realMarginBasisPoints === lowestMargin,
+  );
+  if (!hasHigherMargin || lowerMarginLeaders.length === 0) return null;
+
+  const itemIds = lowerMarginLeaders.map((item) => item.itemId);
+  const plural = itemIds.length > 1;
   return {
     key: "high_volume_low_margin",
     tone: "neutral",
-    title: "O item mais vendido deixa menos proporcionalmente",
-    body: `${namesFor(command, [highestVolume.itemId])} tem a maior quantidade e deixa menos por venda do que os outros itens informados.`,
-    itemIds: [highestVolume.itemId],
+    title: plural
+      ? "Os itens mais vendidos deixam menos proporcionalmente"
+      : "O item mais vendido deixa menos proporcionalmente",
+    body: plural
+      ? `${namesFor(command, itemIds)} têm a maior quantidade e deixam menos por venda do que os outros itens informados.`
+      : `${namesFor(command, itemIds)} tem a maior quantidade e deixa menos por venda do que os outros itens informados.`,
+    itemIds,
   };
 }
 
@@ -197,22 +209,32 @@ function bestUnitResultGuidance(
   const candidates = calculation.items.filter(
     (item) => item.unitProfitCents !== null,
   );
-  const best = candidates.reduce<DetailedItemCalculation | null>(
-    (current, item) =>
-      current === null ||
-      (item.unitProfitCents ?? Number.MIN_SAFE_INTEGER) >
-        (current.unitProfitCents ?? Number.MIN_SAFE_INTEGER)
-        ? item
-        : current,
-    null,
+  const bestResult = Math.max(
+    ...candidates.map(
+      (item) => item.unitProfitCents ?? Number.MIN_SAFE_INTEGER,
+    ),
   );
-  if (best === null) return null;
+  const hasLowerResult = candidates.some(
+    (item) =>
+      (item.unitProfitCents ?? Number.MIN_SAFE_INTEGER) < bestResult,
+  );
+  if (!hasLowerResult) return null;
+
+  const bestItems = candidates.filter(
+    (item) => item.unitProfitCents === bestResult,
+  );
+  const itemIds = bestItems.map((item) => item.itemId);
+  const plural = itemIds.length > 1;
   return {
     key: "best_unit_contribution",
     tone: "positive",
-    title: "Este item deixa mais depois dos valores considerados",
-    body: `${namesFor(command, [best.itemId])} deixa o maior valor por venda entre os itens com custo completo calculado.`,
-    itemIds: [best.itemId],
+    title: plural
+      ? "Estes itens deixam mais depois dos valores considerados"
+      : "Este item deixa mais depois dos valores considerados",
+    body: plural
+      ? `${namesFor(command, itemIds)} deixam o maior valor por venda entre os itens com custo completo calculado.`
+      : `${namesFor(command, itemIds)} deixa o maior valor por venda entre os itens com custo completo calculado.`,
+    itemIds,
   };
 }
 
