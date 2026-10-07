@@ -209,8 +209,8 @@ function ProductReviewStep({
             className="mt-0.5 size-4 shrink-0"
           />
           <p>
-            Sem essa quantidade, o resultado não consegue incluir os gastos
-            mensais em cada unidade.
+            Sem informar quantas unidades você vende por mês, não conseguimos
+            distribuir os gastos mensais entre as unidades.
           </p>
         </div>
       ) : null}
