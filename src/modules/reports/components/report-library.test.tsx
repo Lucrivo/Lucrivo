@@ -155,7 +155,7 @@ describe("ReportListCard", () => {
     expect(within(card).getByText("Preço atual")).toBeInTheDocument();
     expect(within(card).getByText("Margem")).toBeInTheDocument();
     expect(
-      within(card).getByText("Vendas necessárias"),
+      within(card).getByText("Quantidade de vendas necessárias"),
     ).toBeInTheDocument();
     expect(within(card).getByText("114 vendas")).toBeInTheDocument();
     expect(within(card).getByText("Volume de vendas")).toBeInTheDocument();

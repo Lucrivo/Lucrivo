@@ -56,6 +56,34 @@ describe("ReportEditor", () => {
     });
   });
 
+  it("explains taxes and platform fees while editing", async () => {
+    const user = userEvent.setup();
+    render(
+      <ReportEditor
+        diagnosisId={41}
+        version={2}
+        initialDraft={draft}
+        initialSnapshot={snapshot}
+        onCancel={vi.fn()}
+        onPlanRequired={vi.fn()}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Como preencher os impostos?" }),
+    );
+    expect(
+      screen.getByText("Percentual de impostos sobre a venda"),
+    ).toBeVisible();
+    expect(screen.getByText(/“Gastos que existem todo mês”\./i)).toBeVisible();
+    await user.keyboard("{Escape}");
+
+    await user.click(
+      screen.getByRole("button", { name: "Quais taxas devo somar?" }),
+    );
+    expect(screen.getByText(/comissão da plataforma/i)).toBeVisible();
+  });
+
   it("updates the preview and replaces the same report", async () => {
     const user = userEvent.setup();
     const onCancel = vi.fn();

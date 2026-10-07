@@ -1,6 +1,11 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowLeftIcon, CalendarDaysIcon, PlusIcon } from "lucide-react";
+import {
+  ArrowDownIcon,
+  ArrowLeftIcon,
+  CalendarDaysIcon,
+  PlusIcon,
+} from "lucide-react";
 
 import { Accordion } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -56,8 +61,22 @@ function DetailedReportDetail({
       </section>
     ) : null;
 
+  const itemDetailsLink =
+    viewModel.items.length > 1 ? (
+      <a
+        href="#item-details"
+        className={buttonVariants({ variant: "outline", size: "lg" })}
+      >
+        Ver mais detalhes item por item
+        <ArrowDownIcon aria-hidden="true" />
+      </a>
+    ) : null;
+
   return (
-    <main className="mx-auto grid w-full max-w-7xl min-w-0 gap-7 pb-10">
+    <main
+      data-smooth-report-scroll
+      className="mx-auto grid w-full max-w-7xl min-w-0 gap-7 pb-10"
+    >
       <header className="border-primary/15 bg-card relative overflow-hidden rounded-3xl border px-5 py-6 shadow-sm sm:px-8 sm:py-8">
         <div
           aria-hidden="true"
@@ -121,15 +140,23 @@ function DetailedReportDetail({
             vender, qual é o faturamento de equilíbrio e quanto sobra.
           </p>
         </div>
-        <ReportIndicators indicators={viewModel.indicators} />
-        {viewModel.minimumPriceSection ? (
-          <ReportSectionCard section={viewModel.minimumPriceSection} />
-        ) : null}
+        <ReportIndicators
+          indicators={viewModel.indicators}
+          actions={itemDetailsLink ? { sales: itemDetailsLink } : undefined}
+        />
       </section>
 
       {legacyDetails}
 
-      <section aria-labelledby="item-details-title" className="grid gap-4">
+      {viewModel.minimumPriceSection ? (
+        <ReportSectionCard section={viewModel.minimumPriceSection} />
+      ) : null}
+
+      <section
+        id="item-details"
+        aria-labelledby="item-details-title"
+        className="grid scroll-mt-6 gap-4 sm:scroll-mt-8"
+      >
         <div className="grid gap-2 px-1">
           <h2 id="item-details-title" className="text-2xl">
             Item por item

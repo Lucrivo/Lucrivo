@@ -81,8 +81,11 @@ describe("detailed common steps", () => {
     ).toBeEnabled();
   });
 
-  it("makes both global fees explicit without a promotion field", () => {
-    render(<DetailedFeesStep state={productState()} dispatch={vi.fn()} />);
+  it("makes both global fees explicit with category-specific guidance", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <DetailedFeesStep state={productState()} dispatch={vi.fn()} />,
+    );
 
     expect(
       screen.getByLabelText("Qual porcentagem da venda vai para impostos?"),
@@ -95,6 +98,17 @@ describe("detailed common steps", () => {
     expect(
       screen.queryByLabelText(/margem mínima para simular promoções/i),
     ).not.toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "Como preencher os impostos?" }),
+    );
+    expect(screen.getByText(/etapa 6/i)).toBeVisible();
+    await user.keyboard("{Escape}");
+
+    rerender(<DetailedFeesStep state={productionState()} dispatch={vi.fn()} />);
+    await user.click(
+      screen.getByRole("button", { name: "Como preencher os impostos?" }),
+    );
+    expect(screen.getByText(/etapa 5/i)).toBeVisible();
   });
 
   it("separates the item name and shared optional-volume guidance", async () => {

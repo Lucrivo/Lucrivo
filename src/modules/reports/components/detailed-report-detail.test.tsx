@@ -62,6 +62,24 @@ const productionCommand: DetailedDiagnosisCommand = {
   ],
 };
 
+const multiItemProductCommand: DetailedDiagnosisCommand = {
+  ...productCommand,
+  submissionId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+  items: [
+    ...productCommand.items,
+    {
+      id: "22222222-2222-4222-8222-222222222222",
+      position: 1,
+      name: "Garrafa",
+      kind: "resale",
+      unitSalePriceCents: 7_000,
+      monthlySalesVolume: 10,
+      purchaseUnitCostCents: 3_000,
+      packagingUnitCostCents: 300,
+    },
+  ],
+};
+
 function snapshotFor(command: DetailedDiagnosisCommand) {
   return buildDetailedReportSnapshot(
     command,
@@ -70,6 +88,28 @@ function snapshotFor(command: DetailedDiagnosisCommand) {
 }
 
 describe("DetailedReportDetail", () => {
+  it("links a multi-item summary to the item-by-item details", () => {
+    render(
+      <DetailedReportDetail
+        id={167}
+        createdAt="2026-09-17T15:00:00.000Z"
+        snapshot={snapshotFor(multiItemProductCommand)}
+      />,
+    );
+
+    const link = screen.getByRole("link", {
+      name: "Ver mais detalhes item por item",
+    });
+    expect(link).toHaveAttribute("href", "#item-details");
+    expect(link.closest('[data-testid="report-indicator"]')).toHaveAttribute(
+      "data-indicator-key",
+      "sales",
+    );
+    expect(document.querySelector("#item-details")).toHaveAccessibleName(
+      "Item por item",
+    );
+  });
+
   it("shows complete item values and monthly-result comparison", () => {
     render(
       <DetailedReportDetail
@@ -99,6 +139,9 @@ describe("DetailedReportDetail", () => {
     expect(
       screen.getByText(/Resultado estimado de cada item no mês/i),
     ).toBeVisible();
+    expect(
+      screen.queryByRole("link", { name: "Ver mais detalhes item por item" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows a single-item goal and the item break-even reference", async () => {

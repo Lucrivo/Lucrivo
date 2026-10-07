@@ -191,7 +191,7 @@ function buildSummaryMetrics(report: OwnedReportSummary): SummaryMetric[] {
       label:
         report.businessCategory === "service"
           ? "Serviços necessários"
-          : "Vendas necessárias",
+          : "Quantidade de vendas necessárias",
       value:
         report.monthlySalesGoal === null
           ? "Não calculável"

@@ -4,6 +4,7 @@ import type { ProductStepProps } from "./types";
 function ProductFeesStep(props: ProductStepProps) {
   return (
     <SalesFeesFields
+      fixedExpensesStepNumber={4}
       tax={{
         field: "taxRate",
         value: props.values.taxRate,

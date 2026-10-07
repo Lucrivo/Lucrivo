@@ -1,17 +1,29 @@
+import type { ReactNode } from "react";
+
 import { PlainLanguageHelp } from "@/components/shared/plain-language-help";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-import type { ReportIndicatorViewModel } from "../presenters/to-report-view-model";
+import type {
+  ReportIndicatorKey,
+  ReportIndicatorViewModel,
+} from "../presenters/to-report-view-model";
 import { ReportDetailList } from "./report-detail-list";
 import { tonePresentation } from "./report-tone";
 
 function ReportIndicatorCard({
   indicator,
+  action,
   className,
 }: {
   indicator: ReportIndicatorViewModel;
+  action?: ReactNode;
   className?: string;
 }) {
   const presentation = tonePresentation[indicator.tone];
@@ -68,14 +80,21 @@ function ReportIndicatorCard({
           <ReportDetailList details={indicator.details} />
         ) : null}
       </CardContent>
+      {action ? (
+        <CardFooter className="mt-auto justify-start px-5 py-4 sm:px-6">
+          {action}
+        </CardFooter>
+      ) : null}
     </Card>
   );
 }
 
 function ReportIndicators({
   indicators,
+  actions,
 }: {
   indicators: ReportIndicatorViewModel[];
+  actions?: Partial<Record<ReportIndicatorKey, ReactNode>>;
 }) {
   const featured = indicators.filter((indicator) => indicator.featured);
   const regular = indicators.filter((indicator) => !indicator.featured);
@@ -99,6 +118,7 @@ function ReportIndicators({
         <ReportIndicatorCard
           key={indicator.key}
           indicator={indicator}
+          action={actions?.[indicator.key]}
           className={cn(
             "sm:col-span-2",
             layout !== "default" && "xl:col-span-8",
@@ -109,6 +129,7 @@ function ReportIndicators({
         <ReportIndicatorCard
           key={indicator.key}
           indicator={indicator}
+          action={actions?.[indicator.key]}
           className={cn(
             layout === "featured-with-four" && "xl:col-span-4",
             layout === "featured-with-three" &&
