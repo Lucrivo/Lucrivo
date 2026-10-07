@@ -40,6 +40,12 @@ function row(
     monthly_result_cents: null,
     item_count: null,
     is_partial: null,
+    snapshot_monthly_sales_goal: 82,
+    snapshot_monthly_sales_volume_used: null,
+    snapshot_input_items: null,
+    snapshot_result_items: null,
+    snapshot_effective_fixed_cost_cents: null,
+    snapshot_monthly_contribution_cents: null,
   };
 }
 
@@ -115,6 +121,8 @@ describe("listOwnedReports", () => {
           monthlyResultCents: null,
           itemCount: null,
           isPartial: null,
+          monthlySalesGoal: 82,
+          monthlySalesVolume: null,
         },
       ],
       nextCursor: null,
@@ -122,9 +130,11 @@ describe("listOwnedReports", () => {
 
     expect(from).toHaveBeenCalledWith("diagnoses");
     expect(select).toHaveBeenCalledWith(
-      "id, business_category, scenario, created_at, analysis_mode, current_price_cents, real_margin_basis_points, unit_profit_cents, verdict, priority, unit, schema_version, calculation_version, content_version, monthly_gross_revenue_cents, monthly_result_cents, item_count, is_partial",
+      "id, business_category, scenario, created_at, analysis_mode, current_price_cents, real_margin_basis_points, unit_profit_cents, verdict, priority, unit, schema_version, calculation_version, content_version, monthly_gross_revenue_cents, monthly_result_cents, item_count, is_partial, snapshot_monthly_sales_goal:report_snapshot->results->monthlySalesGoal, snapshot_monthly_sales_volume_used:report_snapshot->results->monthlySalesVolumeUsed, snapshot_input_items:report_snapshot->inputs->items, snapshot_result_items:report_snapshot->results->items, snapshot_effective_fixed_cost_cents:report_snapshot->results->effectiveFixedCostCents, snapshot_monthly_contribution_cents:report_snapshot->results->monthlyContributionCents",
     );
-    expect(select.mock.calls[0]?.[0]).not.toContain("report_snapshot");
+    expect(select.mock.calls[0]?.[0]).not.toMatch(
+      /(?:^|, )report_snapshot(?:,|$)/,
+    );
     expect(byUser).toHaveBeenCalledWith("user_id", "trusted-user");
     expect(activeOnly).toHaveBeenCalledWith("deleted_at", null);
     expect(firstOrder).toHaveBeenCalledWith("created_at", {
@@ -135,7 +145,7 @@ describe("listOwnedReports", () => {
     expect(or).not.toHaveBeenCalled();
   });
 
-  it("maps Product enum values without loading the snapshot", async () => {
+  it("maps Product enum values without loading the full snapshot", async () => {
     limit.mockResolvedValue({
       data: [
         row(84, "2026-08-31T15:00:00.000Z", {
@@ -156,10 +166,12 @@ describe("listOwnedReports", () => {
         }),
       ],
     });
-    expect(select.mock.calls[0]?.[0]).not.toContain("report_snapshot");
+    expect(select.mock.calls[0]?.[0]).not.toMatch(
+      /(?:^|, )report_snapshot(?:,|$)/,
+    );
   });
 
-  it("maps Production enum values without loading the snapshot", async () => {
+  it("maps Production enum values without loading the full snapshot", async () => {
     limit.mockResolvedValue({
       data: [
         row(126, "2026-09-01T15:00:00.000Z", {
@@ -180,7 +192,9 @@ describe("listOwnedReports", () => {
         }),
       ],
     });
-    expect(select.mock.calls[0]?.[0]).not.toContain("report_snapshot");
+    expect(select.mock.calls[0]?.[0]).not.toMatch(
+      /(?:^|, )report_snapshot(?:,|$)/,
+    );
   });
 
   it("maps nullable Detailed mix summaries", async () => {
@@ -201,7 +215,21 @@ describe("listOwnedReports", () => {
           monthly_gross_revenue_cents: null,
           monthly_result_cents: null,
           item_count: 3,
-          is_partial: true,
+          is_partial: false,
+          snapshot_monthly_sales_goal: null,
+          snapshot_monthly_sales_volume_used: null,
+          snapshot_input_items: [
+            { monthlySalesVolume: 10 },
+            { monthlySalesVolume: 20 },
+            { monthlySalesVolume: 30 },
+          ],
+          snapshot_result_items: [
+            { unitContributionCents: 2_000 },
+            { unitContributionCents: 3_000 },
+            { unitContributionCents: 4_000 },
+          ],
+          snapshot_effective_fixed_cost_cents: 10_000,
+          snapshot_monthly_contribution_cents: 20_000,
         },
       ],
       error: null,
@@ -217,7 +245,52 @@ describe("listOwnedReports", () => {
           monthlyGrossRevenueCents: null,
           monthlyResultCents: null,
           itemCount: 3,
-          isPartial: true,
+          isPartial: false,
+          monthlySalesGoal: 30,
+          monthlySalesVolume: 60,
+        },
+      ],
+    });
+  });
+
+  it("keeps unavailable detailed sales metrics nullable when the mix is partial", async () => {
+    limit.mockResolvedValue({
+      data: [
+        {
+          ...row(169, createdAt, {
+            category: "product",
+            scenario: "resale",
+          }),
+          analysis_mode: "detailed",
+          current_price_cents: null,
+          unit_profit_cents: null,
+          unit: "mix",
+          item_count: 2,
+          is_partial: true,
+          snapshot_monthly_sales_goal: null,
+          snapshot_monthly_sales_volume_used: null,
+          snapshot_input_items: [
+            { monthlySalesVolume: null },
+            { monthlySalesVolume: 20 },
+          ],
+          snapshot_result_items: [
+            { unitContributionCents: 2_000 },
+            { unitContributionCents: 3_000 },
+          ],
+          snapshot_effective_fixed_cost_cents: 10_000,
+          snapshot_monthly_contribution_cents: null,
+        },
+      ],
+      error: null,
+    });
+
+    await expect(list()).resolves.toMatchObject({
+      status: "success",
+      reports: [
+        {
+          id: 169,
+          monthlySalesGoal: null,
+          monthlySalesVolume: null,
         },
       ],
     });

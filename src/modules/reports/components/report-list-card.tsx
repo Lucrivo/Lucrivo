@@ -6,21 +6,30 @@ import {
   CircleCheckIcon,
   CircleDollarSignIcon,
   CircleGaugeIcon,
+  CircleHelpIcon,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 import {
   formatBasisPoints,
   formatCurrency,
+  formatIntegerVolume,
   formatReportDate,
 } from "../formatters";
 import { getReportLanguageProfile } from "../presenters/report-language";
 import type { OwnedReportSummary } from "../services/list-reports.service";
-import type { ReportScenario, ReportVerdict } from "../types";
+import type { ReportScenario, ReportTone, ReportVerdict } from "../types";
+import { tonePresentation } from "./report-tone";
 
 const categoryLabels = {
   service: "Serviço",
@@ -77,12 +86,224 @@ const verdictPresentation: Record<
   },
 };
 
-function optionalCurrency(value: number | null): string {
-  return value === null ? "Indisponível" : formatCurrency(value);
+type SummaryMetric = {
+  key: "price" | "margin" | "goal" | "volume";
+  label: string;
+  value: string;
+  tone: ReportTone;
+  helpText?: string;
+};
+
+const metricToneStyles = {
+  neutral: "bg-muted/15",
+  positive: "bg-success/6",
+  warning: "bg-warning/7",
+  critical: "bg-destructive/6",
+} as const satisfies Record<ReportTone, string>;
+
+const metricToneLabels = {
+  neutral: "Informativo",
+  positive: "Positivo",
+  warning: "Atenção",
+  critical: "Negativo",
+} as const satisfies Record<ReportTone, string>;
+
+function resultTone(value: number | null): ReportTone {
+  if (value === null) return "neutral";
+  if (value > 0) return "positive";
+  if (value < 0) return "critical";
+  return "warning";
 }
 
-function optionalMargin(value: number | null): string {
-  return value === null ? "Indisponível" : formatBasisPoints(value);
+function salesTone(report: OwnedReportSummary): ReportTone {
+  if (report.monthlySalesGoal === null || report.monthlySalesVolume === null) {
+    return "neutral";
+  }
+  return report.monthlySalesVolume >= report.monthlySalesGoal
+    ? "positive"
+    : "critical";
+}
+
+function formatSalesCount(report: OwnedReportSummary, value: number): string {
+  const formatted = formatIntegerVolume(value);
+  if (report.businessCategory === "service") {
+    if (report.unit === "hour") return `${formatted} horas`;
+    return `${formatted} atendimentos`;
+  }
+  return report.businessCategory === "production" ||
+    report.analysisMode === "detailed"
+    ? `${formatted} unidades`
+    : `${formatted} vendas`;
+}
+
+function marginUnavailableReason(report: OwnedReportSummary): string {
+  if (report.verdict === "missing_price") {
+    return "A margem não pode ser calculada sem um preço válido.";
+  }
+  if (report.verdict === "incomplete_volume" || report.isPartial) {
+    return "A margem depende das quantidades mensais que ainda não foram informadas.";
+  }
+  return "Os dados salvos neste diagnóstico não permitem calcular a margem.";
+}
+
+function goalUnavailableReason(report: OwnedReportSummary): string {
+  if (report.verdict === "direct_loss") {
+    return "No preço atual, cada venda não deixa valor suficiente para pagar os gastos do mês.";
+  }
+  if (report.analysisMode === "detailed" && report.isPartial) {
+    return "A quantidade necessária depende das vendas mensais de todos os itens do conjunto.";
+  }
+  return "Os dados salvos neste diagnóstico não permitem calcular uma quantidade necessária.";
+}
+
+function buildSummaryMetrics(report: OwnedReportSummary): SummaryMetric[] {
+  const comparisonTone = salesTone(report);
+  const metrics: SummaryMetric[] = [
+    {
+      key: "price",
+      label: "Preço atual",
+      value:
+        report.currentPriceCents === null
+          ? "Vários preços"
+          : formatCurrency(report.currentPriceCents),
+      tone: "neutral",
+      ...(report.currentPriceCents === null
+        ? {
+            helpText:
+              "Este diagnóstico reúne vários itens, cada um com seu próprio preço de venda.",
+          }
+        : {}),
+    },
+    {
+      key: "margin",
+      label: "Margem",
+      value:
+        report.realMarginBasisPoints === null
+          ? "Não calculável"
+          : formatBasisPoints(report.realMarginBasisPoints),
+      tone: resultTone(report.realMarginBasisPoints),
+      ...(report.realMarginBasisPoints === null
+        ? { helpText: marginUnavailableReason(report) }
+        : {}),
+    },
+    {
+      key: "goal",
+      label:
+        report.businessCategory === "service"
+          ? "Serviços necessários"
+          : "Vendas necessárias",
+      value:
+        report.monthlySalesGoal === null
+          ? "Não calculável"
+          : formatSalesCount(report, report.monthlySalesGoal),
+      tone: comparisonTone,
+      ...(report.monthlySalesGoal === null
+        ? { helpText: goalUnavailableReason(report) }
+        : {}),
+    },
+  ];
+
+  if (report.businessCategory !== "service") {
+    metrics.push({
+      key: "volume",
+      label: "Volume de vendas",
+      value:
+        report.monthlySalesVolume === null
+          ? "Não informado"
+          : formatSalesCount(report, report.monthlySalesVolume),
+      tone: comparisonTone,
+      ...(report.monthlySalesVolume === null
+        ? {
+            helpText:
+              report.analysisMode === "detailed"
+                ? "O volume total depende das quantidades mensais de todos os itens do conjunto."
+                : "O volume mensal de vendas não foi informado neste diagnóstico.",
+          }
+        : {}),
+    });
+  }
+
+  return metrics;
+}
+
+function metricCellBorder(index: number, count: number): string {
+  if (count === 3) {
+    return index < 2 ? "border-b sm:border-r sm:border-b-0" : "";
+  }
+  if (index === 0) return "border-r border-b sm:border-b-0";
+  if (index === 1) return "border-b sm:border-r sm:border-b-0";
+  if (index === 2) return "border-r";
+  return "";
+}
+
+function ReportSummaryMetrics({ report }: { report: OwnedReportSummary }) {
+  const metrics = buildSummaryMetrics(report);
+
+  return (
+    <dl
+      className={cn(
+        "border-border/70 bg-muted/25 grid overflow-hidden rounded-xl border",
+        metrics.length === 3
+          ? "grid-cols-1 sm:grid-cols-3"
+          : "grid-cols-2 sm:grid-cols-4",
+      )}
+    >
+      {metrics.map((metric, index) => {
+        const presentation = tonePresentation[metric.tone];
+        const ToneIcon = presentation.icon;
+        const hasStatus = metric.tone !== "neutral";
+
+        return (
+          <div
+            key={metric.key}
+            data-metric={metric.key}
+            data-tone={metric.tone}
+            className={cn(
+              "grid min-w-0 content-start gap-1.5 p-3.5",
+              metricCellBorder(index, metrics.length),
+              metricToneStyles[metric.tone],
+            )}
+          >
+            <dt className="text-muted-foreground flex min-w-0 items-center gap-1 text-xs leading-4">
+              <span>{metric.label}</span>
+              {metric.helpText ? (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger
+                      aria-label={`Entenda por que ${metric.label.toLowerCase()} está ${metric.value.toLowerCase()}`}
+                      closeOnClick={false}
+                      className="text-muted-foreground hover:text-foreground focus-visible:ring-ring -m-3 grid size-11 shrink-0 place-items-center rounded-md focus-visible:ring-2 focus-visible:outline-none"
+                    >
+                      <CircleHelpIcon aria-hidden="true" className="size-3.5" />
+                    </TooltipTrigger>
+                    <TooltipContent role="tooltip">
+                      {metric.helpText}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : null}
+            </dt>
+            <dd
+              className={cn(
+                "flex min-w-0 items-center gap-1.5 text-base leading-tight font-semibold tracking-tight wrap-break-word tabular-nums",
+                hasStatus ? presentation.value : "text-foreground",
+              )}
+            >
+              {hasStatus ? (
+                <>
+                  <ToneIcon aria-hidden="true" className="size-4 shrink-0" />
+                  <span className="sr-only">
+                    {metricToneLabels[metric.tone]}:{" "}
+                  </span>
+                </>
+              ) : null}
+              <span>{metric.value}</span>
+            </dd>
+          </div>
+        );
+      })}
+    </dl>
+  );
 }
 
 function DetailedReportListCard({ report }: { report: OwnedReportSummary }) {
@@ -108,8 +329,6 @@ function DetailedReportListCard({ report }: { report: OwnedReportSummary }) {
       ? "Análise de produtos"
       : "Análise de produções";
   const itemCount = report.itemCount ?? 0;
-  const resultAvailable = report.monthlyResultCents !== null;
-  const marginAvailable = report.realMarginBasisPoints !== null;
 
   return (
     <Card
@@ -146,33 +365,7 @@ function DetailedReportListCard({ report }: { report: OwnedReportSummary }) {
       </CardHeader>
 
       <CardContent className="grid flex-1 gap-5 px-5 pb-5 sm:px-6 sm:pb-6">
-        {resultAvailable || marginAvailable ? (
-          <dl className="border-border/70 bg-muted/25 grid grid-cols-2 overflow-hidden rounded-xl border">
-            {resultAvailable ? (
-              <div className="grid gap-1 border-r p-3.5">
-                <dt className="text-muted-foreground text-xs">
-                  Resultado mensal
-                </dt>
-                <dd className="font-semibold tabular-nums">
-                  {formatCurrency(report.monthlyResultCents!)}
-                </dd>
-              </div>
-            ) : null}
-            {marginAvailable ? (
-              <div className="grid gap-1 p-3.5">
-                <dt className="text-muted-foreground text-xs">Margem final</dt>
-                <dd className="font-semibold tabular-nums">
-                  {formatBasisPoints(report.realMarginBasisPoints!)}
-                </dd>
-              </div>
-            ) : null}
-          </dl>
-        ) : (
-          <p className="text-muted-foreground text-sm">
-            Complete os volumes pendentes para ver o resultado mensal do
-            conjunto de itens.
-          </p>
-        )}
+        <ReportSummaryMetrics report={report} />
 
         <div className="flex items-center justify-end">
           <Link
@@ -212,20 +405,6 @@ function ReportListCard({ report }: { report: OwnedReportSummary }) {
   const verdictLabel =
     language.verdictLabels[report.verdict as ReportVerdict] ??
     language.verdictLabels.missing_price;
-  const marginLabel = language.isPlainLanguage
-    ? "Quanto sobra a cada R$ 100"
-    : "Margem real";
-  const profitLabel = language.isPlainLanguage
-    ? report.businessCategory === "product" ||
-      report.businessCategory === "production"
-      ? "Resultado por unidade"
-      : report.unit === "hour"
-        ? "Resultado por hora"
-        : "Resultado por atendimento"
-    : report.businessCategory === "product" ||
-        report.businessCategory === "production"
-      ? "Lucro por unidade"
-      : "Lucro por venda";
 
   return (
     <Card
@@ -260,26 +439,7 @@ function ReportListCard({ report }: { report: OwnedReportSummary }) {
       </CardHeader>
 
       <CardContent className="grid flex-1 gap-5 px-5 pb-5 sm:px-6 sm:pb-6">
-        <dl className="border-border/70 bg-muted/25 grid grid-cols-2 overflow-hidden rounded-xl border sm:grid-cols-3">
-          <div className="col-span-2 grid gap-1 border-b p-3.5 sm:col-span-1 sm:border-r sm:border-b-0">
-            <dt className="text-muted-foreground text-xs">Preço atual</dt>
-            <dd className="text-lg font-semibold tracking-tight tabular-nums">
-              {formatCurrency(report.currentPriceCents!)}
-            </dd>
-          </div>
-          <div className="grid gap-1 border-r p-3.5">
-            <dt className="text-muted-foreground text-xs">{marginLabel}</dt>
-            <dd className="font-semibold tabular-nums">
-              {optionalMargin(report.realMarginBasisPoints)}
-            </dd>
-          </div>
-          <div className="grid gap-1 p-3.5">
-            <dt className="text-muted-foreground text-xs">{profitLabel}</dt>
-            <dd className="font-semibold tabular-nums">
-              {optionalCurrency(report.unitProfitCents)}
-            </dd>
-          </div>
-        </dl>
+        <ReportSummaryMetrics report={report} />
 
         <div className="flex items-center justify-between gap-3">
           <span className="text-muted-foreground flex items-center gap-2 text-xs">
