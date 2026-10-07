@@ -312,7 +312,7 @@ describe("QuickDiagnosisWizard category orchestration", () => {
         name: "Que tipo de produto você vende?",
       }),
     ).toHaveFocus();
-    expect(screen.getByText("3 de 11")).toBeInTheDocument();
+    expect(screen.getByText("3 de 10")).toBeInTheDocument();
 
     await user.click(screen.getByRole("radio", { name: "Produto digital" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
@@ -321,7 +321,7 @@ describe("QuickDiagnosisWizard category orchestration", () => {
         name: "Produto 1 · nome",
       }),
     ).toHaveFocus();
-    expect(screen.getByText("4 de 11")).toBeInTheDocument();
+    expect(screen.getByText("4 de 10")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Voltar" }));
     expect(

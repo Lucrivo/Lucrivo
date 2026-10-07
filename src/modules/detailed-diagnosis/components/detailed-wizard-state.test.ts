@@ -200,7 +200,7 @@ describe("detailedWizardReducer", () => {
       value: "Caneca",
     });
     const state = detailedWizardReducer(
-      { ...populated, phase: "itemComplete" },
+      { ...populated, phase: "review" },
       { type: "addItem", createId: ids("item-2") },
     );
 
@@ -246,6 +246,7 @@ describe("detailedWizardReducer", () => {
     state = detailedWizardReducer(state, {
       type: "editItem",
       itemId: "item-1",
+      phase: "itemName",
     });
     state = detailedWizardReducer(state, {
       type: "changeItemField",
@@ -449,7 +450,6 @@ describe("detailedWizardReducer", () => {
       "itemVolume",
       "ownerCompensation",
       "fees",
-      "itemComplete",
       "review",
     ]);
 
@@ -461,22 +461,54 @@ describe("detailedWizardReducer", () => {
       "itemName",
       "itemValues",
       "itemVolume",
-      "itemComplete",
       "review",
     ]);
 
     const editing = detailedWizardReducer(additional, {
       type: "editItem",
       itemId: "item-1",
+      phase: "itemValues",
     });
-    expect(phasesFrom(editing)).toEqual([
-      "itemName",
-      "itemValues",
-      "itemVolume",
-      "itemComplete",
-      "review",
-    ]);
+    expect(phasesFrom(editing)).toEqual(["itemValues", "review"]);
     expect(editing.values.items[1]).toEqual(additional.values.items[1]);
+  });
+
+  it("opens each review section directly and returns to the review", () => {
+    const initial = { ...productState(), phase: "review" as const };
+    const itemEdit = detailedWizardReducer(initial, {
+      type: "editItem",
+      itemId: "item-1",
+      phase: "itemVolume",
+    });
+    const generalEdit = detailedWizardReducer(initial, {
+      type: "editGeneral",
+      phase: "fixedExpenses",
+    });
+
+    expect(itemEdit).toMatchObject({
+      phase: "itemVolume",
+      itemJourney: "editing",
+      activeItemId: "item-1",
+    });
+    expect(detailedWizardReducer(itemEdit, { type: "next" })).toMatchObject({
+      phase: "review",
+      itemJourney: "first",
+    });
+    expect(generalEdit).toMatchObject({
+      phase: "fixedExpenses",
+      itemJourney: "editing",
+    });
+    const invalidGeneralEdit = detailedWizardReducer(generalEdit, {
+      type: "applyServerErrors",
+      fieldErrors: { fixedMonthlyExpenses: ["Valor inválido"] },
+    });
+    expect(invalidGeneralEdit.itemJourney).toBe("editing");
+    expect(
+      detailedWizardReducer(invalidGeneralEdit, { type: "back" }),
+    ).toMatchObject({
+      phase: "review",
+      itemJourney: "first",
+    });
   });
 
   it("opens the first invalid item and cost phase for nested server errors", () => {
