@@ -1,4 +1,5 @@
 import { calculateDetailedSalesGoal } from "@/modules/reports/domain/calculate-detailed-sales-goal";
+import { deriveDetailedBreakEvenScenario } from "@/modules/reports/domain/detailed-break-even-scenario";
 import {
   formatBasisPoints,
   formatCurrency,
@@ -7,6 +8,7 @@ import {
 import { toDetailedReportViewModel } from "@/modules/reports/presenters/to-detailed-report-view-model";
 import { isDetailedReportSnapshot } from "@/modules/reports/schemas/report-snapshot.schema";
 import type { OwnedReport } from "@/modules/reports/services/get-report.service";
+import { DETAILED_REPORT_CONTENT_VERSION } from "@/modules/reports/types";
 
 import type {
   ReportAiContextV2,
@@ -64,6 +66,14 @@ function buildDetailedReportAiContext(report: OwnedReport): ReportAiContextV2 {
   }
 
   const { results } = snapshot;
+  const scenario =
+    snapshot.contentVersion === DETAILED_REPORT_CONTENT_VERSION
+      ? deriveDetailedBreakEvenScenario(
+          snapshot.inputs,
+          results,
+          snapshot.policy,
+        )
+      : { consolidated: null, byItem: new Map() };
   const visible = toDetailedReportViewModel({
     id: report.id,
     createdAt: report.createdAt,
@@ -135,6 +145,22 @@ function buildDetailedReportAiContext(report: OwnedReport): ReportAiContextV2 {
       salesGoal.available ? salesGoal.daily : null,
       "unidades",
     ),
+    ...(scenario.consolidated
+      ? [
+          volumeFact(
+            "break_even_reference_volume",
+            "Referência de equilíbrio no mês",
+            scenario.consolidated.referenceVolume,
+            "unidades",
+          ),
+          moneyFact(
+            "break_even_price",
+            "Preço de equilíbrio",
+            scenario.consolidated.breakEvenPriceCents,
+            "business",
+          ),
+        ]
+      : []),
   ];
 
   const resultById = new Map(
@@ -144,6 +170,7 @@ function buildDetailedReportAiContext(report: OwnedReport): ReportAiContextV2 {
     (input, index) => {
       const result = resultById.get(input.id);
       if (!result) return [];
+      const itemScenario = scenario.byItem.get(input.id);
       const technicalDetails = visible.items[index]?.technicalDetails ?? null;
       return [
         {
@@ -217,6 +244,23 @@ function buildDetailedReportAiContext(report: OwnedReport): ReportAiContextV2 {
               result.breakEvenUnitPriceCents,
               "item",
             ),
+            ...(itemScenario
+              ? [
+                  volumeFact(
+                    "break_even_reference_volume",
+                    "Referência de equilíbrio do item",
+                    itemScenario.referenceVolume,
+                    "unidades",
+                    "item",
+                  ),
+                  moneyFact(
+                    "break_even_price",
+                    "Preço de equilíbrio do item",
+                    itemScenario.breakEvenPriceCents,
+                    "item",
+                  ),
+                ]
+              : []),
           ],
           technicalDetails: technicalDetails
             ? {
@@ -256,9 +300,10 @@ function buildDetailedReportAiContext(report: OwnedReport): ReportAiContextV2 {
   const missingVolumeIds = new Set(results.missingVolumeItemIds);
   const reasons = snapshot.inputs.items
     .filter(({ id }) => missingVolumeIds.has(id))
-    .map(
-      ({ name }) =>
-        `Informe as vendas mensais de ${name} para completar o resultado do conjunto.`,
+    .map(({ name, id }) =>
+      scenario.byItem.has(id)
+        ? `Sem as vendas mensais de ${name}, o relatório mostra o ponto de equilíbrio desse item como referência, nunca como resultado do mês.`
+        : `Informe as vendas mensais de ${name} para completar o resultado do conjunto.`,
     );
   if (!salesGoal.available && !reasons.includes(salesGoal.reason)) {
     reasons.push(salesGoal.reason);

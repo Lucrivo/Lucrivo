@@ -168,7 +168,7 @@ describe("DetailedReportEditorFields", () => {
     );
     expect(
       screen.getByText(
-        /Digite 0 se não vendeu nenhuma unidade[\s\S]*deixe em branco[\s\S]*resultado será parcial/i,
+        /Digite 0 se não vendeu nenhuma unidade[\s\S]*deixe em branco[\s\S]*ponto de equilíbrio/i,
       ),
     ).toBeVisible();
     expect(

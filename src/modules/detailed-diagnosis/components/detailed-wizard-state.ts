@@ -21,8 +21,11 @@ type DetailedWizardPhase =
   | "itemVolume"
   | "ownerCompensation"
   | "fees"
-  | "itemComplete"
   | "review";
+
+type DetailedEditableGeneralPhase =
+  "productKind" | "fixedExpenses" | "ownerCompensation" | "fees";
+type DetailedEditableItemPhase = "itemName" | "itemValues" | "itemVolume";
 
 type DetailedItemJourney = "first" | "additional" | "editing";
 type DetailedSubmitError = "unauthorized" | "limit_reached" | "create_failed";
@@ -100,7 +103,12 @@ type DetailedWizardAction =
     }
   | { type: "removeIngredient"; itemId: string; ingredientId: string }
   | { type: "addItem"; createId: () => string }
-  | { type: "editItem"; itemId: string }
+  | {
+      type: "editItem";
+      itemId: string;
+      phase: DetailedEditableItemPhase;
+    }
+  | { type: "editGeneral"; phase: DetailedEditableGeneralPhase }
   | { type: "requestRemoveItem"; itemId: string }
   | { type: "cancelRemoveItem" }
   | { type: "confirmRemoveItem" }
@@ -112,36 +120,38 @@ type DetailedWizardAction =
   | { type: "reset"; createId: () => string };
 
 function nextDetailedPhase(state: DetailedWizardState): DetailedWizardPhase {
+  if (state.itemJourney === "editing" && state.phase !== "review")
+    return "review";
   if (state.phase === "productKind") return "itemName";
   if (state.phase === "itemName") return "itemValues";
   if (state.phase === "itemValues")
     return state.itemJourney === "first" ? "fixedExpenses" : "itemVolume";
   if (state.phase === "fixedExpenses") return "itemVolume";
   if (state.phase === "itemVolume")
-    return state.itemJourney === "first" ? "ownerCompensation" : "itemComplete";
+    return state.itemJourney === "first" ? "ownerCompensation" : "review";
   if (state.phase === "ownerCompensation") return "fees";
-  if (state.phase === "fees") return "itemComplete";
-  if (state.phase === "itemComplete") return "review";
+  if (state.phase === "fees") return "review";
   return "review";
 }
 
 function previousDetailedPhase(
   state: DetailedWizardState,
 ): DetailedWizardPhase {
+  if (state.itemJourney === "editing" && state.phase !== "review")
+    return "review";
   if (state.phase === "productKind") return "productKind";
   if (state.phase === "itemName")
     return state.itemJourney === "first" && state.values.category === "product"
       ? "productKind"
-      : "itemComplete";
+      : "review";
   if (state.phase === "itemValues") return "itemName";
   if (state.phase === "fixedExpenses") return "itemValues";
   if (state.phase === "itemVolume")
     return state.itemJourney === "first" ? "fixedExpenses" : "itemValues";
   if (state.phase === "ownerCompensation") return "itemVolume";
   if (state.phase === "fees") return "ownerCompensation";
-  if (state.phase === "itemComplete")
+  if (state.phase === "review")
     return state.itemJourney === "first" ? "fees" : "itemVolume";
-  if (state.phase === "review") return "itemComplete";
   return "itemName";
 }
 
@@ -551,11 +561,27 @@ function detailedWizardReducer(
         ? state
         : {
             ...state,
-            phase: "itemName",
+            phase: action.phase,
             itemJourney: "editing",
             activeItemId: action.itemId,
             pendingRemovalItemId: null,
+            status: "editing",
+            submitError: null,
           };
+
+    case "editGeneral": {
+      if (action.phase === "productKind" && state.values.category !== "product")
+        return state;
+      return {
+        ...state,
+        phase: action.phase,
+        itemJourney: "editing",
+        activeItemId: state.values.items[0]?.id ?? state.activeItemId,
+        pendingRemovalItemId: null,
+        status: "editing",
+        submitError: null,
+      };
+    }
 
     case "requestRemoveItem":
       return state.values.items.length <= 1 ||
@@ -599,15 +625,22 @@ function detailedWizardReducer(
           ...state,
           productKindError: "Escolha o tipo de produto.",
         };
+      const phase = nextDetailedPhase(state);
       return {
         ...state,
-        phase: nextDetailedPhase(state),
+        phase,
+        itemJourney: phase === "review" ? "first" : state.itemJourney,
         productKindError: null,
       };
     }
 
     case "back": {
-      return { ...state, phase: previousDetailedPhase(state) };
+      const phase = previousDetailedPhase(state);
+      return {
+        ...state,
+        phase,
+        itemJourney: phase === "review" ? "first" : state.itemJourney,
+      };
     }
 
     case "applyServerErrors": {
@@ -628,11 +661,13 @@ function detailedWizardReducer(
         ...state,
         phase: resolved.phase,
         itemJourney:
-          resolved.itemIndex === null
-            ? "first"
-            : state.itemJourney === "first" && state.phase !== "review"
+          state.phase === "review" || state.itemJourney === "editing"
+            ? "editing"
+            : resolved.itemIndex === null
               ? "first"
-              : "editing",
+              : state.itemJourney === "first"
+                ? "first"
+                : "editing",
         activeItemId: activeItem?.id ?? state.activeItemId,
         fieldErrors: action.fieldErrors,
         status: "editing",
@@ -660,6 +695,8 @@ export {
   createInitialDetailedWizardState,
   detailedWizardReducer,
   type DetailedGeneralField,
+  type DetailedEditableGeneralPhase,
+  type DetailedEditableItemPhase,
   type DetailedIngredientTextField,
   type DetailedItemJourney,
   type DetailedItemTextField,

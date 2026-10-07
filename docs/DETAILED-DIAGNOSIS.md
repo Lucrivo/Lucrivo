@@ -37,10 +37,11 @@ escolhido.
 4. vendas mensais do item
 5. valor recebido pelo trabalho do dono
 6. impostos e cartão/plataforma
-7. revisar os itens
-   +--> adicionar, editar ou solicitar remoção
+7. revisar os dados do negócio e os itens
+   +--> editar diretamente qualquer grupo de informações
+   +--> adicionar ou solicitar a remoção de itens
    +--> itens adicionais repetem nome, preço/custos e vendas mensais
-8. revisar e gerar o diagnóstico
+   +--> gerar o diagnóstico
 ```
 
 Cada avanço valida somente os campos visíveis no passo atual. Erros aparecem junto ao campo. Se o servidor devolver um erro final, o fluxo retorna ao passo correspondente e move o foco para o primeiro campo inválido.
@@ -170,13 +171,16 @@ não dependem de ponto flutuante do navegador.
 
 ## 8. Gerenciamento dos itens
 
-Depois de preencher custos, o usuário revisa os itens cadastrados. Pode:
+Na revisão final, o usuário confere tanto os dados gerais do negócio quanto os
+itens cadastrados. Pode:
 
 - adicionar outro item;
-- editar um item preservando seus valores;
+- editar diretamente o cenário, os gastos mensais, a retirada do dono e as taxas;
+- editar separadamente o nome, os custos/preço ou o volume de cada item,
+  preservando os demais valores;
 - solicitar a remoção de um item;
 - confirmar ou cancelar a remoção em um diálogo;
-- avançar para a revisão final.
+- gerar o diagnóstico sem passar por uma segunda tela de revisão.
 
 Sempre deve existir ao menos um item. A remoção do único item fica desabilitada
 e um tooltip explica o motivo. Ingredientes seguem a mesma regra: uma ficha

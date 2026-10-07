@@ -7,8 +7,6 @@ type ReportLanguageProfile = {
   analysisEyebrow: string;
   analysisTitle: string;
   analysisDescription: string;
-  numbersTitle: string;
-  numbersDescription: string;
   priorityEyebrow: string;
   toneLabels: Record<ReportTone, string>;
   savedReportLabel: string;
@@ -22,9 +20,7 @@ const currentReportLanguage = {
   analysisEyebrow: "Entenda o resultado",
   analysisTitle: "Como chegamos a esse resultado",
   analysisDescription:
-    "Veja o que precisa ser pago, qual é o resultado e quantas vendas são necessárias.",
-  numbersTitle: "Seus números",
-  numbersDescription: "Valores calculados com o que você informou.",
+    "Os indicadores abaixo reagem ao que você informou: quanto precisa vender, qual é o menor preço e quanto sobra.",
   priorityEyebrow: "Comece por aqui",
   toneLabels: {
     neutral: "Informação",
@@ -36,7 +32,7 @@ const currentReportLanguage = {
   verdictLabels: {
     missing_price: "Informe o preço",
     direct_loss: "Prejuízo por venda",
-    incomplete_volume: "Falta informar as vendas",
+    incomplete_volume: "Equilíbrio como referência",
     operational_loss: "Prejuízo no mês",
     no_sales: "Sem vendas no mês",
     break_even: "No limite",

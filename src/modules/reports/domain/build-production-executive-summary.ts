@@ -3,6 +3,17 @@ import type {
   ProductionReportCalculation,
   ReportExecutiveSummary,
 } from "../types";
+import {
+  deriveQuickBreakEvenScenario,
+  type BreakEvenScenario,
+} from "./break-even-scenario";
+import {
+  BREAK_EVEN_REFERENCE_PRIORITY_BODY,
+  BREAK_EVEN_REFERENCE_VERDICT,
+  scenarioImmediateAction,
+  scenarioPriceSufficiencyAnswer,
+  scenarioProfitabilityAnswer,
+} from "./break-even-scenario-copy";
 
 const verdictContent = {
   direct_loss: {
@@ -10,11 +21,7 @@ const verdictContent = {
     body: "Cada unidade vendida deixa um valor negativo antes dos gastos mensais.",
     tone: "critical",
   },
-  incomplete_volume: {
-    label: "Falta informar as vendas",
-    body: "A quantidade do mês ainda não foi informada.",
-    tone: "neutral",
-  },
+  incomplete_volume: BREAK_EVEN_REFERENCE_VERDICT,
   no_sales: {
     label: "Sem vendas no mês",
     body: "O mês informado teve volume zero e manteve os gastos mensais.",
@@ -36,7 +43,10 @@ const verdictContent = {
     tone: "positive",
   },
 } as const;
-function profitabilityAnswer(calculation: ProductionReportCalculation): string {
+function profitabilityAnswer(
+  calculation: ProductionReportCalculation,
+  scenario: BreakEvenScenario | null,
+): string {
   const result = calculation.monthlyResultCents;
   const contribution = calculation.unitContributionCents;
 
@@ -54,7 +64,9 @@ function profitabilityAnswer(calculation: ProductionReportCalculation): string {
   }
 
   if (calculation.verdict === "incomplete_volume") {
-    return `Ainda não dá para calcular se há lucro no mês. No preço atual, cada unidade deixa ${formatCurrency(contribution)} para ajudar a pagar os gastos mensais.`;
+    return scenario
+      ? scenarioProfitabilityAnswer(scenario, contribution, "unidades")
+      : `Ainda não dá para calcular se há lucro no mês. No preço atual, cada unidade deixa ${formatCurrency(contribution)} para ajudar a pagar os gastos mensais.`;
   }
 
   if (calculation.verdict === "no_sales") {
@@ -76,12 +88,15 @@ function profitabilityAnswer(calculation: ProductionReportCalculation): string {
 
 function priceSufficiencyAnswer(
   calculation: ProductionReportCalculation,
+  scenario: BreakEvenScenario | null,
 ): string {
   if (calculation.verdict === "direct_loss") {
     return "Não. O preço atual não cobre o custo de fabricação e as cobranças da venda.";
   }
   if (calculation.verdict === "incomplete_volume") {
-    return "Ainda não dá para confirmar. Falta uma quantidade para distribuir os gastos mensais e calcular o preço completo.";
+    return scenario
+      ? scenarioPriceSufficiencyAnswer(scenario, "unidades")
+      : "Ainda não dá para confirmar. Falta uma quantidade para distribuir os gastos mensais e calcular o preço completo.";
   }
   if (calculation.verdict === "no_sales") {
     return "Ainda não dá para confirmar com o mês informado, porque não houve vendas.";
@@ -102,11 +117,11 @@ function buildProductionExecutiveSummary(
   calculation: ProductionReportCalculation,
 ): ReportExecutiveSummary {
   const monthlyResult = calculation.monthlyResultCents;
+  const scenario = deriveQuickBreakEvenScenario(calculation);
   const priorityBody = {
     direct_loss:
       "Revise primeiro o preço, as cobranças da venda e o custo de fabricação.",
-    incomplete_volume:
-      "Informe a quantidade vendida para completar o resultado mensal.",
+    incomplete_volume: BREAK_EVEN_REFERENCE_PRIORITY_BODY,
     no_sales: "Use a quantidade necessária como referência para o próximo mês.",
     operational_loss:
       "Revise primeiro o preço e os gastos considerados no mês.",
@@ -116,8 +131,9 @@ function buildProductionExecutiveSummary(
   const action = {
     direct_loss:
       "Revise o preço, as cobranças da venda ou o custo de fabricação antes de vender mais.",
-    incomplete_volume:
-      "Informe quantas unidades costuma vender no mês para completar o resultado.",
+    incomplete_volume: scenario
+      ? scenarioImmediateAction(scenario, "unidades")
+      : "Informe quantas unidades costuma vender no mês para completar o resultado.",
     no_sales:
       "Use a quantidade necessária abaixo como primeira referência para o próximo mês.",
     operational_loss:
@@ -127,8 +143,8 @@ function buildProductionExecutiveSummary(
     positive_result:
       "Acompanhe o lucro, quanto ele representa a cada R$ 100 e a quantidade vendida.",
   }[calculation.verdict];
-  const profitability = profitabilityAnswer(calculation);
-  const priceAnswer = priceSufficiencyAnswer(calculation);
+  const profitability = profitabilityAnswer(calculation, scenario);
+  const priceAnswer = priceSufficiencyAnswer(calculation, scenario);
   const priorityLabel = {
     cost: "Custo de fabricação",
     data: "Quantidade vendida",
@@ -148,12 +164,16 @@ function buildProductionExecutiveSummary(
         currentLabel: "Resultado do mês",
         currentValue:
           monthlyResult === null
-            ? "Ainda não calculado"
+            ? scenario
+              ? "R$ 0,00 no ponto de equilíbrio"
+              : "Ainda não calculado"
             : formatCurrency(monthlyResult),
         referenceLabel: "Quanto sobra a cada R$ 100",
         referenceValue:
           calculation.realMarginBasisPoints === null
-            ? "Ainda não calculado"
+            ? scenario
+              ? "0% no ponto de equilíbrio"
+              : "Ainda não calculado"
             : formatBasisPoints(calculation.realMarginBasisPoints),
       },
       {
@@ -163,7 +183,9 @@ function buildProductionExecutiveSummary(
         referenceLabel: "Menor preço para não ficar no prejuízo",
         referenceValue:
           calculation.minimumPriceCents === null
-            ? "Ainda não calculado"
+            ? scenario?.breakEvenPriceCents != null
+              ? formatCurrency(scenario.breakEvenPriceCents)
+              : "Ainda não calculado"
             : formatCurrency(calculation.minimumPriceCents),
       },
     ],

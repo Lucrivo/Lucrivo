@@ -105,7 +105,7 @@ const partialProductionCommand: DetailedDiagnosisCommand = {
       kind: "manufacturing",
       costMode: "summarized",
       unitSalePriceCents: 3_500,
-      monthlySalesVolume: 80,
+      monthlySalesVolume: null,
       productionUnitCostCents: 1_800,
     },
   ],

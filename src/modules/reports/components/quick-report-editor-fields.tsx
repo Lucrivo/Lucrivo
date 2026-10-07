@@ -1,7 +1,15 @@
 "use client";
 
+import {
+  PlainLanguageHelp,
+  type PlainLanguageHelpContent,
+} from "@/components/shared/plain-language-help";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  cardFeeRateHelp,
+  taxRateHelp,
+} from "@/modules/quick-diagnosis/components/shared/sales-fees-help";
 
 import type { EditableReportDraft } from "../editor/report-editor.types";
 
@@ -12,6 +20,7 @@ function EditorField({
   label,
   value,
   error,
+  help,
   onChange,
   inputMode = "decimal",
 }: {
@@ -19,6 +28,7 @@ function EditorField({
   label: string;
   value: string;
   error?: string[];
+  help?: PlainLanguageHelpContent;
   onChange: (value: string) => void;
   inputMode?: "decimal" | "numeric" | "text";
 }) {
@@ -34,6 +44,7 @@ function EditorField({
         aria-describedby={error?.length ? errorId : undefined}
         onChange={(event) => onChange(event.target.value)}
       />
+      {help ? <PlainLanguageHelp {...help} /> : null}
       {error?.length ? (
         <p id={errorId} className="text-destructive text-sm" role="alert">
           {error[0]}
@@ -47,27 +58,32 @@ function BooleanField({
   id,
   label,
   checked,
+  help,
   onChange,
 }: {
   id: string;
   label: string;
   checked: boolean;
+  help?: PlainLanguageHelpContent;
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label
-      htmlFor={id}
-      className="border-border bg-card flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm font-medium"
-    >
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        className="accent-primary size-4"
-        onChange={(event) => onChange(event.target.checked)}
-      />
-      {label}
-    </label>
+    <div className="grid min-w-0 content-start gap-2">
+      <label
+        htmlFor={id}
+        className="border-border bg-card flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm font-medium"
+      >
+        <input
+          id={id}
+          type="checkbox"
+          checked={checked}
+          className="accent-primary size-4"
+          onChange={(event) => onChange(event.target.checked)}
+        />
+        {label}
+      </label>
+      {help ? <PlainLanguageHelp {...help} /> : null}
+    </div>
   );
 }
 
@@ -194,6 +210,7 @@ function QuickReportEditorFields({
             id="paysRevenueTax"
             label="Pago imposto sobre o valor recebido"
             checked={values.paysRevenueTax === true}
+            help={taxRateHelp({ meiMode: "choice" })}
             onChange={(value) => update("paysRevenueTax", value)}
           />
           <BooleanField
@@ -217,6 +234,7 @@ function QuickReportEditorFields({
               label="Taxa de pagamento (%)"
               value={values.paymentFeeRate}
               error={errors.paymentFeeRate}
+              help={cardFeeRateHelp}
               onChange={(value) => update("paymentFeeRate", value)}
             />
           ) : null}
@@ -264,6 +282,7 @@ function QuickReportEditorFields({
             label="Impostos (%)"
             value={values.taxRate}
             error={errors.taxRate}
+            help={taxRateHelp()}
             onChange={(value) => update("taxRate", value)}
           />
           <EditorField
@@ -271,6 +290,7 @@ function QuickReportEditorFields({
             label="Cartão ou plataforma (%)"
             value={values.cardFeeRate}
             error={errors.cardFeeRate}
+            help={cardFeeRateHelp}
             onChange={(value) => update("cardFeeRate", value)}
           />
         </div>
@@ -357,6 +377,7 @@ function QuickReportEditorFields({
           label="Impostos (%)"
           value={values.taxRate}
           error={errors.taxRate}
+          help={taxRateHelp()}
           onChange={(value) => update("taxRate", value)}
         />
         <EditorField
@@ -364,6 +385,7 @@ function QuickReportEditorFields({
           label="Cartão ou plataforma (%)"
           value={values.cardFeeRate}
           error={errors.cardFeeRate}
+          help={cardFeeRateHelp}
           onChange={(value) => update("cardFeeRate", value)}
         />
       </div>

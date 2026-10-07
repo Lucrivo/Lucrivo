@@ -210,6 +210,13 @@ describe("service diagnosis steps", () => {
     }
 
     render(<Harness />);
+    await user.click(
+      screen.getByRole("button", { name: "Como preencher os impostos?" }),
+    );
+    expect(screen.getByText(/escolha “Não”/i)).toBeVisible();
+    expect(screen.getByText(/etapa 3/i)).toBeVisible();
+    await user.keyboard("{Escape}");
+
     const tax = screen.getByRole("radiogroup", {
       name: "Você paga impostos sobre o valor recebido?",
     });

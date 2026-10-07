@@ -74,9 +74,22 @@ function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
           </p>
         ) : null}
 
+        {item.breakEvenReferenceLabel ? (
+          <p className="border-info/25 bg-info/8 text-foreground flex items-start gap-2 rounded-xl border p-3 text-sm leading-5">
+            <InfoIcon
+              aria-hidden="true"
+              className="text-info mt-0.5 size-4 shrink-0"
+            />
+            {item.breakEvenReferenceLabel}
+          </p>
+        ) : null}
+
         {item.completeCostUnavailableReason ? (
-          <p className="border-info/25 bg-info/8 text-info flex items-start gap-2 rounded-xl border p-3 text-sm leading-5">
-            <InfoIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+          <p className="border-info/25 bg-info/8 text-foreground flex items-start gap-2 rounded-xl border p-3 text-sm leading-5">
+            <InfoIcon
+              aria-hidden="true"
+              className="text-info mt-0.5 size-4 shrink-0"
+            />
             {item.completeCostUnavailableReason}
           </p>
         ) : null}

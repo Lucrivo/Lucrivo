@@ -1,4 +1,5 @@
 import { StepField } from "../../shared/step-field";
+import { cardFeeRateHelp, taxRateHelp } from "../../shared/sales-fees-help";
 import type { ServiceFeesStepProps } from "./types";
 import { YesNoChoice } from "./yes-no-choice";
 
@@ -17,6 +18,10 @@ function FeesStep({
           field="paysRevenueTax"
           value={values.paysRevenueTax}
           error={errors.paysRevenueTax?.[0]}
+          help={taxRateHelp({
+            fixedExpensesStepNumber: 3,
+            meiMode: "choice",
+          })}
           onChange={onPaysRevenueTaxChange}
         />
         {values.paysRevenueTax ? (
@@ -27,6 +32,7 @@ function FeesStep({
             errors={errors}
             onChange={onChange}
             suffix="%"
+            help={cardFeeRateHelp}
           />
         ) : null}
       </div>

@@ -1,6 +1,11 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowLeftIcon, CalendarDaysIcon, PlusIcon } from "lucide-react";
+import {
+  ArrowDownIcon,
+  ArrowLeftIcon,
+  CalendarDaysIcon,
+  PlusIcon,
+} from "lucide-react";
 
 import { Accordion } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -8,12 +13,15 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import { toDetailedReportViewModel } from "../presenters/to-detailed-report-view-model";
-import type { CurrentDetailedReportSnapshot } from "../types";
+import {
+  DETAILED_REPORT_CONTENT_VERSION,
+  type CurrentDetailedReportSnapshot,
+} from "../types";
 import { DetailedGuidanceList } from "./detailed-guidance-list";
 import { DetailedItemBreakdown } from "./detailed-item-breakdown";
 import { DetailedItemCard } from "./detailed-item-card";
 import { ReportExecutiveSummary } from "./report-executive-summary";
-import { ReportNumbers } from "./report-numbers";
+import { ReportIndicators } from "./report-indicators";
 import { ReportSectionCard } from "./report-section-card";
 
 function DetailedReportDetail({
@@ -28,9 +36,47 @@ function DetailedReportDetail({
   management?: ReactNode;
 }) {
   const viewModel = toDetailedReportViewModel({ id, createdAt, snapshot });
+  const legacySections =
+    snapshot.contentVersion === DETAILED_REPORT_CONTENT_VERSION
+      ? []
+      : viewModel.sections;
+  const legacyDetails =
+    legacySections.length > 0 ? (
+      <section
+        aria-labelledby="legacy-calculation-title"
+        className="grid gap-4"
+      >
+        <div className="grid gap-2 px-1">
+          <h2 id="legacy-calculation-title" className="text-2xl">
+            Detalhes preservados deste relatório
+          </h2>
+          <p className="text-muted-foreground max-w-3xl text-sm leading-6">
+            Estes textos foram gravados com as regras vigentes quando o
+            relatório foi criado.
+          </p>
+        </div>
+        {legacySections.map((section) => (
+          <ReportSectionCard key={section.key} section={section} />
+        ))}
+      </section>
+    ) : null;
+
+  const itemDetailsLink =
+    viewModel.items.length > 1 ? (
+      <a
+        href="#item-details"
+        className={buttonVariants({ variant: "outline", size: "lg" })}
+      >
+        Ver mais detalhes item por item
+        <ArrowDownIcon aria-hidden="true" />
+      </a>
+    ) : null;
 
   return (
-    <main className="mx-auto grid w-full max-w-7xl min-w-0 gap-7 pb-10">
+    <main
+      data-smooth-report-scroll
+      className="mx-auto grid w-full max-w-7xl min-w-0 gap-7 pb-10"
+    >
       <header className="border-primary/15 bg-card relative overflow-hidden rounded-3xl border px-5 py-6 shadow-sm sm:px-8 sm:py-8">
         <div
           aria-hidden="true"
@@ -81,32 +127,36 @@ function DetailedReportDetail({
         priorityEyebrow="Comece por aqui"
       />
 
-      <div className="grid items-start gap-6 @4xl/page:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)]">
-        <ReportNumbers
-          numbers={viewModel.numbers}
-          title="Seus números"
-          description="Valores calculados com todos os itens e gastos que você informou."
+      <section aria-labelledby="detailed-analysis-title" className="grid gap-4">
+        <div className="mb-1 grid gap-2 px-1">
+          <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
+            Entenda o resultado
+          </p>
+          <h2 id="detailed-analysis-title" className="text-2xl">
+            Como chegamos a esse resultado
+          </h2>
+          <p className="text-muted-foreground max-w-2xl text-sm leading-6">
+            Os indicadores abaixo reagem ao que você informou: quanto precisa
+            vender, qual é o faturamento de equilíbrio e quanto sobra.
+          </p>
+        </div>
+        <ReportIndicators
+          indicators={viewModel.indicators}
+          actions={itemDetailsLink ? { sales: itemDetailsLink } : undefined}
         />
-        <section
-          aria-labelledby="detailed-analysis-title"
-          className="grid gap-4"
-        >
-          <div className="mb-1 grid gap-2 px-1">
-            <h2 id="detailed-analysis-title" className="text-2xl">
-              Como chegamos a esse resultado
-            </h2>
-            <p className="text-muted-foreground max-w-2xl text-sm leading-6">
-              Veja os preços mínimos por item, o resultado do mês e o
-              faturamento necessário.
-            </p>
-          </div>
-          {viewModel.sections.map((section) => (
-            <ReportSectionCard key={section.key} section={section} />
-          ))}
-        </section>
-      </div>
+      </section>
 
-      <section aria-labelledby="item-details-title" className="grid gap-4">
+      {legacyDetails}
+
+      {viewModel.minimumPriceSection ? (
+        <ReportSectionCard section={viewModel.minimumPriceSection} />
+      ) : null}
+
+      <section
+        id="item-details"
+        aria-labelledby="item-details-title"
+        className="grid scroll-mt-6 gap-4 sm:scroll-mt-8"
+      >
         <div className="grid gap-2 px-1">
           <h2 id="item-details-title" className="text-2xl">
             Item por item

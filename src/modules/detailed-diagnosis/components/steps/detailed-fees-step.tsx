@@ -5,6 +5,7 @@ import type { DetailedStepProps } from "./types";
 function DetailedFeesStep({ state, dispatch }: DetailedStepProps) {
   return (
     <SalesFeesFields
+      fixedExpensesStepNumber={state.values.category === "product" ? 6 : 5}
       tax={{
         field: "taxRate",
         value: state.values.taxRate,

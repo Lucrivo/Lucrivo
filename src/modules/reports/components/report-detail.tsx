@@ -9,8 +9,7 @@ import { cn } from "@/lib/utils";
 import type { ReportViewModel } from "../presenters/to-report-view-model";
 import { DiscountSimulator } from "./discount-simulator";
 import { ReportExecutiveSummary } from "./report-executive-summary";
-import { ReportNumbers } from "./report-numbers";
-import { ReportSectionCard } from "./report-section-card";
+import { ReportIndicators } from "./report-indicators";
 
 function ReportDetail({
   viewModel,
@@ -75,38 +74,25 @@ function ReportDetail({
         priorityEyebrow={viewModel.language.priorityEyebrow}
       />
 
-      <div className="grid items-start gap-6 @4xl/page:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)]">
-        <ReportNumbers
-          numbers={viewModel.numbers}
-          title={viewModel.language.numbersTitle}
-          description={viewModel.language.numbersDescription}
+      <section
+        aria-label={viewModel.language.analysisAriaLabel}
+        className="grid gap-4"
+      >
+        <div className="mb-1 grid gap-1 px-1">
+          <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
+            {viewModel.language.analysisEyebrow}
+          </p>
+          <h2 className="text-2xl">{viewModel.language.analysisTitle}</h2>
+          <p className="text-muted-foreground max-w-2xl text-sm leading-6">
+            {viewModel.language.analysisDescription}
+          </p>
+        </div>
+        <ReportIndicators indicators={viewModel.indicators} />
+        <DiscountSimulator
+          base={viewModel.discountSimulationBase}
+          context={viewModel.discountSimulationContext}
         />
-        <section
-          aria-label={viewModel.language.analysisAriaLabel}
-          className="grid gap-4"
-        >
-          <div className="mb-1 grid gap-1 px-1">
-            <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">
-              {viewModel.language.analysisEyebrow}
-            </p>
-            <h2 className="text-2xl">{viewModel.language.analysisTitle}</h2>
-            <p className="text-muted-foreground max-w-2xl text-sm leading-6">
-              {viewModel.language.analysisDescription}
-            </p>
-          </div>
-          {viewModel.sections.map((section) =>
-            section.key === "discount_simulator" ? (
-              <DiscountSimulator
-                key={section.key}
-                base={viewModel.discountSimulationBase}
-                context={viewModel.discountSimulationContext}
-              />
-            ) : (
-              <ReportSectionCard key={section.key} section={section} />
-            ),
-          )}
-        </section>
-      </div>
+      </section>
     </main>
   );
 }

@@ -1,0 +1,355 @@
+.landing-experience .faq-section {
+  scroll-margin-top: 104px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.landing-experience .faq-shell {
+  width: min(100%, 1240px);
+  margin: 0 auto;
+}
+
+/* Header: title left, lead right, aligned on the baseline. */
+.landing-experience .faq-header {
+  display: grid;
+  margin-bottom: clamp(40px, 4.5vw, 64px);
+  align-items: end;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: clamp(24px, 4vw, 64px);
+}
+
+.landing-experience .faq-header .eyebrow {
+  margin-bottom: 22px;
+  color: var(--landing-primary);
+}
+
+.landing-experience .faq-header h2 {
+  margin: 0;
+  font-size: clamp(2.8rem, 5vw, 5.2rem);
+  font-weight: 540;
+  line-height: 0.98;
+  letter-spacing: -0.05em;
+  text-wrap: balance;
+}
+
+.landing-experience .faq-header-lead {
+  max-width: 34rem;
+  margin: 0 0 10px;
+  color: oklch(0.42 0.04 258);
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+/* Groups: each one is a row with its own sticky intro, so the left column
+   always carries content instead of a single sticky title. */
+.landing-experience .faq-groups {
+  border-top: 1px solid var(--line);
+}
+
+.landing-experience .faq-group {
+  display: grid;
+  padding: clamp(36px, 4vw, 56px) 0;
+  align-items: start;
+  grid-template-columns: minmax(0, 0.42fr) minmax(0, 0.58fr);
+  gap: clamp(28px, 5vw, 88px);
+  border-bottom: 1px solid var(--line);
+}
+
+.landing-experience .faq-group-intro {
+  position: sticky;
+  top: 124px;
+}
+
+.landing-experience .faq-group-index {
+  display: inline-grid;
+  min-width: 44px;
+  height: 28px;
+  padding: 0 10px;
+  place-items: center;
+  border-radius: 999px;
+  background: oklch(0.56 0.23 259 / 0.1);
+  color: var(--landing-primary);
+  font-size: 0.72rem;
+  font-weight: 740;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+}
+
+.landing-experience .faq-group h3 {
+  margin: 18px 0 0;
+  font-size: clamp(1.6rem, 2.2vw, 2.2rem);
+  font-weight: 560;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.landing-experience .faq-group-intro > p {
+  max-width: 30ch;
+  margin: 14px 0 0;
+  color: oklch(0.42 0.04 258);
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+/* Items: hairline list instead of stacked cards. */
+.landing-experience .faq-list {
+  display: grid;
+}
+
+.landing-experience .faq-item {
+  border-bottom: 1px solid var(--line);
+  interpolate-size: allow-keywords;
+}
+
+.landing-experience .faq-item:last-child {
+  border-bottom: 0;
+}
+
+.landing-experience .faq-item summary {
+  display: grid;
+  padding: 20px 0;
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  gap: 20px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.landing-experience .faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.landing-experience .faq-item summary:focus-visible {
+  outline: 3px solid oklch(0.72 0.2 244 / 0.48);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.landing-experience .faq-question {
+  font-size: 1.08rem;
+  font-weight: 620;
+  line-height: 1.4;
+  letter-spacing: -0.018em;
+  transition: color 200ms ease;
+}
+
+.landing-experience .faq-item summary:hover .faq-question,
+.landing-experience .faq-item[open] .faq-question {
+  color: var(--landing-primary);
+}
+
+.landing-experience .faq-toggle {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--landing-primary);
+  transition:
+    background 220ms ease,
+    border-color 220ms ease,
+    color 220ms ease;
+}
+
+.landing-experience .faq-toggle svg {
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.landing-experience .faq-item summary:hover .faq-toggle {
+  border-color: oklch(0.56 0.23 259 / 0.4);
+}
+
+.landing-experience .faq-item[open] .faq-toggle {
+  border-color: transparent;
+  background: var(--landing-primary);
+  color: var(--landing-primary-foreground);
+}
+
+.landing-experience .faq-item[open] .faq-toggle svg {
+  transform: rotate(45deg);
+}
+
+.landing-experience .faq-item::details-content {
+  overflow: hidden;
+  block-size: 0;
+  transition:
+    block-size 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    content-visibility 280ms allow-discrete;
+}
+
+.landing-experience .faq-item[open]::details-content {
+  block-size: auto;
+}
+
+.landing-experience .faq-answer {
+  padding: 0 52px 24px 0;
+}
+
+.landing-experience .faq-answer p {
+  max-width: 58ch;
+  margin: 0;
+  color: oklch(0.36 0.04 258);
+  font-size: 1rem;
+  line-height: 1.62;
+  overflow-wrap: anywhere;
+}
+
+.landing-experience .faq-answer a {
+  color: var(--landing-primary);
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-color: oklch(0.56 0.23 259 / 0.4);
+  text-underline-offset: 3px;
+}
+
+.landing-experience .faq-answer a:hover {
+  text-decoration-color: currentcolor;
+}
+
+/* Closing panel: dark card with contact on the left and the offer on the right. */
+.landing-experience .faq-closing {
+  position: relative;
+  display: grid;
+  margin-top: clamp(48px, 5vw, 72px);
+  padding: clamp(30px, 3.6vw, 52px);
+  overflow: hidden;
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: clamp(28px, 4vw, 64px);
+  border-radius: 24px;
+  background:
+    radial-gradient(
+      circle at 88% 10%,
+      oklch(0.56 0.23 259 / 0.34),
+      transparent 42%
+    ),
+    var(--ink);
+  color: oklch(0.955 0.012 255);
+  box-shadow: 0 40px 90px -50px oklch(0.1 0.05 258 / 0.7);
+}
+
+.landing-experience .faq-closing-kicker {
+  margin: 0;
+  color: var(--landing-info);
+  font-size: 0.72rem;
+  font-weight: 720;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.landing-experience .faq-closing-contact {
+  margin: 14px 0 0;
+  font-size: clamp(1.4rem, 2.2vw, 2rem);
+  font-weight: 540;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+
+.landing-experience .faq-closing-contact a {
+  color: var(--landing-primary-bright);
+  text-decoration: underline;
+  text-decoration-color: oklch(0.67 0.2 255 / 0.4);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+  transition: text-decoration-color 200ms ease;
+}
+
+.landing-experience .faq-closing-contact a:hover {
+  text-decoration-color: currentcolor;
+}
+
+.landing-experience .faq-closing-meta {
+  margin: 12px 0 0;
+  color: oklch(0.955 0.012 255 / 0.6);
+  font-size: 0.92rem;
+}
+
+.landing-experience .faq-closing-action {
+  display: grid;
+  justify-items: start;
+  gap: 16px;
+}
+
+.landing-experience .faq-closing-action .button {
+  box-shadow: 0 18px 36px -14px oklch(0.56 0.23 259 / 0.7);
+}
+
+@media (max-width: 980px) {
+  .landing-experience .faq-header,
+  .landing-experience .faq-group {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-experience .faq-header {
+    gap: 24px;
+  }
+
+  .landing-experience .faq-header-lead {
+    margin-bottom: 0;
+  }
+
+  .landing-experience .faq-group {
+    gap: 28px;
+  }
+
+  .landing-experience .faq-group-intro {
+    position: static;
+  }
+
+  .landing-experience .faq-group-intro > p {
+    max-width: 48ch;
+  }
+
+  .landing-experience .faq-closing {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+@media (max-width: 720px) {
+  .landing-experience .faq-section {
+    scroll-margin-top: 84px;
+  }
+
+  .landing-experience .faq-header h2 {
+    font-size: clamp(2.5rem, 11.5vw, 3.6rem);
+  }
+
+  .landing-experience .faq-item summary {
+    padding: 18px 0;
+    gap: 14px;
+  }
+
+  .landing-experience .faq-question {
+    font-size: 1rem;
+  }
+
+  .landing-experience .faq-answer {
+    padding: 0 0 20px;
+  }
+
+  .landing-experience .faq-closing {
+    padding: 28px 22px;
+    border-radius: 20px;
+  }
+
+  .landing-experience .faq-closing-action {
+    justify-items: stretch;
+  }
+
+  .landing-experience .faq-closing-action .button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-experience .faq-item::details-content,
+  .landing-experience .faq-toggle,
+  .landing-experience .faq-toggle svg,
+  .landing-experience .faq-question {
+    transition: none;
+  }
+}

@@ -6,7 +6,6 @@ import type { DetailedProductItemInput } from "../../types";
 import { createInitialDetailedWizardState } from "../detailed-wizard-state";
 import { DetailedFeesStep } from "./detailed-fees-step";
 import { DetailedFixedExpensesStep } from "./detailed-fixed-expenses-step";
-import { DetailedItemCompleteStep } from "./detailed-item-complete-step";
 import { DetailedItemNameStep } from "./detailed-item-name-step";
 import { DetailedItemVolumeStep } from "./detailed-item-volume-step";
 import { DetailedOwnerCompensationStep } from "./detailed-owner-compensation-step";
@@ -81,8 +80,11 @@ describe("detailed common steps", () => {
     ).toBeEnabled();
   });
 
-  it("makes both global fees explicit without a promotion field", () => {
-    render(<DetailedFeesStep state={productState()} dispatch={vi.fn()} />);
+  it("makes both global fees explicit with category-specific guidance", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <DetailedFeesStep state={productState()} dispatch={vi.fn()} />,
+    );
 
     expect(
       screen.getByLabelText("Qual porcentagem da venda vai para impostos?"),
@@ -95,6 +97,17 @@ describe("detailed common steps", () => {
     expect(
       screen.queryByLabelText(/margem mínima para simular promoções/i),
     ).not.toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "Como preencher os impostos?" }),
+    );
+    expect(screen.getByText(/etapa 6/i)).toBeVisible();
+    await user.keyboard("{Escape}");
+
+    rerender(<DetailedFeesStep state={productionState()} dispatch={vi.fn()} />);
+    await user.click(
+      screen.getByRole("button", { name: "Como preencher os impostos?" }),
+    );
+    expect(screen.getByText(/etapa 5/i)).toBeVisible();
   });
 
   it("separates the item name and shared optional-volume guidance", async () => {
@@ -161,7 +174,13 @@ describe("category-specific detailed costs", () => {
     expect(screen.queryByText(/fornecedor/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/embalagem/i)).not.toBeInTheDocument();
 
-    rerender(<DetailedItemCompleteStep state={state} dispatch={vi.fn()} />);
+    rerender(
+      <DetailedReviewStep
+        state={{ ...state, phase: "review" }}
+        dispatch={vi.fn()}
+        onSubmit={vi.fn()}
+      />,
+    );
     expect(screen.getByText("Custo direto por venda")).toBeVisible();
     expect(
       screen.queryByText(/ficha técnica|fabricação/i),
@@ -325,21 +344,28 @@ describe("category-specific detailed costs", () => {
   });
 });
 
-describe("detailed item completion and review", () => {
-  it("offers exact item actions and confirms destructive removal", async () => {
+describe("detailed review", () => {
+  it("summarizes the business, offers exact edits, and confirms removal", async () => {
     const user = userEvent.setup();
     const dispatch = vi.fn();
     const state = productState();
     const item = state.values.items[0] as DetailedProductItemInput;
     const withTwo = {
       ...state,
-      phase: "itemComplete" as const,
+      phase: "review" as const,
+      productKind: "resale" as const,
       values: {
         ...state.values,
+        fixedMonthlyExpenses: "1000",
+        proLaboreIncluded: true,
+        proLabore: "2500",
+        taxRate: "6",
+        cardFeeRate: "3,5",
         items: [
           {
             ...item,
             name: "Caneca",
+            purchaseUnitCost: "10",
             unitSalePrice: "30",
             monthlySalesVolume: "37",
           },
@@ -348,13 +374,48 @@ describe("detailed item completion and review", () => {
       },
     };
     const { rerender } = render(
-      <DetailedItemCompleteStep state={withTwo} dispatch={dispatch} />,
+      <DetailedReviewStep
+        state={withTwo}
+        dispatch={dispatch}
+        onSubmit={vi.fn()}
+      />,
     );
 
-    await user.click(screen.getByRole("button", { name: "Editar Caneca" }));
+    expect(screen.getByText("Dados do negócio")).toBeVisible();
+    expect(screen.getByText(/R\$\s*1\.000,00/)).toBeVisible();
+    expect(screen.getByText(/R\$\s*2\.500,00/)).toBeVisible();
+    expect(screen.getByText("3,5%")).toBeVisible();
+
+    await user.click(
+      screen.getByRole("button", { name: "Editar gastos mensais" }),
+    );
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "editGeneral",
+      phase: "fixedExpenses",
+    });
+    await user.click(
+      screen.getByRole("button", { name: "Editar identificação de Caneca" }),
+    );
     expect(dispatch).toHaveBeenCalledWith({
       type: "editItem",
       itemId: "item-1",
+      phase: "itemName",
+    });
+    await user.click(
+      screen.getByRole("button", { name: "Editar custos e preço de Caneca" }),
+    );
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "editItem",
+      itemId: "item-1",
+      phase: "itemValues",
+    });
+    await user.click(
+      screen.getByRole("button", { name: "Editar volume de Caneca" }),
+    );
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "editItem",
+      itemId: "item-1",
+      phase: "itemVolume",
     });
     await user.click(screen.getByRole("button", { name: "Remover Caneca" }));
     expect(dispatch).toHaveBeenCalledWith({
@@ -364,14 +425,12 @@ describe("detailed item completion and review", () => {
     expect(
       screen.getByRole("button", { name: "Adicionar outro produto" }),
     ).toBeEnabled();
-    expect(
-      screen.getByRole("button", { name: "Revisar diagnóstico" }),
-    ).toBeEnabled();
 
     rerender(
-      <DetailedItemCompleteStep
+      <DetailedReviewStep
         state={{ ...withTwo, pendingRemovalItemId: "item-1" }}
         dispatch={dispatch}
+        onSubmit={vi.fn()}
       />,
     );
     await user.click(screen.getByRole("button", { name: "Cancelar" }));
@@ -379,9 +438,10 @@ describe("detailed item completion and review", () => {
     expect(dispatch).not.toHaveBeenCalledWith({ type: "confirmRemoveItem" });
 
     rerender(
-      <DetailedItemCompleteStep
+      <DetailedReviewStep
         state={{ ...withTwo, pendingRemovalItemId: "item-1" }}
         dispatch={dispatch}
+        onSubmit={vi.fn()}
       />,
     );
     await user.click(screen.getByRole("button", { name: "Confirmar remoção" }));
@@ -424,7 +484,9 @@ describe("detailed item completion and review", () => {
     expect(screen.getByText("Volume ainda não informado")).toBeVisible();
     expect(screen.getByText("Nenhuma venda no mês")).toBeVisible();
     expect(screen.getByText("37 unidades por mês")).toBeVisible();
-    expect(screen.getByText(/resultado será parcial/i)).toBeVisible();
+    expect(
+      screen.getByText(/ponto de equilíbrio como referência/i),
+    ).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Gerar diagnóstico detalhado" }),
     ).toBeEnabled();

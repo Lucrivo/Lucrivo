@@ -1,16 +1,22 @@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  PlainLanguageHelp,
+  type PlainLanguageHelpContent,
+} from "@/components/shared/plain-language-help";
 
 function YesNoChoice({
   question,
   field,
   value,
   error,
+  help,
   onChange,
 }: {
   question: string;
   field: string;
   value: boolean | null;
   error?: string;
+  help?: PlainLanguageHelpContent;
   onChange: (value: boolean) => void;
 }) {
   const errorId = `${field}-error`;
@@ -18,6 +24,7 @@ function YesNoChoice({
   return (
     <fieldset className="grid gap-3">
       <legend className="text-sm font-medium">{question}</legend>
+      {help ? <PlainLanguageHelp {...help} /> : null}
       <RadioGroup
         data-field={field}
         aria-label={question}

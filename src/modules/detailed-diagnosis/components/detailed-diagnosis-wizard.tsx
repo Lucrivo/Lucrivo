@@ -17,7 +17,6 @@ import {
 } from "./detailed-wizard-state";
 import { DetailedFeesStep } from "./steps/detailed-fees-step";
 import { DetailedFixedExpensesStep } from "./steps/detailed-fixed-expenses-step";
-import { DetailedItemCompleteStep } from "./steps/detailed-item-complete-step";
 import { DetailedItemNameStep } from "./steps/detailed-item-name-step";
 import { DetailedItemVolumeStep } from "./steps/detailed-item-volume-step";
 import { DetailedOwnerCompensationStep } from "./steps/detailed-owner-compensation-step";
@@ -46,8 +45,7 @@ const phaseProgress: Record<DetailedWizardPhase, number> = {
   itemVolume: 6,
   ownerCompensation: 7,
   fees: 8,
-  itemComplete: 9,
-  review: 10,
+  review: 9,
 };
 
 function activeItemIndex(state: DetailedWizardState): number {
@@ -75,8 +73,6 @@ function stepTitle(state: DetailedWizardState): string {
       return "Quanto você quer receber por mês?";
     case "fees":
       return "Quais taxas se aplicam a todos os itens?";
-    case "itemComplete":
-      return "Revise os itens do diagnóstico";
     case "review":
       return "Confira o diagnóstico detalhado";
   }
@@ -120,7 +116,6 @@ function pathsForCurrentPhase(state: DetailedWizardState): string[] {
       return ["proLaboreIncluded", "proLabore"];
     case "fees":
       return ["taxRate", "cardFeeRate"];
-    case "itemComplete":
     case "review":
       return [];
   }
@@ -167,8 +162,6 @@ function DetailedDiagnosisWizard({
         return <DetailedOwnerCompensationStep {...stepProps} />;
       case "fees":
         return <DetailedFeesStep {...stepProps} />;
-      case "itemComplete":
-        return <DetailedItemCompleteStep {...stepProps} />;
       case "review":
         return <DetailedReviewStep {...stepProps} onSubmit={submitDiagnosis} />;
     }
@@ -232,10 +225,7 @@ function DetailedDiagnosisWizard({
     }
   }
 
-  const onContinue =
-    state.phase === "itemComplete" || state.phase === "review"
-      ? undefined
-      : continueToNextStep;
+  const onContinue = state.phase === "review" ? undefined : continueToNextStep;
 
   const isProduct = state.values.category === "product";
   const stepNumber =
@@ -245,7 +235,7 @@ function DetailedDiagnosisWizard({
   return (
     <WizardShell
       stepNumber={stepNumber}
-      totalSteps={isProduct ? 11 : 10}
+      totalSteps={isProduct ? 10 : 9}
       title={stepTitle(state)}
       onBack={goBack}
       onContinue={onContinue}

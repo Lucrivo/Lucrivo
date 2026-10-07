@@ -1,5 +1,20 @@
-import type { CurrentDetailedReportSnapshot } from "../types";
 import { ceilDivide } from "./integer-math";
+
+type DetailedSalesGoalInputs = {
+  items: ReadonlyArray<{ monthlySalesVolume: number | null }>;
+};
+
+type DetailedSalesGoalResults = {
+  effectiveFixedCostCents: number;
+  isPartial: boolean;
+  items: ReadonlyArray<{ unitContributionCents: number }>;
+  monthlyContributionCents: number | null;
+};
+
+type DetailedSalesGoalPolicy = {
+  weeklyDivisorHundredths: number;
+  operatingDaysPerWeek: number;
+};
 
 type DetailedSalesGoal =
   | {
@@ -12,12 +27,9 @@ type DetailedSalesGoal =
   | { available: false; reason: string };
 
 function calculateDetailedSalesGoal(
-  inputs: CurrentDetailedReportSnapshot["inputs"],
-  results: CurrentDetailedReportSnapshot["results"],
-  policy: Pick<
-    CurrentDetailedReportSnapshot["policy"],
-    "weeklyDivisorHundredths" | "operatingDaysPerWeek"
-  >,
+  inputs: DetailedSalesGoalInputs,
+  results: DetailedSalesGoalResults,
+  policy: DetailedSalesGoalPolicy,
 ): DetailedSalesGoal {
   if (results.isPartial) {
     if (inputs.items.length !== 1) {
@@ -90,4 +102,10 @@ function calculateDetailedSalesGoal(
   };
 }
 
-export { calculateDetailedSalesGoal, type DetailedSalesGoal };
+export {
+  calculateDetailedSalesGoal,
+  type DetailedSalesGoal,
+  type DetailedSalesGoalInputs,
+  type DetailedSalesGoalPolicy,
+  type DetailedSalesGoalResults,
+};

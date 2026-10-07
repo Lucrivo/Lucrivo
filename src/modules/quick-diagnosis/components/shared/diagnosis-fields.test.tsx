@@ -79,6 +79,7 @@ describe("shared diagnosis fields", () => {
       <SalesFeesFields
         tax={binding("taxRate")}
         card={binding("cardFeeRate")}
+        fixedExpensesStepNumber={4}
       />,
     );
     expect(
@@ -89,6 +90,16 @@ describe("shared diagnosis fields", () => {
         "Qual porcentagem fica com o cartão ou a plataforma?",
       ),
     ).toBeEnabled();
+    await user.click(
+      screen.getByRole("button", { name: "Como preencher os impostos?" }),
+    );
+    expect(screen.getByText(/etapa 4/i)).toBeVisible();
+    expect(screen.getByText(/R\$ 6 de cada R\$ 100/i)).toBeVisible();
+    await user.keyboard("{Escape}");
+    await user.click(
+      screen.getByRole("button", { name: "Quais taxas devo somar?" }),
+    );
+    expect(screen.getByText(/10%.*4%.*3,5%.*17,5%/i)).toBeVisible();
   });
 
   it("preserves the quick-flow unit-value labels", () => {

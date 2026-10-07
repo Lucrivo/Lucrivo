@@ -149,6 +149,7 @@ const detailedReportSnapshotSchema = z
     calculationVersion: z.literal(DETAILED_REPORT_CALCULATION_VERSION),
     contentVersion: z.union([
       z.literal(1),
+      z.literal(2),
       z.literal(DETAILED_REPORT_CONTENT_VERSION),
     ]),
     analysisMode: z.literal("detailed"),

@@ -85,7 +85,7 @@ describe("client dashboard presentations", () => {
     ).toEqual([
       "Preço não informado",
       "Perda por venda",
-      "Volume não informado",
+      "Equilíbrio como referência",
       "Prejuízo no cenário informado",
       "Mês sem vendas",
       "Zero a zero",

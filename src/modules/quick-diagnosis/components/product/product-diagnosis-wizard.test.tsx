@@ -217,7 +217,7 @@ describe("ProductDiagnosisWizard", () => {
     expect(screen.getByText("Não incluído")).toBeInTheDocument();
     expect(screen.queryByText("R$ 2.000,00")).not.toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Sem essa quantidade, o resultado não consegue incluir os gastos mensais em cada unidade.",
+      "Sem informar quantas unidades você vende por mês, não conseguimos distribuir os gastos mensais entre as unidades.",
     );
     expect(screen.getByText("Quanto você quer receber")).toBeInTheDocument();
     expect(

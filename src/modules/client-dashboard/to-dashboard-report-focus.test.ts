@@ -170,7 +170,7 @@ describe("toDashboardReportFocus quick reports", () => {
     ]) {
       expect(
         toDashboardReportFocus(report).metrics.map((item) => item.key),
-      ).toEqual(["profit", "margin", "minimum", "sales"]);
+      ).toEqual(["sales", "minimum", "margin", "discount"]);
     }
 
     expect(toDashboardReportFocus(productReport())).toMatchObject({
@@ -197,35 +197,31 @@ describe("toDashboardReportFocus quick reports", () => {
     });
   });
 
-  it("preserves unavailable Product values instead of inventing zero", () => {
+  it("uses the break-even reference instead of inventing a monthly result", () => {
     const focus = toDashboardReportFocus(
       productReport({ ...productCommand, monthlySalesVolume: null }),
     );
-    const selected = focus.metrics.filter(({ key }) =>
-      ["profit", "margin", "minimum"].includes(key),
-    );
+    const margin = focus.metrics.find(({ key }) => key === "margin");
+    const sales = focus.metrics.find(({ key }) => key === "sales");
 
-    expect(selected.map(({ value }) => value)).toEqual([
+    expect(margin).toMatchObject({ value: "0%", tone: "neutral" });
+    expect(sales?.tone).toBe("neutral");
+    expect(sales?.supportingText).toMatch(/Referência de equilíbrio/);
+    expect(focus.metrics.find(({ key }) => key === "minimum")?.value).not.toBe(
       "Ainda não calculado",
-      "Ainda não calculado",
-      "Ainda não calculado",
-    ]);
-    expect(JSON.stringify(selected)).not.toContain("R$ 0,00");
+    );
   });
 
-  it("shows the calculated discount limit with its mandatory warning", () => {
-    const snapshot = productReport().snapshot;
-    if ("analysisMode" in snapshot) throw new Error("expected quick snapshot");
+  it("keeps the discount warning in metric help without duplicating the value", () => {
+    const focus = toDashboardReportFocus(productReport());
+    const discount = focus.metrics.find(({ key }) => key === "discount");
 
-    expect(
-      toDashboardReportFocus(productReport()).complementaryFacts,
-    ).toContainEqual({
-      key: "discount_limit",
-      label: "Limite antes do prejuízo",
-      value: `${snapshot.results.breakEvenDiscountPercent}%`,
-      supportingText:
-        "É um limite calculado, não uma recomendação de desconto.",
-    });
+    expect(discount?.help?.description).toContain(
+      "não uma recomendação de desconto",
+    );
+    expect(focus.complementaryFacts.map(({ key }) => key)).not.toContain(
+      "discount_limit",
+    );
   });
 });
 
@@ -234,10 +230,10 @@ describe("toDashboardReportFocus detailed reports", () => {
     const focus = toDashboardReportFocus(detailedReport());
 
     expect(focus.metrics.map((item) => item.key)).toEqual([
-      "result",
-      "margin",
-      "break_even",
       "sales",
+      "break_even",
+      "margin",
+      "revenue",
     ]);
     expect(focus.complementaryFacts).toEqual(
       expect.arrayContaining([
@@ -273,7 +269,7 @@ describe("toDashboardReportFocus detailed reports", () => {
       id: report.id,
       createdAt: report.createdAt,
       snapshot,
-    }).numbers.find(({ key }) => key === "sales");
+    }).indicators.find(({ key }) => key === "sales");
     const focused = toDashboardReportFocus(report).metrics.find(
       ({ key }) => key === "sales",
     );

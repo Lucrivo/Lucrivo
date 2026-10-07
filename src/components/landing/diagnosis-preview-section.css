@@ -263,38 +263,46 @@
   line-height: 1.45;
 }
 
-.landing-experience .preview-numbers {
+.landing-experience .preview-indicators {
   padding: 18px clamp(22px, 2.5vw, 30px) 20px;
   border-top: 1px solid var(--line);
   background: var(--paper);
 }
 
-.landing-experience .preview-numbers h4 {
+.landing-experience .preview-indicators h4 {
   margin: 0 0 12px;
   font-size: 0.87rem;
   font-weight: 700;
 }
 
-.landing-experience .preview-numbers dl {
+.landing-experience .preview-indicators dl {
   display: grid;
   margin: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 22px;
+  gap: 10px;
 }
 
-.landing-experience .preview-numbers dl > div {
+.landing-experience .preview-indicators dl > div {
   display: grid;
   min-width: 0;
+  padding: 10px 12px;
   gap: 3px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper-bright);
 }
 
-.landing-experience .preview-numbers dt {
+.landing-experience .preview-indicators [data-featured="true"] {
+  grid-column: 1 / -1;
+}
+
+.landing-experience .preview-indicators dt {
   color: oklch(0.45 0.04 258);
   font-size: 0.7rem;
   line-height: 1.35;
 }
 
-.landing-experience .preview-numbers dd {
+.landing-experience .preview-indicators dd {
   margin: 0;
   font-size: 0.95rem;
   font-weight: 680;
@@ -302,7 +310,7 @@
   line-height: 1.35;
 }
 
-.landing-experience .preview-numbers [data-tone="positive"] dd {
+.landing-experience .preview-indicators [data-tone="positive"] dd {
   color: oklch(0.39 0.13 151);
 }
 
@@ -353,7 +361,7 @@
     gap: 9px;
   }
 
-  .landing-experience .preview-numbers dl {
+  .landing-experience .preview-indicators dl {
     grid-template-columns: 1fr;
     gap: 12px;
   }

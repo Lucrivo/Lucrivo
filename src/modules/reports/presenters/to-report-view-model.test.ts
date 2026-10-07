@@ -102,7 +102,7 @@ function presentProduction(
 }
 
 describe("toReportViewModel", () => {
-  it("presents Service values without a target or simulator mode", () => {
+  it("presents Service indicators without a target or simulator mode", () => {
     const model = presentService();
 
     expect(model.identity).toMatchObject({
@@ -112,21 +112,24 @@ describe("toReportViewModel", () => {
       unitLabel: "hora",
     });
     expect(model.executiveSummary.verdict.toneLabel).toBe("Resultado positivo");
-    expect(model.numbers.map(({ key }) => key)).toEqual([
-      "sales",
+    expect(model.indicators.map(({ key }) => key)).toEqual([
       "price",
       "minimum",
-      "profit",
+      "sales",
       "margin",
+      "discount",
     ]);
-    expect(model.numbers.find(({ key }) => key === "profit")).toMatchObject({
-      label: "Resultado por hora",
+    expect(model.indicators.find(({ key }) => key === "sales")).toMatchObject({
+      featured: true,
     });
-    expect(model.numbers.at(-1)).toMatchObject({
-      label: "Quanto sobra a cada R$ 100",
+    expect(model.indicators.find(({ key }) => key === "margin")).toMatchObject({
+      label: "Margem de lucro",
       value: "34,26%",
     });
-    expect(model.discountSimulationContext).toEqual({ category: "service" });
+    expect(model.discountSimulationContext).toEqual({
+      category: "service",
+      breakEvenReference: null,
+    });
     expect(JSON.stringify(model)).not.toMatch(/target|legacy_target|meta/i);
   });
 
@@ -140,10 +143,12 @@ describe("toReportViewModel", () => {
       },
     });
 
-    expect(model.numbers[1]?.help?.description).toContain(
-      "R$ 10.392,00 por mês",
-    );
-    expect(model.numbers[1]?.help?.description).toContain("R$ 80,00 por hora");
+    expect(
+      model.indicators.find(({ key }) => key === "price")?.help?.description,
+    ).toContain("R$ 10.392,00 por mês");
+    expect(
+      model.indicators.find(({ key }) => key === "price")?.help?.description,
+    ).toContain("R$ 80,00 por hora");
   });
 
   it("explains unavailable Service values when the price is missing", () => {
@@ -156,8 +161,10 @@ describe("toReportViewModel", () => {
       },
     });
 
-    for (const key of ["sales", "profit", "margin"] as const) {
-      expect(model.numbers.find((number) => number.key === key)).toMatchObject({
+    for (const key of ["sales", "margin"] as const) {
+      expect(
+        model.indicators.find((indicator) => indicator.key === key),
+      ).toMatchObject({
         value: "Ainda não calculado",
         supportingText: "Informe um preço maior que zero para calcular.",
       });
@@ -167,28 +174,39 @@ describe("toReportViewModel", () => {
   it("presents complete Product and Production reports objectively", () => {
     for (const model of [presentProduct(), presentProduction()]) {
       expect(
-        model.numbers.map(({ label, value }) => ({ label, value })),
+        model.indicators.map(({ key, label, value }) => ({
+          key,
+          label,
+          value,
+        })),
       ).toEqual([
+        { key: "price", label: "Preço de venda", value: "R$ 100,00" },
         {
+          key: "minimum",
+          label: "Menor preço para não ficar no prejuízo",
+          value: "R$ 86,96",
+        },
+        {
+          key: "sales",
           label: "Vendas necessárias no mês",
           value:
             model.identity.categoryLabel === "Produto"
               ? "72 vendas"
               : "72 unidades",
         },
-        { label: "Preço atual", value: "R$ 100,00" },
+        { key: "margin", label: "Margem de lucro", value: "12%" },
         {
-          label: "Menor preço para não ficar no prejuízo",
-          value: "R$ 86,96",
+          key: "discount",
+          label: "Desconto máximo sem prejuízo",
+          value: expect.stringMatching(/^\d+%$/),
         },
-        { label: "Quanto sobra a cada R$ 100", value: "12%" },
-        { label: "Resultado do mês", value: "R$ 1.200,00" },
       ]);
       expect(model.executiveSummary.verdict.toneLabel).toBe(
         "Resultado positivo",
       );
     }
   });
+
   it("adds answer helpers only to the new content version", () => {
     const currentSnapshot = buildProductReportSnapshot(
       productCommand,
@@ -232,44 +250,64 @@ describe("toReportViewModel", () => {
         presentProduction({ ...productionCommand, monthlySalesVolume: null }),
     ],
   ])(
-    "does not invent complete values for partial %s reports",
+    "derives a break-even reference for unknown-volume %s reports",
     (_name, build) => {
       const model = build();
-      const minimum = model.numbers.find(({ key }) => key === "minimum");
-      const margin = model.numbers.find(({ key }) => key === "margin");
-      const result = model.numbers.find(({ key }) => key === "profit");
+      const minimum = model.indicators.find(({ key }) => key === "minimum");
+      const margin = model.indicators.find(({ key }) => key === "margin");
+      const sales = model.indicators.find(({ key }) => key === "sales");
 
-      expect(minimum).toMatchObject({
-        value: "Ainda não calculado",
-        supportingText:
-          "Informe uma quantidade maior que zero para dividir os gastos do mês.",
-      });
+      expect(minimum?.value).not.toBe("Ainda não calculado");
+      expect(minimum?.supportingText).toMatch(/Referência com/);
       expect(margin).toMatchObject({
-        value: "Ainda não calculado",
-        supportingText: "Informe uma quantidade maior que zero para calcular.",
+        value: "0%",
+        tone: "neutral",
       });
-      expect(result).toMatchObject({
-        value: "Ainda não calculado",
-        supportingText:
-          "Informe uma quantidade para calcular o resultado do mês.",
-      });
-      expect(JSON.stringify([minimum, margin, result])).not.toContain(
-        "R$ 0,00",
-      );
+      expect(margin?.supportingText).toMatch(/No ponto de equilíbrio/);
+      expect(sales?.tone).toBe("neutral");
+      expect(sales?.supportingText).toMatch(/Referência de equilíbrio/);
+      expect(model.discountSimulationContext.breakEvenReference).not.toBeNull();
     },
   );
+
+  it("does not apply the scenario to a known month without sales", () => {
+    const model = presentProduct({ ...productCommand, monthlySalesVolume: 0 });
+    const margin = model.indicators.find(({ key }) => key === "margin");
+
+    expect(margin?.tone).toBe("critical");
+    expect(margin?.supportingText).toMatch(/Prejuízo de/);
+    expect(model.discountSimulationContext.breakEvenReference).toBeNull();
+  });
+
+  it("keeps the persisted narrative on older content versions", () => {
+    const currentSnapshot = buildProductReportSnapshot(
+      { ...productCommand, monthlySalesVolume: null },
+      calculateProductReport({ ...productCommand, monthlySalesVolume: null }),
+    );
+    const historical = toReportViewModel({
+      id: 47,
+      createdAt: "2026-09-01T15:00:00.000Z",
+      snapshot: { ...currentSnapshot, contentVersion: 5 },
+    });
+    const margin = historical.indicators.find(({ key }) => key === "margin");
+    const minimum = historical.indicators.find(({ key }) => key === "minimum");
+
+    expect(margin?.value).toBe("Ainda não calculado");
+    expect(minimum?.value).toBe("Ainda não calculado");
+    expect(historical.discountSimulationContext.breakEvenReference).toBeNull();
+  });
 
   it("keeps help understandable without accounting vocabulary", () => {
     const helpText = presentProduct({
       ...productCommand,
       monthlySalesVolume: null,
     })
-      .numbers.flatMap(({ help }) =>
+      .indicators.flatMap(({ help }) =>
         help ? [help.title, help.description] : [],
       )
       .join(" ");
 
     expect(helpText).not.toMatch(/rateio|contribuição/i);
-    expect(helpText).toContain("dividir os gastos do mês");
+    expect(helpText).toContain("gastos do mês");
   });
 });

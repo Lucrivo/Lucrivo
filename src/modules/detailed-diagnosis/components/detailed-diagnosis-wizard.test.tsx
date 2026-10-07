@@ -63,7 +63,7 @@ describe("DetailedDiagnosisWizard", () => {
     const { onBackToMode } = renderWizard();
     const user = userEvent.setup();
 
-    expect(screen.getByText("3 de 11")).toBeInTheDocument();
+    expect(screen.getByText("3 de 10")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Escolha o tipo de produto.",
@@ -71,7 +71,7 @@ describe("DetailedDiagnosisWizard", () => {
 
     await user.click(screen.getByRole("radio", { name: "Produto digital" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
-    expect(screen.getByText("4 de 11")).toBeInTheDocument();
+    expect(screen.getByText("4 de 10")).toBeInTheDocument();
     await user.type(screen.getByLabelText("Nome do produto"), "Curso");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(
@@ -141,11 +141,9 @@ describe("DetailedDiagnosisWizard", () => {
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
-    await user.click(
-      screen.getByRole("button", { name: "Revisar diagnóstico" }),
-    );
-
-    expect(screen.getByText(/resultado será parcial/i)).toBeVisible();
+    expect(
+      screen.getByText(/ponto de equilíbrio como referência/i),
+    ).toBeVisible();
     const submit = screen.getByRole("button", {
       name: "Gerar diagnóstico detalhado",
     });
@@ -292,7 +290,7 @@ describe("DetailedDiagnosisWizard", () => {
     );
     const state: DetailedWizardState = {
       ...initial,
-      phase: "itemComplete",
+      phase: "review",
       productKind: "resale",
       values: {
         ...initial.values,
@@ -363,7 +361,7 @@ describe("DetailedDiagnosisWizard", () => {
     });
     const user = userEvent.setup();
 
-    expect(screen.getByText("3 de 10")).toBeInTheDocument();
+    expect(screen.getByText("3 de 9")).toBeInTheDocument();
     await user.type(screen.getByLabelText("Nome da produção"), "Bolo");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(

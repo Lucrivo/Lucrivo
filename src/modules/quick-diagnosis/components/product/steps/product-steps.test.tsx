@@ -177,7 +177,7 @@ describe("Product diagnosis steps", () => {
     );
     expect(
       screen.getByText(
-        /Se você já vende este item, informe a média mensal[\s\S]*Digite 0[\s\S]*deixe em branco[\s\S]*resultado será parcial/i,
+        /Se você já vende este item, informe a média mensal[\s\S]*Digite 0[\s\S]*deixe em branco[\s\S]*ponto de equilíbrio/i,
       ),
     ).toBeVisible();
     expect(

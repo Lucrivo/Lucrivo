@@ -1,3 +1,4 @@
+import { deriveQuickBreakEvenScenario } from "@/modules/reports/domain/break-even-scenario";
 import {
   formatBasisPoints,
   formatCurrency,
@@ -6,6 +7,10 @@ import {
 import { toReportViewModel } from "@/modules/reports/presenters/to-report-view-model";
 import { isDetailedReportSnapshot } from "@/modules/reports/schemas/report-snapshot.schema";
 import type { OwnedReport } from "@/modules/reports/services/get-report.service";
+import {
+  PRODUCT_CONTENT_VERSION,
+  PRODUCTION_CONTENT_VERSION,
+} from "@/modules/reports/types";
 
 import type {
   ReportAiContextV2,
@@ -222,6 +227,13 @@ function buildQuickReportAiContext(report: OwnedReport): ReportAiContextV2 {
       ? snapshot.results.purchaseUnitCostCents
       : snapshot.results.productionUnitCostCents;
   const { results } = snapshot;
+  const usesCurrentContent =
+    snapshot.category === "product"
+      ? snapshot.contentVersion === PRODUCT_CONTENT_VERSION
+      : snapshot.contentVersion === PRODUCTION_CONTENT_VERSION;
+  const scenario = usesCurrentContent
+    ? deriveQuickBreakEvenScenario(results, snapshot.policy)
+    : null;
   const facts: ReportAiFact[] = [
     moneyFact(
       "current_price",
@@ -302,11 +314,29 @@ function buildQuickReportAiContext(report: OwnedReport): ReportAiContextV2 {
       results.breakEvenDiscountPercent,
       "unit",
     ),
+    ...(scenario
+      ? [
+          volumeFact(
+            "break_even_reference_volume",
+            "Referência de equilíbrio no mês",
+            scenario.referenceVolume,
+            "unidades",
+          ),
+          moneyFact(
+            "break_even_price",
+            "Preço de equilíbrio",
+            scenario.breakEvenPriceCents,
+            "unit",
+          ),
+        ]
+      : []),
   ];
   const reasons: string[] = [];
   if (results.monthlySalesVolumeUsed === null) {
     reasons.push(
-      "Informe a quantidade vendida no mês para distribuir os gastos e completar o resultado.",
+      scenario
+        ? "Sem a quantidade vendida, o relatório mostra o ponto de equilíbrio como referência, nunca como resultado do mês."
+        : "Informe a quantidade vendida no mês para distribuir os gastos e completar o resultado.",
     );
   }
   if (results.monthlySalesGoal === null && results.unitContributionCents <= 0) {

@@ -6,7 +6,7 @@ import {
 import { toDetailedReportViewModel } from "@/modules/reports/presenters/to-detailed-report-view-model";
 import {
   toReportViewModel,
-  type ReportNumberViewModel,
+  type ReportIndicatorViewModel,
 } from "@/modules/reports/presenters/to-report-view-model";
 import { isDetailedReportSnapshot } from "@/modules/reports/schemas/report-snapshot.schema";
 import type { OwnedReport } from "@/modules/reports/services/get-report.service";
@@ -22,15 +22,15 @@ import type {
   DashboardReportFocusViewModel,
 } from "./client-dashboard.types";
 
-const quickFocusKeys = ["profit", "margin", "minimum", "sales"] as const;
-const detailedFocusKeys = ["result", "margin", "break_even", "sales"] as const;
+const quickFocusKeys = ["sales", "minimum", "margin", "discount"] as const;
+const detailedFocusKeys = ["sales", "break_even", "margin", "revenue"] as const;
 
 function selectMetrics(
-  numbers: ReportNumberViewModel[],
-  keys: readonly ReportNumberViewModel["key"][],
-): ReportNumberViewModel[] {
+  indicators: ReportIndicatorViewModel[],
+  keys: readonly ReportIndicatorViewModel["key"][],
+): ReportIndicatorViewModel[] {
   return keys.map((key) => {
-    const metric = numbers.find((candidate) => candidate.key === key);
+    const metric = indicators.find((candidate) => candidate.key === key);
     if (!metric) throw new Error(`missing_report_metric:${key}`);
     return metric;
   });
@@ -94,7 +94,7 @@ function toDetailedFocus(report: OwnedReport): DashboardReportFocusViewModel {
         : formatReportDate(report.updatedAt),
     verdict: presentVerdict(snapshot.results.verdict),
     priorityLabel: presentPriority(snapshot.results.priority),
-    metrics: selectMetrics(presented.numbers, detailedFocusKeys),
+    metrics: selectMetrics(presented.indicators, detailedFocusKeys),
     complementaryFacts,
     openHref: `/reports/${report.id}`,
   };
@@ -128,18 +128,8 @@ function toQuickFocus(report: OwnedReport): DashboardReportFocusViewModel {
   });
   const complementaryFacts: DashboardComplementaryFact[] = [
     analyzedOfferFact(snapshot.category),
+    ...updatedFact(report),
   ];
-
-  if (snapshot.results.breakEvenDiscountPercent !== null) {
-    complementaryFacts.push({
-      key: "discount_limit",
-      label: "Limite antes do prejuízo",
-      value: `${snapshot.results.breakEvenDiscountPercent}%`,
-      supportingText:
-        "É um limite calculado, não uma recomendação de desconto.",
-    });
-  }
-  complementaryFacts.push(...updatedFact(report));
 
   return {
     id: report.id,
@@ -154,7 +144,7 @@ function toQuickFocus(report: OwnedReport): DashboardReportFocusViewModel {
         : formatReportDate(report.updatedAt),
     verdict: presentVerdict(snapshot.results.verdict),
     priorityLabel: presentPriority(snapshot.results.priority),
-    metrics: selectMetrics(presented.numbers, quickFocusKeys),
+    metrics: selectMetrics(presented.indicators, quickFocusKeys),
     complementaryFacts,
     openHref: `/reports/${report.id}`,
   };

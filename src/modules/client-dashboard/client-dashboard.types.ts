@@ -1,4 +1,4 @@
-import type { ReportNumberViewModel } from "@/modules/reports/presenters/to-report-view-model";
+import type { ReportIndicatorViewModel } from "@/modules/reports/presenters/to-report-view-model";
 import type { ReportPriority, ReportVerdict } from "@/modules/reports/types";
 
 import type { ClientDashboardSnapshot } from "./client-dashboard.schema";
@@ -26,8 +26,7 @@ type DashboardComplementaryFact = {
     | "direct_loss_items"
     | "missing_volume_items"
     | "analyzed_items"
-    | "updated_at"
-    | "discount_limit";
+    | "updated_at";
   label: string;
   value: string;
   supportingText?: string;
@@ -43,7 +42,7 @@ type DashboardReportFocusViewModel = {
   updatedAtLabel: string | null;
   verdict: { label: string; tone: DashboardTone };
   priorityLabel: string;
-  metrics: ReportNumberViewModel[];
+  metrics: ReportIndicatorViewModel[];
   complementaryFacts: DashboardComplementaryFact[];
   openHref: string;
 };

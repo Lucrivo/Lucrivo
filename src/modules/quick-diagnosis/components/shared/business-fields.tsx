@@ -2,6 +2,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
 import { StepField } from "./step-field";
+import { cardFeeRateHelp, taxRateHelp } from "./sales-fees-help";
 
 type FieldBinding = {
   field: string;
@@ -20,6 +21,7 @@ type OwnerCompensationFieldsProps = {
 type SalesFeesFieldsProps = {
   tax: FieldBinding;
   card: FieldBinding;
+  fixedExpensesStepNumber?: number;
 };
 
 function toStepFieldProps(binding: FieldBinding) {
@@ -59,7 +61,7 @@ function MonthlyVolumeField(binding: FieldBinding) {
         triggerLabel: "Por que é opcional?",
         title: "Quantidade vendida no mês",
         description:
-          "Se você já vende este item, informe a média mensal. Digite 0 se não vendeu nenhuma unidade. Se ainda não sabe ou quer descobrir quanto precisa vender, deixe em branco — o resultado será parcial e a meta aparecerá apenas como referência.",
+          "Se você já vende este item, informe a média mensal. Digite 0 se não vendeu nenhuma unidade. Se ainda não sabe ou quer descobrir quanto precisa vender, deixe em branco — mostraremos quanto você precisa vender para não ter prejuízo (ponto de equilíbrio).",
       }}
     />
   );
@@ -108,18 +110,24 @@ function OwnerCompensationFields({
   );
 }
 
-function SalesFeesFields({ tax, card }: SalesFeesFieldsProps) {
+function SalesFeesFields({
+  tax,
+  card,
+  fixedExpensesStepNumber,
+}: SalesFeesFieldsProps) {
   return (
     <div className="grid gap-5 @xl/page:grid-cols-2">
       <StepField
         {...toStepFieldProps(tax)}
         label="Qual porcentagem da venda vai para impostos?"
         suffix="%"
+        help={taxRateHelp({ fixedExpensesStepNumber })}
       />
       <StepField
         {...toStepFieldProps(card)}
         label="Qual porcentagem fica com o cartão ou a plataforma?"
         suffix="%"
+        help={cardFeeRateHelp}
       />
     </div>
   );

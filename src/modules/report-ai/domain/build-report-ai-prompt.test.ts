@@ -79,6 +79,9 @@ describe("report AI policy", () => {
       expect(REPORT_AI_INSTRUCTIONS).toContain(heading);
     }
     expect(REPORT_AI_INSTRUCTIONS).toContain("volume desconhecido");
+    expect(REPORT_AI_INSTRUCTIONS).toContain(
+      "cenário de equilíbrio (quantidade e preço de equilíbrio) como referência",
+    );
     expect(REPORT_AI_INSTRUCTIONS).toContain("perda direta");
     expect(REPORT_AI_INSTRUCTIONS).toContain("menor preço sem prejuízo");
     expect(REPORT_AI_INSTRUCTIONS).not.toMatch(/preço-alvo|meta universal/i);

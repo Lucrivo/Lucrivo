@@ -43,28 +43,45 @@ const focusedReport: DashboardReportFocusViewModel = {
   verdict: { label: "Resultado positivo", tone: "success" },
   priorityLabel: "Avaliar margem",
   metrics: [
-    { key: "profit", label: "Lucro por unidade", value: "R$ 12,00" },
-    { key: "margin", label: "Margem real", value: "20%" },
+    {
+      key: "sales",
+      label: "Vendas necessárias no mês",
+      value: "100",
+      tone: "positive",
+      toneLabel: "Resultado positivo",
+    },
     {
       key: "minimum",
-      label: "Preço mínimo",
+      label: "Menor preço para não ficar no prejuízo",
       value: "Indisponível",
+      tone: "neutral",
+      toneLabel: "Informação",
       supportingText: "Falta uma quantidade para completar o cálculo.",
     },
-    { key: "sales", label: "Vendas para se pagar", value: "100" },
+    {
+      key: "margin",
+      label: "Margem de lucro",
+      value: "20%",
+      tone: "positive",
+      toneLabel: "Resultado positivo",
+    },
+    {
+      key: "discount",
+      label: "Desconto máximo sem prejuízo",
+      value: "8%",
+      tone: "positive",
+      toneLabel: "Resultado positivo",
+      help: {
+        title: "Desconto máximo sem prejuízo",
+        description: "É um limite calculado, não uma recomendação de desconto.",
+      },
+    },
   ],
   complementaryFacts: [
     {
       key: "analyzed_items",
       label: "Ofertas analisadas",
       value: "1 produto analisado",
-    },
-    {
-      key: "discount_limit",
-      label: "Limite antes do prejuízo",
-      value: "8%",
-      supportingText:
-        "É um limite calculado, não uma recomendação de desconto.",
     },
   ],
   openHref: "/reports/42",
@@ -148,13 +165,13 @@ describe("DashboardReportFocus", () => {
     expect(
       screen.getByText(/criado em 30\/09\/2026.*atualizado em 01\/10\/2026/),
     ).toBeVisible();
-    expect(screen.getByText("Resultado positivo")).toBeVisible();
+    expect(screen.getAllByText("Resultado positivo").length).toBeGreaterThan(0);
     expect(screen.getByText("Avaliar margem")).toBeVisible();
     for (const label of [
-      "Lucro por unidade",
-      "Margem real",
-      "Preço mínimo",
-      "Vendas para se pagar",
+      "Vendas necessárias no mês",
+      "Menor preço para não ficar no prejuízo",
+      "Margem de lucro",
+      "Desconto máximo sem prejuízo",
     ]) {
       expect(screen.getByText(label)).toBeVisible();
     }
@@ -162,10 +179,13 @@ describe("DashboardReportFocus", () => {
       screen.getByText("Falta uma quantidade para completar o cálculo."),
     ).toBeVisible();
     expect(
-      screen.getByText(
-        "É um limite calculado, não uma recomendação de desconto.",
-      ),
+      screen.getByRole("button", {
+        name: "Entenda Desconto máximo sem prejuízo",
+      }),
     ).toBeVisible();
+    expect(
+      screen.queryByText("Limite antes do prejuízo"),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Abrir relatório completo" }),
     ).toHaveAttribute("href", "/reports/42");
@@ -190,5 +210,23 @@ describe("DashboardReportFocus", () => {
     expect(
       screen.getByRole("link", { name: "Abrir relatório" }),
     ).toHaveAttribute("href", "/reports/42");
+  });
+
+  it("dims unavailable metrics from their semantic state instead of their copy", () => {
+    const sales = {
+      ...focusedReport.metrics[0]!,
+      value: "Sem meta única",
+      unavailable: true,
+    };
+    const report = {
+      ...focusedReport,
+      metrics: [sales, ...focusedReport.metrics.slice(1)],
+    };
+
+    render(<DashboardReportFocus focus={{ status: "ready", report }} />);
+
+    expect(
+      screen.getByText("Sem meta única").closest("div.relative"),
+    ).toHaveClass("bg-muted/25");
   });
 });

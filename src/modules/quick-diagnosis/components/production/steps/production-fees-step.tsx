@@ -4,6 +4,7 @@ import type { ProductionStepProps } from "./types";
 function ProductionFeesStep(props: ProductionStepProps) {
   return (
     <SalesFeesFields
+      fixedExpensesStepNumber={4}
       tax={{
         field: "taxRate",
         value: props.values.taxRate,

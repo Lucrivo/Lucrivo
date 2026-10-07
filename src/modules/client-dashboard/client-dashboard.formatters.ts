@@ -22,7 +22,7 @@ import type {
 const verdictPresentation = {
   missing_price: { label: "Preço não informado", tone: "info" },
   direct_loss: { label: "Perda por venda", tone: "danger" },
-  incomplete_volume: { label: "Volume não informado", tone: "info" },
+  incomplete_volume: { label: "Equilíbrio como referência", tone: "info" },
   operational_loss: {
     label: "Prejuízo no cenário informado",
     tone: "danger",

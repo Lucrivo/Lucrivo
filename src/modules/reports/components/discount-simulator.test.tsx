@@ -74,6 +74,9 @@ describe("DiscountSimulator", () => {
     expect(screen.getByTestId("discount-safety")).toHaveTextContent(
       "sem gerar lucro nem prejuízo",
     );
+    expect(screen.getByTestId("discount-safety")).toHaveClass(
+      "dark:text-warning",
+    );
     fireEvent.change(slider, { target: { value: "50" } });
     expect(screen.getByTestId("discount-safety")).toHaveTextContent(
       "Prejuízo estimado",
@@ -95,5 +98,34 @@ describe("DiscountSimulator", () => {
       "primeiro precisamos de uma quantidade para dividir os gastos do mês",
     );
     expect(screen.getAllByText("Indisponível")).toHaveLength(3);
+  });
+
+  it("shows required sales in break-even reference mode", () => {
+    render(
+      <DiscountSimulator
+        base={base}
+        context={{
+          category: "product",
+          breakEvenReference: {
+            effectiveFixedCostCents: 500_000,
+            directUnitCostCents: 4_000,
+            referenceVolume: 100,
+          },
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByText("Vendas necessárias com este desconto"),
+    ).toBeVisible();
+    expect(screen.queryByText("Resultado por unidade")).not.toBeInTheDocument();
+    expect(screen.getByText("100 vendas")).toBeVisible();
+    fireEvent.change(
+      screen.getByRole("slider", { name: "Desconto simulado" }),
+      {
+        target: { value: "0" },
+      },
+    );
+    expect(screen.getByText("84 vendas")).toBeVisible();
   });
 });
