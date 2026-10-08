@@ -25,6 +25,42 @@ describe("admin user boundaries", () => {
     ).toBe(true);
   });
 
+  it("accepts semiannual subscriptions and rejects the superseded annual mode", () => {
+    const baseUser = {
+      id: "96300000-0000-4000-8000-000000000002",
+      email: "cliente@example.com",
+      createdAt: "2026-09-16T12:00:00+00:00",
+      lastSignInAt: null,
+      state: "active",
+      access: "paid",
+      courtesyExpiresAt: null,
+      subscription: {
+        billingMode: "semiannual",
+        status: "active",
+        accessEndsAt: "2027-03-16T12:00:00+00:00",
+      },
+      diagnosisCount: 2,
+      version: 0,
+      hasPaidAccess: true,
+    };
+
+    expect(
+      adminUserListSchema.safeParse({ items: [baseUser], nextCursor: null })
+        .success,
+    ).toBe(true);
+    expect(
+      adminUserListSchema.safeParse({
+        items: [
+          {
+            ...baseUser,
+            subscription: { ...baseUser.subscription, billingMode: "annual" },
+          },
+        ],
+        nextCursor: null,
+      }).success,
+    ).toBe(false);
+  });
+
   it("validates action reason, expiry shape and version", () => {
     const base = {
       userId: "96300000-0000-4000-8000-000000000002",

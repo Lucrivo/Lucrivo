@@ -67,4 +67,28 @@ describe("admin user list", () => {
       screen.getByRole("button", { name: "Limpar filtros salvos" }),
     ).toBeVisible();
   });
+
+  it("labels semiannual subscriptions in responsive views", () => {
+    render(
+      <AdminUserList
+        data={{
+          items: [
+            {
+              ...user,
+              subscription: {
+                billingMode: "semiannual",
+                status: "active",
+                accessEndsAt: "2027-03-16T12:00:00+00:00",
+              },
+            },
+          ],
+          nextCursor: null,
+        }}
+        filters={parseFilters({})}
+      />,
+    );
+
+    expect(screen.getByText(/Semestral/)).toBeVisible();
+    expect(screen.queryByText(/Anual/)).not.toBeInTheDocument();
+  });
 });

@@ -97,7 +97,7 @@ insert into public.billing_contracts (
   'monthly',
   'pix',
   'detached',
-  4990,
+  3990,
   'BRL',
   null,
   1,

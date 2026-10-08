@@ -3,6 +3,7 @@ import { ArrowLeftIcon, ChevronRightIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { presentBillingMode } from "@/modules/admin/billing-mode";
 
 import {
   accessLabel,
@@ -105,7 +106,7 @@ function itemSummary(item: Item, tab: Tab) {
     return (
       <>
         <p className="font-medium">
-          {item.billingMode === "monthly" ? "Mensal" : "Anual"} ·{" "}
+          {presentBillingMode(item.billingMode)} ·{" "}
           {formatMoney(Number(item.amountCents))}
         </p>
         <p className="text-muted-foreground text-sm">
@@ -234,7 +235,7 @@ function AdminUserDetail({
                 <Field label="Excluído em">{formatDate(user.deletedAt)}</Field>
                 <Field label="Assinatura atual">
                   {user.subscription
-                    ? `${user.subscription.billingMode === "monthly" ? "Mensal" : "Anual"} · até ${formatDate(user.subscription.accessEndsAt)}`
+                    ? `${presentBillingMode(user.subscription.billingMode)} · até ${formatDate(user.subscription.accessEndsAt)}`
                     : "Nenhuma vigente"}
                 </Field>
               </dl>

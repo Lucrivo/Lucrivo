@@ -42,7 +42,7 @@ insert into public.billing_contracts (
   'monthly',
   'pix',
   'detached',
-  4990,
+  3990,
   'BRL',
   null,
   1,
@@ -324,7 +324,7 @@ insert into public.billing_contracts (
   '81000000-0000-4000-8000-000000000011',
   '81000000-0000-4000-8000-000000000001',
   '20000000-0000-4000-8000-000000000001',
-  'current-report-access', 'monthly', 'pix', 'detached', 4990, 'BRL',
+  'current-report-access', 'monthly', 'pix', 'detached', 3990, 'BRL',
   null, 1, 'active',
   statement_timestamp() - interval '1 day',
   statement_timestamp() + interval '1 month'

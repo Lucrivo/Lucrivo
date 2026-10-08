@@ -528,7 +528,7 @@ insert into public.billing_prices (
   'report-ai-test',
   'monthly',
   1,
-  4990,
+  3990,
   'BRL',
   1
 );
@@ -555,7 +555,7 @@ insert into public.billing_contracts (
   'monthly',
   'credit_card',
   'recurring',
-  4990,
+  3990,
   'BRL',
   1,
   'active',

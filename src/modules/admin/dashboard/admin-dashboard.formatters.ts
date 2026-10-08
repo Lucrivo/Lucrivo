@@ -48,6 +48,7 @@ const subscriptionDateFormatter = new Intl.DateTimeFormat("pt-BR", {
 const statusPresentation = {
   pending: { label: "Pendente", tone: "neutral" },
   pending_reconciliation: { label: "Em conciliação", tone: "info" },
+  refund_pending: { label: "Reembolso em andamento", tone: "warning" },
   active: { label: "Ativa", tone: "success" },
   cancel_at_period_end: {
     label: "Cancelamento agendado",

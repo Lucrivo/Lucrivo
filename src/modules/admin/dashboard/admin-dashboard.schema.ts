@@ -27,6 +27,7 @@ const growthPointSchema = z.strictObject({
 const contractStatusSchema = z.enum([
   "pending",
   "pending_reconciliation",
+  "refund_pending",
   "active",
   "cancel_at_period_end",
   "expired",
@@ -39,7 +40,7 @@ const contractStatusSchema = z.enum([
 const recentSubscriptionSchema = z.strictObject({
   id: z.uuid(),
   email: z.email().nullable(),
-  billingMode: z.enum(["monthly", "annual"]),
+  billingMode: z.enum(["monthly", "semiannual"]),
   status: contractStatusSchema,
   createdAt: z.iso.datetime({ offset: true }),
 });
