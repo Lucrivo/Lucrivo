@@ -1439,7 +1439,7 @@ as $$
   select jsonb_build_object(
     'schemaVersion', 3,
     'calculationVersion', 3,
-    'contentVersion', 5,
+    'contentVersion', 6,
     'category', 'product',
     'scenario', 'resale',
     'currency', 'BRL',
@@ -1507,7 +1507,7 @@ as $$
   select public.create_product_diagnosis_report_v3(
     p_submission_id, 'resale'::text, 5000::bigint, 10000::bigint,
     100000::bigint, p_monthly_sales_volume, true, 200000::bigint,
-    600::integer, 200::integer, 3::smallint, 3::smallint, 5::smallint,
+    600::integer, 200::integer, 3::smallint, 3::smallint, 6::smallint,
     'resale'::text, 10000::bigint,
     case when p_monthly_sales_volume = 100 then 1200 else null end,
     case when p_monthly_sales_volume = 100 then 1200 else null end,

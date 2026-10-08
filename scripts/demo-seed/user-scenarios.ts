@@ -233,8 +233,7 @@ function paymentFor(input: {
       input.contract.billingMode === "semiannual"
         ? input.contract.amountCents / 6
         : input.contract.amountCents,
-    installmentNumber:
-      input.contract.billingMode === "semiannual" ? 1 : null,
+    installmentNumber: input.contract.billingMode === "semiannual" ? 1 : null,
     dueAt: input.dueAt,
     confirmedAt: confirmed ? { ...input.dueAt, hours: 12 } : null,
     receivedAt: received ? { ...input.dueAt, hours: 18 } : null,

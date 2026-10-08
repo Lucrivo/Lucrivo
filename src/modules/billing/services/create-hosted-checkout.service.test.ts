@@ -55,6 +55,8 @@ describe("createHostedCheckout", () => {
     createCheckout,
     cancelCheckout,
     deleteSubscription: vi.fn(),
+    refundPayment: vi.fn(),
+    refundInstallment: vi.fn(),
   };
 
   beforeEach(() => {
@@ -423,8 +425,7 @@ describe("createHostedCheckout", () => {
           "https://sandbox.asaas.com/checkoutSession/show/checkout_123",
       });
 
-      const price =
-        priceId === monthlyPriceId ? monthlyPrice : semiannualPrice;
+      const price = priceId === monthlyPriceId ? monthlyPrice : semiannualPrice;
       expect(globalThis.crypto.randomUUID).toHaveBeenCalledTimes(1);
       expect(contractInsert).toHaveBeenCalledWith({
         id: contractId,

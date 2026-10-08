@@ -93,8 +93,8 @@ async function recordResult(
     {
       p_request_id: input.requestId,
       p_result: input.result,
-      p_error_code: input.errorCode,
       p_recurrence_canceled: input.recurrenceCanceled,
+      ...(input.errorCode === null ? {} : { p_error_code: input.errorCode }),
     },
   );
   return error || typeof data !== "string" ? null : data;

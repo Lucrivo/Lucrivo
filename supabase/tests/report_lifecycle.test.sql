@@ -147,7 +147,7 @@ as $$
   select jsonb_build_object(
     'schemaVersion', 3,
     'calculationVersion', 3,
-    'contentVersion', 5,
+    'contentVersion', 6,
     'category', 'product',
     'scenario', 'resale',
     'currency', 'BRL',
@@ -297,7 +297,7 @@ select throws_ok(
       '81000000-0000-4000-8000-000000000106'::uuid,
       'resale'::text, 5000::bigint, 12000::bigint, 100000::bigint,
       null::integer, true, 200000::bigint, 600::integer, 200::integer,
-      3::smallint, 3::smallint, 5::smallint, 'resale'::text,
+      3::smallint, 3::smallint, 6::smallint, 'resale'::text,
       12000::bigint, null::integer, null::bigint, null::bigint,
       'incomplete_volume'::text, 'data'::text, 'unit'::text,
       pg_temp.lifecycle_product_snapshot_v3()
@@ -344,7 +344,7 @@ select is(
       '81000000-0000-4000-8000-000000000106'::uuid,
       'resale'::text, 5000::bigint, 12000::bigint, 100000::bigint,
       null::integer, true, 200000::bigint, 600::integer, 200::integer,
-      3::smallint, 3::smallint, 5::smallint, 'resale'::text,
+      3::smallint, 3::smallint, 6::smallint, 'resale'::text,
       12000::bigint, null::integer, null::bigint, null::bigint,
       'incomplete_volume'::text, 'data'::text, 'unit'::text,
       pg_temp.lifecycle_product_snapshot_v3()

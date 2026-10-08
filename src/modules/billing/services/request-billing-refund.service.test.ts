@@ -60,9 +60,9 @@ describe("requestBillingRefund", () => {
   });
 
   it("fails closed for malformed claim data", async () => {
-    await expect(request({ status: "ready", requestId: "bad" })).resolves.toEqual(
-      { status: "pending_reconciliation" },
-    );
+    await expect(
+      request({ status: "ready", requestId: "bad" }),
+    ).resolves.toEqual({ status: "pending_reconciliation" });
     expect(refundPayment).not.toHaveBeenCalled();
   });
 
@@ -141,7 +141,6 @@ describe("requestBillingRefund", () => {
         {
           p_request_id: requestId,
           p_result: "submitted",
-          p_error_code: null,
           p_recurrence_canceled: recurrenceCanceled,
         },
       );
@@ -150,7 +149,11 @@ describe("requestBillingRefund", () => {
 
   it.each([
     [new AsaasGatewayError("rejected", 400), "rejected", "provider_rejected"],
-    [new AsaasGatewayError("ambiguous", 500), "pending_reconciliation", "provider_ambiguous"],
+    [
+      new AsaasGatewayError("ambiguous", 500),
+      "pending_reconciliation",
+      "provider_ambiguous",
+    ],
     [new TypeError("network"), "pending_reconciliation", "provider_ambiguous"],
   ] as const)(
     "records a normalized provider failure",
@@ -170,7 +173,8 @@ describe("requestBillingRefund", () => {
       expect(rpc).toHaveBeenLastCalledWith(
         "record_billing_refund_provider_result",
         expect.objectContaining({
-          p_result: status === "rejected" ? "rejected" : "pending_reconciliation",
+          p_result:
+            status === "rejected" ? "rejected" : "pending_reconciliation",
           p_error_code: errorCode,
           p_recurrence_canceled: false,
         }),
@@ -179,7 +183,9 @@ describe("requestBillingRefund", () => {
   );
 
   it("keeps the request blocked when recurrence deletion fails", async () => {
-    deleteSubscription.mockRejectedValue(new AsaasGatewayError("rejected", 400));
+    deleteSubscription.mockRejectedValue(
+      new AsaasGatewayError("rejected", 400),
+    );
     const claim = {
       status: "ready",
       requestId,

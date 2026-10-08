@@ -111,11 +111,7 @@ describe("POST /api/billing/refund", () => {
     ["not_eligible", 409, { error: "refund_not_eligible" }],
     ["not_ready", 409, { error: "payment_not_ready" }],
     ["rejected", 422, { error: "refund_rejected" }],
-    [
-      "pending_reconciliation",
-      503,
-      { error: "pending_reconciliation" },
-    ],
+    ["pending_reconciliation", 503, { error: "pending_reconciliation" }],
   ] as const)("maps %s to a safe response", async (status, code, expected) => {
     requestBillingRefund.mockResolvedValue({ status });
 

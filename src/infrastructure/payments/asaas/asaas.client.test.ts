@@ -218,17 +218,14 @@ describe("AsaasGateway", () => {
     [408, "ambiguous"],
     [429, "ambiguous"],
     [500, "ambiguous"],
-  ] as const)(
-    "classifies refund HTTP %s as %s",
-    async (status, kind) => {
-      fetchMock.mockResolvedValue(new Response("{}", { status }));
+  ] as const)("classifies refund HTTP %s as %s", async (status, kind) => {
+    fetchMock.mockResolvedValue(new Response("{}", { status }));
 
-      await expect(gateway.refundPayment("pay_123")).rejects.toMatchObject({
-        kind,
-        status,
-      });
-    },
-  );
+    await expect(gateway.refundPayment("pay_123")).rejects.toMatchObject({
+      kind,
+      status,
+    });
+  });
 
   it.each([
     [400, "rejected"],

@@ -42,6 +42,8 @@ describe("cancelMonthlyBilling", () => {
     createCheckout: vi.fn(),
     cancelCheckout: vi.fn(),
     deleteSubscription,
+    refundPayment: vi.fn(),
+    refundInstallment: vi.fn(),
   };
 
   beforeEach(() => {
