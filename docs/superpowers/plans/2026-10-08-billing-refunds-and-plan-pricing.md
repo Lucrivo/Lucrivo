@@ -440,13 +440,23 @@ git commit -m "feat: reconcile refund webhooks"
 ```ts
 type BillingMode = "monthly" | "semiannual";
 type BillingContractStatus =
-  | "pending" | "pending_reconciliation" | "active"
-  | "cancel_at_period_end" | "refund_pending" | "expired"
-  | "canceled" | "refunded" | "chargeback" | "failed";
+  | "pending"
+  | "pending_reconciliation"
+  | "active"
+  | "cancel_at_period_end"
+  | "refund_pending"
+  | "expired"
+  | "canceled"
+  | "refunded"
+  | "chargeback"
+  | "failed";
 
 type BillingRefundStatus =
-  | "processing" | "submitted" | "confirmed"
-  | "rejected" | "pending_reconciliation";
+  | "processing"
+  | "submitted"
+  | "confirmed"
+  | "rejected"
+  | "pending_reconciliation";
 ```
 
 - [ ] **Step 1: Regenerate types from the reset local database**
@@ -584,10 +594,14 @@ Use one loose schema and the existing private `request` helper:
 const refundResponseSchema = z.looseObject({ id: z.string().trim().min(1) });
 
 async function refund(path: string, expectedId: string) {
-  const result = await request(path, {
-    method: "POST",
-    body: JSON.stringify({}),
-  }, refundResponseSchema);
+  const result = await request(
+    path,
+    {
+      method: "POST",
+      body: JSON.stringify({}),
+    },
+    refundResponseSchema,
+  );
   if (result.id !== expectedId) throw new AsaasGatewayError("ambiguous", 200);
   return { id: result.id };
 }
@@ -1013,7 +1027,8 @@ Calculate savings against six monthly payments:
 
 ```ts
 const comparisonMonths = semiannual.accessMonths;
-const savingsCents = monthly.amountCents * comparisonMonths - semiannual.amountCents;
+const savingsCents =
+  monthly.amountCents * comparisonMonths - semiannual.amountCents;
 ```
 
 Render savings only when positive. Derive the installment amount only after
