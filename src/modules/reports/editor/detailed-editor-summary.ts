@@ -8,7 +8,11 @@ type DetailedEditorItemSummary = {
   priceLabel: string;
   costLabel: string;
   status: {
-    label: "Revise os campos" | "Perda por venda" | "Deixa valor por venda";
+    label:
+      | "Revise os campos"
+      | "Perda por venda"
+      | "Não cobre o mês"
+      | "Deixa valor por venda";
     tone: "warning" | "critical" | "positive";
   };
   pendingCount: number;
@@ -42,7 +46,9 @@ function buildDetailedEditorItemSummary(
         ? { label: "Revise os campos", tone: "warning" }
         : result?.directLoss
           ? { label: "Perda por venda", tone: "critical" }
-          : { label: "Deixa valor por venda", tone: "positive" },
+          : result?.unitProfitCents != null && result.unitProfitCents < 0
+            ? { label: "Não cobre o mês", tone: "warning" }
+            : { label: "Deixa valor por venda", tone: "positive" },
     pendingCount,
   };
 }

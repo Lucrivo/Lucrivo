@@ -45,13 +45,27 @@ type DetailedTechnicalDetailsViewModel = {
   additionalCostsLabel?: string;
 };
 
+type DetailedItemStatusTone = "positive" | "warning" | "critical" | "neutral";
+
+type DetailedValueTone = "neutral" | "positive" | "critical";
+
 type DetailedItemViewModel = {
   id: string;
   category: "product" | "production";
   name: string;
   volumeLabel: string;
   statusLabel: string;
-  statusTone: "positive" | "critical";
+  statusTone: DetailedItemStatusTone;
+  headlineLabel: string;
+  headlineValue: string;
+  headlineValueTone: DetailedValueTone;
+  unitProfitTone: DetailedValueTone;
+  realMarginTone: DetailedValueTone;
+  unitContributionTone: DetailedValueTone;
+  /** Explains a sale that leaves money but does not cover its share of the month. */
+  coverageNote?: string;
+  /** Explains whether the monthly share is the real mix or an isolated reference. */
+  allocationNote?: string;
   priceLabel: string;
   variableCostLabel: string;
   feeLabel: string;
@@ -63,6 +77,8 @@ type DetailedItemViewModel = {
   completeCostUnavailableReason?: string;
   unitContributionLabel: string;
   monthlyContributionLabel: string;
+  /** Present when the monthly total can be multiplied from a known quantity. */
+  monthlyContributionContext?: string;
   marginLabel: string;
   breakEvenLabel: string;
   breakEvenUnavailableReason?: string;
@@ -130,11 +146,64 @@ const salesHelp: PlainLanguageHelpContent = {
 const UNAVAILABLE = "Ainda não calculado";
 
 const surplusHelp: PlainLanguageHelpContent = {
-  title: "O que cada venda deixa para o mês?",
+  title: "O que cada venda deixa?",
   description:
-    "É o valor que resta depois do custo da unidade e das cobranças da venda. Esse valor ajuda a pagar os gastos mensais.",
+    "É o que resta do preço depois do custo desta unidade e das cobranças da venda. Aluguel, contas e pró-labore ainda não entram aqui.",
   technicalTerm: "contribuição unitária",
 };
+
+function signedTone(value: number | null): DetailedValueTone {
+  if (value === null || value === 0) return "neutral";
+  return value > 0 ? "positive" : "critical";
+}
+
+function itemReading(
+  result: CurrentDetailedReportSnapshot["results"]["items"][number],
+): {
+  statusLabel: string;
+  statusTone: DetailedItemStatusTone;
+  headlineLabel: string;
+  headlineValue: string;
+  headlineValueTone: DetailedValueTone;
+} {
+  const contributionLabel = formatCurrency(result.unitContributionCents);
+  if (result.directLoss || result.unitProfitCents === null) {
+    return {
+      statusLabel: result.directLoss
+        ? "Perda por venda"
+        : "Deixa valor por venda",
+      statusTone: result.directLoss ? "critical" : "neutral",
+      headlineLabel: "Valor deixado por venda",
+      headlineValue: contributionLabel,
+      headlineValueTone: result.directLoss ? "critical" : "neutral",
+    };
+  }
+  if (result.unitProfitCents < 0) {
+    return {
+      statusLabel: "Não cobre o mês",
+      statusTone: "warning",
+      headlineLabel: "Resultado por venda",
+      headlineValue: formatCurrency(result.unitProfitCents),
+      headlineValueTone: "critical",
+    };
+  }
+  if (result.unitProfitCents === 0) {
+    return {
+      statusLabel: "Paga o mês, sem sobra",
+      statusTone: "neutral",
+      headlineLabel: "Resultado por venda",
+      headlineValue: formatCurrency(0),
+      headlineValueTone: "neutral",
+    };
+  }
+  return {
+    statusLabel: "Cobre o mês",
+    statusTone: "positive",
+    headlineLabel: "Resultado por venda",
+    headlineValue: formatCurrency(result.unitProfitCents),
+    headlineValueTone: "positive",
+  };
+}
 function detailedAnswerHelp(
   key: ExecutiveSummaryAnswer["key"],
 ): PlainLanguageHelpContent {
@@ -499,6 +568,30 @@ function toDetailedReportViewModel({
       const result = resultById.get(item.id);
       if (!result) return [];
       const reference = scenario.byItem.get(item.id);
+      const reading = itemReading(result);
+      const knownVolume = item.monthlySalesVolume;
+      const allocationNote =
+        result.fixedAllocationCents !== null
+          ? `Os gastos do mês foram divididos igualmente entre as ${formatIntegerVolume(
+              snapshot.inputs.items.reduce(
+                (sum, candidate) => sum + (candidate.monthlySalesVolume ?? 0),
+                0,
+              ),
+            )} unidades informadas.`
+          : reference
+            ? `Referência se este item fosse vendido sozinho, nas ${formatIntegerVolume(reference.referenceVolume)} unidades de equilíbrio.`
+            : undefined;
+      const coverageNote =
+        !result.directLoss &&
+        result.unitProfitCents !== null &&
+        result.unitProfitCents < 0 &&
+        result.fixedAllocationCents !== null
+          ? `Cada venda deixa ${formatCurrency(result.unitContributionCents)}. A parte dos gastos do mês desta unidade é ${formatCurrency(result.fixedAllocationCents)}, então o resultado é ${formatCurrency(result.unitProfitCents)}.`
+          : undefined;
+      const monthlyContributionContext =
+        knownVolume !== null && result.monthlyContributionCents !== null
+          ? `${formatIntegerVolume(knownVolume)} ${knownVolume === 1 ? "venda" : "vendas"} × ${formatCurrency(result.unitContributionCents)}. Este total ainda será comparado com os gastos do mês.`
+          : undefined;
       const completeCostUnavailableReason =
         result.totalUnitCostCents === null
           ? reference
@@ -525,10 +618,21 @@ function toDetailedReportViewModel({
                 ? `Sem quantidade informada · equilíbrio com ${formatIntegerVolume(reference.referenceVolume)} unidades no mês`
                 : "Vendas mensais ainda não informadas"
               : `${formatIntegerVolume(item.monthlySalesVolume)} unidades vendidas no mês`,
-          statusLabel: result.directLoss
-            ? "Perda por venda"
-            : "Deixa valor para pagar o mês",
-          statusTone: result.directLoss ? "critical" : "positive",
+          statusLabel: reading.statusLabel,
+          statusTone: reading.statusTone,
+          headlineLabel: reading.headlineLabel,
+          headlineValue: reading.headlineValue,
+          headlineValueTone: reading.headlineValueTone,
+          unitProfitTone: reference
+            ? "neutral"
+            : signedTone(result.unitProfitCents),
+          realMarginTone: reference
+            ? "neutral"
+            : signedTone(result.realMarginBasisPoints),
+          unitContributionTone:
+            result.unitContributionCents < 0 ? "critical" : "neutral",
+          ...(coverageNote ? { coverageNote } : {}),
+          ...(allocationNote ? { allocationNote } : {}),
           priceLabel: formatCurrency(item.unitSalePriceCents),
           variableCostLabel: formatCurrency(result.variableUnitCostCents),
           feeLabel: formatCurrency(result.feeAmountCents),
@@ -554,6 +658,7 @@ function toDetailedReportViewModel({
           monthlyContributionLabel: optionalCurrency(
             result.monthlyContributionCents,
           ),
+          ...(monthlyContributionContext ? { monthlyContributionContext } : {}),
           marginLabel: optionalPercentage(result.contributionMarginBasisPoints),
           breakEvenLabel: optionalCurrency(breakEvenPriceCents),
           ...(breakEvenUnavailableReason ? { breakEvenUnavailableReason } : {}),

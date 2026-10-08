@@ -50,8 +50,20 @@ describe("toDetailedReportViewModel", () => {
       totalUnitCostLabel: "R$ 27,00",
       unitProfitLabel: "R$ 23,00",
       realMarginLabel: "46%",
+      statusLabel: "Cobre o mês",
+      statusTone: "positive",
+      headlineLabel: "Resultado por venda",
+      headlineValue: "R$ 23,00",
+      headlineValueTone: "positive",
+      unitProfitTone: "positive",
+      realMarginTone: "positive",
+      unitContributionTone: "neutral",
+      allocationNote:
+        "Os gastos do mês foram divididos igualmente entre as 20 unidades informadas.",
       unitContributionLabel: "R$ 28,00",
       monthlyContributionLabel: "R$ 560,00",
+      monthlyContributionContext:
+        "20 vendas × R$ 28,00. Este total ainda será comparado com os gastos do mês.",
       breakEvenLabel: "R$ 27,00",
       discountSimulationBase: {
         originalPriceCents: 5_000,
@@ -150,11 +162,22 @@ describe("toDetailedReportViewModel", () => {
     });
 
     expect(model.items[0]).toMatchObject({
+      statusLabel: "Deixa valor por venda",
+      statusTone: "neutral",
+      headlineLabel: "Valor deixado por venda",
+      headlineValue: "R$ 28,00",
+      headlineValueTone: "neutral",
+      unitProfitTone: "neutral",
+      unitContributionTone: "neutral",
       unitProfitLabel: "R$ 0,00 no equilíbrio",
       realMarginLabel: "0% no equilíbrio",
+      allocationNote:
+        "Referência se este item fosse vendido sozinho, nas 4 unidades de equilíbrio.",
       breakEvenReferenceLabel:
         "Para não ter prejuízo vendendo só este item: 4 unidades por mês.",
     });
+    expect(model.items[0]?.monthlyContributionContext).toBeUndefined();
+    expect(model.items[0]?.coverageNote).toBeUndefined();
     expect(model.items[0]?.fixedAllocationLabel).not.toBe(
       "Ainda não calculado",
     );
@@ -166,6 +189,79 @@ describe("toDetailedReportViewModel", () => {
       contextLabel: "por unidade",
       statusLabel: "Ajuda a pagar os gastos do mês",
     });
+  });
+
+  it("shows the allocated loss when the sale leaves money but misses the month", () => {
+    const model = present({
+      ...baseCommand,
+      fixedMonthlyExpensesCents: 1_000_000,
+      taxRateBasisPoints: 800,
+      items: [
+        {
+          ...baseCommand.items[0]!,
+          unitSalePriceCents: 10_000,
+          monthlySalesVolume: 10,
+          purchaseUnitCostCents: 5_000,
+          packagingUnitCostCents: 0,
+        },
+      ],
+    });
+
+    expect(model.items[0]).toMatchObject({
+      statusLabel: "Não cobre o mês",
+      statusTone: "warning",
+      headlineLabel: "Resultado por venda",
+      headlineValue: "-R$ 958,00",
+      headlineValueTone: "critical",
+      unitProfitTone: "critical",
+      realMarginTone: "critical",
+      unitContributionTone: "neutral",
+      coverageNote:
+        "Cada venda deixa R$ 42,00. A parte dos gastos do mês desta unidade é R$ 1.000,00, então o resultado é -R$ 958,00.",
+      monthlyContributionContext:
+        "10 vendas × R$ 42,00. Este total ainda será comparado com os gastos do mês.",
+    });
+  });
+
+  it("keeps an exact month payment distinct from a surplus", () => {
+    const model = present({
+      ...baseCommand,
+      items: [
+        {
+          ...baseCommand.items[0]!,
+          unitSalePriceCents: 2_700,
+        },
+      ],
+    });
+
+    expect(model.items[0]).toMatchObject({
+      statusLabel: "Paga o mês, sem sobra",
+      statusTone: "neutral",
+      headlineLabel: "Resultado por venda",
+      headlineValue: "R$ 0,00",
+    });
+  });
+
+  it("keeps a direct loss on the value left by the sale", () => {
+    const model = present({
+      ...baseCommand,
+      items: [
+        {
+          ...baseCommand.items[0]!,
+          unitSalePriceCents: 1_000,
+        },
+      ],
+    });
+
+    expect(model.items[0]).toMatchObject({
+      statusLabel: "Perda por venda",
+      statusTone: "critical",
+      headlineLabel: "Valor deixado por venda",
+      headlineValue: "-R$ 12,00",
+      headlineValueTone: "critical",
+      unitContributionTone: "critical",
+    });
+    expect(model.items[0]?.coverageNote).toBeUndefined();
   });
 
   it("shows a single-item unknown-volume goal with the break-even reference", () => {

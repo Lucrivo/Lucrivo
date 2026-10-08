@@ -154,11 +154,22 @@ function DiscountSimulator({
 }) {
   const inputId = useId();
   const statusId = useId();
-  const [discountPercent, setDiscountPercent] = useState(10);
+  const currentSale = simulateDiscount(base, 0);
+  const alreadyLosing = currentSale.status === "loss";
+  const [discountPercent, setDiscountPercent] = useState(
+    alreadyLosing ? 0 : 10,
+  );
   const simulation = simulateDiscount(base, discountPercent);
   const presentation = statusPresentation[simulation.status];
+  const resultToneClass =
+    simulation.status === "loss"
+      ? "text-destructive"
+      : simulation.status === "positive_result"
+        ? "text-success"
+        : "text-foreground";
   const StatusIcon = presentation.icon;
   const unitLabel = context.category === "service" ? "serviço" : "unidade";
+  const saleWord = context.category === "service" ? "serviço" : "venda";
   const scenarioMode = Boolean(context.breakEvenReference);
   const requiredVolume =
     context.breakEvenReference && simulation.discountedPriceCents !== null
@@ -187,9 +198,16 @@ function DiscountSimulator({
             Simulação interativa
           </Badge>
         </div>
+        {alreadyLosing && currentSale.unitProfitCents !== null ? (
+          <p className="text-destructive max-w-3xl text-[0.9375rem] leading-6 font-medium">
+            Nenhum. No preço atual o resultado já é{" "}
+            {formatCurrency(currentSale.unitProfitCents)} por {saleWord}.
+          </p>
+        ) : null}
         <p className="text-muted-foreground max-w-3xl text-[0.9375rem] leading-6">
-          Arraste para ver como o desconto muda o preço e o resultado depois de
-          todos os valores considerados.
+          {alreadyLosing
+            ? "Arraste para ver o quanto essa perda aumenta."
+            : "Arraste para ver como o desconto muda o preço e o resultado depois de todos os valores considerados."}
         </p>
       </CardHeader>
 
@@ -245,7 +263,9 @@ function DiscountSimulator({
               <dt className="text-muted-foreground text-xs">
                 Quanto sobra a cada R$ 100
               </dt>
-              <dd className="font-semibold break-words tabular-nums">
+              <dd
+                className={`font-semibold break-words tabular-nums ${resultToneClass}`}
+              >
                 {optionalMargin(simulation.realMarginBasisPoints)}
               </dd>
             </div>
@@ -255,7 +275,9 @@ function DiscountSimulator({
                   ? "Vendas necessárias com este desconto"
                   : `Resultado por ${unitLabel}`}
               </dt>
-              <dd className="font-semibold break-words tabular-nums">
+              <dd
+                className={`font-semibold break-words tabular-nums ${scenarioMode ? "text-foreground" : resultToneClass}`}
+              >
                 {scenarioMode
                   ? requiredVolume === null
                     ? "Indisponível"

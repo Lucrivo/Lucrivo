@@ -11,8 +11,18 @@ const item = {
   category: "product",
   name: "Caneca",
   volumeLabel: "20 unidades vendidas no mês",
-  statusLabel: "Deixa valor para pagar o mês",
+  statusLabel: "Cobre o mês",
   statusTone: "positive",
+  headlineLabel: "Resultado por venda",
+  headlineValue: "R$ 23,00",
+  headlineValueTone: "positive",
+  unitProfitTone: "positive",
+  realMarginTone: "positive",
+  unitContributionTone: "neutral",
+  allocationNote:
+    "Os gastos do mês foram divididos igualmente entre as 20 unidades informadas.",
+  monthlyContributionContext:
+    "20 vendas × R$ 28,00. Este total ainda será comparado com os gastos do mês.",
   priceLabel: "R$ 50,00",
   variableCostLabel: "R$ 22,00",
   feeLabel: "R$ 0,00",
@@ -61,16 +71,52 @@ describe("DetailedItemCard", () => {
       "Resultado por venda",
       "Quanto sobra a cada R$ 100",
       "Menor preço para não ficar no prejuízo",
-      "Valor deixado pelas vendas para pagar o mês",
+      "Valor deixado por venda",
+      "Total deixado no mês, antes dos gastos",
     ]) {
       expect(within(card).getAllByText(label).length).toBeGreaterThan(0);
     }
     expect(
       within(card).getAllByText("R$ 27,00", { selector: "dd" }),
     ).toHaveLength(2);
-    expect(within(card).getByText("R$ 23,00")).toBeVisible();
+    expect(within(card).getAllByText("R$ 23,00").length).toBeGreaterThan(0);
+    expect(
+      within(card).getByText(
+        "Os gastos do mês foram divididos igualmente entre as 20 unidades informadas.",
+      ),
+    ).toBeVisible();
+    expect(
+      within(card).getByText(
+        "20 vendas × R$ 28,00. Este total ainda será comparado com os gastos do mês.",
+      ),
+    ).toBeVisible();
     expect(within(card).getByText("46%")).toBeVisible();
     expect(within(card).getByTestId("discount-simulator")).toBeVisible();
+  });
+
+  it("explains a sale that leaves money without covering the month", () => {
+    const card = renderItem({
+      ...item,
+      statusLabel: "Não cobre o mês",
+      statusTone: "warning",
+      headlineLabel: "Resultado por venda",
+      headlineValue: "-R$ 291,34",
+      headlineValueTone: "critical",
+      unitProfitTone: "critical",
+      realMarginTone: "critical",
+      coverageNote:
+        "Cada venda deixa R$ 42,00. A parte dos gastos do mês desta unidade é R$ 333,34, então o resultado é -R$ 291,34.",
+    });
+
+    expect(within(card).getByText("Não cobre o mês")).toBeVisible();
+    expect(within(card).getByText("-R$ 291,34")).toHaveClass(
+      "text-destructive",
+    );
+    expect(
+      within(card).getByText("Menor preço para não ficar no prejuízo")
+        .parentElement,
+    ).toHaveClass("content-start", "self-start");
+    expect(within(card).getByText(/Cada venda deixa R\$ 42,00/)).toBeVisible();
   });
 
   it("shows the item break-even reference when volume is unknown", () => {
