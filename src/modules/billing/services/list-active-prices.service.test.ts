@@ -8,20 +8,20 @@ const monthlyPrice = {
   id: "20000000-0000-4000-8000-000000000001",
   product_code: "quick_diagnosis_pro",
   billing_mode: "monthly",
-  amount_cents: 4990,
+  amount_cents: 3990,
   currency: "BRL",
   installment_limit: null,
   access_months: 1,
 };
 
-const annualPrice = {
+const semiannualPrice = {
   id: "20000000-0000-4000-8000-000000000002",
   product_code: "quick_diagnosis_pro",
-  billing_mode: "annual",
-  amount_cents: 47880,
+  billing_mode: "semiannual",
+  amount_cents: 17940,
   currency: "BRL",
-  installment_limit: 12,
-  access_months: 12,
+  installment_limit: 6,
+  access_months: 6,
 };
 
 describe("listActivePrices", () => {
@@ -36,7 +36,7 @@ describe("listActivePrices", () => {
     select.mockReturnValue({ eq: activeOnly });
     activeOnly.mockReturnValue({ eq: productOnly });
     productOnly.mockResolvedValue({
-      data: [annualPrice, monthlyPrice],
+      data: [semiannualPrice, monthlyPrice],
       error: null,
     });
   });
@@ -51,19 +51,19 @@ describe("listActivePrices", () => {
           id: monthlyPrice.id,
           productCode: "quick_diagnosis_pro",
           billingMode: "monthly",
-          amountCents: 4990,
+          amountCents: 3990,
           currency: "BRL",
           installmentLimit: null,
           accessMonths: 1,
         },
         {
-          id: annualPrice.id,
+          id: semiannualPrice.id,
           productCode: "quick_diagnosis_pro",
-          billingMode: "annual",
-          amountCents: 47880,
+          billingMode: "semiannual",
+          amountCents: 17940,
           currency: "BRL",
-          installmentLimit: 12,
-          accessMonths: 12,
+          installmentLimit: 6,
+          accessMonths: 6,
         },
       ],
     });
@@ -81,9 +81,9 @@ describe("listActivePrices", () => {
 
   it.each([
     [[monthlyPrice]],
-    [[annualPrice]],
-    [[monthlyPrice, monthlyPrice, annualPrice]],
-    [[monthlyPrice, annualPrice, annualPrice]],
+    [[semiannualPrice]],
+    [[monthlyPrice, monthlyPrice, semiannualPrice]],
+    [[monthlyPrice, semiannualPrice, semiannualPrice]],
   ])("rejects a catalog with missing or duplicate modes", async (data) => {
     productOnly.mockResolvedValue({ data, error: null });
 
@@ -96,10 +96,10 @@ describe("listActivePrices", () => {
     { ...monthlyPrice, amount_cents: 0 },
     { ...monthlyPrice, currency: "USD" },
     { ...monthlyPrice, installment_limit: 2 },
-    { ...annualPrice, access_months: 6 },
+    { ...semiannualPrice, access_months: 12 },
   ])("rejects an invalid active catalog row", async (invalidPrice) => {
     productOnly.mockResolvedValue({
-      data: [invalidPrice, annualPrice],
+      data: [invalidPrice, semiannualPrice],
       error: null,
     });
 

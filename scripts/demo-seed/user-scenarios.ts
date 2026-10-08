@@ -488,8 +488,8 @@ function buildDemoCatalog(): DemoSeedCatalog {
 }
 
 export {
-  ANNUAL_PRICE_ID,
   MONTHLY_PRICE_ID,
+  SEMIANNUAL_PRICE_ID,
   buildDemoCatalog,
   clientReportCount,
   contractStatuses,

@@ -97,7 +97,9 @@ function reusableCheckout(
   }
 
   const unresolved = contracts.find(
-    (contract) => contract.status === "pending_reconciliation",
+    (contract) =>
+      contract.status === "pending_reconciliation" ||
+      contract.status === "refund_pending",
   );
   if (unresolved) return { status: "pending_reconciliation" };
 
@@ -236,7 +238,11 @@ async function createHostedCheckout({
     }
 
     if (
-      contracts.some((contract) => contract.status === "pending_reconciliation")
+      contracts.some(
+        (contract) =>
+          contract.status === "pending_reconciliation" ||
+          contract.status === "refund_pending",
+      )
     ) {
       return { status: "pending_reconciliation" };
     }

@@ -38,11 +38,11 @@ function buildCheckoutRequest({
         name:
           price.billingMode === "monthly"
             ? "Diagnóstico Pro Mensal"
-            : "Diagnóstico Pro Anual",
+            : "Diagnóstico Pro Semestral",
         description:
           price.billingMode === "monthly"
             ? "Acesso ao Lucrivo por um mês"
-            : "Acesso ao Lucrivo por 12 meses",
+            : "Acesso ao Lucrivo por 6 meses",
         imageBase64: CHECKOUT_ITEM_IMAGE_BASE64,
         quantity: 1 as const,
         value: price.amountCents / 100,
@@ -72,8 +72,8 @@ function buildCheckoutRequest({
     };
   }
 
-  if (price.installmentLimit !== 12 || price.accessMonths !== 12) {
-    throw new Error("Invalid annual billing price");
+  if (price.installmentLimit !== 6 || price.accessMonths !== 6) {
+    throw new Error("Invalid semiannual billing price");
   }
 
   return {

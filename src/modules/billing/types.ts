@@ -3,14 +3,21 @@ type BillingContractStatus =
   | "pending_reconciliation"
   | "active"
   | "cancel_at_period_end"
+  | "refund_pending"
   | "expired"
   | "canceled"
   | "refunded"
   | "chargeback"
   | "failed";
 
-type BillingMode = "monthly" | "annual";
+type BillingMode = "monthly" | "semiannual";
 type BillingPaymentMethod = "credit_card" | "pix";
+type BillingRefundStatus =
+  | "processing"
+  | "submitted"
+  | "confirmed"
+  | "rejected"
+  | "pending_reconciliation";
 
 type ActiveBillingPrice = {
   id: string;
@@ -45,5 +52,6 @@ export type {
   BillingMode,
   BillingOverview,
   BillingPaymentMethod,
+  BillingRefundStatus,
   GetBillingOverviewResult,
 };

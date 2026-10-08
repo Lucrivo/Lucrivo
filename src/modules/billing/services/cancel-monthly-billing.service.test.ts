@@ -99,7 +99,7 @@ describe("cancelMonthlyBilling", () => {
   });
 
   it.each([
-    { ...activeContract, billing_mode: "annual" },
+    { ...activeContract, billing_mode: "semiannual" },
     { ...activeContract, payment_method: "pix", charge_type: "detached" },
     { ...activeContract, charge_type: "installment" },
   ])("never deletes a non-recurring subscription shape", async (contract) => {

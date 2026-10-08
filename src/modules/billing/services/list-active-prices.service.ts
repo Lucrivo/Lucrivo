@@ -55,9 +55,9 @@ function normalizePrice(row: ActiveBillingPriceRow): ActiveBillingPrice | null {
   }
 
   if (
-    row.billing_mode === "annual" &&
-    row.installment_limit === 12 &&
-    row.access_months === 12 &&
+    row.billing_mode === "semiannual" &&
+    row.installment_limit === 6 &&
+    row.access_months === 6 &&
     row.amount_cents % row.installment_limit === 0
   ) {
     return {
@@ -95,11 +95,11 @@ async function listActivePrices(input: {
     const monthlyCount = normalizedPrices.filter(
       (price) => price.billingMode === "monthly",
     ).length;
-    const annualCount = normalizedPrices.filter(
-      (price) => price.billingMode === "annual",
+    const semiannualCount = normalizedPrices.filter(
+      (price) => price.billingMode === "semiannual",
     ).length;
 
-    if (monthlyCount !== 1 || annualCount !== 1) {
+    if (monthlyCount !== 1 || semiannualCount !== 1) {
       return { status: "read_failed" };
     }
 

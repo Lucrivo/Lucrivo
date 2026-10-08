@@ -15,20 +15,20 @@ const monthlyPrice: ActiveBillingPrice = {
   id: "20000000-0000-4000-8000-000000000001",
   productCode: "quick_diagnosis_pro",
   billingMode: "monthly",
-  amountCents: 4990,
+  amountCents: 3990,
   currency: "BRL",
   installmentLimit: null,
   accessMonths: 1,
 };
 
-const annualPrice: ActiveBillingPrice = {
+const semiannualPrice: ActiveBillingPrice = {
   id: "20000000-0000-4000-8000-000000000002",
   productCode: "quick_diagnosis_pro",
-  billingMode: "annual",
-  amountCents: 47880,
+  billingMode: "semiannual",
+  amountCents: 17940,
   currency: "BRL",
-  installmentLimit: 12,
-  accessMonths: 12,
+  installmentLimit: 6,
+  accessMonths: 6,
 };
 
 function build(
@@ -53,23 +53,30 @@ describe("buildCheckoutRequest", () => {
       chargeTypes: ["RECURRENT"],
       subscription: { cycle: "MONTHLY", nextDueDate: "2026-09-09" },
       externalReference: contractId,
-      items: [{ quantity: 1, value: 49.9 }],
+      items: [{ quantity: 1, value: 39.9 }],
     });
   });
 
-  it("builds the annual installment credit-card payload", () => {
-    expect(build(annualPrice, "credit_card")).toMatchObject({
+  it("builds the semiannual installment credit-card payload", () => {
+    expect(build(semiannualPrice, "credit_card")).toMatchObject({
       billingTypes: ["CREDIT_CARD"],
       chargeTypes: ["DETACHED", "INSTALLMENT"],
-      installment: { maxInstallmentCount: 12 },
+      installment: { maxInstallmentCount: 6 },
       externalReference: contractId,
-      items: [{ quantity: 1, value: 478.8 }],
+      items: [
+        {
+          name: "Diagnóstico Pro Semestral",
+          description: "Acesso ao Lucrivo por 6 meses",
+          quantity: 1,
+          value: 179.4,
+        },
+      ],
     });
   });
 
   it.each([
-    [monthlyPrice, 49.9],
-    [annualPrice, 478.8],
+    [monthlyPrice, 39.9],
+    [semiannualPrice, 179.4],
   ] as const)(
     "builds a detached Pix payload without recurring fields",
     (price, value) => {
@@ -89,8 +96,8 @@ describe("buildCheckoutRequest", () => {
   it.each([
     [monthlyPrice, "credit_card"],
     [monthlyPrice, "pix"],
-    [annualPrice, "credit_card"],
-    [annualPrice, "pix"],
+    [semiannualPrice, "credit_card"],
+    [semiannualPrice, "pix"],
   ] as const)(
     "uses only controlled callbacks and a valid PNG item image",
     (price, paymentMethod) => {
