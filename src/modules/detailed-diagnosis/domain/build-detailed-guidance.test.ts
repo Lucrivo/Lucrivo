@@ -172,10 +172,52 @@ describe("buildDetailedGuidance", () => {
 
     expect(guidance).toMatchObject({
       title: "Estes itens deixam mais depois dos valores considerados",
+      tone: "positive",
       itemIds: [
         "11111111-1111-4111-8111-111111111111",
         "22222222-2222-4222-8222-222222222222",
       ],
+    });
+  });
+
+  it("describes the smaller loss without calling it a positive result", () => {
+    const losingMix: DetailedDiagnosisCommand = {
+      ...command,
+      fixedMonthlyExpensesCents: 1_000_000,
+      proLaboreIncluded: false,
+      proLaboreCents: 0,
+      taxRateBasisPoints: 0,
+      cardFeeRateBasisPoints: 0,
+      items: [
+        {
+          ...command.items[0]!,
+          unitSalePriceCents: 5_000,
+          monthlySalesVolume: 2,
+          purchaseUnitCostCents: 2_000,
+          packagingUnitCostCents: 0,
+        },
+        {
+          ...command.items[0]!,
+          id: "22222222-2222-4222-8222-222222222222",
+          position: 1,
+          name: "Caderno",
+          unitSalePriceCents: 6_000,
+          monthlySalesVolume: 2,
+          purchaseUnitCostCents: 2_000,
+          packagingUnitCostCents: 0,
+        },
+      ],
+    };
+
+    const guidance = buildDetailedGuidance(
+      losingMix,
+      calculateDetailedDiagnosis(losingMix),
+    ).find(({ key }) => key === "best_unit_contribution");
+
+    expect(guidance).toMatchObject({
+      tone: "neutral",
+      title: "Este item perde menos por venda do que os outros",
+      itemIds: ["22222222-2222-4222-8222-222222222222"],
     });
   });
 });

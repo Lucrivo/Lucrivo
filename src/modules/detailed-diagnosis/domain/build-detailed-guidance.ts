@@ -226,15 +226,29 @@ function bestUnitResultGuidance(
   );
   const itemIds = bestItems.map((item) => item.itemId);
   const plural = itemIds.length > 1;
+  const names = namesFor(command, itemIds);
+  if (bestResult < 0) {
+    return {
+      key: "best_unit_contribution",
+      tone: "neutral",
+      title: plural
+        ? "Estes itens perdem menos por venda do que os outros"
+        : "Este item perde menos por venda do que os outros",
+      body: plural
+        ? `${names} têm o prejuízo menor por venda entre os itens com custo completo calculado.`
+        : `${names} tem o prejuízo menor por venda entre os itens com custo completo calculado.`,
+      itemIds,
+    };
+  }
   return {
     key: "best_unit_contribution",
-    tone: "positive",
+    tone: bestResult > 0 ? "positive" : "neutral",
     title: plural
       ? "Estes itens deixam mais depois dos valores considerados"
       : "Este item deixa mais depois dos valores considerados",
     body: plural
-      ? `${namesFor(command, itemIds)} deixam o maior valor por venda entre os itens com custo completo calculado.`
-      : `${namesFor(command, itemIds)} deixa o maior valor por venda entre os itens com custo completo calculado.`,
+      ? `${names} deixam o maior valor por venda entre os itens com custo completo calculado.`
+      : `${names} deixa o maior valor por venda entre os itens com custo completo calculado.`,
     itemIds,
   };
 }

@@ -14,16 +14,46 @@ import {
 } from "../presenters/to-detailed-report-view-model";
 import { DiscountSimulator } from "./discount-simulator";
 
-function ValueRow({ label, value }: { label: string; value: string }) {
+const valueToneClass = {
+  neutral: "text-foreground",
+  positive: "text-success",
+  critical: "text-destructive",
+} as const;
+
+function ValueRow({
+  label,
+  value,
+  note,
+  valueTone = "neutral",
+}: {
+  label: string;
+  value: string;
+  note?: string;
+  valueTone?: keyof typeof valueToneClass;
+}) {
   return (
-    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-end gap-4 py-3">
+    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 py-3">
       <dt className="text-muted-foreground text-sm">{label}</dt>
-      <dd className="max-w-full min-w-0 text-right font-semibold break-words tabular-nums">
+      <dd
+        className={`max-w-full min-w-0 text-right font-semibold break-words tabular-nums ${valueToneClass[valueTone]}`}
+      >
         {value}
       </dd>
+      {note ? (
+        <p className="text-muted-foreground col-span-2 text-xs leading-5">
+          {note}
+        </p>
+      ) : null}
     </div>
   );
 }
+
+const statusBadgeVariant = {
+  positive: "success",
+  warning: "warning",
+  critical: "destructive",
+  neutral: "info",
+} as const;
 
 function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
   return (
@@ -35,34 +65,39 @@ function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
         aria-label={`Abrir detalhes de ${item.name}`}
         className="min-h-16 min-w-0 gap-4 px-4 py-4 hover:no-underline sm:px-5"
       >
-        <span className="grid min-w-0 flex-1 gap-3 text-left @3xl/page:grid-cols-[minmax(0,1fr)_auto_auto_auto] @3xl/page:items-center">
-          <span className="grid min-w-0 gap-1">
+        <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-3 text-left">
+          <span className="grid min-w-0 flex-1 basis-48 gap-1">
             <span className="truncate text-lg font-semibold">{item.name}</span>
             <span className="text-muted-foreground font-normal">
               {item.volumeLabel}
             </span>
           </span>
-          <span className="text-muted-foreground grid gap-0.5 font-normal">
-            <span className="text-xs">Preço de venda</span>
-            <strong className="text-foreground tabular-nums">
-              {item.priceLabel}
-            </strong>
+          <span className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2">
+            <span className="text-muted-foreground grid gap-0.5 font-normal">
+              <span className="text-xs">Preço de venda</span>
+              <strong className="text-foreground tabular-nums">
+                {item.priceLabel}
+              </strong>
+            </span>
+            <span className="text-muted-foreground grid gap-0.5 font-normal">
+              <span className="text-xs">{item.headlineLabel}</span>
+              <strong
+                className={`tabular-nums ${valueToneClass[item.headlineValueTone]}`}
+              >
+                {item.headlineValue}
+              </strong>
+            </span>
+            <Badge
+              variant={statusBadgeVariant[item.statusTone]}
+              className="h-auto max-w-full whitespace-normal"
+            >
+              {item.statusTone === "critical" ||
+              item.statusTone === "warning" ? (
+                <TriangleAlertIcon aria-hidden="true" />
+              ) : null}
+              {item.statusLabel}
+            </Badge>
           </span>
-          <span className="text-muted-foreground grid gap-0.5 font-normal">
-            <span className="text-xs">Valor que ajuda a pagar o mês</span>
-            <strong className="text-foreground tabular-nums">
-              {item.monthlyContributionLabel}
-            </strong>
-          </span>
-          <Badge
-            variant={item.statusTone === "critical" ? "destructive" : "success"}
-            className="h-auto max-w-full justify-self-start whitespace-normal @3xl/page:justify-self-end"
-          >
-            {item.statusTone === "critical" ? (
-              <TriangleAlertIcon aria-hidden="true" />
-            ) : null}
-            {item.statusLabel}
-          </Badge>
         </span>
       </AccordionTrigger>
 
@@ -71,6 +106,12 @@ function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
           <p className="border-destructive/25 bg-destructive/5 text-destructive rounded-xl border p-3 text-sm">
             O preço atual não cobre o custo da unidade e as cobranças desta
             venda.
+          </p>
+        ) : null}
+
+        {item.coverageNote ? (
+          <p className="border-warning/35 bg-warning/12 text-warning-foreground dark:text-warning rounded-xl border p-3 text-sm leading-5">
+            {item.coverageNote}
           </p>
         ) : null}
 
@@ -94,7 +135,7 @@ function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
           </p>
         ) : null}
 
-        <div className="grid min-w-0 gap-5 @3xl/page:grid-cols-2">
+        <div className="grid min-w-0 items-start gap-5 @3xl/page:grid-cols-2">
           <section aria-labelledby={`${item.id}-sale`} className="grid gap-3">
             <h4 id={`${item.id}-sale`} className="text-base font-semibold">
               Venda e resultado
@@ -108,10 +149,12 @@ function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
               <ValueRow
                 label="Resultado por venda"
                 value={item.unitProfitLabel}
+                valueTone={item.unitProfitTone}
               />
               <ValueRow
                 label="Quanto sobra a cada R$ 100"
                 value={item.realMarginLabel}
+                valueTone={item.realMarginTone}
               />
             </dl>
           </section>
@@ -129,6 +172,7 @@ function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
               <ValueRow
                 label="Parte dos gastos do mês"
                 value={item.fixedAllocationLabel}
+                {...(item.allocationNote ? { note: item.allocationNote } : {})}
               />
               <ValueRow
                 label="Custo completo por unidade"
@@ -138,8 +182,8 @@ function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
           </section>
         </div>
 
-        <dl className="grid min-w-0 gap-4 @xl/page:grid-cols-2">
-          <div className="border-border/70 bg-background/70 grid min-w-0 gap-1 rounded-xl border p-4">
+        <dl className="grid min-w-0 items-start gap-4 @xl/page:grid-cols-2">
+          <div className="border-border/70 bg-background/70 grid min-w-0 content-start gap-1 self-start rounded-xl border p-4">
             <dt className="text-muted-foreground text-sm">
               Menor preço para não ficar no prejuízo
             </dt>
@@ -152,14 +196,29 @@ function DetailedItemCard({ item }: { item: DetailedItemViewModel }) {
               </p>
             ) : null}
           </div>
-          <div className="border-border/70 bg-background/70 grid min-w-0 gap-1 rounded-xl border p-4">
+          <div className="border-border/70 bg-background/70 grid min-w-0 content-start gap-1 self-start rounded-xl border p-4">
             <dt className="text-muted-foreground text-sm">
-              Valor deixado pelas vendas para pagar o mês
+              Valor deixado por venda
             </dt>
-            <dd className="text-lg font-semibold break-words tabular-nums">
-              {item.monthlyContributionLabel}
+            <dd
+              className={`text-lg font-semibold break-words tabular-nums ${valueToneClass[item.unitContributionTone]}`}
+            >
+              {item.unitContributionLabel}
             </dd>
             <PlainLanguageHelp {...surplusHelp} />
+            {item.monthlyContributionContext ? (
+              <div className="border-border/70 mt-3 grid gap-1 border-t pt-3">
+                <p className="text-muted-foreground text-sm">
+                  Total deixado no mês, antes dos gastos
+                </p>
+                <p className="text-lg font-semibold break-words tabular-nums">
+                  {item.monthlyContributionLabel}
+                </p>
+                <p className="text-muted-foreground text-xs leading-5">
+                  {item.monthlyContributionContext}
+                </p>
+              </div>
+            ) : null}
           </div>
         </dl>
 

@@ -100,6 +100,32 @@ describe("DiscountSimulator", () => {
     expect(screen.getAllByText("Indisponível")).toHaveLength(3);
   });
 
+  it("answers that no discount is safe when the current price already loses", () => {
+    render(
+      <DiscountSimulator
+        base={{ ...base, unitCostCents: 12_000, minimumPriceCents: 12_000 }}
+        context={{ category: "product" }}
+      />,
+    );
+
+    const answer = screen.getByText(/Nenhum\. No preço atual/);
+    const instruction = screen.getByText(
+      "Arraste para ver o quanto essa perda aumenta.",
+    );
+
+    expect(
+      screen.getByRole("slider", { name: "Desconto simulado" }),
+    ).toHaveValue("0");
+    expect(answer).toHaveTextContent("o resultado já é -R$ 20,00 por venda");
+    expect(
+      answer.compareDocumentPosition(instruction) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(answer.compareDocumentPosition(screen.getByRole("slider"))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
   it("shows required sales in break-even reference mode", () => {
     render(
       <DiscountSimulator

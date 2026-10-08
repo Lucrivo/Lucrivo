@@ -129,7 +129,11 @@ describe("DetailedReportDetail", () => {
     expect(item).not.toBeNull();
     expect(within(item!).getByText("Parte dos gastos do mês")).toBeVisible();
     expect(within(item!).getByText("Custo completo por unidade")).toBeVisible();
-    expect(within(item!).getByText("Resultado por venda")).toBeVisible();
+    expect(
+      within(item!).getAllByText("Resultado por venda").length,
+    ).toBeGreaterThan(0);
+    expect(within(item!).getByText("Cobre o mês")).toBeVisible();
+    expect(within(item!).getByText("Valor deixado por venda")).toBeVisible();
     expect(
       screen.getByRole("heading", {
         name: "Como cada item participa do resultado?",

@@ -63,4 +63,26 @@ describe("buildDetailedEditorItemSummary", () => {
       tone: "critical",
     });
   });
+
+  it("marks a positive contribution that still misses the month", () => {
+    const { snapshot, item } = detailedFixture();
+    const shortfallSnapshot = {
+      ...snapshot,
+      results: {
+        ...snapshot.results,
+        items: snapshot.results.items.map((result) => ({
+          ...result,
+          directLoss: false,
+          unitProfitCents: -1_000,
+        })),
+      },
+    };
+
+    expect(
+      buildDetailedEditorItemSummary(item, 0, shortfallSnapshot, {}).status,
+    ).toEqual({
+      label: "Não cobre o mês",
+      tone: "warning",
+    });
+  });
 });
