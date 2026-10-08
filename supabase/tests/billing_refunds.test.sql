@@ -125,15 +125,19 @@ select
   end,
   format('refund-contract-%s', value),
   case when value = 6 then 'semiannual' else 'monthly' end,
-  case when value in (2, 6) then 'credit_card' else 'pix' end,
-  case when value = 2 then 'recurring'
+  case when value in (2, 5, 6) then 'credit_card' else 'pix' end,
+  case when value in (2, 5) then 'recurring'
        when value = 6 then 'installment'
        else 'detached' end,
   case when value = 6 then 17940 else 3990 end,
   'BRL',
   case when value = 6 then 6 else null end,
   case when value = 6 then 6 else 1 end,
-  case when value = 2 then 'sub_refund_2' else null end,
+  case value
+    when 2 then 'sub_refund_2'
+    when 5 then 'sub_refund_5'
+    else null
+  end,
   case when value = 6 then 'ins_refund_6' else null end,
   'active',
   case value
@@ -251,6 +255,140 @@ select is(
    where contract_id = 'a2000000-0000-4000-8000-000000000001'),
   2,
   'reclaiming increments the existing request attempt count'
+);
+
+select is(
+  public.apply_asaas_webhook_event(
+    'evt-refund-first-2',
+    'PAYMENT_REFUNDED',
+    jsonb_build_object(
+      'dateCreated', transaction_timestamp(),
+      'payment', jsonb_build_object(
+        'id', 'pay_refund_2',
+        'externalReference', 'refund-contract-2',
+        'value', 39.90,
+        'dueDate', current_date
+      )
+    )
+  ),
+  'processed',
+  'a monthly refund webhook is processed before cancellation'
+);
+select results_eq(
+  $$
+    select status, refund_confirmed_at is not null,
+      recurrence_canceled_at is null
+    from public.billing_refund_requests
+    where contract_id = 'a2000000-0000-4000-8000-000000000002'
+  $$,
+  $$ values ('submitted'::text, true, true) $$,
+  'monthly card waits for recurrence cancellation after refund confirmation'
+);
+select is(
+  public.apply_asaas_webhook_event(
+    'evt-cancel-second-2',
+    'SUBSCRIPTION_DELETED',
+    jsonb_build_object(
+      'dateCreated', transaction_timestamp(),
+      'subscription', jsonb_build_object('id', 'sub_refund_2')
+    )
+  ),
+  'processed',
+  'subscription deletion converges after the refund'
+);
+select results_eq(
+  $$
+    select request.status, contract.status,
+      request.refund_confirmed_at is not null,
+      request.recurrence_canceled_at is not null
+    from public.billing_refund_requests as request
+    join public.billing_contracts as contract on contract.id = request.contract_id
+    where request.contract_id = 'a2000000-0000-4000-8000-000000000002'
+  $$,
+  $$ values ('confirmed'::text, 'refunded'::text, true, true) $$,
+  'refund then subscription deletion reaches confirmed without restoring access'
+);
+
+select is(
+  public.begin_billing_refund(
+    'a1000000-0000-4000-8000-000000000005'::uuid
+  )->>'status',
+  'ready',
+  'the reverse-order monthly fixture is claimed'
+);
+select is(
+  public.apply_asaas_webhook_event(
+    'evt-cancel-first-5',
+    'SUBSCRIPTION_INACTIVATED',
+    jsonb_build_object(
+      'dateCreated', transaction_timestamp(),
+      'subscription', jsonb_build_object('id', 'sub_refund_5')
+    )
+  ),
+  'processed',
+  'subscription cancellation is processed before its refund'
+);
+select is(
+  public.apply_asaas_webhook_event(
+    'evt-refund-second-5',
+    'PAYMENT_REFUNDED',
+    jsonb_build_object(
+      'dateCreated', transaction_timestamp(),
+      'payment', jsonb_build_object(
+        'id', 'pay_refund_5',
+        'externalReference', 'refund-contract-5',
+        'value', 39.90,
+        'dueDate', current_date
+      )
+    )
+  ),
+  'processed',
+  'refund confirmation converges after recurrence cancellation'
+);
+select results_eq(
+  $$
+    select request.status, contract.status,
+      request.refund_confirmed_at is not null,
+      request.recurrence_canceled_at is not null
+    from public.billing_refund_requests as request
+    join public.billing_contracts as contract on contract.id = request.contract_id
+    where request.contract_id = 'a2000000-0000-4000-8000-000000000005'
+  $$,
+  $$ values ('confirmed'::text, 'refunded'::text, true, true) $$,
+  'subscription deletion then refund also reaches confirmed'
+);
+
+select is(
+  public.begin_billing_refund(
+    'a1000000-0000-4000-8000-000000000006'::uuid
+  )->>'status',
+  'ready',
+  'the semiannual installment fixture is claimed'
+);
+select is(
+  public.apply_asaas_webhook_event(
+    'evt-semiannual-refund-6',
+    'PAYMENT_REFUNDED',
+    jsonb_build_object(
+      'dateCreated', transaction_timestamp(),
+      'payment', jsonb_build_object(
+        'id', 'pay_refund_6',
+        'externalReference', 'refund-contract-6',
+        'installment', 'ins_refund_6',
+        'installmentNumber', 1,
+        'value', 29.90,
+        'dueDate', current_date
+      )
+    )
+  ),
+  'processed',
+  'a semiannual refund webhook is processed'
+);
+select is(
+  (select status from public.billing_refund_requests
+   where contract_id = 'a2000000-0000-4000-8000-000000000006'),
+  'confirmed',
+  'fixed-term refunds need no recurrence event'
 );
 
 set local role authenticated;

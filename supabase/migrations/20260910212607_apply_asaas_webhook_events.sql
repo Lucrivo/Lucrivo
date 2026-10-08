@@ -55,6 +55,7 @@ declare
   v_existing_payment_contract_id uuid;
   v_existing_payment_status text;
   v_new_access_end timestamptz;
+  v_refund_request_found boolean;
 begin
   if p_event_id is null or length(btrim(p_event_id)) = 0 then
     raise exception using errcode = '22023', message = 'invalid webhook event id';
@@ -202,7 +203,8 @@ begin
           'pending',
           'pending_reconciliation',
           'active',
-          'cancel_at_period_end'
+          'cancel_at_period_end',
+          'refund_pending'
         );
     end if;
 
@@ -288,16 +290,41 @@ begin
       'SUBSCRIPTION_INACTIVATED',
       'SUBSCRIPTION_DELETED'
     ) then
-      update public.billing_contracts
-      set status = 'cancel_at_period_end',
-          cancel_at_period_end = true,
-          cancellation_confirmed_at = v_event_at,
+      update public.billing_refund_requests
+      set recurrence_canceled_at = coalesce(
+            recurrence_canceled_at,
+            v_event_at
+          ),
+          provider_submitted_at = coalesce(
+            provider_submitted_at,
+            v_event_at
+          ),
+          status = case
+            when refund_confirmed_at is not null then 'confirmed'
+            else 'submitted'
+          end,
+          last_error_code = null,
           updated_at = statement_timestamp()
-      where id = v_contract.id
-        and billing_mode = 'monthly'
-        and payment_method = 'credit_card'
-        and charge_type = 'recurring'
-        and status in ('active', 'cancel_at_period_end');
+      where contract_id = v_contract.id
+        and status in (
+          'processing',
+          'submitted',
+          'pending_reconciliation'
+        )
+      returning true into v_refund_request_found;
+
+      if not coalesce(v_refund_request_found, false) then
+        update public.billing_contracts
+        set status = 'cancel_at_period_end',
+            cancel_at_period_end = true,
+            cancellation_confirmed_at = v_event_at,
+            updated_at = statement_timestamp()
+        where id = v_contract.id
+          and billing_mode = 'monthly'
+          and payment_method = 'credit_card'
+          and charge_type = 'recurring'
+          and status in ('active', 'cancel_at_period_end');
+      end if;
 
     elsif p_event_type like 'PAYMENT\_%' escape '\' then
       if v_payment_id is null
@@ -483,6 +510,29 @@ begin
             cancellation_confirmed_at = null,
             updated_at = statement_timestamp()
         where id = v_contract.id;
+
+        update public.billing_refund_requests
+        set refund_confirmed_at = coalesce(refund_confirmed_at, v_event_at),
+            provider_submitted_at = coalesce(
+              provider_submitted_at,
+              v_event_at
+            ),
+            status = case
+              when v_contract.billing_mode <> 'monthly'
+                or v_contract.payment_method <> 'credit_card'
+                or recurrence_canceled_at is not null
+              then 'confirmed'
+              else 'submitted'
+            end,
+            last_error_code = null,
+            updated_at = statement_timestamp()
+        where contract_id = v_contract.id
+          and status in (
+            'processing',
+            'submitted',
+            'pending_reconciliation',
+            'rejected'
+          );
 
       elsif p_event_type in (
         'PAYMENT_CHARGEBACK_REQUESTED',
