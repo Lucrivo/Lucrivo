@@ -10,6 +10,11 @@ select has_table('public', 'billing_contracts', 'billing contracts exist');
 select has_table('public', 'billing_payments', 'billing payments exist');
 select has_table(
   'public',
+  'billing_refund_requests',
+  'billing refund requests exist'
+);
+select has_table(
+  'public',
   'asaas_webhook_events',
   'Asaas webhook ledger exists'
 );
