@@ -101,9 +101,14 @@ function TrustRail() {
 
 function BillingPlans({ prices, overview, context }: BillingPlansProps) {
   const monthly = prices.find((price) => price.billingMode === "monthly");
-  const annual = prices.find((price) => price.billingMode === "annual");
+  const semiannual = prices.find((price) => price.billingMode === "semiannual");
 
-  const catalogReady = monthly !== undefined && annual !== undefined;
+  const catalogReady =
+    monthly !== undefined &&
+    semiannual !== undefined &&
+    semiannual.installmentLimit === 6 &&
+    semiannual.accessMonths === 6 &&
+    semiannual.amountCents % semiannual.installmentLimit === 0;
 
   const Heading = context === "public" ? "h3" : "h2";
 
@@ -121,10 +126,10 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
         ? "Fazer diagnóstico"
         : "Ver meu relatório";
 
-  const annualInstallmentLimit = annual?.installmentLimit ?? 1;
+  const semiannualInstallmentLimit = semiannual?.installmentLimit ?? 1;
 
-  const annualInstallmentAmountCents = annual
-    ? Math.round(annual.amountCents / annualInstallmentLimit)
+  const semiannualInstallmentAmountCents = semiannual
+    ? semiannual.amountCents / semiannualInstallmentLimit
     : 0;
 
   function checkoutActions(
@@ -226,7 +231,7 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
           <>
             <article
               className={`${styles.card} ${styles.featuredCard}`}
-              aria-label="Plano Anual"
+              aria-label="Plano Semestral"
             >
               <div className={styles.popularBadge}>
                 <span aria-hidden="true" className={styles.popularDot} />
@@ -234,34 +239,36 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
               </div>
 
               <PlanHeader
-                name="Anual"
+                name="Semestral"
                 tagline="Melhor custo-benefício"
                 Heading={Heading}
               />
 
               <div className={styles.priceBlock}>
-                <p className={`${styles.planPrice} ${styles.annualPrice}`}>
+                <p className={`${styles.planPrice} ${styles.fixedTermPrice}`}>
                   <span className={styles.installmentCount}>
-                    {annualInstallmentLimit}x de
+                    {semiannualInstallmentLimit}x de
                   </span>
 
                   <span className={styles.installmentValue}>
-                    {formatBRL(annualInstallmentAmountCents)}
+                    {formatBRL(semiannualInstallmentAmountCents)}
                   </span>
                 </p>
 
                 <p className={styles.planDescription}>
-                  ou {formatBRL(annual.amountCents)} à vista
+                  ou {formatBRL(semiannual.amountCents)} à vista
                 </p>
 
-                {monthly.amountCents * 12 > annual.amountCents ? (
+                {monthly.amountCents * semiannual.accessMonths >
+                semiannual.amountCents ? (
                   <p className={styles.saving}>
                     <BadgeCheckIcon aria-hidden="true" />
                     Economize{" "}
                     {formatBRL(
-                      monthly.amountCents * 12 - annual.amountCents,
+                      monthly.amountCents * semiannual.accessMonths -
+                        semiannual.amountCents,
                     )}{" "}
-                    no ano.
+                    em seis meses
                   </p>
                 ) : null}
               </div>
@@ -270,12 +277,14 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
                 {paidBenefits.map((benefit) => (
                   <Benefit key={benefit}>{benefit}</Benefit>
                 ))}
-                <Benefit>12 meses de acesso</Benefit>
+                <Benefit>6 meses de acesso</Benefit>
               </ul>
 
               {checkoutActions(
-                annual,
-                context === "public" ? "Escolher anual" : "Assinar anual",
+                semiannual,
+                context === "public"
+                  ? "Escolher semestral"
+                  : "Assinar semestral",
                 true,
               )}
             </article>
