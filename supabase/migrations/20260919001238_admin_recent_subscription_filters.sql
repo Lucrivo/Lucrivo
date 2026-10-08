@@ -24,7 +24,7 @@ begin
   end if;
 
   if p_period not in ('7d', '30d', '90d', 'all')
-    or p_billing_mode not in ('monthly', 'annual', 'all')
+    or p_billing_mode not in ('monthly', 'semiannual', 'all')
     or p_state not in ('active', 'ended', 'all')
   then
     raise exception using errcode = '22023', message = 'invalid subscription filters';

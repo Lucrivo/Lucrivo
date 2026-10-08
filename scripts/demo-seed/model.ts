@@ -101,12 +101,12 @@ type SeedContract = {
   userId: string;
   priceId: string;
   externalReference: string;
-  billingMode: "monthly" | "annual";
+  billingMode: "monthly" | "semiannual";
   paymentMethod: "credit_card" | "pix";
   chargeType: "recurring" | "installment" | "detached";
   amountCents: number;
   installmentLimit: number | null;
-  accessMonths: 1 | 12;
+  accessMonths: 1 | 6;
   status: SeedContractStatus;
   accessStartsAt: SeedRelativeTime | null;
   accessEndsAt: SeedRelativeTime | null;

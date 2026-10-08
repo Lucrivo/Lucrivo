@@ -498,6 +498,18 @@ select public.get_admin_dashboard_v1();
 insert into dashboard_recent_subscriptions (payload)
 select public.list_admin_recent_subscriptions_v1('all', 'all', 'all');
 
+select lives_ok(
+  $$ select public.list_admin_recent_subscriptions_v1('all', 'semiannual', 'all') $$,
+  'semiannual is an accepted administration filter'
+);
+
+select throws_ok(
+  $$ select public.list_admin_recent_subscriptions_v1('all', 'annual', 'all') $$,
+  '22023',
+  'invalid subscription filters',
+  'annual is rejected from administration filters'
+);
+
 reset role;
 
 select is(

@@ -669,9 +669,9 @@ begin
       select 1
       from public.billing_contracts as contract
       where contract.user_id = ${sqlLiteral(adminId, "uuid")}
-        and contract.billing_mode = 'annual'
+        and contract.billing_mode = 'semiannual'
         and contract.status = 'active'
-        and contract.amount_cents = 47880
+        and contract.amount_cents = 17940
         and contract.access_starts_at <= pg_catalog.statement_timestamp()
         and contract.access_ends_at > pg_catalog.statement_timestamp()
     )

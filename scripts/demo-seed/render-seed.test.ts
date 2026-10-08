@@ -51,6 +51,10 @@ describe("renderDemoSeed", () => {
     );
     expect(sql).toContain("demo_seed_invariant_failed");
     expect(sql).toContain("288");
-    expect(sql).toContain("47880");
+    expect(sql).toContain("'semiannual'");
+    expect(sql).toContain("17940");
+    expect(sql).toContain("6");
+    expect(sql).not.toContain("'annual'");
+    expect(sql).not.toContain("47880");
   });
 });

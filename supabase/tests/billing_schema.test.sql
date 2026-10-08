@@ -489,10 +489,22 @@ select results_eq(
     order by billing_mode desc
   $$,
   $$ values
-    ('monthly'::text, 4990::bigint, 'BRL'::text, null::integer, 1, true),
-    ('annual'::text, 47880::bigint, 'BRL'::text, 12, 12, true)
+    ('semiannual'::text, 17940::bigint, 'BRL'::text, 6, 6, true),
+    ('monthly'::text, 3990::bigint, 'BRL'::text, null::integer, 1, true)
   $$,
-  'v1 catalog contains the approved monthly and annual prices'
+  'v1 catalog contains the approved monthly and semiannual prices'
+);
+
+select throws_ok(
+  $$
+    insert into public.billing_prices (
+      product_code, billing_mode, version, amount_cents, currency,
+      installment_limit, access_months
+    ) values ('legacy', 'annual', 1, 47880, 'BRL', 12, 12)
+  $$,
+  '23514',
+  null,
+  'annual mode is rejected from the pre-production baseline'
 );
 
 select throws_ok(
@@ -582,10 +594,10 @@ begin
         ('monthly', 'credit_card', 'detached'),
         ('monthly', 'pix', 'recurring'),
         ('monthly', 'pix', 'installment'),
-        ('annual', 'credit_card', 'recurring'),
-        ('annual', 'credit_card', 'detached'),
-        ('annual', 'pix', 'recurring'),
-        ('annual', 'pix', 'installment')
+        ('semiannual', 'credit_card', 'recurring'),
+        ('semiannual', 'credit_card', 'detached'),
+        ('semiannual', 'pix', 'recurring'),
+        ('semiannual', 'pix', 'installment')
     ) as invalid_flow(billing_mode, payment_method, charge_type)
   loop
     begin
@@ -611,10 +623,10 @@ begin
         candidate.billing_mode,
         candidate.payment_method,
         candidate.charge_type,
-        case candidate.billing_mode when 'monthly' then 4990 else 47880 end,
+        case candidate.billing_mode when 'monthly' then 3990 else 17940 end,
         'BRL',
-        case candidate.billing_mode when 'monthly' then null else 12 end,
-        case candidate.billing_mode when 'monthly' then 1 else 12 end,
+        case candidate.billing_mode when 'monthly' then null else 6 end,
+        case candidate.billing_mode when 'monthly' then 1 else 6 end,
         'failed'
       );
 
@@ -643,7 +655,7 @@ select lives_ok(
         '81000000-0000-4000-8000-000000000001',
         '20000000-0000-4000-8000-000000000001',
         '83000000-0000-4000-8000-000000000091',
-        'monthly', 'credit_card', 'recurring', 4990, 'BRL', null, 1,
+        'monthly', 'credit_card', 'recurring', 3990, 'BRL', null, 1,
         'failed'
       ),
       (
@@ -651,7 +663,7 @@ select lives_ok(
         '81000000-0000-4000-8000-000000000002',
         '20000000-0000-4000-8000-000000000002',
         '83000000-0000-4000-8000-000000000092',
-        'annual', 'pix', 'detached', 47880, 'BRL', 12, 12,
+        'semiannual', 'pix', 'detached', 17940, 'BRL', 6, 6,
         'failed'
       )
   $$,
@@ -688,7 +700,7 @@ insert into public.billing_contracts (
     'monthly',
     'pix',
     'detached',
-    4990,
+    3990,
     'BRL',
     null,
     1,
@@ -701,16 +713,16 @@ insert into public.billing_contracts (
     '81000000-0000-4000-8000-000000000002',
     '20000000-0000-4000-8000-000000000002',
     '83000000-0000-4000-8000-000000000002',
-    'annual',
+    'semiannual',
     'credit_card',
     'installment',
-    47880,
+    17940,
     'BRL',
-    12,
-    12,
+    6,
+    6,
     'active',
     '2026-09-01T00:00:00Z',
-    '2027-09-01T00:00:00Z'
+    '2027-03-01T00:00:00Z'
   );
 
 insert into public.billing_customers (user_id, asaas_customer_id)
@@ -731,7 +743,7 @@ insert into public.billing_payments (
     '82000000-0000-4000-8000-000000000001',
     'pay_a',
     'received',
-    4990,
+    3990,
     '2026-09-01'
   ),
   (
@@ -739,7 +751,7 @@ insert into public.billing_payments (
     '82000000-0000-4000-8000-000000000002',
     'pay_b',
     'confirmed',
-    47880,
+    17940,
     '2026-09-01'
   );
 
@@ -826,7 +838,7 @@ select throws_ok(
       '81000000-0000-4000-8000-000000000001',
       '20000000-0000-4000-8000-000000000001',
       '83000000-0000-4000-8000-000000000099',
-      'monthly', 'pix', 'detached', 4990, 'BRL', null, 1
+      'monthly', 'pix', 'detached', 3990, 'BRL', null, 1
     )
   $$,
   '42501',

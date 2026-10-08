@@ -18,7 +18,7 @@ create table public.billing_prices (
     length(btrim(product_code)) > 0
   ),
   constraint billing_prices_billing_mode_check check (
-    billing_mode in ('monthly', 'annual')
+    billing_mode in ('monthly', 'semiannual')
   ),
   constraint billing_prices_version_check check (version >= 1),
   constraint billing_prices_amount_cents_check check (amount_cents > 0),
@@ -30,9 +30,9 @@ create table public.billing_prices (
       and access_months = 1
     )
     or (
-      billing_mode = 'annual'
-      and installment_limit = 12
-      and access_months = 12
+      billing_mode = 'semiannual'
+      and installment_limit = 6
+      and access_months = 6
       and amount_cents % installment_limit = 0
     )
   ),
@@ -124,7 +124,7 @@ create table public.billing_contracts (
     length(btrim(external_reference)) > 0
   ),
   constraint billing_contracts_billing_mode_check check (
-    billing_mode in ('monthly', 'annual')
+    billing_mode in ('monthly', 'semiannual')
   ),
   constraint billing_contracts_payment_method_check check (
     payment_method in ('credit_card', 'pix')
@@ -136,8 +136,8 @@ create table public.billing_contracts (
     (billing_mode, payment_method, charge_type) in (
       ('monthly', 'credit_card', 'recurring'),
       ('monthly', 'pix', 'detached'),
-      ('annual', 'credit_card', 'installment'),
-      ('annual', 'pix', 'detached')
+      ('semiannual', 'credit_card', 'installment'),
+      ('semiannual', 'pix', 'detached')
     )
   ),
   constraint billing_contracts_amount_cents_check check (amount_cents > 0),
@@ -149,9 +149,9 @@ create table public.billing_contracts (
       and access_months = 1
     )
     or (
-      billing_mode = 'annual'
-      and installment_limit = 12
-      and access_months = 12
+      billing_mode = 'semiannual'
+      and installment_limit = 6
+      and access_months = 6
       and amount_cents % installment_limit = 0
     )
   ),
@@ -170,7 +170,7 @@ create table public.billing_contracts (
       asaas_installment_id is null
       or (
         length(btrim(asaas_installment_id)) > 0
-        and billing_mode = 'annual'
+        and billing_mode = 'semiannual'
         and payment_method = 'credit_card'
         and charge_type = 'installment'
       )
@@ -422,7 +422,7 @@ insert into public.billing_prices (
     'quick_diagnosis_pro',
     'monthly',
     1,
-    4990,
+    3990,
     'BRL',
     null,
     1,
@@ -431,11 +431,11 @@ insert into public.billing_prices (
   (
     '20000000-0000-4000-8000-000000000002',
     'quick_diagnosis_pro',
-    'annual',
+    'semiannual',
     1,
-    47880,
+    17940,
     'BRL',
-    12,
-    12,
+    6,
+    6,
     true
   );

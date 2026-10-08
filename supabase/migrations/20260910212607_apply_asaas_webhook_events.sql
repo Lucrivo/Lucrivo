@@ -250,7 +250,7 @@ begin
           else asaas_subscription_id
         end,
         asaas_installment_id = case
-          when billing_mode = 'annual'
+          when billing_mode = 'semiannual'
             and payment_method = 'credit_card'
             and charge_type = 'installment'
           then coalesce(asaas_installment_id, v_installment_id)
@@ -460,11 +460,11 @@ begin
             and access_starts_at is null
             and status in ('pending', 'pending_reconciliation');
 
-        elsif v_contract.billing_mode = 'annual' then
+        elsif v_contract.billing_mode = 'semiannual' then
           update public.billing_contracts
           set status = 'active',
               access_starts_at = v_event_at,
-              access_ends_at = v_event_at + interval '12 months',
+              access_ends_at = v_event_at + interval '6 months',
               updated_at = statement_timestamp()
           where id = v_contract.id
             and access_starts_at is null
