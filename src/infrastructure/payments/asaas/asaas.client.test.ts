@@ -174,6 +174,63 @@ describe("AsaasGateway", () => {
   });
 
   it.each([
+    ["payment", "pay/123", "/v3/payments/pay%2F123/refund"],
+    ["installment", "ins/123", "/v3/installments/ins%2F123/refund"],
+  ] as const)(
+    "submits a full %s refund with an encoded ID",
+    async (kind, id, path) => {
+      fetchMock.mockResolvedValue(Response.json({ id, ignored: "field" }));
+
+      const operation =
+        kind === "payment"
+          ? gateway.refundPayment(id)
+          : gateway.refundInstallment(id);
+
+      await expect(operation).resolves.toEqual({ id });
+      expect(fetchMock).toHaveBeenCalledWith(
+        `https://api-sandbox.asaas.com${path}`,
+        {
+          method: "POST",
+          headers: {
+            access_token: "asaas-api-key",
+            "Content-Type": "application/json",
+          },
+          body: "{}",
+        },
+      );
+    },
+  );
+
+  it.each(["refundPayment", "refundInstallment"] as const)(
+    "treats a mismatched %s success response as ambiguous",
+    async (method) => {
+      fetchMock.mockResolvedValue(Response.json({ id: "different-id" }));
+
+      await expect(gateway[method]("expected-id")).rejects.toMatchObject({
+        kind: "ambiguous",
+        status: 200,
+      });
+    },
+  );
+
+  it.each([
+    [400, "rejected"],
+    [408, "ambiguous"],
+    [429, "ambiguous"],
+    [500, "ambiguous"],
+  ] as const)(
+    "classifies refund HTTP %s as %s",
+    async (status, kind) => {
+      fetchMock.mockResolvedValue(new Response("{}", { status }));
+
+      await expect(gateway.refundPayment("pay_123")).rejects.toMatchObject({
+        kind,
+        status,
+      });
+    },
+  );
+
+  it.each([
     [400, "rejected"],
     [401, "rejected"],
     [408, "ambiguous"],

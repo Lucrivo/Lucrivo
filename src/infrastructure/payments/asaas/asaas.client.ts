@@ -53,6 +53,8 @@ interface AsaasGateway {
   createCheckout(input: AsaasCheckoutRequest): Promise<AsaasCheckout>;
   cancelCheckout(id: string): Promise<{ id: string; status: "CANCELED" }>;
   deleteSubscription(id: string): Promise<{ id: string; deleted: true }>;
+  refundPayment(id: string): Promise<{ id: string }>;
+  refundInstallment(id: string): Promise<{ id: string }>;
 }
 
 type AsaasGatewayErrorKind = "rejected" | "ambiguous";
@@ -101,6 +103,10 @@ const cancelCheckoutResponseSchema = z.looseObject({
 const deleteResponseSchema = z.looseObject({
   id: z.string().min(1),
   deleted: z.literal(true),
+});
+
+const refundResponseSchema = z.looseObject({
+  id: z.string().trim().min(1),
 });
 
 const safeCheckoutHosts = new Set([
@@ -195,6 +201,20 @@ function createAsaasGateway(input: {
     }
   }
 
+  async function refund(path: string, expectedId: string) {
+    const result = await request(
+      path,
+      { method: "POST", body: JSON.stringify({}) },
+      refundResponseSchema,
+    );
+
+    if (result.id !== expectedId) {
+      throw new AsaasGatewayError("ambiguous", 200);
+    }
+
+    return { id: result.id };
+  }
+
   return {
     async createCheckout(checkoutRequest) {
       const checkout = await request(
@@ -233,6 +253,14 @@ function createAsaasGateway(input: {
         { method: "DELETE" },
         deleteResponseSchema,
       );
+    },
+
+    refundPayment(id) {
+      return refund(`/v3/payments/${encodeURIComponent(id)}/refund`, id);
+    },
+
+    refundInstallment(id) {
+      return refund(`/v3/installments/${encodeURIComponent(id)}/refund`, id);
     },
   };
 }
