@@ -10,9 +10,16 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { requireUser } from "@/modules/auth/services/require-user";
 import { BillingPlans } from "@/modules/billing/components/billing-plans";
 import { CancelSubscriptionButton } from "@/modules/billing/components/cancel-subscription-button";
+import { RefundButton } from "@/modules/billing/components/refund-button";
+import { RefundStatusCard } from "@/modules/billing/components/refund-status-card";
 import { getBillingOverview } from "@/modules/billing/services/get-billing-overview.service";
 import { listActivePrices } from "@/modules/billing/services/list-active-prices.service";
-import type { BillingOverview } from "@/modules/billing/types";
+import type { BillingMode, BillingOverview } from "@/modules/billing/types";
+
+const planLabel: Record<BillingMode, string> = {
+  monthly: "mensal",
+  semiannual: "semestral",
+};
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   day: "numeric",
@@ -54,7 +61,7 @@ function currentPlan(overview: BillingOverview) {
               Seu plano atual
             </p>
             <h2 className="text-2xl font-semibold tracking-tight">
-              Plano {contract.billingMode === "monthly" ? "mensal" : "anual"}
+              Plano {planLabel[contract.billingMode]}
             </h2>
           </div>
           <Badge variant={contract.cancelAtPeriodEnd ? "warning" : "success"}>
@@ -102,9 +109,21 @@ function currentPlan(overview: BillingOverview) {
               do período pago.
             </p>
           ) : null}
-          {canCancel ? (
-            <CancelSubscriptionButton accessEndsAt={contract.accessEndsAt!} />
+          {contract.canRequestRefund && contract.refundEligibilityEndsAt ? (
+            <p className="text-muted-foreground text-sm">
+              Reembolso integral disponível até{" "}
+              <strong className="text-foreground font-semibold">
+                {formatDate(contract.refundEligibilityEndsAt)}
+              </strong>
+              .
+            </p>
           ) : null}
+          <div className="flex flex-wrap items-start gap-3">
+            {canCancel ? (
+              <CancelSubscriptionButton accessEndsAt={contract.accessEndsAt!} />
+            ) : null}
+            {contract.canRequestRefund ? <RefundButton /> : null}
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -124,6 +143,8 @@ export default async function BillingPage() {
 
   const { overview } = overviewResult;
   const prices = pricesResult.status === "success" ? pricesResult.prices : [];
+  const hasBlockingRefund =
+    overview.refund !== null && overview.refund.status !== "rejected";
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8">
@@ -148,7 +169,14 @@ export default async function BillingPage() {
         </div>
       </header>
 
-      {overview.tier === "paid" ? (
+      {hasBlockingRefund ? (
+        <RefundStatusCard status={overview.refund!.status} />
+      ) : overview.refund?.status === "rejected" ? (
+        <div className="grid gap-6">
+          <RefundStatusCard status="rejected" />
+          {currentPlan(overview)}
+        </div>
+      ) : overview.tier === "paid" ? (
         currentPlan(overview)
       ) : overview.tier === "courtesy" ? (
         <div className="grid gap-8">
