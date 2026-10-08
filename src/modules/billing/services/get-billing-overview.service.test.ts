@@ -15,6 +15,9 @@ describe("getBillingOverview", () => {
   const diagnosisIsFree = vi.fn();
   const diagnosisLimit = vi.fn();
   const diagnosisMaybeSingle = vi.fn();
+  const refundSelect = vi.fn();
+  const refundByContract = vi.fn();
+  const refundMaybeSingle = vi.fn();
   const from = vi.fn();
   const rpc = vi.fn();
   const supabase = { from, rpc };
@@ -27,6 +30,9 @@ describe("getBillingOverview", () => {
       }
 
       if (table === "diagnoses") return { select: diagnosisSelect };
+      if (table === "billing_refund_requests") {
+        return { select: refundSelect };
+      }
       throw new Error(`unexpected table ${table}`);
     });
     contractSelect.mockReturnValue({ eq: contractByUser });
@@ -37,6 +43,9 @@ describe("getBillingOverview", () => {
     diagnosisIsFree.mockReturnValue({ limit: diagnosisLimit });
     diagnosisLimit.mockReturnValue({ maybeSingle: diagnosisMaybeSingle });
     diagnosisMaybeSingle.mockResolvedValue({ data: null, error: null });
+    refundSelect.mockReturnValue({ eq: refundByContract });
+    refundByContract.mockReturnValue({ maybeSingle: refundMaybeSingle });
+    refundMaybeSingle.mockResolvedValue({ data: null, error: null });
     rpc.mockResolvedValue({ data: null, error: null });
   });
 
@@ -57,11 +66,12 @@ describe("getBillingOverview", () => {
         freeReportUsed: false,
         courtesyExpiresAt: null,
         contract: null,
+        refund: null,
       },
     });
 
     expect(contractSelect).toHaveBeenCalledWith(
-      "billing_mode, payment_method, status, access_starts_at, access_ends_at, cancel_at_period_end, created_at",
+      "id, billing_mode, payment_method, status, access_starts_at, access_ends_at, cancel_at_period_end, created_at",
     );
     expect(contractByUser).toHaveBeenCalledWith("user_id", "trusted-user");
     expect(contractOrder).toHaveBeenCalledWith("created_at", {
@@ -99,11 +109,12 @@ describe("getBillingOverview", () => {
     contractOrder.mockResolvedValue({
       data: [
         {
-          billing_mode: "annual",
+          id: "contract-paid",
+          billing_mode: "semiannual",
           payment_method: "credit_card",
           status: "active",
           access_starts_at: "2026-09-01T00:00:00.000Z",
-          access_ends_at: "2027-09-01T00:00:00.000Z",
+          access_ends_at: "2027-03-01T00:00:00.000Z",
           cancel_at_period_end: false,
           created_at: "2026-09-01T00:00:00.000Z",
         },
@@ -119,12 +130,15 @@ describe("getBillingOverview", () => {
         freeReportUsed: true,
         courtesyExpiresAt: null,
         contract: {
-          billingMode: "annual",
+          billingMode: "semiannual",
           paymentMethod: "credit_card",
           status: "active",
-          accessEndsAt: "2027-09-01T00:00:00.000Z",
+          accessEndsAt: "2027-03-01T00:00:00.000Z",
           cancelAtPeriodEnd: false,
+          canRequestRefund: false,
+          refundEligibilityEndsAt: "2026-09-08T00:00:00.000Z",
         },
+        refund: null,
       },
     });
   });
@@ -137,6 +151,7 @@ describe("getBillingOverview", () => {
     contractOrder.mockResolvedValue({
       data: [
         {
+          id: "contract-expired",
           billing_mode: "monthly",
           payment_method: "pix",
           status: "expired",
@@ -162,7 +177,10 @@ describe("getBillingOverview", () => {
           status: "expired",
           accessEndsAt: "2026-09-01T00:00:00.000Z",
           cancelAtPeriodEnd: false,
+          canRequestRefund: false,
+          refundEligibilityEndsAt: "2026-08-08T00:00:00.000Z",
         },
+        refund: null,
       },
     });
   });
@@ -203,7 +221,117 @@ describe("getBillingOverview", () => {
         freeReportUsed: true,
         courtesyExpiresAt: "2026-09-20T12:00:00.000Z",
         contract: null,
+        refund: null,
       },
     });
+  });
+
+  it("projects inclusive refund eligibility for the exact contract", async () => {
+    contractOrder.mockResolvedValue({
+      data: [
+        {
+          id: "contract-refundable",
+          billing_mode: "monthly",
+          payment_method: "credit_card",
+          status: "active",
+          access_starts_at: "2026-09-08T12:00:00.000Z",
+          access_ends_at: "2026-10-08T12:00:00.000Z",
+          cancel_at_period_end: false,
+          created_at: "2026-09-08T12:00:00.000Z",
+        },
+      ],
+      error: null,
+    });
+
+    await expect(get()).resolves.toMatchObject({
+      status: "success",
+      overview: {
+        contract: {
+          canRequestRefund: true,
+          refundEligibilityEndsAt: "2026-09-15T12:00:00.000Z",
+        },
+        refund: null,
+      },
+    });
+    expect(refundByContract).toHaveBeenCalledWith(
+      "contract_id",
+      "contract-refundable",
+    );
+  });
+
+  it("projects a safe refund summary and disables duplicate requests", async () => {
+    contractOrder.mockResolvedValue({
+      data: [
+        {
+          id: "contract-refundable",
+          billing_mode: "monthly",
+          payment_method: "pix",
+          status: "refund_pending",
+          access_starts_at: "2026-09-10T12:00:00.000Z",
+          access_ends_at: "2026-10-10T12:00:00.000Z",
+          cancel_at_period_end: false,
+          created_at: "2026-09-10T12:00:00.000Z",
+        },
+      ],
+      error: null,
+    });
+    refundMaybeSingle.mockResolvedValue({
+      data: {
+        status: "submitted",
+        eligibility_ends_at: "2026-09-17T12:00:00.000Z",
+        requested_at: "2026-09-15T10:00:00.000Z",
+        refund_confirmed_at: null,
+        last_error_code: null,
+      },
+      error: null,
+    });
+
+    await expect(get()).resolves.toMatchObject({
+      status: "success",
+      overview: {
+        contract: { canRequestRefund: false },
+        refund: {
+          status: "submitted",
+          eligibilityEndsAt: "2026-09-17T12:00:00.000Z",
+          requestedAt: "2026-09-15T10:00:00.000Z",
+          refundConfirmedAt: null,
+        },
+      },
+    });
+  });
+
+  it("fails closed when the exact refund query or its timestamps are invalid", async () => {
+    contractOrder.mockResolvedValue({
+      data: [
+        {
+          id: "contract-refundable",
+          billing_mode: "monthly",
+          payment_method: "pix",
+          status: "active",
+          access_starts_at: "2026-09-10T12:00:00.000Z",
+          access_ends_at: "2026-10-10T12:00:00.000Z",
+          cancel_at_period_end: false,
+          created_at: "2026-09-10T12:00:00.000Z",
+        },
+      ],
+      error: null,
+    });
+    refundMaybeSingle.mockResolvedValueOnce({
+      data: null,
+      error: { code: "XX001" },
+    });
+    await expect(get()).resolves.toEqual({ status: "read_failed" });
+
+    refundMaybeSingle.mockResolvedValueOnce({
+      data: {
+        status: "submitted",
+        eligibility_ends_at: "not-a-date",
+        requested_at: "2026-09-15T10:00:00.000Z",
+        refund_confirmed_at: null,
+        last_error_code: null,
+      },
+      error: null,
+    });
+    await expect(get()).resolves.toEqual({ status: "read_failed" });
   });
 });
