@@ -3,6 +3,12 @@
 **Date:** 2026-09-09
 **Status:** Approved design, amended 2026-09-10 for detached Pix payments
 
+> **Superseded in part on 2026-10-08:** The monthly/annual prices, annual plan,
+> related Checkout/catalog shapes, and absence of customer-initiated refunds
+> are replaced by the
+> [billing refunds and plan pricing design](2026-10-08-billing-refunds-and-plan-pricing-design.md).
+> The remaining access, security, and billing foundations continue to apply.
+
 ## 1. Objective
 
 Add paid access to Lucrivo through Asaas while preserving a useful free tier and keeping payment state, product access, and historical prices auditable.
