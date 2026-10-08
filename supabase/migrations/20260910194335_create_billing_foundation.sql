@@ -613,7 +613,8 @@ begin
 
   if (v_contract.billing_mode = 'semiannual'
       and v_contract.payment_method = 'credit_card'
-      and v_contract.asaas_installment_id is null)
+      and v_contract.asaas_installment_id is null
+      and v_payment_id is null)
     or (not (v_contract.billing_mode = 'semiannual'
       and v_contract.payment_method = 'credit_card')
       and v_payment_id is null)

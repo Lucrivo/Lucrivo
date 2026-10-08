@@ -56,7 +56,16 @@ const readyClaimSchema = z.union([
     requestId: requestIdentifier,
     billingMode: z.literal("semiannual"),
     paymentMethod: z.literal("credit_card"),
-    paymentId: z.null(),
+    paymentId: identifier,
+    installmentId: z.null(),
+    subscriptionId: z.null(),
+  }),
+  z.object({
+    status: z.literal("ready"),
+    requestId: requestIdentifier,
+    billingMode: z.literal("semiannual"),
+    paymentMethod: z.literal("credit_card"),
+    paymentId: identifier.nullable(),
     installmentId: identifier,
     subscriptionId: z.null(),
   }),
@@ -118,10 +127,7 @@ async function requestBillingRefund({
 
     let recurrenceCanceled = false;
     try {
-      if (
-        claim.billingMode === "semiannual" &&
-        claim.paymentMethod === "credit_card"
-      ) {
+      if (claim.installmentId !== null) {
         await asaas.refundInstallment(claim.installmentId);
       } else {
         await asaas.refundPayment(claim.paymentId);

@@ -150,8 +150,9 @@ Após a confirmação explícita na interface:
    dias e a existência dos identificadores necessários;
 2. o contrato passa imediatamente para `refund_pending`, revogando o acesso;
 3. mensal no cartão ou Pix chama `POST /v3/payments/{paymentId}/refund`;
-4. semestral no Pix também reembolsa o pagamento; semestral no cartão chama
-   `POST /v3/installments/{installmentId}/refund` para devolver a compra toda;
+4. semestral no Pix e semestral no cartão em 1x reembolsam o pagamento;
+   semestral parcelado chama `POST /v3/installments/{installmentId}/refund`
+   para devolver a compra toda;
 5. mensal no cartão também chama `DELETE /v3/subscriptions/{subscriptionId}`
    para impedir nova cobrança;
 6. `PAYMENT_REFUNDED` e, quando aplicável, `SUBSCRIPTION_INACTIVATED` ou

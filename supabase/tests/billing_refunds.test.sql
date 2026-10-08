@@ -108,7 +108,7 @@ select
   'authenticated',
   'authenticated',
   format('refund-%s@example.com', value)
-from generate_series(1, 7) as value;
+from generate_series(1, 8) as value;
 
 insert into public.billing_contracts (
   id, user_id, price_id, external_reference, billing_mode, payment_method,
@@ -119,20 +119,20 @@ insert into public.billing_contracts (
 select
   format('a2000000-0000-4000-8000-%s', lpad(value::text, 12, '0'))::uuid,
   format('a1000000-0000-4000-8000-%s', lpad(value::text, 12, '0'))::uuid,
-  case when value = 6
+  case when value in (6, 8)
     then '20000000-0000-4000-8000-000000000002'::uuid
     else '20000000-0000-4000-8000-000000000001'::uuid
   end,
   format('refund-contract-%s', value),
-  case when value = 6 then 'semiannual' else 'monthly' end,
-  case when value in (2, 5, 6) then 'credit_card' else 'pix' end,
+  case when value in (6, 8) then 'semiannual' else 'monthly' end,
+  case when value in (2, 5, 6, 8) then 'credit_card' else 'pix' end,
   case when value in (2, 5) then 'recurring'
-       when value = 6 then 'installment'
+       when value in (6, 8) then 'installment'
        else 'detached' end,
-  case when value = 6 then 17940 else 3990 end,
+  case when value in (6, 8) then 17940 else 3990 end,
   'BRL',
-  case when value = 6 then 6 else null end,
-  case when value = 6 then 6 else 1 end,
+  case when value in (6, 8) then 6 else null end,
+  case when value in (6, 8) then 6 else 1 end,
   case value
     when 2 then 'sub_refund_2'
     when 5 then 'sub_refund_5'
@@ -147,7 +147,25 @@ select
     else transaction_timestamp() - interval '1 day'
   end,
   transaction_timestamp() + interval '1 month'
-from generate_series(1, 6) as value;
+from generate_series(1, 6) as value
+union all
+select
+  'a2000000-0000-4000-8000-000000000008'::uuid,
+  'a1000000-0000-4000-8000-000000000008'::uuid,
+  '20000000-0000-4000-8000-000000000002'::uuid,
+  'refund-contract-8',
+  'semiannual',
+  'credit_card',
+  'installment',
+  17940,
+  'BRL',
+  6,
+  6,
+  null,
+  null,
+  'active',
+  transaction_timestamp() - interval '1 day',
+  transaction_timestamp() + interval '6 months';
 
 insert into public.billing_payments (
   contract_id, asaas_payment_id, status, value_cents, installment_number,
@@ -157,12 +175,12 @@ select
   format('a2000000-0000-4000-8000-%s', lpad(value::text, 12, '0'))::uuid,
   format('pay_refund_%s', value),
   'confirmed',
-  case when value = 6 then 2990 else 3990 end,
+  case value when 6 then 2990 when 8 then 17940 else 3990 end,
   case when value = 6 then 1 else null end,
   current_date,
   transaction_timestamp() - interval '1 day'
-from generate_series(1, 6) as value
-where value <> 4;
+from generate_series(1, 8) as value
+where value not in (4, 7);
 
 select is(
   public.begin_billing_refund(
@@ -389,6 +407,22 @@ select is(
    where contract_id = 'a2000000-0000-4000-8000-000000000006'),
   'confirmed',
   'fixed-term refunds need no recurrence event'
+);
+
+select results_eq(
+  $$
+    select
+      claim ->> 'status',
+      claim ->> 'paymentId',
+      claim ->> 'installmentId'
+    from (
+      select public.begin_billing_refund(
+        'a1000000-0000-4000-8000-000000000008'::uuid
+      ) as claim
+    ) as claimed
+  $$,
+  $$ values ('ready'::text, 'pay_refund_8'::text, null::text) $$,
+  'a one-payment semiannual card purchase is refunded by payment id'
 );
 
 set local role authenticated;

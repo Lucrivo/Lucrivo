@@ -110,13 +110,27 @@ describe("requestBillingRefund", () => {
       false,
     ],
     [
-      "semiannual card",
+      "semiannual card in one payment",
       {
         status: "ready",
         requestId,
         billingMode: "semiannual",
         paymentMethod: "credit_card",
-        paymentId: null,
+        paymentId: "pay_123",
+        installmentId: null,
+        subscriptionId: null,
+      },
+      "payment",
+      false,
+    ],
+    [
+      "semiannual card in installments",
+      {
+        status: "ready",
+        requestId,
+        billingMode: "semiannual",
+        paymentMethod: "credit_card",
+        paymentId: "pay_123",
         installmentId: "ins_123",
         subscriptionId: null,
       },
@@ -146,6 +160,23 @@ describe("requestBillingRefund", () => {
       );
     },
   );
+
+  it("fails closed when a semiannual card claim has no refundable identifier", async () => {
+    await expect(
+      request({
+        status: "ready",
+        requestId,
+        billingMode: "semiannual",
+        paymentMethod: "credit_card",
+        paymentId: null,
+        installmentId: null,
+        subscriptionId: null,
+      }),
+    ).resolves.toEqual({ status: "pending_reconciliation" });
+
+    expect(refundPayment).not.toHaveBeenCalled();
+    expect(refundInstallment).not.toHaveBeenCalled();
+  });
 
   it.each([
     [new AsaasGatewayError("rejected", 400), "rejected", "provider_rejected"],
