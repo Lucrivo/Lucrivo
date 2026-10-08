@@ -15,10 +15,13 @@ function namesFor(
   itemIds: string[],
 ): string {
   const ids = new Set(itemIds);
-  return command.items
+  const names = command.items
     .filter((item) => ids.has(item.id))
-    .map((item) => item.name)
-    .join(", ");
+    .map((item) => item.name);
+  if (names.length <= 1) return names[0] ?? "um item";
+  if (names.length === 2) return `${names[0]} e ${names[1]}`;
+  if (names.length === 3) return `${names[0]}, ${names[1]} e ${names[2]}`;
+  return `${names[0]}, ${names[1]} e outros ${names.length - 2} itens`;
 }
 
 function missingVolumeGuidance(
@@ -61,6 +64,7 @@ function directLossGuidance(
     .filter((item) => item.directLoss)
     .map((item) => item.itemId);
   if (itemIds.length === 0) return null;
+  const plural = itemIds.length > 1;
   return {
     key: "direct_loss",
     tone: "critical",
@@ -68,7 +72,7 @@ function directLossGuidance(
       itemIds.length === 1
         ? "Um item não paga seus valores diretos"
         : "Há itens que não pagam seus valores diretos",
-    body: `${namesFor(command, itemIds)} não deixa valor para os gastos do mês no preço atual. Revise preço ou custo antes de ampliar as vendas.`,
+    body: `${namesFor(command, itemIds)} não ${plural ? "deixam" : "deixa"} valor para os gastos do mês no preço atual. Revise preço ou custo antes de ampliar as vendas.`,
     itemIds,
   };
 }
@@ -142,7 +146,6 @@ function concentrationGuidance(
   const leaders = positiveItems.filter(
     (item) => item.monthlyContributionCents === highestContribution,
   );
-  if (leaders.length !== 1) return null;
   const [leading] = leaders;
   if (
     !leading ||
@@ -151,12 +154,18 @@ function concentrationGuidance(
   ) {
     return null;
   }
+  const itemIds = leaders.map((item) => item.itemId);
+  const plural = itemIds.length > 1;
   return {
     key: "concentration",
     tone: "warning",
-    title: "Um item deixa a maior parte do valor do conjunto",
-    body: `${namesFor(command, [leading.itemId])} responde por mais de 45% do valor positivo deixado pelas vendas informadas.`,
-    itemIds: [leading.itemId],
+    title: plural
+      ? "Estes itens deixam a maior parte do valor do conjunto"
+      : "Um item deixa a maior parte do valor do conjunto",
+    body: plural
+      ? `${namesFor(command, itemIds)} empatam e cada um responde por mais de 45% do valor positivo deixado pelas vendas informadas.`
+      : `${namesFor(command, itemIds)} responde por mais de 45% do valor positivo deixado pelas vendas informadas.`,
+    itemIds,
   };
 }
 
@@ -173,23 +182,24 @@ function highVolumeLowerResultGuidance(
   const volumeById = new Map(
     command.items.map((item) => [item.id, item.monthlySalesVolume ?? 0]),
   );
-  const highestVolume = Math.max(
-    ...comparable.map((item) => volumeById.get(item.itemId) ?? 0),
+  const volumes = comparable.map((item) => volumeById.get(item.itemId) ?? 0);
+  const highestVolume = Math.max(...volumes);
+  if (highestVolume === Math.min(...volumes)) return null;
+  const topSellers = comparable.filter(
+    (item) => (volumeById.get(item.itemId) ?? 0) === highestVolume,
   );
-  const lowestMargin = Math.min(
-    ...comparable.map((item) => item.realMarginBasisPoints ?? 0),
+  const smallerItems = comparable.filter(
+    (item) => (volumeById.get(item.itemId) ?? 0) < highestVolume,
   );
-  const hasHigherMargin = comparable.some(
-    (item) => (item.realMarginBasisPoints ?? 0) > lowestMargin,
+  const worstSmallerMargin = Math.min(
+    ...smallerItems.map((item) => item.realMarginBasisPoints ?? 0),
   );
-  const lowerMarginLeaders = comparable.filter(
-    (item) =>
-      (volumeById.get(item.itemId) ?? 0) === highestVolume &&
-      item.realMarginBasisPoints === lowestMargin,
+  const groupLeavesLess = topSellers.every(
+    (item) => (item.realMarginBasisPoints ?? 0) < worstSmallerMargin,
   );
-  if (!hasHigherMargin || lowerMarginLeaders.length === 0) return null;
+  if (!groupLeavesLess) return null;
 
-  const itemIds = lowerMarginLeaders.map((item) => item.itemId);
+  const itemIds = topSellers.map((item) => item.itemId);
   const plural = itemIds.length > 1;
   return {
     key: "high_volume_low_margin",
