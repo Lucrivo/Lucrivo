@@ -2,7 +2,7 @@
 
 **Data:** 2026-10-08
 
-**Status:** Aguardando revisão
+**Status:** Implementado
 
 **Documentos relacionados:**
 

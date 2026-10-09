@@ -53,7 +53,10 @@ modalidade detalhada escolhe uma única vez entre revenda e digital e aplica o
 cenário a todos os itens; Digital usa apenas o gasto direto por venda e mantém a
 embalagem oculta e igual a zero. Em Produção, novos itens começam pelo custo
 resumido, com a ficha técnica completa disponível como alternativa. Serviço
-permanece no fluxo rápido.
+permanece no fluxo rápido. O plano gratuito permite um diagnóstico rápido.
+Diagnósticos detalhados exigem acesso pago ou cortesia vigente e não consomem
+o benefício rápido gratuito. A necessidade de plano é informada antes do
+formulário detalhado.
 
 Os fluxos coletam preço, custos e demais dados pertinentes à categoria,
 apresentam uma revisão antes da confirmação e geram um relatório privado. O
@@ -83,7 +86,8 @@ que foram criados.
 - Cadastro, autenticação, recuperação e atualização de senha.
 - Diagnóstico rápido para revenda, produto digital, produção própria e serviços.
 - Diagnóstico detalhado para revenda, produto digital e produção própria, com
-  um cenário uniforme por análise e múltiplos itens.
+  um cenário uniforme por análise e múltiplos itens. A criação exige acesso
+  pago ou cortesia vigente e não consome o diagnóstico rápido gratuito.
 - Produção detalhada inicia pelo custo total por unidade e permite optar pela
   ficha técnica completa para itens fabricados.
 - Cálculos financeiros determinísticos separados por categoria de negócio.

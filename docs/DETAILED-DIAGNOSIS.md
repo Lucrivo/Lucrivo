@@ -22,6 +22,21 @@ Uma análise usa um único cenário em todos os itens. Produto não mistura Reve
 Digital; Produção usa exclusivamente itens fabricados. A escolha é preservada ao
 voltar entre as etapas e ao adicionar novos itens.
 
+### 2.1 Acesso
+
+Criar um diagnóstico detalhado exige acesso pago ou cortesia vigente. Quem não
+tem esse acesso continua podendo escolher a modalidade, mas não entra no
+formulário: o diálogo explica que ela faz parte dos planos, oferece continuar no
+diagnóstico rápido da mesma categoria ou seguir para os planos. A categoria
+escolhida fica registrada neste navegador por duas horas e só é retomada depois
+de um pagamento confirmado.
+
+Sem acesso vigente, o banco recusa a criação com `paid_access_required`. Repetir
+um envio que já gerou o relatório devolve o mesmo diagnóstico, sem nova cobrança
+de acesso. Diagnósticos detalhados novos não são o benefício gratuito. Um
+relatório detalhado antigo que já tenha sido marcado como gratuito permanece
+legível e não libera outro diagnóstico rápido.
+
 ## 3. Jornada implementada
 
 Depois da escolha de categoria e modalidade, Produto escolhe Revenda ou Digital

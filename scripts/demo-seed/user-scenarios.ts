@@ -154,9 +154,7 @@ function buildReports(
     ) {
       const template =
         reportOrdinal === 0
-          ? quickReportTemplates[
-              client.ordinal % quickReportTemplates.length
-            ]!
+          ? quickReportTemplates[client.ordinal % quickReportTemplates.length]!
           : currentReportTemplates[
               (client.ordinal + reportOrdinal) % currentReportTemplates.length
             ]!;
