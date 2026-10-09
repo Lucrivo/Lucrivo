@@ -1,6 +1,7 @@
 "use client";
 
 import { LogOutIcon, UserRoundIcon } from "lucide-react";
+import Link from "next/link";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,10 @@ function AccountMenu({ email, logoutAction }: AccountMenuProps) {
               </span>
             </span>
           </DropdownMenuLabel>
+          <DropdownMenuItem render={<Link href="/account" />} className="h-9">
+            <UserRoundIcon aria-hidden="true" />
+            Minha conta
+          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <form action={logoutAction}>

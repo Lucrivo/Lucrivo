@@ -21,7 +21,7 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
   DropdownMenuLabel: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
-  DropdownMenuSeparator: () => <hr />,
+  DropdownMenuSeparator: () => <hr data-testid="account-menu-separator" />,
   DropdownMenuItem: ({
     render,
     children,
@@ -50,5 +50,23 @@ describe("AccountMenu", () => {
     expect(
       screen.getByRole("button", { name: /sair da conta/i }),
     ).toHaveAttribute("type", "submit");
+  });
+
+  it("oferece Minha conta antes do logout destrutivo", () => {
+    render(<AccountMenu email="pessoa@lucrivo.local" logoutAction={vi.fn()} />);
+
+    const accountLink = screen.getByRole("link", { name: "Minha conta" });
+    const separator = screen.getByTestId("account-menu-separator");
+    const logout = screen.getByRole("button", { name: /sair da conta/i });
+
+    expect(accountLink).toHaveAttribute("href", "/account");
+    expect(
+      accountLink.compareDocumentPosition(separator) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      separator.compareDocumentPosition(logout) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });
