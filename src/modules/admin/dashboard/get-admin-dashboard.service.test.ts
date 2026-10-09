@@ -61,8 +61,8 @@ const validSnapshot = {
     },
     {
       id: "95000000-0000-4000-8000-000000000002",
-      email: "anual@example.com",
-      billingMode: "annual",
+      email: "semestral@example.com",
+      billingMode: "semiannual",
       status: "cancel_at_period_end",
       createdAt: "2026-09-15T15:00:00.000Z",
     },
@@ -108,8 +108,8 @@ describe("getAdminDashboard", () => {
           status: { label: "Ativa", tone: "success" },
         },
         {
-          email: "anual@example.com",
-          billingModeLabel: "Anual",
+          email: "semestral@example.com",
+          billingModeLabel: "Semestral",
           status: { label: "Cancelamento agendado", tone: "warning" },
         },
       ],

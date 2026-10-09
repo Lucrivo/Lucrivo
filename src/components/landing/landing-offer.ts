@@ -6,7 +6,7 @@ const GUARANTEE_DAYS = 7;
 
 // Used only when the live catalog is unavailable, so the offer copy never
 // renders without a price.
-const FALLBACK_MONTHLY_PRICE_LABEL = "R$ 49,90";
+const FALLBACK_MONTHLY_PRICE_LABEL = "R$ 39,90";
 
 // Placeholder destinations until the final profile URLs are provided.
 const SOCIAL_LINKS = [

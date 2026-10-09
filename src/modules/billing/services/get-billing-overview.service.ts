@@ -9,14 +9,19 @@ import type {
   BillingMode,
   BillingOverview,
   BillingPaymentMethod,
+  BillingRefundStatus,
   GetBillingOverviewResult,
 } from "../types";
 
 const BILLING_OVERVIEW_CONTRACT_COLUMNS =
-  "billing_mode, payment_method, status, access_starts_at, access_ends_at, cancel_at_period_end, created_at" as const;
+  "id, billing_mode, payment_method, status, access_starts_at, access_ends_at, cancel_at_period_end, created_at" as const;
+
+const BILLING_OVERVIEW_REFUND_COLUMNS =
+  "status, eligibility_ends_at, requested_at, refund_confirmed_at, last_error_code" as const;
 
 type BillingContractRow = Pick<
   Database["public"]["Tables"]["billing_contracts"]["Row"],
+  | "id"
   | "billing_mode"
   | "payment_method"
   | "status"
@@ -24,6 +29,15 @@ type BillingContractRow = Pick<
   | "access_ends_at"
   | "cancel_at_period_end"
   | "created_at"
+>;
+
+type BillingRefundRow = Pick<
+  Database["public"]["Tables"]["billing_refund_requests"]["Row"],
+  | "status"
+  | "eligibility_ends_at"
+  | "requested_at"
+  | "refund_confirmed_at"
+  | "last_error_code"
 >;
 
 type GetBillingOverviewInput = {
@@ -60,10 +74,59 @@ function grantsPaidAccess(
   );
 }
 
+const billingModes = new Set(["monthly", "semiannual"]);
+const paymentMethods = new Set(["credit_card", "pix"]);
+const contractStatuses = new Set([
+  "pending",
+  "pending_reconciliation",
+  "active",
+  "cancel_at_period_end",
+  "refund_pending",
+  "expired",
+  "canceled",
+  "refunded",
+  "chargeback",
+  "failed",
+]);
+const refundStatuses = new Set([
+  "processing",
+  "submitted",
+  "confirmed",
+  "rejected",
+  "pending_reconciliation",
+]);
+
 function toOverviewContract(
   contract: BillingContractRow | undefined,
-): BillingOverview["contract"] {
+  refund: BillingRefundRow | null,
+  instant: number,
+): BillingOverview["contract"] | undefined {
   if (!contract) return null;
+
+  if (
+    !billingModes.has(contract.billing_mode) ||
+    !paymentMethods.has(contract.payment_method) ||
+    !contractStatuses.has(contract.status)
+  ) {
+    return undefined;
+  }
+
+  const accessStartsAt = validDate(contract.access_starts_at);
+  const accessEndsAt = validDate(contract.access_ends_at);
+  if (
+    (contract.access_starts_at !== null && accessStartsAt === null) ||
+    (contract.access_ends_at !== null && accessEndsAt === null)
+  ) {
+    return undefined;
+  }
+  const eligibilityEndsAt =
+    accessStartsAt === null ? null : accessStartsAt + 7 * 24 * 60 * 60 * 1000;
+  const canRequestRefund =
+    (contract.status === "active" ||
+      contract.status === "cancel_at_period_end") &&
+    eligibilityEndsAt !== null &&
+    instant <= eligibilityEndsAt &&
+    (refund === null || refund.status === "rejected");
 
   return {
     billingMode: contract.billing_mode as BillingMode,
@@ -71,6 +134,34 @@ function toOverviewContract(
     status: contract.status as BillingContractStatus,
     accessEndsAt: contract.access_ends_at,
     cancelAtPeriodEnd: contract.cancel_at_period_end,
+    canRequestRefund,
+    refundEligibilityEndsAt:
+      eligibilityEndsAt === null
+        ? null
+        : new Date(eligibilityEndsAt).toISOString(),
+  };
+}
+
+function toOverviewRefund(
+  refund: BillingRefundRow | null,
+): BillingOverview["refund"] | undefined {
+  if (refund === null) return null;
+  if (!refundStatuses.has(refund.status)) return undefined;
+  if (
+    validDate(refund.eligibility_ends_at) === null ||
+    validDate(refund.requested_at) === null ||
+    (refund.refund_confirmed_at !== null &&
+      validDate(refund.refund_confirmed_at) === null)
+  ) {
+    return undefined;
+  }
+
+  return {
+    status: refund.status as BillingRefundStatus,
+    eligibilityEndsAt: refund.eligibility_ends_at,
+    requestedAt: refund.requested_at,
+    refundConfirmedAt: refund.refund_confirmed_at,
+    lastErrorCode: refund.last_error_code,
   };
 }
 
@@ -121,6 +212,25 @@ async function getBillingOverview({
     const paidContract = contracts.find((contract) =>
       grantsPaidAccess(contract, instant),
     );
+    const projectedContract = paidContract ?? contracts[0];
+    let refundRow: BillingRefundRow | null = null;
+    if (projectedContract) {
+      const refundResult = await supabase
+        .from("billing_refund_requests")
+        .select(BILLING_OVERVIEW_REFUND_COLUMNS)
+        .eq("contract_id", projectedContract.id)
+        .maybeSingle();
+      if (refundResult.error) return { status: "read_failed" };
+      refundRow = refundResult.data;
+    }
+    const refund = toOverviewRefund(refundRow);
+    if (refund === undefined) return { status: "read_failed" };
+    const overviewContract = toOverviewContract(
+      projectedContract,
+      refundRow,
+      instant,
+    );
+    if (overviewContract === undefined) return { status: "read_failed" };
     const freeReportUsed = freeReportResult.data?.is_free_report === true;
     const hasPaidAccess = paidContract !== undefined;
     const courtesyInstant = validDate(courtesyExpiresAt);
@@ -135,7 +245,8 @@ async function getBillingOverview({
           hasPaidAccess || hasCourtesyAccess || !freeReportUsed,
         freeReportUsed,
         courtesyExpiresAt: hasCourtesyAccess ? courtesyExpiresAt : null,
-        contract: toOverviewContract(paidContract ?? contracts[0]),
+        contract: overviewContract,
+        refund,
       },
     };
   } catch {
@@ -145,6 +256,7 @@ async function getBillingOverview({
 
 export {
   BILLING_OVERVIEW_CONTRACT_COLUMNS,
+  BILLING_OVERVIEW_REFUND_COLUMNS,
   getBillingOverview,
   type GetBillingOverviewInput,
 };

@@ -264,6 +264,74 @@ export type Database = {
         };
         Relationships: [];
       };
+      billing_refund_requests: {
+        Row: {
+          attempt_count: number;
+          contract_id: string;
+          created_at: string;
+          eligibility_ends_at: string;
+          eligibility_started_at: string;
+          id: string;
+          last_attempt_at: string;
+          last_error_code: string | null;
+          previous_contract_status: string;
+          provider_submitted_at: string | null;
+          recurrence_canceled_at: string | null;
+          refund_confirmed_at: string | null;
+          rejected_at: string | null;
+          requested_at: string;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          attempt_count?: number;
+          contract_id: string;
+          created_at?: string;
+          eligibility_ends_at: string;
+          eligibility_started_at: string;
+          id?: string;
+          last_attempt_at: string;
+          last_error_code?: string | null;
+          previous_contract_status: string;
+          provider_submitted_at?: string | null;
+          recurrence_canceled_at?: string | null;
+          refund_confirmed_at?: string | null;
+          rejected_at?: string | null;
+          requested_at: string;
+          status: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          attempt_count?: number;
+          contract_id?: string;
+          created_at?: string;
+          eligibility_ends_at?: string;
+          eligibility_started_at?: string;
+          id?: string;
+          last_attempt_at?: string;
+          last_error_code?: string | null;
+          previous_contract_status?: string;
+          provider_submitted_at?: string | null;
+          recurrence_canceled_at?: string | null;
+          refund_confirmed_at?: string | null;
+          rejected_at?: string | null;
+          requested_at?: string;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "billing_refund_requests_contract_id_fkey";
+            columns: ["contract_id"];
+            isOneToOne: true;
+            referencedRelation: "billing_contracts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       detailed_diagnoses: {
         Row: {
           card_fee_rate_basis_points: number;
@@ -880,6 +948,7 @@ export type Database = {
         Args: { p_event_id: string; p_event_type: string; p_payload: Json };
         Returns: string;
       };
+      begin_billing_refund: { Args: { p_user_id: string }; Returns: Json };
       change_admin_user_v1: {
         Args: {
           p_action: string;
@@ -1214,6 +1283,15 @@ export type Database = {
           p_state?: string;
         };
         Returns: Json;
+      };
+      record_billing_refund_provider_result: {
+        Args: {
+          p_error_code?: string;
+          p_recurrence_canceled?: boolean;
+          p_request_id: string;
+          p_result: string;
+        };
+        Returns: string;
       };
       replace_detailed_diagnosis_report_v1: {
         Args: {

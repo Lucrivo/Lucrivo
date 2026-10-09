@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient } from "@/infrastructure/database/supabase/clients/server.client";
 import { requireAdmin } from "@/modules/auth/services/require-admin";
+import { presentBillingMode } from "@/modules/admin/billing-mode";
 
 import {
   formatMonthPeriod,
@@ -48,8 +49,7 @@ async function getAdminDashboard(): Promise<AdminDashboardViewModel> {
       recentSubscriptions: snapshot.recentSubscriptions.map((contract) => ({
         id: contract.id,
         email: contract.email ?? "E-mail indisponível",
-        billingModeLabel:
-          contract.billingMode === "monthly" ? "Mensal" : "Anual",
+        billingModeLabel: presentBillingMode(contract.billingMode),
         createdAtLabel: formatSubscriptionDate(contract.createdAt),
         status: presentContractStatus(contract.status),
       })),

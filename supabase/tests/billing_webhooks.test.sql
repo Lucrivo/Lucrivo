@@ -85,84 +85,84 @@ insert into public.billing_contracts (
     '91000000-0000-4000-8000-000000000001',
     '20000000-0000-4000-8000-000000000001',
     'contract-monthly-card',
-    'monthly', 'credit_card', 'recurring', 4990, 'BRL', null, 1, 'pending'
+    'monthly', 'credit_card', 'recurring', 3990, 'BRL', null, 1, 'pending'
   ),
   (
     '92000000-0000-4000-8000-000000000002',
     '91000000-0000-4000-8000-000000000002',
     '20000000-0000-4000-8000-000000000001',
     'contract-monthly-pix',
-    'monthly', 'pix', 'detached', 4990, 'BRL', null, 1, 'pending'
+    'monthly', 'pix', 'detached', 3990, 'BRL', null, 1, 'pending'
   ),
   (
     '92000000-0000-4000-8000-000000000003',
     '91000000-0000-4000-8000-000000000003',
     '20000000-0000-4000-8000-000000000002',
-    'contract-annual-card',
-    'annual', 'credit_card', 'installment', 47880, 'BRL', 12, 12, 'pending'
+    'contract-semiannual-card',
+    'semiannual', 'credit_card', 'installment', 17940, 'BRL', 6, 6, 'pending'
   ),
   (
     '92000000-0000-4000-8000-000000000004',
     '91000000-0000-4000-8000-000000000004',
     '20000000-0000-4000-8000-000000000002',
-    'contract-annual-pix',
-    'annual', 'pix', 'detached', 47880, 'BRL', 12, 12, 'pending'
+    'contract-semiannual-pix',
+    'semiannual', 'pix', 'detached', 17940, 'BRL', 6, 6, 'pending'
   ),
   (
     '92000000-0000-4000-8000-000000000005',
     '91000000-0000-4000-8000-000000000005',
     '20000000-0000-4000-8000-000000000001',
     'contract-cancel',
-    'monthly', 'pix', 'detached', 4990, 'BRL', null, 1, 'pending'
+    'monthly', 'pix', 'detached', 3990, 'BRL', null, 1, 'pending'
   ),
   (
     '92000000-0000-4000-8000-000000000006',
     '91000000-0000-4000-8000-000000000006',
     '20000000-0000-4000-8000-000000000001',
     'contract-expire',
-    'monthly', 'pix', 'detached', 4990, 'BRL', null, 1, 'pending'
+    'monthly', 'pix', 'detached', 3990, 'BRL', null, 1, 'pending'
   ),
   (
     '92000000-0000-4000-8000-000000000007',
     '91000000-0000-4000-8000-000000000007',
     '20000000-0000-4000-8000-000000000001',
     'contract-retry',
-    'monthly', 'credit_card', 'recurring', 4990, 'BRL', null, 1, 'pending'
+    'monthly', 'credit_card', 'recurring', 3990, 'BRL', null, 1, 'pending'
   ),
   (
     '92000000-0000-4000-8000-000000000008',
     '91000000-0000-4000-8000-000000000008',
     '20000000-0000-4000-8000-000000000001',
     'contract-customer-fallback',
-    'monthly', 'pix', 'detached', 4990, 'BRL', null, 1, 'pending'
+    'monthly', 'pix', 'detached', 3990, 'BRL', null, 1, 'pending'
   ),
   (
     '92000000-0000-4000-8000-000000000009',
     '91000000-0000-4000-8000-000000000009',
     '20000000-0000-4000-8000-000000000001',
     'contract-ambiguous-a',
-    'monthly', 'pix', 'detached', 4990, 'BRL', null, 1, 'active'
+    'monthly', 'pix', 'detached', 3990, 'BRL', null, 1, 'active'
   ),
   (
     '92000000-0000-4000-8000-000000000010',
     '91000000-0000-4000-8000-000000000009',
     '20000000-0000-4000-8000-000000000002',
     'contract-ambiguous-b',
-    'annual', 'pix', 'detached', 47880, 'BRL', 12, 12, 'active'
+    'semiannual', 'pix', 'detached', 17940, 'BRL', 6, 6, 'active'
   ),
   (
     '92000000-0000-4000-8000-000000000011',
     '91000000-0000-4000-8000-000000000011',
     '20000000-0000-4000-8000-000000000001',
     'contract-payment-checkout-session',
-    'monthly', 'credit_card', 'recurring', 4990, 'BRL', null, 1, 'pending'
+    'monthly', 'credit_card', 'recurring', 3990, 'BRL', null, 1, 'pending'
   ),
   (
     '92000000-0000-4000-8000-000000000012',
     '91000000-0000-4000-8000-000000000012',
     '20000000-0000-4000-8000-000000000001',
     'contract-subscription-checkout-session',
-    'monthly', 'credit_card', 'recurring', 4990, 'BRL', null, 1, 'pending'
+    'monthly', 'credit_card', 'recurring', 3990, 'BRL', null, 1, 'pending'
   );
 
 update public.billing_contracts
@@ -198,7 +198,7 @@ select is(
         "checkoutSession":"chk_payment_checkout_session",
         "subscription":"sub_payment_checkout_session",
         "customer":"cus_payment_checkout_session",
-        "value":49.90,
+        "value":39.90,
         "dueDate":"2026-09-09"
       }
     }'::jsonb
@@ -374,7 +374,7 @@ select is(
         "id":"pay_monthly_card_1",
         "customer":"cus_monthly_card",
         "subscription":"sub_monthly_card",
-        "value":49.90,
+        "value":39.90,
         "dueDate":"2026-09-09"
       }
     }'::jsonb
@@ -399,7 +399,7 @@ select results_eq(
   $$,
   $$ values (
     'confirmed'::text,
-    4990::bigint,
+    3990::bigint,
     '2026-09-09'::date,
     '2026-09-09T13:02:00Z'::timestamptz
   ) $$,
@@ -452,7 +452,7 @@ select is(
       "payment":{
         "id":"pay_monthly_card_old",
         "subscription":"sub_monthly_card",
-        "value":49.90,
+        "value":39.90,
         "dueDate":"2026-09-01"
       }
     }'::jsonb
@@ -512,7 +512,7 @@ select is(
         "id":"pay_monthly_pix_1",
         "externalReference":"contract-monthly-pix",
         "customer":"cus_monthly_pix",
-        "value":49.90,
+        "value":39.90,
         "dueDate":"2026-09-10"
       }
     }'::jsonb
@@ -529,7 +529,7 @@ select is(
       "payment":{
         "id":"pay_monthly_pix_2",
         "externalReference":"contract-monthly-pix",
-        "value":49.90,
+        "value":39.90,
         "dueDate":"2026-09-20"
       }
     }'::jsonb
@@ -553,38 +553,38 @@ select results_eq(
 
 select is(
   public.apply_asaas_webhook_event(
-    'evt-annual-card-paid',
+    'evt-semiannual-card-paid',
     'CHECKOUT_PAID',
     '{
       "dateCreated":"2026-08-11T12:00:00Z",
       "checkout":{
-        "id":"chk_annual_card",
-        "externalReference":"contract-annual-card",
-        "customer":"cus_annual_card"
+        "id":"chk_semiannual_card",
+        "externalReference":"contract-semiannual-card",
+        "customer":"cus_semiannual_card"
       }
     }'::jsonb
   ),
   'processed',
-  'annual card Checkout grants twelve months once'
+  'semiannual card Checkout grants six months once'
 );
 select is(
   public.apply_asaas_webhook_event(
-    'evt-annual-card-installment',
+    'evt-semiannual-card-installment',
     'PAYMENT_CONFIRMED',
     '{
       "dateCreated":"2026-09-01T12:00:00Z",
       "payment":{
-        "id":"pay_annual_card_1",
-        "externalReference":"contract-annual-card",
-        "installment":"ins_annual_card",
-        "value":39.90,
+        "id":"pay_semiannual_card_1",
+        "externalReference":"contract-semiannual-card",
+        "installment":"ins_semiannual_card",
+        "value":29.90,
         "installmentNumber":1,
         "dueDate":"2026-09-01"
       }
     }'::jsonb
   ),
   'processed',
-  'annual installment settlement is recorded'
+  'semiannual installment settlement is recorded'
 );
 select results_eq(
   $$
@@ -594,45 +594,45 @@ select results_eq(
   $$,
   $$ values (
     '2026-08-11T12:00:00Z'::timestamptz,
-    '2027-08-11T12:00:00Z'::timestamptz,
-    'ins_annual_card'::text
+    '2027-02-11T12:00:00Z'::timestamptz,
+    'ins_semiannual_card'::text
   ) $$,
-  'annual card installments never multiply annual access'
+  'semiannual card installments never multiply semiannual access'
 );
 
 select is(
   public.apply_asaas_webhook_event(
-    'evt-annual-pix-first',
+    'evt-semiannual-pix-first',
     'PAYMENT_CONFIRMED',
     '{
       "dateCreated":"2026-08-12T12:00:00Z",
       "payment":{
-        "id":"pay_annual_pix_1",
-        "externalReference":"contract-annual-pix",
-        "value":478.80,
+        "id":"pay_semiannual_pix_1",
+        "externalReference":"contract-semiannual-pix",
+        "value":179.40,
         "dueDate":"2026-08-12"
       }
     }'::jsonb
   ),
   'processed',
-  'annual Pix grants twelve months once'
+  'semiannual Pix grants six months once'
 );
 select is(
   public.apply_asaas_webhook_event(
-    'evt-annual-pix-later',
+    'evt-semiannual-pix-later',
     'PAYMENT_CONFIRMED',
     '{
       "dateCreated":"2026-09-02T12:00:00Z",
       "payment":{
-        "id":"pay_annual_pix_2",
-        "externalReference":"contract-annual-pix",
-        "value":478.80,
+        "id":"pay_semiannual_pix_2",
+        "externalReference":"contract-semiannual-pix",
+        "value":179.40,
         "dueDate":"2026-09-02"
       }
     }'::jsonb
   ),
   'processed',
-  'later annual Pix events are recorded'
+  'later semiannual Pix events are recorded'
 );
 select results_eq(
   $$
@@ -642,9 +642,9 @@ select results_eq(
   $$,
   $$ values (
     '2026-08-12T12:00:00Z'::timestamptz,
-    '2027-08-12T12:00:00Z'::timestamptz
+    '2027-02-12T12:00:00Z'::timestamptz
   ) $$,
-  'annual Pix is never silently renewed'
+  'semiannual Pix is never silently renewed'
 );
 
 select is(
@@ -654,9 +654,9 @@ select is(
     '{
       "dateCreated":"2026-09-03T12:00:00Z",
       "payment":{
-        "id":"pay_annual_card_2",
-        "externalReference":"contract-annual-card",
-        "value":39.90,
+        "id":"pay_semiannual_card_2",
+        "externalReference":"contract-semiannual-card",
+        "value":29.90,
         "dueDate":"2026-09-03"
       }
     }'::jsonb
@@ -671,9 +671,9 @@ select is(
     '{
       "dateCreated":"2026-09-04T12:00:00Z",
       "payment":{
-        "id":"pay_annual_card_3",
-        "externalReference":"contract-annual-card",
-        "value":39.90,
+        "id":"pay_semiannual_card_3",
+        "externalReference":"contract-semiannual-card",
+        "value":29.90,
         "dueDate":"2026-09-04"
       }
     }'::jsonb
@@ -688,10 +688,10 @@ select results_eq(
        where id = '92000000-0000-4000-8000-000000000003'),
       array_agg(status order by status)
     from public.billing_payments
-    where asaas_payment_id in ('pay_annual_card_2', 'pay_annual_card_3')
+    where asaas_payment_id in ('pay_semiannual_card_2', 'pay_semiannual_card_3')
   $$,
   $$ values (
-    '2027-08-11T12:00:00Z'::timestamptz,
+    '2027-02-11T12:00:00Z'::timestamptz,
     array['capture_refused', 'overdue']::text[]
   ) $$,
   'refused and overdue events never grant or extend access'
@@ -704,9 +704,9 @@ select is(
     '{
       "dateCreated":"2026-09-08T12:00:00Z",
       "payment":{
-        "id":"pay_annual_card_1",
-        "externalReference":"contract-annual-card",
-        "value":39.90,
+        "id":"pay_semiannual_card_1",
+        "externalReference":"contract-semiannual-card",
+        "value":29.90,
         "dueDate":"2026-09-01"
       }
     }'::jsonb
@@ -720,10 +720,10 @@ select results_eq(
     from public.billing_contracts as c
     join public.billing_payments as p on p.contract_id = c.id
     join public.asaas_webhook_events as e on e.id = 'evt-partial-refund'
-    where p.asaas_payment_id = 'pay_annual_card_1'
+    where p.asaas_payment_id = 'pay_semiannual_card_1'
   $$,
   $$ values (
-    '2027-08-11T12:00:00Z'::timestamptz,
+    '2027-02-11T12:00:00Z'::timestamptz,
     'partially_refunded'::text,
     'manual_review_required'::text
   ) $$,
@@ -737,9 +737,9 @@ select is(
     '{
       "dateCreated":"2026-09-09T12:00:00Z",
       "payment":{
-        "id":"pay_annual_pix_1",
-        "externalReference":"contract-annual-pix",
-        "value":478.80,
+        "id":"pay_semiannual_pix_1",
+        "externalReference":"contract-semiannual-pix",
+        "value":179.40,
         "dueDate":"2026-08-12"
       }
     }'::jsonb
@@ -764,9 +764,9 @@ select is(
     '{
       "dateCreated":"2026-09-09T13:00:00Z",
       "payment":{
-        "id":"pay_annual_card_1",
-        "externalReference":"contract-annual-card",
-        "value":39.90,
+        "id":"pay_semiannual_card_1",
+        "externalReference":"contract-semiannual-card",
+        "value":29.90,
         "dueDate":"2026-09-01"
       }
     }'::jsonb
@@ -957,7 +957,7 @@ select is(
       "payment":{
         "id":"pay_ambiguous",
         "customer":"cus_ambiguous",
-        "value":49.90,
+        "value":39.90,
         "dueDate":"2026-09-15"
       }
     }'::jsonb
@@ -975,7 +975,7 @@ select is(
       "payment":{
         "id":"pay_late",
         "subscription":"sub_late",
-        "value":49.90,
+        "value":39.90,
         "dueDate":"2026-09-16"
       }
     }'::jsonb
@@ -1006,7 +1006,7 @@ select is(
       "payment":{
         "id":"pay_late",
         "subscription":"sub_late",
-        "value":49.90,
+        "value":39.90,
         "dueDate":"2026-09-16"
       }
     }'::jsonb

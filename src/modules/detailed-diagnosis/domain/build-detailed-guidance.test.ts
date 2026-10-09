@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import type { DetailedDiagnosisCommand } from "../types";
+import type { DetailedDiagnosisCommand, DetailedProductItem } from "../types";
 import { calculateDetailedDiagnosis } from "./calculate-detailed-diagnosis";
 import { buildDetailedGuidance } from "./build-detailed-guidance";
 
-const command: DetailedDiagnosisCommand = {
+const command: DetailedDiagnosisCommand & { items: DetailedProductItem[] } = {
   submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   category: "product",
   fixedMonthlyExpensesCents: 300_000,

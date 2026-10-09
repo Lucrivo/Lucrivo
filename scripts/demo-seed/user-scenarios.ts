@@ -15,7 +15,7 @@ import type {
 import { currentReportTemplates } from "./report-scenarios";
 
 const MONTHLY_PRICE_ID = "20000000-0000-4000-8000-000000000001";
-const ANNUAL_PRICE_ID = "20000000-0000-4000-8000-000000000002";
+const SEMIANNUAL_PRICE_ID = "20000000-0000-4000-8000-000000000002";
 
 const contractStatuses = [
   "pending",
@@ -44,8 +44,8 @@ const paymentStatuses = [
 const validPurchaseTuples = [
   ["monthly", "credit_card", "recurring"],
   ["monthly", "pix", "detached"],
-  ["annual", "credit_card", "installment"],
-  ["annual", "pix", "detached"],
+  ["semiannual", "credit_card", "installment"],
+  ["semiannual", "pix", "detached"],
 ] as const;
 
 function relativeTime(
@@ -195,14 +195,15 @@ function baseContract(input: {
   return {
     id: seedUuid("contract", input.ownerOrdinal, input.childOrdinal),
     userId: input.userId,
-    priceId: billingMode === "annual" ? ANNUAL_PRICE_ID : MONTHLY_PRICE_ID,
+    priceId:
+      billingMode === "semiannual" ? SEMIANNUAL_PRICE_ID : MONTHLY_PRICE_ID,
     externalReference: input.externalReference,
     billingMode,
     paymentMethod,
     chargeType,
-    amountCents: billingMode === "annual" ? 47_880 : 3_990,
-    installmentLimit: billingMode === "annual" ? 12 : null,
-    accessMonths: billingMode === "annual" ? 12 : 1,
+    amountCents: billingMode === "semiannual" ? 17_940 : 3_990,
+    installmentLimit: billingMode === "semiannual" ? 6 : null,
+    accessMonths: billingMode === "semiannual" ? 6 : 1,
     status: input.status,
     accessStartsAt: input.accessStartsAt ?? null,
     accessEndsAt: input.accessEndsAt ?? null,
@@ -229,10 +230,10 @@ function paymentFor(input: {
     externalPaymentId: `demo-payment-${String(input.ownerOrdinal).padStart(3, "0")}-${String(input.childOrdinal).padStart(3, "0")}`,
     status: input.status,
     valueCents:
-      input.contract.billingMode === "annual"
-        ? input.contract.amountCents / 12
+      input.contract.billingMode === "semiannual"
+        ? input.contract.amountCents / 6
         : input.contract.amountCents,
-    installmentNumber: input.contract.billingMode === "annual" ? 1 : null,
+    installmentNumber: input.contract.billingMode === "semiannual" ? 1 : null,
     dueAt: input.dueAt,
     confirmedAt: confirmed ? { ...input.dueAt, hours: 12 } : null,
     receivedAt: received ? { ...input.dueAt, hours: 18 } : null,
@@ -256,12 +257,12 @@ function buildBilling(admin: SeedUser, clients: SeedUser[]) {
     ownerOrdinal: 0,
     childOrdinal: 0,
     userId: admin.id,
-    externalReference: "demo-admin-annual-active",
+    externalReference: "demo-admin-semiannual-active",
     status: "active",
     tuple: validPurchaseTuples[3],
-    accessStartsAt: relativeTime(-12),
+    accessStartsAt: relativeTime(-6),
     accessEndsAt: relativeTime(1),
-    createdAt: relativeTime(-12),
+    createdAt: relativeTime(-6),
   });
   contracts.push(adminContract);
   payments.push(
@@ -486,8 +487,8 @@ function buildDemoCatalog(): DemoSeedCatalog {
 }
 
 export {
-  ANNUAL_PRICE_ID,
   MONTHLY_PRICE_ID,
+  SEMIANNUAL_PRICE_ID,
   buildDemoCatalog,
   clientReportCount,
   contractStatuses,

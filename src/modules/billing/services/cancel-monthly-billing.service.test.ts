@@ -42,6 +42,8 @@ describe("cancelMonthlyBilling", () => {
     createCheckout: vi.fn(),
     cancelCheckout: vi.fn(),
     deleteSubscription,
+    refundPayment: vi.fn(),
+    refundInstallment: vi.fn(),
   };
 
   beforeEach(() => {
@@ -99,7 +101,7 @@ describe("cancelMonthlyBilling", () => {
   });
 
   it.each([
-    { ...activeContract, billing_mode: "annual" },
+    { ...activeContract, billing_mode: "semiannual" },
     { ...activeContract, payment_method: "pix", charge_type: "detached" },
     { ...activeContract, charge_type: "installment" },
   ])("never deletes a non-recurring subscription shape", async (contract) => {

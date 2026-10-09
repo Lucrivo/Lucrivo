@@ -9,26 +9,26 @@ import { createHostedCheckout } from "./create-hosted-checkout.service";
 const now = new Date("2026-09-09T12:00:00.000Z");
 const contractId = "10000000-0000-4000-8000-000000000001";
 const monthlyPriceId = "20000000-0000-4000-8000-000000000001";
-const annualPriceId = "20000000-0000-4000-8000-000000000002";
+const semiannualPriceId = "20000000-0000-4000-8000-000000000002";
 
 const monthlyPrice = {
   id: monthlyPriceId,
   product_code: "quick_diagnosis_pro",
   billing_mode: "monthly",
-  amount_cents: 4990,
+  amount_cents: 3990,
   currency: "BRL",
   installment_limit: null,
   access_months: 1,
 };
 
-const annualPrice = {
-  id: annualPriceId,
+const semiannualPrice = {
+  id: semiannualPriceId,
   product_code: "quick_diagnosis_pro",
-  billing_mode: "annual",
-  amount_cents: 47880,
+  billing_mode: "semiannual",
+  amount_cents: 17940,
   currency: "BRL",
-  installment_limit: 12,
-  access_months: 12,
+  installment_limit: 6,
+  access_months: 6,
 };
 
 describe("createHostedCheckout", () => {
@@ -55,6 +55,8 @@ describe("createHostedCheckout", () => {
     createCheckout,
     cancelCheckout,
     deleteSubscription: vi.fn(),
+    refundPayment: vi.fn(),
+    refundInstallment: vi.fn(),
   };
 
   beforeEach(() => {
@@ -78,7 +80,7 @@ describe("createHostedCheckout", () => {
     priceSelect.mockReturnValue({ eq: priceActive });
     priceActive.mockReturnValue({ eq: priceProduct });
     priceProduct.mockResolvedValue({
-      data: [annualPrice, monthlyPrice],
+      data: [semiannualPrice, monthlyPrice],
       error: null,
     });
 
@@ -186,6 +188,30 @@ describe("createHostedCheckout", () => {
     expect(createCheckout).not.toHaveBeenCalled();
   });
 
+  it("blocks a purchase while a refund is unresolved", async () => {
+    contractsByUser.mockResolvedValue({
+      data: [
+        {
+          id: "refund-contract",
+          price_id: monthlyPriceId,
+          payment_method: "credit_card",
+          status: "refund_pending",
+          access_starts_at: "2026-09-01T00:00:00.000Z",
+          access_ends_at: "2026-10-01T00:00:00.000Z",
+          asaas_checkout_url: null,
+          checkout_expires_at: null,
+        },
+      ],
+      error: null,
+    });
+
+    await expect(create()).resolves.toEqual({
+      status: "pending_reconciliation",
+    });
+    expect(contractInsert).not.toHaveBeenCalled();
+    expect(createCheckout).not.toHaveBeenCalled();
+  });
+
   it("reuses a non-expired pending Checkout for the same offer and method", async () => {
     contractsByUser.mockResolvedValue({
       data: [
@@ -234,7 +260,7 @@ describe("createHostedCheckout", () => {
     });
 
     await expect(
-      create({ priceId: annualPriceId, paymentMethod: "pix" }),
+      create({ priceId: semiannualPriceId, paymentMethod: "pix" }),
     ).resolves.toEqual({
       status: "created",
       checkoutUrl:
@@ -281,7 +307,7 @@ describe("createHostedCheckout", () => {
     });
 
     await expect(
-      create({ priceId: annualPriceId, paymentMethod: "pix" }),
+      create({ priceId: semiannualPriceId, paymentMethod: "pix" }),
     ).resolves.toEqual({ status: "pending_reconciliation" });
     expect(cancelCheckout).not.toHaveBeenCalled();
     expect(contractInsert).not.toHaveBeenCalled();
@@ -313,7 +339,7 @@ describe("createHostedCheckout", () => {
       cancelCheckout.mockRejectedValue(error);
 
       await expect(
-        create({ priceId: annualPriceId, paymentMethod: "pix" }),
+        create({ priceId: semiannualPriceId, paymentMethod: "pix" }),
       ).resolves.toEqual({ status: "pending_reconciliation" });
       expect(contractInsert).not.toHaveBeenCalled();
       expect(contractUpdate).not.toHaveBeenCalled();
@@ -341,7 +367,7 @@ describe("createHostedCheckout", () => {
     updatedContractMaybeSingle.mockResolvedValue({ data: null, error: null });
 
     await expect(
-      create({ priceId: annualPriceId, paymentMethod: "pix" }),
+      create({ priceId: semiannualPriceId, paymentMethod: "pix" }),
     ).resolves.toEqual({ status: "pending_reconciliation" });
     expect(cancelCheckout).toHaveBeenCalledWith("checkout_existing");
     expect(contractInsert).not.toHaveBeenCalled();
@@ -388,8 +414,8 @@ describe("createHostedCheckout", () => {
   it.each([
     [monthlyPriceId, "credit_card", "recurring"],
     [monthlyPriceId, "pix", "detached"],
-    [annualPriceId, "credit_card", "installment"],
-    [annualPriceId, "pix", "detached"],
+    [semiannualPriceId, "credit_card", "installment"],
+    [semiannualPriceId, "pix", "detached"],
   ] as const)(
     "persists a complete price snapshot before calling Asaas",
     async (priceId, paymentMethod, chargeType) => {
@@ -399,7 +425,7 @@ describe("createHostedCheckout", () => {
           "https://sandbox.asaas.com/checkoutSession/show/checkout_123",
       });
 
-      const price = priceId === monthlyPriceId ? monthlyPrice : annualPrice;
+      const price = priceId === monthlyPriceId ? monthlyPrice : semiannualPrice;
       expect(globalThis.crypto.randomUUID).toHaveBeenCalledTimes(1);
       expect(contractInsert).toHaveBeenCalledWith({
         id: contractId,

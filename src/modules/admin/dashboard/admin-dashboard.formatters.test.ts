@@ -30,6 +30,7 @@ describe("admin dashboard formatters", () => {
   it.each([
     ["pending", "Pendente", "neutral"],
     ["pending_reconciliation", "Em conciliação", "info"],
+    ["refund_pending", "Reembolso em andamento", "warning"],
     ["active", "Ativa", "success"],
     ["cancel_at_period_end", "Cancelamento agendado", "warning"],
     ["expired", "Expirada", "neutral"],

@@ -3,6 +3,7 @@ import { ChevronRightIcon, UsersIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { presentBillingMode } from "@/modules/admin/billing-mode";
 import {
   Table,
   TableBody,
@@ -195,7 +196,7 @@ function AdminUserList({
                         </TableCell>
                         <TableCell className="hidden max-w-56 truncate min-[1600px]:table-cell">
                           {user.subscription
-                            ? `${user.subscription.billingMode === "monthly" ? "Mensal" : "Anual"} · ${formatDate(user.subscription.accessEndsAt)}`
+                            ? `${presentBillingMode(user.subscription.billingMode)} · ${formatDate(user.subscription.accessEndsAt)}`
                             : "—"}
                         </TableCell>
                         <TableCell>{user.diagnosisCount}</TableCell>

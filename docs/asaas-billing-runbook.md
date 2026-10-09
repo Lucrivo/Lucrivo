@@ -12,13 +12,27 @@ registrá-los.
 - `billing_prices` é o catálogo comercial versionado.
 - `billing_contracts` representa a compra e o intervalo de acesso local.
 - `billing_payments` normaliza cobranças conhecidas.
+- `billing_refund_requests` registra a solicitação, o resultado do envio ao
+  provedor e a confirmação financeira final.
 - `asaas_webhook_events` é o ledger idempotente de eventos, com payload
   redigido.
 - Somente webhooks verificados podem liberar, renovar ou revogar acesso. O
   retorno do navegador após o Checkout nunca é fonte de verdade.
-- Reembolso não é iniciado pelo Lucrivo nesta versão. Eventos de reembolso ou
-  chargeback originados externamente continuam sendo processados para manter o
-  acesso local coerente.
+- O cliente pode iniciar um reembolso integral automático em até sete dias
+  corridos, incluindo o instante exato do limite, contados do início do acesso
+  pago. O acesso é bloqueado assim que a solicitação local é aceita; o webhook
+  do Asaas confirma o estado financeiro final.
+- Eventos de reembolso ou chargeback iniciados fora do Lucrivo também continuam
+  sendo processados para manter o acesso local coerente.
+
+## Catálogo comercial vigente
+
+- Mensal: R$ 39,90, com renovação mensal no cartão ou pagamento avulso no Pix.
+- Semestral: R$ 179,40, equivalente a 6x de R$ 29,90, com seis meses de acesso
+  e sem renovação automática.
+
+O catálogo ativo deve conter exatamente uma oferta de cada modalidade. O modo
+`annual` foi removido da base de pré-produção e não deve ser recriado.
 
 ## Ambientes e variáveis
 
@@ -56,6 +70,9 @@ Regras obrigatórias:
   server-only e nunca recebem prefixo `NEXT_PUBLIC_`.
 - Cada `ASAAS_WEBHOOK_TOKEN` deve ter pelo menos 32 caracteres aleatórios e ser
   diferente de `ASAAS_API_KEY`.
+- A `ASAAS_API_KEY` precisa permitir criação/cancelamento de Checkout,
+  cancelamento de assinatura e escrita de reembolso. Valide essas permissões em
+  sandbox antes de publicar a chave em produção.
 - Gere tokens com uma fonte criptograficamente segura, por exemplo
   `openssl rand -base64 48`, e armazene-os somente no gerenciador de secrets do
   ambiente.
@@ -119,6 +136,36 @@ aplicação chama `POST /v3/checkouts/{id}/cancel` antes de criar a substituiç�
 Ela reutiliza a sessão quando a oferta é a mesma. Nunca libere apenas o registro
 local: uma falha ou resposta ambígua do cancelamento deve impedir o novo
 Checkout até a conciliação, evitando duas sessões simultaneamente pagáveis.
+
+## Reembolso automático
+
+O cliente solicita o reembolso em `POST /api/billing/refund`. O endpoint exige
+sessão autenticada, origem válida e não aceita identificadores do cliente no
+corpo. A operação é integral; reembolso parcial nunca é iniciado por esse
+fluxo.
+
+Após a confirmação explícita na interface:
+
+1. `begin_billing_refund` valida o contrato atual, a janela inclusiva de sete
+   dias e a existência dos identificadores necessários;
+2. o contrato passa imediatamente para `refund_pending`, revogando o acesso;
+3. mensal no cartão ou Pix chama `POST /v3/payments/{paymentId}/refund`;
+4. semestral no Pix e semestral no cartão em 1x reembolsam o pagamento;
+   semestral parcelado chama `POST /v3/installments/{installmentId}/refund`
+   para devolver a compra toda;
+5. mensal no cartão também chama `DELETE /v3/subscriptions/{subscriptionId}`
+   para impedir nova cobrança;
+6. `PAYMENT_REFUNDED` e, quando aplicável, `SUBSCRIPTION_INACTIVATED` ou
+   `SUBSCRIPTION_DELETED` confirmam a convergência final.
+
+Cliques duplicados são idempotentes. Uma rejeição explícita do Asaas pode ser
+mostrada ao cliente e permite nova tentativa segura. Timeout, resposta ambígua,
+falha ao persistir o resultado ou falha ao cancelar a recorrência resultam em
+`pending_reconciliation`; não repita a mutação sem consultar o Asaas.
+
+O crédito do cartão pode levar até dez dias úteis para aparecer na fatura. No
+Pix, o Asaas pode recusar o estorno se a conta não tiver saldo disponível; esse
+caso fica como rejeitado e deve ser resolvido antes de uma nova tentativa.
 
 ## Observabilidade segura
 
@@ -211,6 +258,17 @@ Para eventos `failed` ou contratos `pending_reconciliation`:
    originais armazenados;
 5. confirme o resultado e registre a execução no incidente.
 
+Para uma solicitação de reembolso em `pending_reconciliation`, siga esta ordem:
+
+1. identifique a solicitação local e o contrato sem copiar payloads ou secrets;
+2. consulte o pagamento ou parcelamento no Asaas antes de repetir qualquer
+   mutação;
+3. em mensal no cartão, confirme também que a assinatura está inativa ou
+   excluída;
+4. reentregue o webhook original ou aplique uma conciliação auditada;
+5. confirme que solicitação, contrato, pagamento, acesso e estado visível ao
+   cliente estão coerentes.
+
 Nos eventos de Checkout v3, cobranças e assinaturas podem referenciar a sessão
 no campo `checkoutSession`. Esse valor deve ser conciliado com
 `billing_contracts.asaas_checkout_id`; não dependa de `externalReference`, pois
@@ -283,38 +341,54 @@ registre o ID local do contrato e todos os IDs de evento relacionados. Verifique
 no navegador e consulte `billing_contracts`, `billing_payments` e
 `asaas_webhook_events` sem selecionar payloads.
 
-### 1. Mensal no cartão
+### 1. Mensal no cartão — R$ 39,90
 
 - Criar o Checkout e concluir o pagamento com cartão de teste.
 - Confirmar contrato `monthly`, `credit_card`, `recurring` e acesso de um mês.
 - Simular/aguardar a confirmação da renovação e confirmar extensão sem lacuna.
+- Solicitar reembolso dentro de sete dias, confirmar bloqueio imediato, estorno
+  integral do pagamento e exclusão/inativação da assinatura.
+- Reentregar os webhooks e inverter a ordem entre reembolso e cancelamento da
+  assinatura; o estado final deve continuar `refunded`.
 - Cancelar pela tela `/billing` e verificar `cancel_at_period_end`, mantendo
   `access_ends_at` intacto.
 - Avançar/aguardar o fim do período e confirmar expiração e bloqueio dos
   relatórios extras.
 
-### 2. Mensal no Pix
+### 2. Mensal no Pix — R$ 39,90
 
 - Criar e pagar um Checkout Pix avulso.
 - Confirmar exatamente um mês de acesso.
 - Confirmar ausência de assinatura e de renovação automática.
+- Solicitar reembolso dentro de sete dias e confirmar o estorno integral pelo
+  pagamento, sem operação de assinatura.
+- Repetir sem saldo Pix disponível, confirmar rejeição segura e validar uma
+  nova tentativa somente depois de recompor o saldo.
 
-### 3. Anual no Pix e no cartão
+### 3. Semestral — R$ 179,40
 
-- Confirmar que o Checkout anual no cartão foi criado com os tipos de cobrança
+- Confirmar que o Checkout semestral no cartão foi criado com os tipos de cobrança
   `DETACHED` e `INSTALLMENT`; o Asaas exige ambos para oferecer pagamento à
   vista ou parcelado.
-- Pagar o anual no Pix à vista e confirmar exatamente 12 meses.
-- Fazer uma compra anual no cartão em 1x e confirmar exatamente 12 meses.
-- Fazer outra compra anual no cartão em 12x e confirmar exatamente 12 meses.
+- Pagar no Pix à vista e confirmar exatamente seis meses.
+- Fazer uma compra no cartão em 1x e confirmar exatamente seis meses.
+- Fazer outra compra no cartão em 6x de R$ 29,90 e confirmar exatamente seis
+  meses.
 - Nos três casos, confirmar que não existe renovação automática.
+- Reembolsar Pix pelo pagamento e cartão pelo parcelamento; confirmar devolução
+  integral tanto em 1x quanto em 6x.
 
 ### 4. Idempotência, ordem e reversões
 
 - Reentregar o mesmo evento e confirmar ausência de duplicação de acesso ou
   pagamento.
+- Clicar duas vezes em “Pedir reembolso” e confirmar uma única solicitação e
+  uma única mutação no Asaas.
+- Testar um instante dentro da janela, o limite exato de sete dias e um instante
+  posterior; somente o último deve ser recusado por prazo.
 - Entregar `PAYMENT_RECEIVED` fora de ordem e confirmar convergência segura.
-- Emitir reembolso total no sandbox e confirmar revogação conforme webhook.
+- Inverter a ordem dos eventos de reembolso e assinatura, confirmando
+  convergência.
 - Emitir/simular chargeback e confirmar revogação e estado local correspondente.
 - Reembolso parcial deve ficar para revisão manual, sem ajuste automático
   silencioso de acesso.
@@ -345,31 +419,28 @@ no navegador e consulte `billing_contracts`, `billing_payments` e
 ### Registro da homologação
 
 Não marque uma linha como aprovada sem evidência no navegador e nas três tabelas
-locais. Use uma linha adicional para cada variação do caso 3.
+locais. Use uma linha adicional para cada variação. Registre somente IDs
+internos seguros; nunca inclua chave de API, token de webhook, payload bruto ou
+dados de cartão/cliente.
 
-| Caso                     | Resultado | Contrato local                         | Eventos Asaas | Evidência/ticket        | Executor        | Data UTC   |
-| ------------------------ | --------- | -------------------------------------- | ------------- | ----------------------- | --------------- | ---------- |
-| 1. Mensal cartão         | Pendente  | —                                      | —             | —                       | —               | —          |
-| 2. Mensal Pix            | Aprovado  | `012c06dc-fa68-403c-816e-250df28af501` | `M-PIX-01`    | Navegador e banco local | Usuário + Codex | 2026-09-11 |
-| 3. Anual Pix             | Pendente  | —                                      | —             | —                       | —               | —          |
-| 3. Anual cartão 1x       | Pendente  | —                                      | —             | —                       | —               | —          |
-| 3. Anual cartão 12x      | Pendente  | —                                      | —             | —                       | —               | —          |
-| 4. Ordem/reversões       | Pendente  | —                                      | —             | —                       | —               | —          |
-| 5. Callback antecipado   | Pendente  | —                                      | —             | —                       | —               | —          |
-| 6. Timeout/reconciliação | Pendente  | —                                      | —             | —                       | —               | —          |
-| 7. Acesso a relatórios   | Pendente  | —                                      | —             | —                       | —               | —          |
+| Caso                               | Resultado | Contrato/reembolso local | Eventos Asaas | Evidência/ticket | Executor | Data UTC |
+| ---------------------------------- | --------- | ------------------------ | ------------- | ---------------- | -------- | -------- |
+| 1. Mensal cartão + reembolso       | Pendente  | —                        | —             | —                | —        | —        |
+| 2. Mensal Pix + reembolso          | Pendente  | —                        | —             | —                | —        | —        |
+| 3. Semestral Pix + reembolso       | Pendente  | —                        | —             | —                | —        | —        |
+| 3. Semestral cartão 1x + reembolso | Pendente  | —                        | —             | —                | —        | —        |
+| 3. Semestral cartão 6x + reembolso | Pendente  | —                        | —             | —                | —        | —        |
+| 4. Limite exato de sete dias       | Pendente  | —                        | —             | —                | —        | —        |
+| 4. Clique duplicado                | Pendente  | —                        | —             | —                | —        | —        |
+| 4. Ordem reembolso/assinatura      | Pendente  | —                        | —             | —                | —        | —        |
+| 4. Reembolso parcial externo       | Pendente  | —                        | —             | —                | —        | —        |
+| 4. Pix sem saldo disponível        | Pendente  | —                        | —             | —                | —        | —        |
+| 5. Callback antecipado             | Pendente  | —                        | —             | —                | —        | —        |
+| 6. Timeout/reconciliação           | Pendente  | —                        | —             | —                | —        | —        |
+| 7. Acesso a relatórios             | Pendente  | —                        | —             | —                | —        | —        |
 
 Não disponibilize os CTAs de produção nem promova o release antes de todas as
 linhas estarem aprovadas e vinculadas às evidências.
-
-Evidências de eventos:
-
-- `M-PIX-01`: `evt_37260be8159d4472b4458d3de13efc2d&19619025`
-  (`CHECKOUT_CREATED`), `evt_d26e303b238e509335ac9ba210e51b0f&19619613`
-  (`PAYMENT_RECEIVED`) e `evt_20f793f686aa4783d486a40e3c6b91d1&19619610`
-  (`CHECKOUT_PAID`). Um pagamento de 4990 centavos, acesso de
-  `2026-09-11 21:45:58+00` até `2026-10-11 21:45:58+00`, sem assinatura ou
-  parcelamento; autorização paga confirmada.
 
 ## Checklist de promoção para produção
 

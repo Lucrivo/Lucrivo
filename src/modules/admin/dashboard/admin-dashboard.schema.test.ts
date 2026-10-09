@@ -60,6 +60,23 @@ describe("adminDashboardSnapshotSchema", () => {
     );
   });
 
+  it("accepts semiannual contracts while a refund is pending", () => {
+    const candidate = {
+      ...validSnapshot,
+      recentSubscriptions: [
+        {
+          ...validSnapshot.recentSubscriptions[0],
+          billingMode: "semiannual",
+          status: "refund_pending",
+        },
+      ],
+    };
+
+    expect(adminDashboardSnapshotSchema.safeParse(candidate).success).toBe(
+      true,
+    );
+  });
+
   it.each([
     [
       "missing key",
@@ -115,6 +132,15 @@ describe("adminDashboardSnapshotSchema", () => {
           ...validSnapshot.recentSubscriptions[0],
           id: `95000000-0000-4000-8000-00000000000${index + 1}`,
         })),
+      }),
+    ],
+    [
+      "superseded annual billing mode",
+      () => ({
+        ...validSnapshot,
+        recentSubscriptions: [
+          { ...validSnapshot.recentSubscriptions[0], billingMode: "annual" },
+        ],
       }),
     ],
     [

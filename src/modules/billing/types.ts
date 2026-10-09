@@ -3,14 +3,21 @@ type BillingContractStatus =
   | "pending_reconciliation"
   | "active"
   | "cancel_at_period_end"
+  | "refund_pending"
   | "expired"
   | "canceled"
   | "refunded"
   | "chargeback"
   | "failed";
 
-type BillingMode = "monthly" | "annual";
+type BillingMode = "monthly" | "semiannual";
 type BillingPaymentMethod = "credit_card" | "pix";
+type BillingRefundStatus =
+  | "processing"
+  | "submitted"
+  | "confirmed"
+  | "rejected"
+  | "pending_reconciliation";
 
 type ActiveBillingPrice = {
   id: string;
@@ -20,6 +27,14 @@ type ActiveBillingPrice = {
   currency: "BRL";
   installmentLimit: number | null;
   accessMonths: number;
+};
+
+type BillingRefundSummary = {
+  status: BillingRefundStatus;
+  eligibilityEndsAt: string;
+  requestedAt: string;
+  refundConfirmedAt: string | null;
+  lastErrorCode: string | null;
 };
 
 type BillingOverview = {
@@ -33,7 +48,10 @@ type BillingOverview = {
     status: BillingContractStatus;
     accessEndsAt: string | null;
     cancelAtPeriodEnd: boolean;
+    canRequestRefund: boolean;
+    refundEligibilityEndsAt: string | null;
   };
+  refund: BillingRefundSummary | null;
 };
 
 type GetBillingOverviewResult =
@@ -45,5 +63,7 @@ export type {
   BillingMode,
   BillingOverview,
   BillingPaymentMethod,
+  BillingRefundStatus,
+  BillingRefundSummary,
   GetBillingOverviewResult,
 };

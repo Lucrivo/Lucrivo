@@ -22,8 +22,8 @@ describe("getRecentSubscriptions", () => {
         {
           id: "95000000-0000-4000-8000-000000000001",
           email: "cliente@example.com",
-          billingMode: "annual",
-          status: "active",
+          billingMode: "semiannual",
+          status: "refund_pending",
           createdAt: "2026-09-18T15:00:00.000Z",
         },
       ],
@@ -35,8 +35,8 @@ describe("getRecentSubscriptions", () => {
     await expect(getRecentSubscriptions()).resolves.toEqual([
       expect.objectContaining({
         email: "cliente@example.com",
-        billingModeLabel: "Anual",
-        status: { label: "Ativa", tone: "success" },
+        billingModeLabel: "Semestral",
+        status: { label: "Reembolso em andamento", tone: "warning" },
       }),
     ]);
     expect(rpc).toHaveBeenCalledWith("list_admin_recent_subscriptions_v1", {
@@ -58,4 +58,23 @@ describe("getRecentSubscriptions", () => {
       );
     },
   );
+
+  it("rejects the superseded annual billing mode", async () => {
+    rpc.mockResolvedValue({
+      data: [
+        {
+          id: "95000000-0000-4000-8000-000000000001",
+          email: "cliente@example.com",
+          billingMode: "annual",
+          status: "active",
+          createdAt: "2026-09-18T15:00:00.000Z",
+        },
+      ],
+      error: null,
+    });
+
+    await expect(getRecentSubscriptions()).rejects.toBeInstanceOf(
+      AdminRecentSubscriptionsUnavailableError,
+    );
+  });
 });

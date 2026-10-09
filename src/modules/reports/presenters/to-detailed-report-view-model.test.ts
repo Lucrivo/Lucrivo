@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import { calculateDetailedDiagnosis } from "@/modules/detailed-diagnosis/domain/calculate-detailed-diagnosis";
-import type { DetailedDiagnosisCommand } from "@/modules/detailed-diagnosis/types";
+import type {
+  DetailedDiagnosisCommand,
+  DetailedProductItem,
+} from "@/modules/detailed-diagnosis/types";
 
 import { buildDetailedReportSnapshot } from "../domain/build-detailed-report-snapshot";
 import { toDetailedReportViewModel } from "./to-detailed-report-view-model";
 
-const baseCommand: DetailedDiagnosisCommand = {
+const baseCommand: DetailedDiagnosisCommand & {
+  items: DetailedProductItem[];
+} = {
   submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   category: "product",
   fixedMonthlyExpensesCents: 10_000,

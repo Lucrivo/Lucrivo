@@ -52,7 +52,7 @@ const dashboardFixture: AdminDashboardViewModel = {
     {
       id: "95000000-0000-4000-8000-000000000002",
       email: "E-mail indisponível",
-      billingModeLabel: "Anual",
+      billingModeLabel: "Semestral",
       createdAtLabel: "15 set. 2026",
       status: { label: "Cancelamento agendado", tone: "warning" },
     },

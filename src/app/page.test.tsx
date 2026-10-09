@@ -37,7 +37,7 @@ const prices = [
     id: "11111111-1111-4111-8111-111111111111",
     productCode: "quick_diagnosis_pro" as const,
     billingMode: "monthly" as const,
-    amountCents: 4990,
+    amountCents: 3990,
     currency: "BRL" as const,
     installmentLimit: null,
     accessMonths: 1,
@@ -45,11 +45,11 @@ const prices = [
   {
     id: "22222222-2222-4222-8222-222222222222",
     productCode: "quick_diagnosis_pro" as const,
-    billingMode: "annual" as const,
-    amountCents: 47880,
+    billingMode: "semiannual" as const,
+    amountCents: 17940,
     currency: "BRL" as const,
-    installmentLimit: 12,
-    accessMonths: 12,
+    installmentLimit: 6,
+    accessMonths: 6,
   },
 ];
 
@@ -80,7 +80,7 @@ describe("Home", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      view.getByRole("link", { name: "Assinar agora por R$ 49,90/mês" }),
+      view.getByRole("link", { name: "Assinar agora por R$ 39,90/mês" }),
     ).toHaveAttribute("href", "/register");
     expect(view.getByRole("link", { name: "Ver planos" })).toHaveAttribute(
       "href",
@@ -315,7 +315,7 @@ describe("Home", () => {
     ).toBeInTheDocument();
 
     const steps = [
-      ["Assine", "Pague R$ 49,90 com cartão ou Pix. O acesso libera na hora."],
+      ["Assine", "Pague R$ 39,90 com cartão ou Pix. O acesso libera na hora."],
       [
         "Use por 7 dias",
         "Coloque seus produtos e veja o resultado de cada um.",
@@ -377,7 +377,7 @@ describe("Home", () => {
       items.map((item) => item.querySelector("summary")?.textContent),
     ).toEqual([
       "Já fiz o diagnóstico grátis. Por que assinar?",
-      "R$ 49,90 não é caro?",
+      "R$ 39,90 não é caro?",
       "Funciona para o meu tipo de negócio?",
       "Preciso entender de conta ou de imposto?",
       "E se eu não souber algum número?",
@@ -395,12 +395,12 @@ describe("Home", () => {
 
     expect(
       view.getByText(
-        "A assinatura renova todo mês por R$ 49,90. Se não quiser continuar, é só cancelar antes da próxima cobrança.",
+        "A assinatura renova todo mês por R$ 39,90. Se não quiser continuar, é só cancelar antes da próxima cobrança.",
       ),
     ).toBeInTheDocument();
     expect(view.getByText(/Não achou sua dúvida\?/)).toBeInTheDocument();
     expect(
-      view.getByRole("link", { name: "Quero assinar por R$ 49,90/mês" }),
+      view.getByRole("link", { name: "Quero assinar por R$ 39,90/mês" }),
     ).toHaveAttribute("href", "/register");
     expect(view.getByText("Garantia de 7 dias.")).toBeInTheDocument();
   });
@@ -538,7 +538,7 @@ describe("Home", () => {
       pricingView.getByRole("link", { name: "Começar grátis" }),
     ).toHaveAttribute("href", "/register");
     expect(
-      pricingView.getByRole("link", { name: "Escolher anual" }),
+      pricingView.getByRole("link", { name: "Escolher semestral" }),
     ).toHaveAttribute("href", "/register");
     expect(
       pricingView.getByRole("link", { name: "Escolher mensal" }),
@@ -553,7 +553,7 @@ describe("Home", () => {
     expect(finalStep).not.toBeNull();
     expect(
       within(finalStep as HTMLElement).getByRole("link", {
-        name: "Garantir meu acesso por R$ 49,90/mês",
+        name: "Garantir meu acesso por R$ 39,90/mês",
       }),
     ).toHaveAttribute("href", "/register");
   });
@@ -582,9 +582,9 @@ describe("Home", () => {
     expect(
       screen.getByText("Planos pagos temporariamente indisponíveis"),
     ).toBeInTheDocument();
-    expect(screen.queryByText("R$ 49,90/mês")).not.toBeInTheDocument();
+    expect(screen.queryByText("R$ 39,90/mês")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Assinar agora por R$ 49,90/mês" }),
+      screen.getByRole("link", { name: "Assinar agora por R$ 39,90/mês" }),
     ).toHaveAttribute("href", "/register");
   });
 });

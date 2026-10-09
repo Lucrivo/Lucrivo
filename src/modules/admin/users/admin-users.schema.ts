@@ -9,7 +9,7 @@ const accountStateSchema = z.enum(["active", "blocked", "deleted"]);
 const accessSchema = z.enum(["free", "paid", "courtesy"]);
 const subscriptionSchema = z
   .object({
-    billingMode: z.enum(["monthly", "annual"]),
+    billingMode: z.enum(["monthly", "semiannual"]),
     status: z.string(),
     accessEndsAt: z.iso.datetime({ offset: true }),
   })
@@ -45,7 +45,7 @@ const diagnosisSchema = z.object({
 const contractSchema = z.object({
   id: uuid,
   createdAt: z.iso.datetime({ offset: true }),
-  billingMode: z.string(),
+  billingMode: z.enum(["monthly", "semiannual"]),
   paymentMethod: z.string(),
   status: z.string(),
   amountCents: z.number(),

@@ -76,4 +76,40 @@ describe("admin user detail", () => {
       "true",
     );
   });
+
+  it("labels semiannual subscriptions without an annual fallback", () => {
+    render(
+      <AdminUserDetail
+        user={{
+          ...user,
+          subscription: {
+            billingMode: "semiannual",
+            status: "active",
+            accessEndsAt: "2027-03-16T12:00:00+00:00",
+          },
+        }}
+        tab="subscription"
+        back="/admin/users"
+        items={{
+          items: [
+            {
+              id: "1",
+              createdAt: user.createdAt,
+              billingMode: "semiannual",
+              amountCents: 17940,
+              status: "active",
+              paymentMethod: "pix",
+              accessStartsAt: user.createdAt,
+              accessEndsAt: "2027-03-16T12:00:00+00:00",
+              cancelAtPeriodEnd: false,
+            },
+          ],
+          nextCursor: null,
+        }}
+      />,
+    );
+
+    expect(screen.getAllByText(/Semestral/)).toHaveLength(1);
+    expect(screen.queryByText(/Anual/)).not.toBeInTheDocument();
+  });
 });

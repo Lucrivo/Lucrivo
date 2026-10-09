@@ -9,7 +9,7 @@ const prices: ActiveBillingPrice[] = [
     id: "11111111-1111-4111-8111-111111111111",
     productCode: "quick_diagnosis_pro",
     billingMode: "monthly",
-    amountCents: 4990,
+    amountCents: 3990,
     currency: "BRL",
     installmentLimit: null,
     accessMonths: 1,
@@ -17,11 +17,11 @@ const prices: ActiveBillingPrice[] = [
   {
     id: "22222222-2222-4222-8222-222222222222",
     productCode: "quick_diagnosis_pro",
-    billingMode: "annual",
-    amountCents: 47880,
+    billingMode: "semiannual",
+    amountCents: 17940,
     currency: "BRL",
-    installmentLimit: 12,
-    accessMonths: 12,
+    installmentLimit: 6,
+    accessMonths: 6,
   },
 ];
 
@@ -35,20 +35,27 @@ describe("BillingPlans", () => {
     expect(screen.getByText("1 diagnóstico rápido")).toBeInTheDocument();
     expect(screen.getByText("1 relatório completo")).toBeInTheDocument();
 
-    expect(screen.getByText("R$ 49,90/mês")).toBeInTheDocument();
+    expect(screen.getByText("R$ 39,90/mês")).toBeInTheDocument();
     expect(screen.getByText("Mais vantajoso")).toBeInTheDocument();
     expect(screen.getByText("Comece sem custo")).toBeInTheDocument();
     expect(screen.getByText("Mais flexibilidade")).toBeInTheDocument();
     expect(screen.getByText("Melhor custo-benefício")).toBeInTheDocument();
 
-    const annual = screen.getByRole("article", { name: "Plano Anual" });
+    const semiannual = screen.getByRole("article", {
+      name: "Plano Semestral",
+    });
 
-    expect(within(annual).getByText("12x de")).toBeInTheDocument();
-    expect(within(annual).getByText("R$ 39,90")).toBeInTheDocument();
+    expect(within(semiannual).getByText("6x de")).toBeInTheDocument();
+    expect(within(semiannual).getByText("R$ 29,90")).toBeInTheDocument();
     expect(
-      within(annual).getByText("ou R$ 478,80 à vista"),
+      within(semiannual).getByText("ou R$ 179,40 à vista"),
     ).toBeInTheDocument();
-    expect(screen.getByText("Economize R$ 120,00 no ano.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Economize R$ 60,00 em seis meses"),
+    ).toBeInTheDocument();
+    expect(
+      within(semiannual).getByText("6 meses de acesso"),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("region", { name: "Segurança e transparência" }),
     ).toHaveTextContent(
@@ -69,13 +76,13 @@ describe("BillingPlans", () => {
       screen.getByRole("link", { name: "Começar grátis" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Escolher anual" }),
+      screen.getByRole("link", { name: "Escolher semestral" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Escolher mensal" }),
     ).toBeInTheDocument();
     expect(screen.queryByText("Pagar com Pix")).not.toBeInTheDocument();
-    expect(screen.queryByText("Assinar anual")).not.toBeInTheDocument();
+    expect(screen.queryByText("Assinar semestral")).not.toBeInTheDocument();
     expect(
       screen.getAllByText(
         "Crie a conta primeiro. Cartão ou Pix na hora de assinar.",
@@ -93,21 +100,25 @@ describe("BillingPlans", () => {
         context="public"
         prices={[
           { ...prices[0], amountCents: 5990 },
-          { ...prices[1], amountCents: 59880 },
+          { ...prices[1], amountCents: 29940 },
         ]}
       />,
     );
 
     expect(screen.getByText("R$ 59,90/mês")).toBeInTheDocument();
 
-    const annual = screen.getByRole("article", { name: "Plano Anual" });
+    const semiannual = screen.getByRole("article", {
+      name: "Plano Semestral",
+    });
 
-    expect(within(annual).getByText("12x de")).toBeInTheDocument();
-    expect(within(annual).getByText("R$ 49,90")).toBeInTheDocument();
+    expect(within(semiannual).getByText("6x de")).toBeInTheDocument();
+    expect(within(semiannual).getByText("R$ 49,90")).toBeInTheDocument();
     expect(
-      within(annual).getByText("ou R$ 598,80 à vista"),
+      within(semiannual).getByText("ou R$ 299,40 à vista"),
     ).toBeInTheDocument();
-    expect(screen.getByText("Economize R$ 120,00 no ano.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Economize R$ 60,00 em seis meses"),
+    ).toBeInTheDocument();
     expect(screen.queryByText("R$ 49,90/mês")).not.toBeInTheDocument();
   });
 
@@ -127,7 +138,9 @@ describe("BillingPlans", () => {
     render(<BillingPlans context="account" prices={prices} />);
 
     const monthly = screen.getByRole("article", { name: "Plano Mensal" });
-    const annual = screen.getByRole("article", { name: "Plano Anual" });
+    const semiannual = screen.getByRole("article", {
+      name: "Plano Semestral",
+    });
 
     expect(
       within(monthly).getByRole("button", { name: "Assinar mensal" }),
@@ -136,13 +149,31 @@ describe("BillingPlans", () => {
       within(monthly).getByRole("button", { name: "Pagar com Pix" }),
     ).toBeInTheDocument();
     expect(
-      within(annual).getByRole("button", { name: "Assinar anual" }),
+      within(semiannual).getByRole("button", {
+        name: "Assinar semestral",
+      }),
     ).toBeInTheDocument();
     expect(
-      within(annual).getByRole("button", { name: "Pagar com Pix" }),
+      within(semiannual).getByRole("button", { name: "Pagar com Pix" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("region", { name: "Opções de plano" }),
     ).toHaveAttribute("data-context", "account");
+  });
+
+  it("fails closed when the installment value is not exact", () => {
+    render(
+      <BillingPlans
+        context="public"
+        prices={[prices[0], { ...prices[1], amountCents: 17941 }]}
+      />,
+    );
+
+    expect(
+      screen.getByText("Planos pagos temporariamente indisponíveis"),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("article", { name: "Plano Semestral" }),
+    ).toBeNull();
   });
 });

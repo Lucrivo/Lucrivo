@@ -21,7 +21,7 @@ type AdminDashboardViewModel = {
   recentSubscriptions: Array<{
     id: string;
     email: string;
-    billingModeLabel: "Mensal" | "Anual";
+    billingModeLabel: "Mensal" | "Semestral";
     createdAtLabel: string;
     status: { label: string; tone: StatusTone };
   }>;

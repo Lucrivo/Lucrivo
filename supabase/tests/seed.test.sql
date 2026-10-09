@@ -159,9 +159,9 @@ select results_eq(
     order by report_family
   $$,
   $$ values
-    ('detailed'::text, 1::smallint, 1::smallint, 2::smallint),
-    ('product'::text, 3::smallint, 3::smallint, 5::smallint),
-    ('production'::text, 3::smallint, 3::smallint, 5::smallint),
+    ('detailed'::text, 1::smallint, 1::smallint, 3::smallint),
+    ('product'::text, 3::smallint, 3::smallint, 6::smallint),
+    ('production'::text, 3::smallint, 3::smallint, 6::smallint),
     ('service'::text, 4::smallint, 3::smallint, 6::smallint)
   $$,
   'seed snapshots use only current report version tuples'
@@ -314,15 +314,15 @@ select is(
     join public.billing_payments as payment
       on payment.contract_id = contract.id
     where contract.user_id = 'd1000000-0000-4000-8000-000000000000'
-      and contract.billing_mode = 'annual'
-      and contract.amount_cents = 47880
+      and contract.billing_mode = 'semiannual'
+      and contract.amount_cents = 17940
       and contract.status = 'active'
       and contract.access_starts_at <= statement_timestamp()
       and contract.access_ends_at > statement_timestamp()
       and payment.status = 'received'
   ),
   1::bigint,
-  'admin has a current paid annual subscription'
+  'admin has a current paid semiannual subscription'
 );
 
 select is(

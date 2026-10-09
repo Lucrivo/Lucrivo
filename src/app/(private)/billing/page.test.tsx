@@ -27,7 +27,7 @@ const prices = [
     id: "11111111-1111-4111-8111-111111111111",
     productCode: "quick_diagnosis_pro" as const,
     billingMode: "monthly" as const,
-    amountCents: 4990,
+    amountCents: 3990,
     currency: "BRL" as const,
     installmentLimit: null,
     accessMonths: 1,
@@ -35,11 +35,11 @@ const prices = [
   {
     id: "22222222-2222-4222-8222-222222222222",
     productCode: "quick_diagnosis_pro" as const,
-    billingMode: "annual" as const,
-    amountCents: 47880,
+    billingMode: "semiannual" as const,
+    amountCents: 17940,
     currency: "BRL" as const,
-    installmentLimit: 12,
-    accessMonths: 12,
+    installmentLimit: 6,
+    accessMonths: 6,
   },
 ];
 
@@ -56,7 +56,9 @@ describe("BillingPage", () => {
         tier: "free",
         canCreateDiagnosis: true,
         freeReportUsed: false,
+        courtesyExpiresAt: null,
         contract: null,
+        refund: null,
       },
     });
   });
@@ -76,7 +78,7 @@ describe("BillingPage", () => {
       screen.getByRole("article", { name: "Plano Mensal" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("article", { name: "Plano Anual" }),
+      screen.getByRole("article", { name: "Plano Semestral" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Mais vantajoso")).toBeInTheDocument();
     expect(
@@ -86,7 +88,7 @@ describe("BillingPage", () => {
       screen.getByRole("button", { name: "Assinar mensal" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Assinar anual" }),
+      screen.getByRole("button", { name: "Assinar semestral" }),
     ).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /Pix/i })).toHaveLength(2);
     expect(requireUser).toHaveBeenCalledOnce();
@@ -104,13 +106,17 @@ describe("BillingPage", () => {
         tier: "paid",
         canCreateDiagnosis: true,
         freeReportUsed: true,
+        courtesyExpiresAt: null,
         contract: {
           billingMode: "monthly",
           paymentMethod: "credit_card",
           status: "active",
           accessEndsAt: "2026-10-10T12:00:00.000Z",
           cancelAtPeriodEnd: false,
+          canRequestRefund: true,
+          refundEligibilityEndsAt: "2026-09-17T12:00:00.000Z",
         },
+        refund: null,
       },
     });
 
@@ -132,30 +138,37 @@ describe("BillingPage", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("article", { name: "Plano Anual" }),
+      within(currentPlan).getByRole("button", { name: "Pedir reembolso" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("article", { name: "Plano Semestral" }),
     ).not.toBeInTheDocument();
   });
 
-  it("does not offer subscription cancellation for annual or Pix access", async () => {
+  it("does not offer subscription cancellation for semiannual or Pix access", async () => {
     getBillingOverview.mockResolvedValue({
       status: "success",
       overview: {
         tier: "paid",
         canCreateDiagnosis: true,
         freeReportUsed: false,
+        courtesyExpiresAt: null,
         contract: {
-          billingMode: "annual",
+          billingMode: "semiannual",
           paymentMethod: "pix",
           status: "active",
           accessEndsAt: "2027-09-10T12:00:00.000Z",
           cancelAtPeriodEnd: false,
+          canRequestRefund: false,
+          refundEligibilityEndsAt: "2026-09-17T12:00:00.000Z",
         },
+        refund: null,
       },
     });
 
     await renderPage();
 
-    expect(screen.getByText("Plano anual")).toBeInTheDocument();
+    expect(screen.getByText("Plano semestral")).toBeInTheDocument();
     expect(screen.getByText("Pix")).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Cancelar renovação" }),
@@ -171,6 +184,7 @@ describe("BillingPage", () => {
         freeReportUsed: true,
         courtesyExpiresAt: "2026-09-20T12:00:00.000Z",
         contract: null,
+        refund: null,
       },
     });
 
@@ -183,5 +197,75 @@ describe("BillingPage", () => {
     expect(
       screen.queryByRole("region", { name: "Seu plano atual" }),
     ).toBeNull();
+  });
+
+  it("shows unresolved refund state before purchase actions", async () => {
+    getBillingOverview.mockResolvedValue({
+      status: "success",
+      overview: {
+        tier: "free",
+        canCreateDiagnosis: false,
+        freeReportUsed: true,
+        courtesyExpiresAt: null,
+        contract: {
+          billingMode: "monthly",
+          paymentMethod: "credit_card",
+          status: "refund_pending",
+          accessEndsAt: "2026-09-15T12:00:00.000Z",
+          cancelAtPeriodEnd: false,
+          canRequestRefund: false,
+          refundEligibilityEndsAt: "2026-09-17T12:00:00.000Z",
+        },
+        refund: {
+          status: "pending_reconciliation",
+          eligibilityEndsAt: "2026-09-17T12:00:00.000Z",
+          requestedAt: "2026-09-15T10:00:00.000Z",
+          refundConfirmedAt: null,
+          lastErrorCode: "provider_ambiguous",
+        },
+      },
+    });
+
+    await renderPage();
+
+    expect(
+      screen.getByRole("region", { name: "Situação do reembolso" }),
+    ).toHaveTextContent("Reembolso em conferência");
+    expect(screen.queryByRole("article", { name: /Plano/ })).toBeNull();
+  });
+
+  it("shows a rejected status with an eligible retry", async () => {
+    getBillingOverview.mockResolvedValue({
+      status: "success",
+      overview: {
+        tier: "paid",
+        canCreateDiagnosis: true,
+        freeReportUsed: true,
+        courtesyExpiresAt: null,
+        contract: {
+          billingMode: "monthly",
+          paymentMethod: "pix",
+          status: "active",
+          accessEndsAt: "2026-10-10T12:00:00.000Z",
+          cancelAtPeriodEnd: false,
+          canRequestRefund: true,
+          refundEligibilityEndsAt: "2026-09-17T12:00:00.000Z",
+        },
+        refund: {
+          status: "rejected",
+          eligibilityEndsAt: "2026-09-17T12:00:00.000Z",
+          requestedAt: "2026-09-15T10:00:00.000Z",
+          refundConfirmedAt: null,
+          lastErrorCode: "provider_rejected",
+        },
+      },
+    });
+
+    await renderPage();
+
+    expect(screen.getByText("Reembolso não concluído")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Pedir reembolso" }),
+    ).toBeVisible();
   });
 });

@@ -24,7 +24,7 @@ const prices = [
     id: "11111111-1111-4111-8111-111111111111",
     productCode: "quick_diagnosis_pro" as const,
     billingMode: "monthly" as const,
-    amountCents: 4990,
+    amountCents: 3990,
     currency: "BRL" as const,
     installmentLimit: null,
     accessMonths: 1,
@@ -32,11 +32,11 @@ const prices = [
   {
     id: "22222222-2222-4222-8222-222222222222",
     productCode: "quick_diagnosis_pro" as const,
-    billingMode: "annual" as const,
-    amountCents: 47880,
+    billingMode: "semiannual" as const,
+    amountCents: 17940,
     currency: "BRL" as const,
-    installmentLimit: 12,
-    accessMonths: 12,
+    installmentLimit: 6,
+    accessMonths: 6,
   },
 ];
 
@@ -143,7 +143,7 @@ describe("BillingReturnPage", () => {
       screen.getByRole("article", { name: "Plano Mensal" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("article", { name: "Plano Anual" }),
+      screen.getByRole("article", { name: "Plano Semestral" }),
     ).toBeInTheDocument();
   });
 });
