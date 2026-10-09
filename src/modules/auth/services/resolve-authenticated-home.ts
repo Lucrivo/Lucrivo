@@ -3,7 +3,7 @@ import "server-only";
 import { createClient } from "@/infrastructure/database/supabase/clients/server.client";
 
 type AuthenticatedHome =
-  "/login" | "/dashboard" | "/admin" | "/account-unavailable";
+  "/login" | "/dashboard" | "/admin" | "/onboarding" | "/account-unavailable";
 
 async function resolveAuthenticatedHome(): Promise<AuthenticatedHome> {
   const supabase = await createClient();
@@ -21,8 +21,17 @@ async function resolveAuthenticatedHome(): Promise<AuthenticatedHome> {
     );
     if (eligibilityError || eligible !== true) return "/account-unavailable";
 
-    const { data, error } = await supabase.rpc("current_user_is_admin");
-    return !error && data === true ? "/admin" : "/dashboard";
+    const { data: isAdmin } = await supabase.rpc("current_user_is_admin");
+    if (isAdmin === true) return "/admin";
+
+    const { data: hasCompletedOnboarding, error: onboardingError } =
+      await supabase.rpc("current_user_has_completed_onboarding");
+
+    if (onboardingError || typeof hasCompletedOnboarding !== "boolean") {
+      return "/account-unavailable";
+    }
+
+    return hasCompletedOnboarding ? "/dashboard" : "/onboarding";
   } catch {
     return "/account-unavailable";
   }
