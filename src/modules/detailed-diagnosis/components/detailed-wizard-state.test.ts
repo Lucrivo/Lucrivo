@@ -561,11 +561,11 @@ describe("detailedWizardReducer", () => {
 
     const failed = detailedWizardReducer(submitting, {
       type: "submitFailed",
-      error: "limit_reached",
+      error: "create_failed",
     });
     expect(failed).toMatchObject({
       status: "editing",
-      submitError: "limit_reached",
+      submitError: "create_failed",
     });
 
     const reset = detailedWizardReducer(failed, {
@@ -575,5 +575,17 @@ describe("detailedWizardReducer", () => {
     expect(reset.values.submissionId).toBe("submission-2");
     expect(reset.activeItemId).toBe("item-2");
     expect(reset.submitError).toBeNull();
+  });
+
+  it("returns to editing without clearing values when access is stale", () => {
+    const initial = productState();
+    const submitting = detailedWizardReducer(initial, { type: "submit" });
+    const settled = detailedWizardReducer(submitting, {
+      type: "submissionSettled",
+    });
+
+    expect(settled.status).toBe("editing");
+    expect(settled.submitError).toBeNull();
+    expect(settled.values).toBe(initial.values);
   });
 });

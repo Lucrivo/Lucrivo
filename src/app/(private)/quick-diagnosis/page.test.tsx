@@ -69,8 +69,17 @@ describe("QuickDiagnosisPage", () => {
     });
   });
 
-  async function renderPage() {
-    render(await QuickDiagnosisPage());
+  async function renderPage(
+    searchParams: {
+      resume?: string | string[];
+      category?: string | string[];
+    } = {},
+  ) {
+    render(
+      await QuickDiagnosisPage({
+        searchParams: Promise.resolve(searchParams),
+      }),
+    );
   }
 
   it("preflights access and composes the wizard with the server actions", async () => {
@@ -83,6 +92,8 @@ describe("QuickDiagnosisPage", () => {
     expect(screen.getByText("Wizard do diagnóstico")).toBeInTheDocument();
     expect(QuickDiagnosisWizard).toHaveBeenCalledWith(
       {
+        userId: "trusted-user",
+        canCreateDetailedDiagnosis: false,
         createProductDiagnosis,
         createProductionDiagnosis,
         createServiceDiagnosis,
@@ -119,9 +130,55 @@ describe("QuickDiagnosisPage", () => {
   it("fails closed when the billing overview cannot be loaded", async () => {
     getBillingOverview.mockResolvedValue({ status: "read_failed" });
 
-    await expect(QuickDiagnosisPage()).rejects.toThrow(
-      "billing_overview_read_failed",
-    );
+    await expect(
+      QuickDiagnosisPage({ searchParams: Promise.resolve({}) }),
+    ).rejects.toThrow("billing_overview_read_failed");
     expect(QuickDiagnosisWizard).not.toHaveBeenCalled();
+  });
+
+  it("resumes a product diagnosis only for a capable paid return", async () => {
+    getBillingOverview.mockResolvedValue({
+      status: "success",
+      overview: {
+        tier: "paid",
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: true,
+        freeQuickDiagnosisUsed: true,
+        contract: null,
+      },
+    });
+
+    await renderPage({ resume: "detailed", category: "product" });
+
+    expect(QuickDiagnosisWizard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "trusted-user",
+        canCreateDetailedDiagnosis: true,
+        initialDetailedCategory: "product",
+      }),
+      undefined,
+    );
+  });
+
+  it("ignores resume values that are not an exact detailed category", async () => {
+    getBillingOverview.mockResolvedValue({
+      status: "success",
+      overview: {
+        tier: "paid",
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: true,
+        freeQuickDiagnosisUsed: true,
+        contract: null,
+      },
+    });
+
+    await renderPage({ resume: "detailed", category: "service" });
+
+    expect(QuickDiagnosisWizard).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        initialDetailedCategory: expect.anything(),
+      }),
+      undefined,
+    );
   });
 });

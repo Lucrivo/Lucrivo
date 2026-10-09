@@ -35,6 +35,7 @@ type DetailedDiagnosisWizardProps = {
   createDiagnosis: CreateDetailedDiagnosisAction;
   createId: () => string;
   onBackToMode: () => void;
+  onPlanRequired: () => void;
 };
 
 const phaseProgress: Record<DetailedWizardPhase, number> = {
@@ -127,6 +128,7 @@ function DetailedDiagnosisWizard({
   createDiagnosis,
   createId,
   onBackToMode,
+  onPlanRequired,
 }: DetailedDiagnosisWizardProps) {
   const router = useRouter();
   const submittingRef = useRef(false);
@@ -214,6 +216,12 @@ function DetailedDiagnosisWizard({
           type: "applyServerErrors",
           fieldErrors: result.fieldErrors,
         });
+        return;
+      }
+
+      if (result.error === "plan_required") {
+        dispatch({ type: "submissionSettled" });
+        onPlanRequired();
         return;
       }
 

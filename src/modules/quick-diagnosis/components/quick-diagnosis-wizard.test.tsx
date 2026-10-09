@@ -30,6 +30,8 @@ describe("QuickDiagnosisWizard category orchestration", () => {
   });
 
   function renderWizard(options?: {
+    canCreateDetailedDiagnosis?: boolean;
+    initialDetailedCategory?: "product" | "production";
     createProductDiagnosis?: CreateProductDiagnosisAction;
     createProductionDiagnosis?: CreateProductionDiagnosisAction;
     createServiceDiagnosis?: CreateServiceDiagnosisAction;
@@ -55,6 +57,9 @@ describe("QuickDiagnosisWizard category orchestration", () => {
 
     render(
       <QuickDiagnosisWizard
+        userId="trusted-user"
+        canCreateDetailedDiagnosis={options?.canCreateDetailedDiagnosis ?? true}
+        initialDetailedCategory={options?.initialDetailedCategory}
         createProductDiagnosis={createProductDiagnosis}
         createProductionDiagnosis={createProductionDiagnosis}
         createServiceDiagnosis={createServiceDiagnosis}
@@ -307,6 +312,7 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     );
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
         name: "Que tipo de produto você vende?",
@@ -332,6 +338,173 @@ describe("QuickDiagnosisWizard category orchestration", () => {
       screen.getByRole("radio", { name: "Diagnóstico detalhado" }),
     ).toBeChecked();
     expect(createSubmissionId).toHaveBeenCalledTimes(4);
+  });
+
+  it("keeps a free user on the mode step and explains the plan", async () => {
+    const user = userEvent.setup();
+    const { createSubmissionId } = renderWizard({
+      canCreateDetailedDiagnosis: false,
+    });
+
+    await user.click(screen.getByRole("radio", { name: "Produto" }));
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(
+      screen.getByRole("radio", { name: "Diagnóstico detalhado" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Diagnóstico detalhado faz parte dos planos",
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("heading", {
+        name: "Que tipo de resultado você quer ver?",
+        hidden: true,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
+        name: "Que tipo de produto você vende?",
+      }),
+    ).not.toBeInTheDocument();
+    expect(createSubmissionId).toHaveBeenCalledOnce();
+  });
+
+  it("returns focus to the mode step when the upgrade dialog is dismissed", async () => {
+    const user = userEvent.setup();
+    renderWizard({ canCreateDetailedDiagnosis: false });
+
+    await user.click(screen.getByRole("radio", { name: "Produto" }));
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    const detailed = screen.getByRole("radio", {
+      name: "Diagnóstico detalhado",
+    });
+    await user.click(detailed);
+    const continueButton = screen.getByRole("button", { name: "Continuar" });
+    await user.click(continueButton);
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Diagnóstico detalhado faz parte dos planos",
+      }),
+    ).toBeVisible();
+
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(continueButton).toHaveFocus();
+    expect(detailed).toBeChecked();
+  });
+
+  it("continues the same category in quick mode from the upgrade dialog", async () => {
+    const user = userEvent.setup();
+    renderWizard({ canCreateDetailedDiagnosis: false });
+
+    await user.click(screen.getByRole("radio", { name: "Produto" }));
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(
+      screen.getByRole("radio", { name: "Diagnóstico detalhado" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(
+      screen.getByRole("button", { name: "Continuar no diagnóstico rápido" }),
+    );
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("radio", { name: "Diagnóstico rápido" }),
+    ).toBeChecked();
+    expect(
+      screen.getByRole("heading", {
+        name: "Que tipo de resultado você quer ver?",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("resumes a paid detailed diagnosis only when access is current", () => {
+    renderWizard({
+      canCreateDetailedDiagnosis: true,
+      initialDetailedCategory: "product",
+    });
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Que tipo de produto você vende?",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("ignores a stored detailed category when access is missing", () => {
+    renderWizard({
+      canCreateDetailedDiagnosis: false,
+      initialDetailedCategory: "product",
+    });
+
+    expect(
+      screen.getByRole("heading", { name: "O que você quer analisar?" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("opens the plan dialog after a stale detailed submission and keeps the answers", async () => {
+    const user = userEvent.setup();
+    const createDetailedDiagnosis = vi
+      .fn<CreateDetailedDiagnosisAction>()
+      .mockResolvedValue({ status: "error", error: "plan_required" });
+    renderWizard({ createDetailedDiagnosis });
+
+    await user.click(screen.getByRole("radio", { name: "Produto" }));
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(
+      screen.getByRole("radio", { name: "Diagnóstico detalhado" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(
+      screen.getByRole("radio", { name: "Produto para revenda" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.type(screen.getByLabelText("Nome do produto"), "Camiseta");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.type(
+      screen.getByLabelText("Quanto você paga ao fornecedor por unidade?"),
+      "40",
+    );
+    await user.type(
+      screen.getByLabelText("Por quanto você vende cada unidade?"),
+      "100",
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.type(
+      screen.getByLabelText("Gastos que existem todo mês"),
+      "1000",
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.type(
+      screen.getByLabelText("Qual porcentagem da venda vai para impostos?"),
+      "6",
+    );
+    await user.type(
+      screen.getByLabelText(
+        "Qual porcentagem fica com o cartão ou a plataforma?",
+      ),
+      "3",
+    );
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await user.click(
+      screen.getByRole("button", { name: "Gerar diagnóstico detalhado" }),
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Diagnóstico detalhado faz parte dos planos",
+      }),
+    ).toBeVisible();
+    expect(screen.getByText("Camiseta")).toBeInTheDocument();
   });
 
   it("preserves one Production branch and submits only to its Action", async () => {

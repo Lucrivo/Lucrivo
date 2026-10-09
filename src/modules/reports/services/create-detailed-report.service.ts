@@ -16,7 +16,7 @@ type CreateDetailedReportInput = {
 
 type CreateDetailedReportResult =
   | { status: "success"; diagnosisId: number }
-  | { status: "error"; error: "create_failed" | "limit_reached" };
+  | { status: "error"; error: "create_failed" | "plan_required" };
 
 type GeneratedDetailedRpcArgs =
   Database["public"]["Functions"]["create_detailed_diagnosis_report"]["Args"];
@@ -33,11 +33,8 @@ async function createDetailedReport({
       rpcArgs as GeneratedDetailedRpcArgs,
     );
 
-    if (
-      error?.code === "P0001" &&
-      error.message === "free_report_limit_reached"
-    ) {
-      return { status: "error", error: "limit_reached" };
+    if (error?.code === "P0001" && error.message === "paid_access_required") {
+      return { status: "error", error: "plan_required" };
     }
 
     if (

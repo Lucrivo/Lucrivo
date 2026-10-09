@@ -52,7 +52,7 @@ describe("Product diagnosis steps", () => {
     expect(onModeChange).toHaveBeenLastCalledWith("detailed");
     expect(
       screen.getByText(
-        "Analise produtos para revenda ou digitais, seus custos e o resultado geral.",
+        "Recurso dos planos para analisar produtos de revenda ou digitais, seus custos e o resultado geral.",
       ),
     ).toBeVisible();
     expect(screen.queryByText(/\bmix\b/i)).not.toBeInTheDocument();

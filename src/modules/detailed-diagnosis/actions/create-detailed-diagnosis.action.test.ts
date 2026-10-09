@@ -221,7 +221,7 @@ describe("createDetailedDiagnosis", () => {
     ]);
   });
 
-  it.each(["limit_reached", "create_failed"] as const)(
+  it.each(["plan_required", "create_failed"] as const)(
     "preserves the safe %s persistence result",
     async (error) => {
       createDetailedReport.mockResolvedValue({ status: "error", error });

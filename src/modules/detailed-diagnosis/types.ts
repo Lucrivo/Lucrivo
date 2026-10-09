@@ -175,7 +175,7 @@ type CreateDetailedDiagnosisActionResult =
     }
   | {
       status: "error";
-      error: "unauthorized" | "limit_reached" | "create_failed";
+      error: "unauthorized" | "plan_required" | "create_failed";
     };
 
 export {

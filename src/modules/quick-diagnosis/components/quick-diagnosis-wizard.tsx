@@ -6,6 +6,7 @@ import {
   DetailedDiagnosisWizard,
   type CreateDetailedDiagnosisAction,
 } from "@/modules/detailed-diagnosis/components/detailed-diagnosis-wizard";
+import { DetailedDiagnosisUpgradeDialog } from "@/modules/detailed-diagnosis/components/detailed-diagnosis-upgrade-dialog";
 import {
   createInitialDetailedWizardState,
   detailedWizardReducer,
@@ -55,6 +56,9 @@ type ActiveDiagnosisBranch =
   | { type: "detailed"; state: DetailedWizardState };
 
 type QuickDiagnosisWizardProps = {
+  userId: string;
+  canCreateDetailedDiagnosis: boolean;
+  initialDetailedCategory?: DetailedDiagnosisCategory;
   createServiceDiagnosis: CreateServiceDiagnosisAction;
   createProductDiagnosis: CreateProductDiagnosisAction;
   createProductionDiagnosis: CreateProductionDiagnosisAction;
@@ -63,19 +67,38 @@ type QuickDiagnosisWizardProps = {
 };
 
 function QuickDiagnosisWizard({
+  userId,
+  canCreateDetailedDiagnosis,
+  initialDetailedCategory,
   createServiceDiagnosis,
   createProductDiagnosis,
   createProductionDiagnosis,
   createDetailedDiagnosis,
   createSubmissionId = () => crypto.randomUUID(),
 }: QuickDiagnosisWizardProps) {
+  const resumedCategory =
+    canCreateDetailedDiagnosis && initialDetailedCategory
+      ? initialDetailedCategory
+      : null;
   const [diagnosisType, setDiagnosisType] = useState<DiagnosisType | "">("");
   const [diagnosisTypeError, setDiagnosisTypeError] = useState<string | null>(
     null,
   );
   const [activeBranch, setActiveBranch] =
-    useState<ActiveDiagnosisBranch | null>(null);
-  const [showCategory, setShowCategory] = useState(true);
+    useState<ActiveDiagnosisBranch | null>(() =>
+      resumedCategory
+        ? {
+            type: "detailed",
+            state: createInitialDetailedWizardState(
+              resumedCategory,
+              createSubmissionId,
+            ),
+          }
+        : null,
+    );
+  const [showCategory, setShowCategory] = useState(resumedCategory === null);
+  const [upgradeCategory, setUpgradeCategory] =
+    useState<DetailedDiagnosisCategory | null>(null);
 
   const serviceDispatch: Dispatch<ServiceWizardAction> = (action) => {
     setActiveBranch((branch) =>
@@ -128,7 +151,23 @@ function QuickDiagnosisWizard({
     });
   }
 
-  function returnToMode(category: DetailedDiagnosisCategory) {
+  function requestDetailed(category: DetailedDiagnosisCategory) {
+    if (canCreateDetailedDiagnosis) {
+      startDetailed(category);
+      return;
+    }
+
+    setUpgradeCategory(category);
+  }
+
+  function requireUpgrade(category: DetailedDiagnosisCategory) {
+    setUpgradeCategory(category);
+  }
+
+  function returnToMode(
+    category: DetailedDiagnosisCategory,
+    mode: "quick" | "detailed" = "detailed",
+  ) {
     if (category === "product") {
       const initialState =
         createInitialProductWizardState(createSubmissionId());
@@ -136,7 +175,7 @@ function QuickDiagnosisWizard({
         type: "product",
         state: productWizardReducer(initialState, {
           type: "setAnalysisMode",
-          value: "detailed",
+          value: mode,
         }),
       });
       return;
@@ -148,7 +187,7 @@ function QuickDiagnosisWizard({
       type: "production",
       state: productionWizardReducer(initialState, {
         type: "setAnalysisMode",
-        value: "detailed",
+        value: mode,
       }),
     });
   }
@@ -196,71 +235,106 @@ function QuickDiagnosisWizard({
     setShowCategory(false);
   }
 
+  const upgradeDialog = (
+    <DetailedDiagnosisUpgradeDialog
+      open={upgradeCategory !== null}
+      userId={userId}
+      category={upgradeCategory}
+      onOpenChange={(open) => {
+        if (!open) setUpgradeCategory(null);
+      }}
+      onContinueQuick={() => {
+        if (upgradeCategory === null) return;
+        returnToMode(upgradeCategory, "quick");
+        setShowCategory(false);
+        setUpgradeCategory(null);
+      }}
+    />
+  );
+
   if (!showCategory && activeBranch?.type === "service") {
     return (
-      <ServiceDiagnosisWizard
-        state={activeBranch.state}
-        dispatch={serviceDispatch}
-        createDiagnosis={createServiceDiagnosis}
-        createSubmissionId={createSubmissionId}
-        onBackToType={() => setShowCategory(true)}
-      />
+      <>
+        <ServiceDiagnosisWizard
+          state={activeBranch.state}
+          dispatch={serviceDispatch}
+          createDiagnosis={createServiceDiagnosis}
+          createSubmissionId={createSubmissionId}
+          onBackToType={() => setShowCategory(true)}
+        />
+        {upgradeDialog}
+      </>
     );
   }
 
   if (!showCategory && activeBranch?.type === "product") {
     return (
-      <ProductDiagnosisWizard
-        state={activeBranch.state}
-        dispatch={productDispatch}
-        createDiagnosis={createProductDiagnosis}
-        createSubmissionId={createSubmissionId}
-        onBackToType={() => setShowCategory(true)}
-        onStartDetailed={() => startDetailed("product")}
-      />
+      <>
+        <ProductDiagnosisWizard
+          state={activeBranch.state}
+          dispatch={productDispatch}
+          createDiagnosis={createProductDiagnosis}
+          createSubmissionId={createSubmissionId}
+          onBackToType={() => setShowCategory(true)}
+          onStartDetailed={() => requestDetailed("product")}
+        />
+        {upgradeDialog}
+      </>
     );
   }
 
   if (!showCategory && activeBranch?.type === "detailed") {
     return (
-      <DetailedDiagnosisWizard
-        state={activeBranch.state}
-        dispatch={detailedDispatch}
-        createDiagnosis={createDetailedDiagnosis}
-        createId={createSubmissionId}
-        onBackToMode={() => returnToMode(activeBranch.state.values.category)}
-      />
+      <>
+        <DetailedDiagnosisWizard
+          state={activeBranch.state}
+          dispatch={detailedDispatch}
+          createDiagnosis={createDetailedDiagnosis}
+          createId={createSubmissionId}
+          onBackToMode={() => returnToMode(activeBranch.state.values.category)}
+          onPlanRequired={() =>
+            requireUpgrade(activeBranch.state.values.category)
+          }
+        />
+        {upgradeDialog}
+      </>
     );
   }
 
   if (!showCategory && activeBranch?.type === "production") {
     return (
-      <ProductionDiagnosisWizard
-        state={activeBranch.state}
-        dispatch={productionDispatch}
-        createDiagnosis={createProductionDiagnosis}
-        createSubmissionId={createSubmissionId}
-        onBackToType={() => setShowCategory(true)}
-        onStartDetailed={() => startDetailed("production")}
-      />
+      <>
+        <ProductionDiagnosisWizard
+          state={activeBranch.state}
+          dispatch={productionDispatch}
+          createDiagnosis={createProductionDiagnosis}
+          createSubmissionId={createSubmissionId}
+          onBackToType={() => setShowCategory(true)}
+          onStartDetailed={() => requestDetailed("production")}
+        />
+        {upgradeDialog}
+      </>
     );
   }
 
   return (
-    <WizardShell
-      stepNumber={1}
-      totalSteps={8}
-      title="O que você quer analisar?"
-      backDisabled
-      onBack={() => undefined}
-      onContinue={continueToBranch}
-    >
-      <DiagnosisTypeStep
-        value={diagnosisType}
-        error={diagnosisTypeError}
-        onChange={selectDiagnosisType}
-      />
-    </WizardShell>
+    <>
+      <WizardShell
+        stepNumber={1}
+        totalSteps={8}
+        title="O que você quer analisar?"
+        backDisabled
+        onBack={() => undefined}
+        onContinue={continueToBranch}
+      >
+        <DiagnosisTypeStep
+          value={diagnosisType}
+          error={diagnosisTypeError}
+          onChange={selectDiagnosisType}
+        />
+      </WizardShell>
+      {upgradeDialog}
+    </>
   );
 }
 
