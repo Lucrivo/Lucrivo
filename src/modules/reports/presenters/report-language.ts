@@ -9,7 +9,6 @@ type ReportLanguageProfile = {
   analysisDescription: string;
   priorityEyebrow: string;
   toneLabels: Record<ReportTone, string>;
-  savedReportLabel: string;
   verdictLabels: Record<ReportVerdict, string>;
 };
 
@@ -28,7 +27,6 @@ const currentReportLanguage = {
     warning: "Atenção",
     critical: "Precisa de atenção",
   },
-  savedReportLabel: "Diagnóstico salvo",
   verdictLabels: {
     missing_price: "Informe o preço",
     direct_loss: "Prejuízo por venda",
