@@ -5,6 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { requireUser } from "@/modules/auth/services/require-user";
 import { BillingPlans } from "@/modules/billing/components/billing-plans";
+import { ResumeDetailedDiagnosisLink } from "@/modules/detailed-diagnosis/components/resume-detailed-diagnosis-link";
 import { getBillingOverview } from "@/modules/billing/services/get-billing-overview.service";
 import { listActivePrices } from "@/modules/billing/services/list-active-prices.service";
 
@@ -16,6 +17,7 @@ function statusCard(
   tone: "success" | "pending" | "neutral",
   title: string,
   description: string,
+  userId?: string,
 ) {
   const Icon =
     tone === "success"
@@ -39,10 +41,8 @@ function statusCard(
           </p>
         </div>
         <div className="flex flex-wrap justify-center gap-3">
-          {tone === "success" ? (
-            <Link href="/quick-diagnosis" className={buttonVariants()}>
-              Fazer diagnóstico
-            </Link>
+          {tone === "success" && userId ? (
+            <ResumeDetailedDiagnosisLink userId={userId} />
           ) : null}
           <Link
             href="/billing"
@@ -83,6 +83,7 @@ export default async function BillingReturnPage({
             "success",
             "Pagamento confirmado",
             "O Asaas confirmou o pagamento e seu acesso já está liberado.",
+            userId,
           )}
         </main>
       );

@@ -1,6 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { saveDetailedDiagnosisIntent } from "@/modules/detailed-diagnosis/services/detailed-diagnosis-intent";
+
 const { getBillingOverview, listActivePrices, requireUser } = vi.hoisted(
   () => ({
     getBillingOverview: vi.fn(),
@@ -45,6 +47,7 @@ describe("BillingReturnPage", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    window.sessionStorage.clear();
     requireUser.mockResolvedValue({ userId: "trusted-user", supabase });
     listActivePrices.mockResolvedValue({ status: "success", prices });
     getBillingOverview.mockResolvedValue({
@@ -85,6 +88,12 @@ describe("BillingReturnPage", () => {
       },
     });
 
+    saveDetailedDiagnosisIntent(window.sessionStorage, {
+      userId: "trusted-user",
+      category: "product",
+      now: Date.now(),
+    });
+
     await renderOutcome("success");
 
     expect(
@@ -94,6 +103,9 @@ describe("BillingReturnPage", () => {
       screen.getByText(/confirmação segura do Asaas/i),
     ).toBeInTheDocument();
     expect(screen.queryByText("Pagamento confirmado")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Continuar diagnóstico detalhado" }),
+    ).not.toBeInTheDocument();
   });
 
   it("confirms only paid access already observed on the server", async () => {
@@ -122,6 +134,44 @@ describe("BillingReturnPage", () => {
     expect(
       screen.getByRole("link", { name: "Fazer diagnóstico" }),
     ).toHaveAttribute("href", "/quick-diagnosis");
+    expect(
+      screen.queryByRole("link", { name: "Continuar diagnóstico detalhado" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("resumes a confirmed paid checkout only when the current user stored a category", async () => {
+    saveDetailedDiagnosisIntent(window.sessionStorage, {
+      userId: "trusted-user",
+      category: "product",
+      now: Date.now(),
+    });
+    getBillingOverview.mockResolvedValue({
+      status: "success",
+      overview: {
+        tier: "paid",
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: true,
+        freeQuickDiagnosisUsed: true,
+        contract: {
+          billingMode: "monthly",
+          paymentMethod: "pix",
+          status: "active",
+          accessEndsAt: "2026-10-10T12:00:00.000Z",
+          cancelAtPeriodEnd: false,
+        },
+      },
+    });
+
+    await renderOutcome("success");
+
+    expect(
+      await screen.findByRole("link", {
+        name: "Continuar diagnóstico detalhado",
+      }),
+    ).toHaveAttribute(
+      "href",
+      "/quick-diagnosis?resume=detailed&category=product",
+    );
   });
 
   it("never claims paid access from the callback alone", async () => {
@@ -133,15 +183,27 @@ describe("BillingReturnPage", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.queryByText("Pagamento confirmado")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Continuar diagnóstico detalhado" }),
+    ).not.toBeInTheDocument();
   });
 
   it.each([
     ["canceled", "Checkout cancelado"],
     ["expired", "Checkout expirado"],
   ])("returns %s outcomes to plan selection", async (outcome, heading) => {
+    saveDetailedDiagnosisIntent(window.sessionStorage, {
+      userId: "trusted-user",
+      category: "product",
+      now: Date.now(),
+    });
+
     await renderOutcome(outcome);
 
     expect(screen.getByRole("heading", { name: heading })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Continuar diagnóstico detalhado" }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("article", { name: "Plano Mensal" }),
     ).toBeInTheDocument();
