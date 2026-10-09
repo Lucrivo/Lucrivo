@@ -332,6 +332,77 @@ export type Database = {
           },
         ];
       };
+      business_segments: {
+        Row: {
+          created_at: string;
+          id: number;
+          is_active: boolean;
+          name: string;
+          sort_order: number;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: never;
+          is_active?: boolean;
+          name: string;
+          sort_order: number;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: never;
+          is_active?: boolean;
+          name?: string;
+          sort_order?: number;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [];
+      };
+      business_subcategories: {
+        Row: {
+          created_at: string;
+          id: number;
+          is_active: boolean;
+          name: string;
+          segment_id: number;
+          sort_order: number;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: never;
+          is_active?: boolean;
+          name: string;
+          segment_id: number;
+          sort_order: number;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: never;
+          is_active?: boolean;
+          name?: string;
+          segment_id?: number;
+          sort_order?: number;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "business_subcategories_segment_id_fkey";
+            columns: ["segment_id"];
+            isOneToOne: false;
+            referencedRelation: "business_segments";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       detailed_diagnoses: {
         Row: {
           card_fee_rate_basis_points: number;
@@ -622,6 +693,63 @@ export type Database = {
           version?: number;
         };
         Relationships: [];
+      };
+      onboarding_profiles: {
+        Row: {
+          completed_at: string;
+          custom_subcategory: string | null;
+          full_name: string;
+          marketing_consent_granted_at: string | null;
+          segment_id: number;
+          subcategory_id: number | null;
+          updated_at: string;
+          user_id: string;
+          version: number;
+          whatsapp_e164: string;
+          whatsapp_marketing_consent: boolean;
+        };
+        Insert: {
+          completed_at?: string;
+          custom_subcategory?: string | null;
+          full_name: string;
+          marketing_consent_granted_at?: string | null;
+          segment_id: number;
+          subcategory_id?: number | null;
+          updated_at?: string;
+          user_id: string;
+          version?: number;
+          whatsapp_e164: string;
+          whatsapp_marketing_consent?: boolean;
+        };
+        Update: {
+          completed_at?: string;
+          custom_subcategory?: string | null;
+          full_name?: string;
+          marketing_consent_granted_at?: string | null;
+          segment_id?: number;
+          subcategory_id?: number | null;
+          updated_at?: string;
+          user_id?: string;
+          version?: number;
+          whatsapp_e164?: string;
+          whatsapp_marketing_consent?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_profiles_segment_id_fkey";
+            columns: ["segment_id"];
+            isOneToOne: false;
+            referencedRelation: "business_segments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "onboarding_profiles_subcategory_segment_fkey";
+            columns: ["subcategory_id", "segment_id"];
+            isOneToOne: false;
+            referencedRelation: "business_subcategories";
+            referencedColumns: ["id", "segment_id"];
+          },
+        ];
       };
       product_diagnoses: {
         Row: {
@@ -1234,6 +1362,7 @@ export type Database = {
       };
       current_account_is_eligible: { Args: never; Returns: boolean };
       current_courtesy_access_expires_at: { Args: never; Returns: string };
+      current_user_has_completed_onboarding: { Args: never; Returns: boolean };
       current_user_is_admin: { Args: never; Returns: boolean };
       fail_report_ai_turn_v1: {
         Args: {
@@ -1259,6 +1388,7 @@ export type Database = {
         };
         Returns: Json;
       };
+      get_my_onboarding_profile_v1: { Args: never; Returns: Json };
       list_admin_recent_subscriptions_v1: {
         Args: { p_billing_mode: string; p_period: string; p_state: string };
         Returns: Json;
@@ -1284,6 +1414,7 @@ export type Database = {
         };
         Returns: Json;
       };
+      list_business_catalog_v1: { Args: never; Returns: Json };
       record_billing_refund_provider_result: {
         Args: {
           p_error_code?: string;
@@ -1427,6 +1558,19 @@ export type Database = {
           p_question: string;
           p_report_version: number;
           p_request_id: string;
+        };
+        Returns: Json;
+      };
+      save_onboarding_profile_v1: {
+        Args: {
+          p_consent_copy_version: string;
+          p_custom_subcategory: string;
+          p_expected_version: number;
+          p_full_name: string;
+          p_segment_id: number;
+          p_subcategory_id: number;
+          p_whatsapp_e164: string;
+          p_whatsapp_marketing_consent: boolean;
         };
         Returns: Json;
       };

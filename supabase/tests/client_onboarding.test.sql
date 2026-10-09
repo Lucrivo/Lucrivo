@@ -402,5 +402,379 @@ select is(
   'missing identity has no profile projection'
 );
 
+reset role;
+
+select has_table(
+  'private',
+  'whatsapp_consent_events',
+  'append-only WhatsApp consent history exists'
+);
+select has_function(
+  'public',
+  'save_onboarding_profile_v1',
+  array[
+    'text', 'text', 'bigint', 'bigint', 'text', 'boolean', 'text', 'integer'
+  ],
+  'versioned onboarding save RPC exists'
+);
+select ok(
+  (
+    select prosecdef
+      and provolatile = 'v'
+      and proconfig = array['search_path=""']::text[]
+    from pg_catalog.pg_proc
+    where oid = 'public.save_onboarding_profile_v1(text,text,bigint,bigint,text,boolean,text,integer)'::regprocedure
+  ),
+  'save RPC is volatile security definer with an empty search path'
+);
+select table_privs_are(
+  'private',
+  'whatsapp_consent_events',
+  'authenticated',
+  array[]::text[],
+  'authenticated clients have no direct consent history access'
+);
+select table_privs_are(
+  'private',
+  'whatsapp_consent_events',
+  'anon',
+  array[]::text[],
+  'anonymous clients have no direct consent history access'
+);
+select table_privs_are(
+  'private',
+  'whatsapp_consent_events',
+  'service_role',
+  array[]::text[],
+  'service role cannot mutate consent history directly'
+);
+select ok(
+  has_function_privilege(
+    'authenticated',
+    'public.save_onboarding_profile_v1(text,text,bigint,bigint,text,boolean,text,integer)',
+    'execute'
+  ),
+  'authenticated clients can execute the save RPC'
+);
+select ok(
+  not has_function_privilege(
+    'anon',
+    'public.save_onboarding_profile_v1(text,text,bigint,bigint,text,boolean,text,integer)',
+    'execute'
+  ) and not has_function_privilege(
+    'service_role',
+    'public.save_onboarding_profile_v1(text,text,bigint,bigint,text,boolean,text,integer)',
+    'execute'
+  ),
+  'unintended roles cannot execute the save RPC'
+);
+select ok(
+  not has_function_privilege(
+    'public',
+    'private.reject_whatsapp_consent_event_mutation()',
+    'execute'
+  ) and not has_function_privilege(
+    'authenticated',
+    'private.reject_whatsapp_consent_event_mutation()',
+    'execute'
+  ) and not has_function_privilege(
+    'service_role',
+    'private.reject_whatsapp_consent_event_mutation()',
+    'execute'
+  ),
+  'public roles cannot execute the consent guard trigger function'
+);
+
+insert into auth.users (id, aud, role, email)
+values
+  (
+    '94000000-0000-4000-8000-000000000003',
+    'authenticated',
+    'authenticated',
+    'onboarding-save@example.com'
+  ),
+  (
+    '94000000-0000-4000-8000-000000000004',
+    'authenticated',
+    'authenticated',
+    'onboarding-declined@example.com'
+  ),
+  (
+    '94000000-0000-4000-8000-000000000005',
+    'authenticated',
+    'authenticated',
+    'onboarding-catalog@example.com'
+  );
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '94000000-0000-4000-8000-000000000003',
+  true
+);
+
+select is(
+  public.save_onboarding_profile_v1(
+    '  Maria   da Silva  ',
+    '+5511999999999',
+    (select id from public.business_segments where name = 'Alimentação'),
+    (select id from public.business_subcategories where name = 'Confeitaria'),
+    null,
+    true,
+    'whatsapp-marketing-v1',
+    null
+  ),
+  '{"status":"saved","version":0}'::jsonb,
+  'initial checked consent saves version zero'
+);
+
+reset role;
+select is(
+  (
+    select full_name
+    from public.onboarding_profiles
+    where user_id = '94000000-0000-4000-8000-000000000003'
+  ),
+  'Maria da Silva',
+  'the save RPC normalizes repeated name whitespace'
+);
+select ok(
+  (
+    select version = 0
+      and whatsapp_marketing_consent
+      and marketing_consent_granted_at is not null
+    from public.onboarding_profiles
+    where user_id = '94000000-0000-4000-8000-000000000003'
+  ),
+  'initial profile stores consent and version zero'
+);
+select is(
+  (
+    select pg_catalog.count(*)
+    from private.whatsapp_consent_events
+    where user_id = '94000000-0000-4000-8000-000000000003'
+      and decision = 'granted'
+      and source = 'onboarding'
+      and copy_version = 'whatsapp-marketing-v1'
+  ),
+  1::bigint,
+  'initial checked choice appends one granted onboarding event'
+);
+
+set local role authenticated;
+select is(
+  public.save_onboarding_profile_v1(
+    'Maria da Silva',
+    '+5511999999999',
+    (select id from public.business_segments where name = 'Alimentação'),
+    (select id from public.business_subcategories where name = 'Confeitaria'),
+    null,
+    true,
+    'whatsapp-marketing-v1',
+    0
+  ),
+  '{"status":"saved","version":1}'::jsonb,
+  'an idempotent consent update increments the profile once'
+);
+
+reset role;
+select is(
+  (
+    select pg_catalog.count(*)
+    from private.whatsapp_consent_events
+    where user_id = '94000000-0000-4000-8000-000000000003'
+  ),
+  1::bigint,
+  'unchanged consent does not duplicate history'
+);
+
+set local role authenticated;
+select is(
+  public.save_onboarding_profile_v1(
+    'Maria da Silva',
+    '+5511999999999',
+    (select id from public.business_segments where name = 'Alimentação'),
+    (select id from public.business_subcategories where name = 'Confeitaria'),
+    null,
+    false,
+    'whatsapp-marketing-v1',
+    1
+  ),
+  '{"status":"saved","version":2}'::jsonb,
+  'revoking consent saves the next version'
+);
+
+reset role;
+select ok(
+  (
+    select version = 2
+      and not whatsapp_marketing_consent
+      and marketing_consent_granted_at is null
+    from public.onboarding_profiles
+    where user_id = '94000000-0000-4000-8000-000000000003'
+  ),
+  'revocation clears the active grant timestamp'
+);
+select is(
+  (
+    select pg_catalog.count(*)
+    from private.whatsapp_consent_events
+    where user_id = '94000000-0000-4000-8000-000000000003'
+      and decision = 'revoked'
+      and source = 'account'
+  ),
+  1::bigint,
+  'revocation appends one account event'
+);
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '94000000-0000-4000-8000-000000000004',
+  true
+);
+select is(
+  public.save_onboarding_profile_v1(
+    'Ana Souza',
+    '+5511988888888',
+    (select id from public.business_segments where name = 'Construção'),
+    null,
+    '  Reformas   residenciais  ',
+    false,
+    'whatsapp-marketing-v1',
+    null
+  ),
+  '{"status":"saved","version":0}'::jsonb,
+  'initial unchecked consent saves a custom subcategory'
+);
+
+reset role;
+select ok(
+  (
+    select custom_subcategory = 'Reformas residenciais'
+      and not whatsapp_marketing_consent
+      and marketing_consent_granted_at is null
+    from public.onboarding_profiles
+    where user_id = '94000000-0000-4000-8000-000000000004'
+  ),
+  'custom subcategory whitespace is normalized'
+);
+select is(
+  (
+    select pg_catalog.count(*)
+    from private.whatsapp_consent_events
+    where user_id = '94000000-0000-4000-8000-000000000004'
+      and decision = 'declined'
+      and source = 'onboarding'
+  ),
+  1::bigint,
+  'initial unchecked choice appends one declined onboarding event'
+);
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '94000000-0000-4000-8000-000000000003',
+  true
+);
+select is(
+  public.save_onboarding_profile_v1(
+    'Tentativa antiga',
+    '+5511977777777',
+    (select id from public.business_segments where name = 'Alimentação'),
+    (select id from public.business_subcategories where name = 'Confeitaria'),
+    null,
+    false,
+    'whatsapp-marketing-v1',
+    1
+  ),
+  '{"status":"conflict"}'::jsonb,
+  'a stale version returns a conflict without overwriting'
+);
+
+reset role;
+select is(
+  (
+    select version
+    from public.onboarding_profiles
+    where user_id = '94000000-0000-4000-8000-000000000003'
+  ),
+  2,
+  'a conflict leaves the stored profile untouched'
+);
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '94000000-0000-4000-8000-000000000005',
+  true
+);
+select is(
+  public.save_onboarding_profile_v1(
+    'Carlos Pereira',
+    '+5511966666666',
+    (select id from public.business_segments where name = 'Beleza'),
+    (select id from public.business_subcategories where name = 'Confeitaria'),
+    null,
+    false,
+    'whatsapp-marketing-v1',
+    null
+  ),
+  '{"status":"catalog_inactive"}'::jsonb,
+  'an active mismatched catalog pair returns catalog inactive'
+);
+
+reset role;
+update public.business_subcategories
+set is_active = false
+where name = 'Confeitaria';
+
+set local role authenticated;
+select is(
+  public.save_onboarding_profile_v1(
+    'Carlos Pereira',
+    '+5511966666666',
+    (select id from public.business_segments where name = 'Alimentação'),
+    (select id from public.business_subcategories where name = 'Confeitaria'),
+    null,
+    false,
+    'whatsapp-marketing-v1',
+    null
+  ),
+  '{"status":"catalog_inactive"}'::jsonb,
+  'a new archived selection returns catalog inactive'
+);
+
+select set_config(
+  'request.jwt.claim.sub',
+  '94000000-0000-4000-8000-000000000003',
+  true
+);
+select is(
+  public.save_onboarding_profile_v1(
+    'Maria da Silva',
+    '+5511999999999',
+    (select id from public.business_segments where name = 'Alimentação'),
+    (select id from public.business_subcategories where name = 'Confeitaria'),
+    null,
+    false,
+    'whatsapp-marketing-v1',
+    2
+  ),
+  '{"status":"saved","version":3}'::jsonb,
+  'the exact archived current selection can be retained'
+);
+
+reset role;
+select is(
+  (
+    select pg_catalog.count(*)
+    from private.whatsapp_consent_events
+    where user_id = '94000000-0000-4000-8000-000000000003'
+  ),
+  2::bigint,
+  'retaining an archived choice does not duplicate consent history'
+);
+
 select * from finish();
 rollback;
