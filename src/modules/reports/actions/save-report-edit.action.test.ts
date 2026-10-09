@@ -79,7 +79,12 @@ describe("saveReportEdit", () => {
     });
     mocks.getBillingOverview.mockResolvedValue({
       status: "success",
-      overview: { tier: "paid" },
+      overview: {
+        tier: "paid",
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: true,
+        freeQuickDiagnosisUsed: true,
+      },
     });
   });
 
@@ -204,7 +209,12 @@ describe("saveReportEdit", () => {
   it("fails closed when paid access is absent", async () => {
     mocks.getBillingOverview.mockResolvedValue({
       status: "success",
-      overview: { tier: "free" },
+      overview: {
+        tier: "free",
+        canCreateQuickDiagnosis: false,
+        canCreateDetailedDiagnosis: false,
+        freeQuickDiagnosisUsed: true,
+      },
     });
 
     await expect(

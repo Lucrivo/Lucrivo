@@ -13,6 +13,7 @@ describe("getBillingOverview", () => {
   const diagnosisSelect = vi.fn();
   const diagnosisByUser = vi.fn();
   const diagnosisIsFree = vi.fn();
+  const diagnosisMode = vi.fn();
   const diagnosisLimit = vi.fn();
   const diagnosisMaybeSingle = vi.fn();
   const refundSelect = vi.fn();
@@ -40,7 +41,8 @@ describe("getBillingOverview", () => {
     contractOrder.mockResolvedValue({ data: [], error: null });
     diagnosisSelect.mockReturnValue({ eq: diagnosisByUser });
     diagnosisByUser.mockReturnValue({ eq: diagnosisIsFree });
-    diagnosisIsFree.mockReturnValue({ limit: diagnosisLimit });
+    diagnosisIsFree.mockReturnValue({ eq: diagnosisMode });
+    diagnosisMode.mockReturnValue({ limit: diagnosisLimit });
     diagnosisLimit.mockReturnValue({ maybeSingle: diagnosisMaybeSingle });
     diagnosisMaybeSingle.mockResolvedValue({ data: null, error: null });
     refundSelect.mockReturnValue({ eq: refundByContract });
@@ -62,8 +64,9 @@ describe("getBillingOverview", () => {
       status: "success",
       overview: {
         tier: "free",
-        canCreateDiagnosis: true,
-        freeReportUsed: false,
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: false,
+        freeQuickDiagnosisUsed: false,
         courtesyExpiresAt: null,
         contract: null,
         refund: null,
@@ -80,6 +83,7 @@ describe("getBillingOverview", () => {
     expect(diagnosisSelect).toHaveBeenCalledWith("is_free_report");
     expect(diagnosisByUser).toHaveBeenCalledWith("user_id", "trusted-user");
     expect(diagnosisIsFree).toHaveBeenCalledWith("is_free_report", true);
+    expect(diagnosisMode).toHaveBeenCalledWith("analysis_mode", "quick");
     expect(diagnosisLimit).toHaveBeenCalledWith(1);
     expect(rpc).toHaveBeenCalledWith("current_courtesy_access_expires_at");
   });
@@ -94,8 +98,9 @@ describe("getBillingOverview", () => {
       status: "success",
       overview: {
         tier: "free",
-        canCreateDiagnosis: false,
-        freeReportUsed: true,
+        canCreateQuickDiagnosis: false,
+        canCreateDetailedDiagnosis: false,
+        freeQuickDiagnosisUsed: true,
         contract: null,
       },
     });
@@ -126,8 +131,9 @@ describe("getBillingOverview", () => {
       status: "success",
       overview: {
         tier: "paid",
-        canCreateDiagnosis: true,
-        freeReportUsed: true,
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: true,
+        freeQuickDiagnosisUsed: true,
         courtesyExpiresAt: null,
         contract: {
           billingMode: "semiannual",
@@ -168,8 +174,9 @@ describe("getBillingOverview", () => {
       status: "success",
       overview: {
         tier: "free",
-        canCreateDiagnosis: false,
-        freeReportUsed: true,
+        canCreateQuickDiagnosis: false,
+        canCreateDetailedDiagnosis: false,
+        freeQuickDiagnosisUsed: true,
         courtesyExpiresAt: null,
         contract: {
           billingMode: "monthly",
@@ -217,8 +224,9 @@ describe("getBillingOverview", () => {
       status: "success",
       overview: {
         tier: "courtesy",
-        canCreateDiagnosis: true,
-        freeReportUsed: true,
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: true,
+        freeQuickDiagnosisUsed: true,
         courtesyExpiresAt: "2026-09-20T12:00:00.000Z",
         contract: null,
         refund: null,

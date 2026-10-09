@@ -115,14 +115,14 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
   const freeHref =
     context === "public"
       ? "/register"
-      : overview?.canCreateDiagnosis
+      : overview?.canCreateQuickDiagnosis
         ? "/quick-diagnosis"
         : "/reports";
 
   const freeAction =
     context === "public"
       ? "Começar grátis"
-      : overview?.canCreateDiagnosis
+      : overview?.canCreateQuickDiagnosis
         ? "Fazer diagnóstico"
         : "Ver meu relatório";
 

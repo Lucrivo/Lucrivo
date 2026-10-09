@@ -18,7 +18,7 @@ export default async function QuickDiagnosisPage() {
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col">
       <h1 className="sr-only">Diagnóstico rápido</h1>
-      {result.overview.canCreateDiagnosis ? (
+      {result.overview.canCreateQuickDiagnosis ? (
         <QuickDiagnosisWizard
           createServiceDiagnosis={createServiceDiagnosis}
           createProductDiagnosis={createProductDiagnosis}

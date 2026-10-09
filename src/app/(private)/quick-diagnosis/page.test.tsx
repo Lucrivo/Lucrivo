@@ -61,8 +61,9 @@ describe("QuickDiagnosisPage", () => {
       status: "success",
       overview: {
         tier: "free",
-        canCreateDiagnosis: true,
-        freeReportUsed: false,
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: false,
+        freeQuickDiagnosisUsed: false,
         contract: null,
       },
     });
@@ -101,8 +102,9 @@ describe("QuickDiagnosisPage", () => {
       status: "success",
       overview: {
         tier: "free",
-        canCreateDiagnosis: false,
-        freeReportUsed: true,
+        canCreateQuickDiagnosis: false,
+        canCreateDetailedDiagnosis: false,
+        freeQuickDiagnosisUsed: true,
         contract: null,
       },
     });

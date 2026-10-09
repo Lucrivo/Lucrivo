@@ -51,8 +51,9 @@ describe("BillingReturnPage", () => {
       status: "success",
       overview: {
         tier: "free",
-        canCreateDiagnosis: true,
-        freeReportUsed: false,
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: false,
+        freeQuickDiagnosisUsed: false,
         contract: null,
       },
     });
@@ -71,8 +72,9 @@ describe("BillingReturnPage", () => {
       status: "success",
       overview: {
         tier: "free",
-        canCreateDiagnosis: true,
-        freeReportUsed: false,
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: false,
+        freeQuickDiagnosisUsed: false,
         contract: {
           billingMode: "monthly",
           paymentMethod: "credit_card",
@@ -99,8 +101,9 @@ describe("BillingReturnPage", () => {
       status: "success",
       overview: {
         tier: "paid",
-        canCreateDiagnosis: true,
-        freeReportUsed: false,
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: true,
+        freeQuickDiagnosisUsed: true,
         contract: {
           billingMode: "monthly",
           paymentMethod: "pix",

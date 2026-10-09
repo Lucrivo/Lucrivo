@@ -186,6 +186,7 @@ async function getBillingOverview({
           .select("is_free_report")
           .eq("user_id", userId)
           .eq("is_free_report", true)
+          .eq("analysis_mode", "quick")
           .limit(1)
           .maybeSingle(),
         supabase.rpc("current_courtesy_access_expires_at"),
@@ -231,19 +232,21 @@ async function getBillingOverview({
       instant,
     );
     if (overviewContract === undefined) return { status: "read_failed" };
-    const freeReportUsed = freeReportResult.data?.is_free_report === true;
+    const freeQuickDiagnosisUsed =
+      freeReportResult.data?.is_free_report === true;
     const hasPaidAccess = paidContract !== undefined;
     const courtesyInstant = validDate(courtesyExpiresAt);
     const hasCourtesyAccess =
       courtesyInstant !== null && courtesyInstant > instant;
+    const hasReportAccess = hasPaidAccess || hasCourtesyAccess;
 
     return {
       status: "success",
       overview: {
         tier: hasPaidAccess ? "paid" : hasCourtesyAccess ? "courtesy" : "free",
-        canCreateDiagnosis:
-          hasPaidAccess || hasCourtesyAccess || !freeReportUsed,
-        freeReportUsed,
+        canCreateQuickDiagnosis: hasReportAccess || !freeQuickDiagnosisUsed,
+        canCreateDetailedDiagnosis: hasReportAccess,
+        freeQuickDiagnosisUsed,
         courtesyExpiresAt: hasCourtesyAccess ? courtesyExpiresAt : null,
         contract: overviewContract,
         refund,

@@ -111,7 +111,12 @@ describe("POST /api/reports/:id/ai/messages", () => {
     getOwnedReport.mockResolvedValue({ status: "found", report });
     getBillingOverview.mockResolvedValue({
       status: "success",
-      overview: { tier: "paid" },
+      overview: {
+        tier: "paid",
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: true,
+        freeQuickDiagnosisUsed: true,
+      },
     });
     readReportAiEnvironment.mockReturnValue({
       apiKey: "sk-private-test",
@@ -161,7 +166,20 @@ describe("POST /api/reports/:id/ai/messages", () => {
     async (tier) => {
       getBillingOverview.mockResolvedValue({
         status: "success",
-        overview: { tier },
+        overview:
+          tier === "courtesy"
+            ? {
+                tier,
+                canCreateQuickDiagnosis: true,
+                canCreateDetailedDiagnosis: true,
+                freeQuickDiagnosisUsed: true,
+              }
+            : {
+                tier,
+                canCreateQuickDiagnosis: false,
+                canCreateDetailedDiagnosis: false,
+                freeQuickDiagnosisUsed: true,
+              },
       });
 
       const result = await post();
@@ -281,7 +299,12 @@ describe("POST /api/reports/:id/ai/messages", () => {
 
     getBillingOverview.mockResolvedValue({
       status: "success",
-      overview: { tier: "paid" },
+      overview: {
+        tier: "paid",
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: true,
+        freeQuickDiagnosisUsed: true,
+      },
     });
     readReportAiEnvironment.mockImplementation(() => {
       throw new Error("sk-private-test provider detail");
