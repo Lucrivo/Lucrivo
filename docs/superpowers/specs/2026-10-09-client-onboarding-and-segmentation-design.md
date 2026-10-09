@@ -2,7 +2,7 @@
 
 **Data:** 2026-10-09
 
-**Status:** Aprovado em conversa; aguardando revisão da especificação escrita
+**Status:** Aprovado
 
 **Documentos relacionados:**
 
