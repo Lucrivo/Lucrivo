@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(28);
+select plan(31);
 
 insert into auth.users (id, aud, role, email)
 values
@@ -17,6 +17,12 @@ values
     'authenticated',
     'authenticated',
     'report-other@example.com'
+  ),
+  (
+    '81000000-0000-4000-8000-000000000003',
+    'authenticated',
+    'authenticated',
+    'legacy-detailed-free@example.com'
   );
 
 insert into public.billing_contracts (
@@ -437,6 +443,104 @@ select ok(
     )'::regprocedure
   ) like '%real_margin_basis_points%',
   'staged replacement copies corrected detailed unit economics'
+);
+
+insert into public.diagnoses (
+  submission_id,
+  user_id,
+  business_category,
+  scenario,
+  schema_version,
+  calculation_version,
+  content_version,
+  current_price_cents,
+  verdict,
+  priority,
+  unit,
+  report_snapshot,
+  is_free_report,
+  analysis_mode,
+  item_count,
+  is_partial
+) values (
+  '81000000-0000-4000-8000-000000000301',
+  '81000000-0000-4000-8000-000000000003',
+  'product',
+  'resale',
+  1,
+  1,
+  2,
+  null,
+  'positive_result',
+  'volume',
+  'mix',
+  '{"legacy":"detailed-free"}'::jsonb,
+  true,
+  'detailed',
+  1,
+  false
+);
+
+create function pg_temp.create_legacy_quick_report(p_submission_id uuid)
+returns bigint
+language sql
+as $$
+  select public.create_product_diagnosis_report_v3(
+    p_submission_id,
+    'resale',
+    5000,
+    12000,
+    100000,
+    null,
+    true,
+    200000,
+    600,
+    200,
+    3::smallint,
+    3::smallint,
+    6::smallint,
+    'resale',
+    12000,
+    null,
+    null,
+    null,
+    'incomplete_volume',
+    'data',
+    'unit',
+    pg_temp.lifecycle_product_snapshot_v3()
+  );
+$$;
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '81000000-0000-4000-8000-000000000003',
+  true
+);
+
+select is(
+  (
+    select analysis_mode::text || ':' || is_free_report::text
+    from public.diagnoses
+    where submission_id = '81000000-0000-4000-8000-000000000301'
+  ),
+  'detailed:true',
+  'a legacy free detailed report remains readable'
+);
+select lives_ok(
+  $$ select pg_temp.create_legacy_quick_report(
+    '81000000-0000-4000-8000-000000000302'
+  ) $$,
+  'a legacy free detailed report does not consume the free quick allowance'
+);
+select is(
+  (
+    select is_free_report
+    from public.diagnoses
+    where submission_id = '81000000-0000-4000-8000-000000000302'
+  ),
+  true,
+  'the quick report after a legacy detailed report is the free allowance'
 );
 
 select * from finish();

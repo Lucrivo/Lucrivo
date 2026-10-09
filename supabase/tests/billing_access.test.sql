@@ -26,8 +26,8 @@ select col_not_null(
 select has_index(
   'public',
   'diagnoses',
-  'diagnoses_one_free_report_per_user_idx',
-  'a user can own at most one free report'
+  'diagnoses_one_free_quick_report_per_user_idx',
+  'a user can own at most one free quick report'
 );
 
 select has_function(
@@ -174,6 +174,12 @@ values
     'authenticated',
     'authenticated',
     'cancel-at-period-end@example.com'
+  ),
+  (
+    '85000000-0000-4000-8000-000000000007',
+    'authenticated',
+    'authenticated',
+    'detailed-then-quick@example.com'
   );
 
 insert into public.billing_contracts (
@@ -269,6 +275,22 @@ insert into public.billing_contracts (
     null,
     1,
     'failed',
+    '2000-01-01T00:00:00Z',
+    '2100-01-01T00:00:00Z'
+  ),
+  (
+    '86000000-0000-4000-8000-000000000007',
+    '85000000-0000-4000-8000-000000000007',
+    '20000000-0000-4000-8000-000000000001',
+    'detailed-then-quick',
+    'monthly',
+    'pix',
+    'detached',
+    3990,
+    'BRL',
+    null,
+    1,
+    'active',
     '2000-01-01T00:00:00Z',
     '2100-01-01T00:00:00Z'
   );
@@ -755,6 +777,291 @@ select results_eq(
   $$,
   $$ values (true, 1::bigint), (false, 1::bigint) $$,
   'the paid user keeps one free report and one paid report'
+);
+
+reset role;
+
+create function pg_temp.billing_detailed_items()
+returns jsonb
+language sql
+immutable
+as $$
+  select jsonb_build_array(
+    jsonb_build_object(
+      'id', '71111111-1111-4111-8111-111111111111',
+      'position', 0,
+      'name', 'Caneca',
+      'kind', 'resale',
+      'unitSalePriceCents', 1000,
+      'monthlySalesVolume', 10,
+      'purchaseUnitCostCents', 400,
+      'packagingUnitCostCents', 100,
+      'variableUnitCostCents', 500,
+      'feeAmountCents', 80,
+      'netUnitRevenueCents', 920,
+      'unitContributionCents', 420,
+      'contributionMarginBasisPoints', 4200,
+      'fixedAllocationCents', 7,
+      'totalUnitCostCents', 507,
+      'unitProfitCents', 413,
+      'realMarginBasisPoints', 4130,
+      'monthlyGrossRevenueCents', 10000,
+      'monthlyContributionCents', 4200,
+      'breakEvenUnitPriceCents', 552,
+      'directLoss', false
+    ),
+    jsonb_build_object(
+      'id', '72222222-2222-4222-8222-222222222222',
+      'position', 1,
+      'name', 'Caderno',
+      'kind', 'resale',
+      'unitSalePriceCents', 2000,
+      'monthlySalesVolume', 5,
+      'purchaseUnitCostCents', 800,
+      'packagingUnitCostCents', 200,
+      'variableUnitCostCents', 1000,
+      'feeAmountCents', 160,
+      'netUnitRevenueCents', 1840,
+      'unitContributionCents', 840,
+      'contributionMarginBasisPoints', 4200,
+      'fixedAllocationCents', 7,
+      'totalUnitCostCents', 1007,
+      'unitProfitCents', 833,
+      'realMarginBasisPoints', 4165,
+      'monthlyGrossRevenueCents', 10000,
+      'monthlyContributionCents', 4200,
+      'breakEvenUnitPriceCents', 1095,
+      'directLoss', false
+    )
+  );
+$$;
+
+create function pg_temp.billing_detailed_snapshot(p_submission_id uuid)
+returns jsonb
+language sql
+stable
+as $$
+  select jsonb_build_object(
+    'schemaVersion', 1,
+    'calculationVersion', 1,
+    'contentVersion', 3,
+    'analysisMode', 'detailed',
+    'category', 'product',
+    'scenario', 'resale',
+    'currency', 'BRL',
+    'unit', 'mix',
+    'policy', jsonb_build_object(
+      'concentrationThresholdBasisPoints', 4500,
+      'weeklyDivisorHundredths', 433,
+      'operatingDaysPerWeek', 6,
+      'proLaboreIncluded', false
+    ),
+    'inputs', jsonb_build_object(
+      'submissionId', p_submission_id,
+      'category', 'product',
+      'fixedMonthlyExpensesCents', 100,
+      'proLaboreIncluded', false,
+      'proLaboreCents', 0,
+      'taxRateBasisPoints', 600,
+      'cardFeeRateBasisPoints', 200,
+      'items', (
+        select jsonb_agg(
+          item - array[
+            'variableUnitCostCents', 'feeAmountCents',
+            'netUnitRevenueCents', 'unitContributionCents',
+            'contributionMarginBasisPoints', 'fixedAllocationCents',
+            'totalUnitCostCents', 'unitProfitCents',
+            'realMarginBasisPoints', 'monthlyGrossRevenueCents',
+            'monthlyContributionCents', 'breakEvenUnitPriceCents',
+            'directLoss'
+          ]
+          order by (item ->> 'position')::integer
+        )
+        from jsonb_array_elements(pg_temp.billing_detailed_items()) as item
+      )
+    ),
+    'results', jsonb_build_object(
+      'effectiveFixedCostCents', 100,
+      'isPartial', false,
+      'missingVolumeItemIds', jsonb_build_array(),
+      'items', (
+        select jsonb_agg(
+          jsonb_build_object(
+            'itemId', item ->> 'id',
+            'variableUnitCostCents', item -> 'variableUnitCostCents',
+            'feeAmountCents', item -> 'feeAmountCents',
+            'netUnitRevenueCents', item -> 'netUnitRevenueCents',
+            'unitContributionCents', item -> 'unitContributionCents',
+            'contributionMarginBasisPoints',
+              item -> 'contributionMarginBasisPoints',
+            'fixedAllocationCents', item -> 'fixedAllocationCents',
+            'totalUnitCostCents', item -> 'totalUnitCostCents',
+            'unitProfitCents', item -> 'unitProfitCents',
+            'realMarginBasisPoints', item -> 'realMarginBasisPoints',
+            'monthlyGrossRevenueCents', item -> 'monthlyGrossRevenueCents',
+            'monthlyContributionCents', item -> 'monthlyContributionCents',
+            'breakEvenUnitPriceCents', item -> 'breakEvenUnitPriceCents',
+            'directLoss', item -> 'directLoss'
+          )
+          order by (item ->> 'position')::integer
+        )
+        from jsonb_array_elements(pg_temp.billing_detailed_items()) as item
+      ),
+      'monthlyGrossRevenueCents', 20000,
+      'monthlyFeeAmountCents', 1600,
+      'monthlyVariableCostCents', 10000,
+      'monthlyNetRevenueCents', 18400,
+      'monthlyCostCents', 10100,
+      'monthlyContributionCents', 8400,
+      'monthlyResultCents', 8300,
+      'mixContributionMarginBasisPoints', 4200,
+      'finalMarginBasisPoints', 4150,
+      'breakEvenRevenueCents', 239,
+      'verdict', 'positive_result',
+      'priority', 'volume'
+    ),
+    'executiveSummary', jsonb_build_object(
+      'headline', 'Seus produtos dão lucro?',
+      'introduction', 'Veja o resultado geral e os próximos passos.',
+      'verdict', jsonb_build_object(
+        'label', 'Lucro',
+        'body', 'O mês terminou positivo.',
+        'tone', 'positive'
+      ),
+      'facts', jsonb_build_array(
+        jsonb_build_object(
+          'key', 'margin',
+          'currentLabel', 'Resultado do mês',
+          'currentValue', 'R$ 83,00',
+          'referenceLabel', 'Quanto sobra a cada R$ 100',
+          'referenceValue', '41,5%'
+        )
+      ),
+      'priority', jsonb_build_object(
+        'label', 'Faturamento do mês',
+        'body', 'Acompanhe o resultado e preserve as condições atuais.'
+      ),
+      'answers', jsonb_build_array(
+        jsonb_build_object(
+          'key', 'profitability',
+          'question', 'Estou ganhando dinheiro?',
+          'answer', 'Sim.'
+        )
+      )
+    ),
+    'sections', jsonb_build_array(
+      jsonb_build_object(
+        'key', 'break_even',
+        'title', 'Seus menores preços sem prejuízo',
+        'body', 'Valores por item.',
+        'emphasisLabel', 'Itens analisados',
+        'emphasisValue', '2',
+        'tone', 'neutral'
+      ),
+      jsonb_build_object(
+        'key', 'hidden_cost',
+        'title', 'O que sai das vendas',
+        'body', 'Custos e cobranças das vendas.',
+        'emphasisLabel', 'Receita líquida',
+        'emphasisValue', 'R$ 184,00',
+        'tone', 'neutral'
+      ),
+      jsonb_build_object(
+        'key', 'margin_diagnosis',
+        'title', 'Quanto sobra no mês',
+        'body', 'Resultado depois dos gastos.',
+        'emphasisLabel', 'Lucro',
+        'emphasisValue', 'R$ 83,00',
+        'tone', 'positive'
+      ),
+      jsonb_build_object(
+        'key', 'sales_goal',
+        'title', 'Quanto você precisa vender',
+        'body', 'Referência para pagar os gastos mensais.',
+        'emphasisLabel', 'Faturamento necessário',
+        'emphasisValue', 'R$ 2,39',
+        'tone', 'neutral'
+      )
+    ),
+    'guidance', jsonb_build_array()
+  );
+$$;
+
+create function pg_temp.create_detailed_billing_report(p_submission_id uuid)
+returns bigint
+language sql
+as $$
+  select public.create_detailed_diagnosis_report(
+    p_submission_id,
+    'product'::public.business_category,
+    100,
+    false,
+    0,
+    600,
+    200,
+    pg_temp.billing_detailed_items(),
+    1::smallint,
+    1::smallint,
+    3::smallint,
+    20000,
+    8300,
+    4150,
+    'positive_result',
+    'volume',
+    2,
+    false,
+    pg_temp.billing_detailed_snapshot(p_submission_id)
+  );
+$$;
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '85000000-0000-4000-8000-000000000007',
+  true
+);
+
+select lives_ok(
+  $$ select pg_temp.create_detailed_billing_report(
+    '88000000-0000-4000-8000-000000000010'
+  ) $$,
+  'a paid user creates a detailed report before any quick report'
+);
+select lives_ok(
+  $$ select pg_temp.create_product_report(
+    '88000000-0000-4000-8000-000000000011'
+  ) $$,
+  'the same paid user then creates a quick report'
+);
+select results_eq(
+  $$
+    select analysis_mode::text, is_free_report
+    from public.diagnoses
+    where user_id = '85000000-0000-4000-8000-000000000007'
+    order by id
+  $$,
+  $$ values ('detailed'::text, false), ('quick'::text, true) $$,
+  'paid access keeps the first detailed report paid and the next quick report free'
+);
+
+reset role;
+update public.billing_contracts
+set status = 'expired'
+where id = '86000000-0000-4000-8000-000000000007';
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '85000000-0000-4000-8000-000000000007',
+  true
+);
+select throws_ok(
+  $$ select pg_temp.create_product_report(
+    '88000000-0000-4000-8000-000000000012'
+  ) $$,
+  'P0001',
+  'free_report_limit_reached',
+  'ending paid access blocks a second quick report'
 );
 
 select ok(

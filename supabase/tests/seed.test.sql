@@ -200,6 +200,7 @@ select is(
       'd1000000-0000-4000-8000-000000000000'::uuid and
       'd1000000-0000-4000-8000-000000000060'::uuid
       and is_free_report
+      and analysis_mode = 'quick'
   ),
   (
     select count(distinct user_id)::bigint
@@ -221,11 +222,24 @@ select is(
         'd1000000-0000-4000-8000-000000000000'::uuid and
         'd1000000-0000-4000-8000-000000000060'::uuid
       group by user_id
-      having count(*) filter (where is_free_report) <> 1
+      having count(*) filter (
+        where is_free_report and analysis_mode = 'quick'
+      ) <> 1
     ) as invalid_owner
   ),
   0::bigint,
   'no demo report owner has zero or multiple free reports'
+);
+
+select is(
+  (
+    select count(*)::bigint
+    from public.diagnoses
+    where is_free_report
+      and analysis_mode = 'detailed'
+  ),
+  0::bigint,
+  'seeded detailed reports never consume the free quick allowance'
 );
 
 select is(

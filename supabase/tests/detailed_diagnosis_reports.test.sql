@@ -1317,28 +1317,140 @@ select set_config(
   '71000000-0000-4000-8000-000000000002',
   true
 );
-select lives_ok(
+select throws_ok(
   $$ select pg_temp.create_detailed_report(
     '71000000-0000-4000-8000-000000000200'
   ) $$,
-  'an unpaid user creates one free detailed mix'
+  'P0001',
+  'paid_access_required',
+  'an unpaid user cannot create a first detailed mix'
 );
-select results_eq(
-  $$
+
+select is(
+  (
     select count(*)::bigint
     from public.diagnoses
     where user_id = '71000000-0000-4000-8000-000000000002'
-  $$,
-  array[1::bigint],
-  'a multi-item detailed mix consumes exactly one report slot'
+  ),
+  0::bigint,
+  'rejected detailed creation leaves no diagnosis registry row'
 );
-select throws_ok(
+
+reset role;
+
+insert into auth.users (id, aud, role, email)
+values
+  (
+    '71000000-0000-4000-8000-000000000003',
+    'authenticated',
+    'authenticated',
+    'detailed-courtesy@example.com'
+  ),
+  (
+    '71000000-0000-4000-8000-000000000004',
+    'authenticated',
+    'authenticated',
+    'detailed-paid-entitlement@example.com'
+  );
+
+insert into public.billing_contracts (
+  id, user_id, price_id, external_reference, billing_mode, payment_method,
+  charge_type, amount_cents, currency, installment_limit, access_months,
+  status, access_starts_at, access_ends_at
+) values (
+  '71000000-0000-4000-8000-000000000011',
+  '71000000-0000-4000-8000-000000000004',
+  '20000000-0000-4000-8000-000000000001',
+  'detailed-paid-entitlement',
+  'monthly',
+  'pix',
+  'detached',
+  3990,
+  'BRL',
+  null,
+  1,
+  'active',
+  statement_timestamp() - interval '1 day',
+  statement_timestamp() + interval '30 days'
+);
+
+insert into private.admin_user_state (
+  user_id,
+  blocked_at,
+  courtesy_expires_at
+) values (
+  '71000000-0000-4000-8000-000000000003',
+  null,
+  statement_timestamp() + interval '7 days'
+);
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '71000000-0000-4000-8000-000000000003',
+  true
+);
+select lives_ok(
   $$ select pg_temp.create_detailed_report(
-    '71000000-0000-4000-8000-000000000201'
+    '71000000-0000-4000-8000-000000000320'
   ) $$,
-  'P0001',
-  'free_report_limit_reached',
-  'a second detailed mix is blocked by the free-tier limit'
+  'a courtesy user can create a detailed report'
+);
+
+reset role;
+select is(
+  (
+    select is_free_report
+    from public.diagnoses
+    where submission_id = '71000000-0000-4000-8000-000000000320'
+  ),
+  false,
+  'a courtesy detailed report does not use the free allowance'
+);
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '71000000-0000-4000-8000-000000000004',
+  true
+);
+select lives_ok(
+  $$ select pg_temp.create_detailed_report(
+    '71000000-0000-4000-8000-000000000330'
+  ) $$,
+  'a paid user can create a detailed report'
+);
+select is(
+  (
+    select is_free_report
+    from public.diagnoses
+    where submission_id = '71000000-0000-4000-8000-000000000330'
+  ),
+  false,
+  'a paid detailed report is never marked free'
+);
+
+reset role;
+update public.billing_contracts
+set status = 'expired'
+where id = '71000000-0000-4000-8000-000000000011';
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '71000000-0000-4000-8000-000000000004',
+  true
+);
+select is(
+  pg_temp.create_detailed_report(
+    '71000000-0000-4000-8000-000000000330'
+  ),
+  (
+    select id
+    from public.diagnoses
+    where submission_id = '71000000-0000-4000-8000-000000000330'
+  ),
+  'replaying a detailed submission returns the same id after entitlement ends'
 );
 
 select results_eq(
@@ -1463,7 +1575,7 @@ select throws_ok(
     schema_version, calculation_version, content_version,
     current_price_cents, verdict, priority, unit, report_snapshot
   ) values (
-    '71000000-0000-4000-8000-000000000300',
+    '71000000-0000-4000-8000-000000000320',
     '71000000-0000-4000-8000-000000000001',
     'product', 'resale', 1, 1, 1,
     null, 'positive_result', 'volume', 'unit', '{}'::jsonb

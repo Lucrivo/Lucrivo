@@ -132,6 +132,9 @@ function buildReports(
   admin: SeedUser,
   clients: SeedUser[],
 ): SeedAssignedReport[] {
+  const quickReportTemplates = currentReportTemplates.filter(
+    (template) => template.analysisMode === "quick",
+  );
   const reports: SeedAssignedReport[] = currentReportTemplates.map(
     (template, reportOrdinal) => ({
       ownerId: admin.id,
@@ -150,9 +153,13 @@ function buildReports(
       reportOrdinal += 1
     ) {
       const template =
-        currentReportTemplates[
-          (client.ordinal + reportOrdinal) % currentReportTemplates.length
-        ]!;
+        reportOrdinal === 0
+          ? quickReportTemplates[
+              client.ordinal % quickReportTemplates.length
+            ]!
+          : currentReportTemplates[
+              (client.ordinal + reportOrdinal) % currentReportTemplates.length
+            ]!;
       const months =
         client.accessSource === "courtesy"
           ? -(2 + (reportOrdinal % 5))
