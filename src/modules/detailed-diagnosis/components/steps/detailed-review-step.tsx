@@ -402,16 +402,6 @@ function DetailedReviewStep({
                 Entrar novamente
               </Link>
             </>
-          ) : state.submitError === "limit_reached" ? (
-            <>
-              Seu diagnóstico gratuito já foi usado.{" "}
-              <Link
-                href="/billing"
-                className="font-semibold underline underline-offset-4"
-              >
-                Conhecer os planos
-              </Link>
-            </>
           ) : (
             "Não foi possível salvar o diagnóstico. Tente novamente."
           )}

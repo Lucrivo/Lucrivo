@@ -4,7 +4,6 @@ import {
   CalendarDaysIcon,
   CircleAlertIcon,
   CircleCheckIcon,
-  CircleDollarSignIcon,
   CircleGaugeIcon,
   CircleHelpIcon,
 } from "lucide-react";
@@ -441,11 +440,7 @@ function ReportListCard({ report }: { report: OwnedReportSummary }) {
       <CardContent className="grid flex-1 gap-5 px-5 pb-5 sm:px-6 sm:pb-6">
         <ReportSummaryMetrics report={report} />
 
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-muted-foreground flex items-center gap-2 text-xs">
-            <CircleDollarSignIcon aria-hidden="true" className="size-4" />
-            {language.savedReportLabel}
-          </span>
+        <div className="flex items-center justify-end">
           <Link
             href={`/reports/${report.id}`}
             className={cn(

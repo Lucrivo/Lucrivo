@@ -230,7 +230,8 @@ describe("ReportListCard", () => {
     expect(screen.getByText("Serviços necessários")).toBeInTheDocument();
     expect(screen.getByText("82 atendimentos")).toBeInTheDocument();
     expect(screen.queryByText("Volume de vendas")).not.toBeInTheDocument();
-    expect(screen.getByText("Diagnóstico salvo")).toBeInTheDocument();
+    expect(screen.queryByText("Diagnóstico salvo")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Abrir relatório" })).toBeVisible();
   });
 
   it("uses the saved Digital identity for a detailed Product report", () => {
@@ -260,6 +261,9 @@ describe("ReportListCard", () => {
     expect(within(card).getByText("18,5%")).toBeVisible();
     expect(within(card).getByText("125 unidades")).toBeVisible();
     expect(within(card).getByText("200 unidades")).toBeVisible();
+    expect(
+      within(card).queryByText("Diagnóstico salvo"),
+    ).not.toBeInTheDocument();
     expect(
       within(card).queryByText("Diagnóstico detalhado"),
     ).not.toBeInTheDocument();

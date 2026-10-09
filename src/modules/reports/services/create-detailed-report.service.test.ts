@@ -195,19 +195,27 @@ describe("createDetailedReport", () => {
     );
   });
 
-  it("maps only the database free-report limit to limit_reached", async () => {
+  it("maps only paid access denial to plan_required", async () => {
     rpc.mockResolvedValue({
       data: null,
-      error: { code: "P0001", message: "free_report_limit_reached" },
+      error: { code: "P0001", message: "paid_access_required" },
     });
 
     await expect(
       create(productCommand).then(({ result }) => result),
-    ).resolves.toEqual({ status: "error", error: "limit_reached" });
+    ).resolves.toEqual({ status: "error", error: "plan_required" });
 
     rpc.mockResolvedValue({
       data: null,
-      error: { code: "XX001", message: "free_report_limit_reached" },
+      error: { code: "XX001", message: "paid_access_required" },
+    });
+    await expect(
+      create(productCommand).then(({ result }) => result),
+    ).resolves.toEqual({ status: "error", error: "create_failed" });
+
+    rpc.mockResolvedValue({
+      data: null,
+      error: { code: "P0001", message: "free_report_limit_reached" },
     });
     await expect(
       create(productCommand).then(({ result }) => result),

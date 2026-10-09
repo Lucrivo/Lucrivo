@@ -28,7 +28,7 @@ type DetailedEditableGeneralPhase =
 type DetailedEditableItemPhase = "itemName" | "itemValues" | "itemVolume";
 
 type DetailedItemJourney = "first" | "additional" | "editing";
-type DetailedSubmitError = "unauthorized" | "limit_reached" | "create_failed";
+type DetailedSubmitError = "unauthorized" | "create_failed";
 
 type DetailedWizardState = {
   phase: DetailedWizardPhase;
@@ -117,6 +117,7 @@ type DetailedWizardAction =
   | { type: "applyServerErrors"; fieldErrors: DetailedDiagnosisFieldErrors }
   | { type: "submit" }
   | { type: "submitFailed"; error: DetailedSubmitError }
+  | { type: "submissionSettled" }
   | { type: "reset"; createId: () => string };
 
 function nextDetailedPhase(state: DetailedWizardState): DetailedWizardPhase {
@@ -682,6 +683,9 @@ function detailedWizardReducer(
 
     case "submitFailed":
       return { ...state, status: "editing", submitError: action.error };
+
+    case "submissionSettled":
+      return { ...state, status: "editing", submitError: null };
 
     case "reset":
       return createInitialDetailedWizardState(

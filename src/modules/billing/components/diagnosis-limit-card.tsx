@@ -17,8 +17,9 @@ function DiagnosisLimitCard() {
               Seu diagnóstico gratuito já foi usado
             </h2>
             <p className="text-muted-foreground leading-7">
-              Seu primeiro relatório continua disponível. Para criar novos
-              diagnósticos e consultar todo o histórico, escolha um plano.
+              Seu diagnóstico rápido gratuito já foi usado. Para criar novos
+              diagnósticos rápidos ou usar o diagnóstico detalhado, escolha um
+              plano.
             </p>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { currentReportTemplates } from "./report-scenarios";
 import {
   buildDemoCatalog,
   clientReportCount,
@@ -96,6 +97,27 @@ describe("demo user and operations catalog", () => {
       expect(reports).toHaveLength(user.reportCount);
       expect(reports.map((report) => report.reportOrdinal)).toEqual(
         Array.from({ length: user.reportCount }, (_, index) => index),
+      );
+    }
+  });
+
+  it("starts every report owner with a quick diagnosis", () => {
+    const templatesByKey = new Map(
+      currentReportTemplates.map((template) => [template.key, template]),
+    );
+
+    for (const user of [catalog.admin, ...catalog.clients]) {
+      const firstReport = catalog.reports.find(
+        (report) => report.ownerId === user.id && report.reportOrdinal === 0,
+      );
+      if (user.reportCount === 0) {
+        expect(firstReport).toBeUndefined();
+        continue;
+      }
+
+      expect(firstReport).toBeDefined();
+      expect(templatesByKey.get(firstReport!.templateKey)?.analysisMode).toBe(
+        "quick",
       );
     }
   });

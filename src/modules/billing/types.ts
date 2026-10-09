@@ -39,8 +39,9 @@ type BillingRefundSummary = {
 
 type BillingOverview = {
   tier: "free" | "paid" | "courtesy";
-  canCreateDiagnosis: boolean;
-  freeReportUsed: boolean;
+  canCreateQuickDiagnosis: boolean;
+  canCreateDetailedDiagnosis: boolean;
+  freeQuickDiagnosisUsed: boolean;
   courtesyExpiresAt: string | null;
   contract: null | {
     billingMode: BillingMode;

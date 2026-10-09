@@ -54,8 +54,9 @@ describe("BillingPage", () => {
       status: "success",
       overview: {
         tier: "free",
-        canCreateDiagnosis: true,
-        freeReportUsed: false,
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: false,
+        freeQuickDiagnosisUsed: false,
         courtesyExpiresAt: null,
         contract: null,
         refund: null,
@@ -104,8 +105,9 @@ describe("BillingPage", () => {
       status: "success",
       overview: {
         tier: "paid",
-        canCreateDiagnosis: true,
-        freeReportUsed: true,
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: true,
+        freeQuickDiagnosisUsed: true,
         courtesyExpiresAt: null,
         contract: {
           billingMode: "monthly",
@@ -150,8 +152,9 @@ describe("BillingPage", () => {
       status: "success",
       overview: {
         tier: "paid",
-        canCreateDiagnosis: true,
-        freeReportUsed: false,
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: true,
+        freeQuickDiagnosisUsed: true,
         courtesyExpiresAt: null,
         contract: {
           billingMode: "semiannual",
@@ -180,8 +183,9 @@ describe("BillingPage", () => {
       status: "success",
       overview: {
         tier: "courtesy",
-        canCreateDiagnosis: true,
-        freeReportUsed: true,
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: true,
+        freeQuickDiagnosisUsed: true,
         courtesyExpiresAt: "2026-09-20T12:00:00.000Z",
         contract: null,
         refund: null,
@@ -204,8 +208,9 @@ describe("BillingPage", () => {
       status: "success",
       overview: {
         tier: "free",
-        canCreateDiagnosis: false,
-        freeReportUsed: true,
+        canCreateQuickDiagnosis: false,
+        canCreateDetailedDiagnosis: false,
+        freeQuickDiagnosisUsed: true,
         courtesyExpiresAt: null,
         contract: {
           billingMode: "monthly",
@@ -239,8 +244,9 @@ describe("BillingPage", () => {
       status: "success",
       overview: {
         tier: "paid",
-        canCreateDiagnosis: true,
-        freeReportUsed: true,
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: true,
+        freeQuickDiagnosisUsed: true,
         courtesyExpiresAt: null,
         contract: {
           billingMode: "monthly",

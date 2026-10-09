@@ -72,6 +72,11 @@ describe("Production diagnosis steps", () => {
     await user.click(detailed);
     expect(detailed).toBeEnabled();
     expect(onModeChange).toHaveBeenLastCalledWith("detailed");
+    expect(
+      screen.getByText(
+        "Recurso dos planos para analisar uma ou mais produções, com ficha técnica e resultado geral.",
+      ),
+    ).toBeVisible();
     expect(screen.queryByText(/\bmix\b/i)).not.toBeInTheDocument();
   });
 

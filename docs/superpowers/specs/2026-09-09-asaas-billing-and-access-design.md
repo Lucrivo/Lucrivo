@@ -8,6 +8,12 @@
 > are replaced by the
 > [billing refunds and plan pricing design](2026-10-08-billing-refunds-and-plan-pricing-design.md).
 > The remaining access, security, and billing foundations continue to apply.
+>
+> **Superseded in part on 2026-10-08:** The rule that the first report of any
+> mode is free is replaced by the
+> [paid detailed diagnosis access design](2026-10-08-paid-detailed-diagnosis-access-design.md).
+> One quick diagnosis is free; detailed diagnosis creation requires a current
+> paid or courtesy entitlement.
 
 ## 1. Objective
 

@@ -14,6 +14,11 @@ describe("billing access cards", () => {
       }),
     ).toBeInTheDocument();
     expect(
+      screen.getByText(
+        "Seu diagnóstico rápido gratuito já foi usado. Para criar novos diagnósticos rápidos ou usar o diagnóstico detalhado, escolha um plano.",
+      ),
+    ).toBeVisible();
+    expect(
       screen.getByRole("link", { name: "Conhecer os planos" }),
     ).toHaveAttribute("href", "/billing");
   });

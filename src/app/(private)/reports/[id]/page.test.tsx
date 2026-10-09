@@ -138,7 +138,12 @@ describe("ReportPage", () => {
     requireUser.mockResolvedValue({ userId: "trusted-user", supabase });
     getBillingOverview.mockResolvedValue({
       status: "success",
-      overview: { tier: "paid" },
+      overview: {
+        tier: "paid",
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: true,
+        freeQuickDiagnosisUsed: true,
+      },
     });
     getOwnedReport.mockResolvedValue({
       status: "found",
@@ -236,7 +241,20 @@ describe("ReportPage", () => {
     async (tier) => {
       getBillingOverview.mockResolvedValue({
         status: "success",
-        overview: { tier },
+        overview:
+          tier === "courtesy"
+            ? {
+                tier,
+                canCreateQuickDiagnosis: true,
+                canCreateDetailedDiagnosis: true,
+                freeQuickDiagnosisUsed: true,
+              }
+            : {
+                tier,
+                canCreateQuickDiagnosis: false,
+                canCreateDetailedDiagnosis: false,
+                freeQuickDiagnosisUsed: true,
+              },
       });
 
       await renderPage();
@@ -250,7 +268,20 @@ describe("ReportPage", () => {
     async (tier) => {
       getBillingOverview.mockResolvedValue({
         status: "success",
-        overview: { tier },
+        overview:
+          tier === "courtesy"
+            ? {
+                tier,
+                canCreateQuickDiagnosis: true,
+                canCreateDetailedDiagnosis: true,
+                freeQuickDiagnosisUsed: true,
+              }
+            : {
+                tier,
+                canCreateQuickDiagnosis: false,
+                canCreateDetailedDiagnosis: false,
+                freeQuickDiagnosisUsed: true,
+              },
       });
       getReportAiHistory.mockResolvedValue({
         status: "success",

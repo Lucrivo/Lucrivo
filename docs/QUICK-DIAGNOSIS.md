@@ -12,6 +12,8 @@ Este documento trata somente do **diagnóstico rápido de um único produto, pro
 
 O sistema não pesquisa preços de concorrentes e não determina um “preço correto de mercado”. Ele calcula referências com base exclusivamente nos números informados pelo usuário. Nenhuma categoria usa uma margem universal como meta, corte de veredito ou base para recomendar preço.
 
+Cada usuário pode criar exatamente um diagnóstico rápido gratuito, tenha ou não acesso pago ou cortesia. Um diagnóstico detalhado não consome esse benefício. Excluir o relatório rápido, inclusive de forma lógica, não devolve o direito de criar outro gratuito. Sem acesso vigente, a tentativa de criar um segundo diagnóstico rápido é recusada.
+
 ---
 
 ## 2. Visão geral do fluxo

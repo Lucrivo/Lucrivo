@@ -41,6 +41,7 @@ describe("DetailedDiagnosisWizard", () => {
     const createDiagnosis =
       options?.createDiagnosis ?? vi.fn<CreateDetailedDiagnosisAction>();
     const onBackToMode = vi.fn();
+    const onPlanRequired = vi.fn();
 
     function ControlledWizard() {
       const [state, dispatch] = useReducer(detailedWizardReducer, initialState);
@@ -51,12 +52,13 @@ describe("DetailedDiagnosisWizard", () => {
           createDiagnosis={createDiagnosis}
           createId={createId}
           onBackToMode={onBackToMode}
+          onPlanRequired={onPlanRequired}
         />
       );
     }
 
     render(<ControlledWizard />);
-    return { createDiagnosis, createId, onBackToMode };
+    return { createDiagnosis, createId, onBackToMode, onPlanRequired };
   }
 
   it("validates Product kind, preserves it through navigation, and returns to mode", async () => {
@@ -220,6 +222,50 @@ describe("DetailedDiagnosisWizard", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Revise o custo de compra.",
     );
+  });
+
+  it("keeps the diagnosis and asks for a plan when access is missing", async () => {
+    const initial = createInitialDetailedWizardState(
+      "product",
+      (() => {
+        let index = 0;
+        return () => ids[index++] ?? ids[2];
+      })(),
+    );
+    const state: DetailedWizardState = {
+      ...initial,
+      phase: "review",
+      productKind: "resale",
+      values: {
+        ...initial.values,
+        fixedMonthlyExpenses: "1000",
+        taxRate: "6",
+        cardFeeRate: "3",
+        items: [
+          {
+            ...initial.values.items[0],
+            kind: "resale",
+            name: "Camiseta",
+            unitSalePrice: "100",
+            purchaseUnitCost: "40",
+            packagingUnitCost: "0",
+          },
+        ],
+      },
+    };
+    const createDiagnosis = vi
+      .fn<CreateDetailedDiagnosisAction>()
+      .mockResolvedValue({ status: "error", error: "plan_required" });
+    const { onPlanRequired } = renderWizard({ state, createDiagnosis });
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByRole("button", { name: "Gerar diagnóstico detalhado" }),
+    );
+
+    await waitFor(() => expect(onPlanRequired).toHaveBeenCalledOnce());
+    expect(screen.getByText("Camiseta")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("focuses the ingredient collection when the recipe total is invalid", async () => {
