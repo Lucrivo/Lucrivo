@@ -105,10 +105,9 @@ describe("PhoneInput", () => {
     await user.click(
       await screen.findByRole("option", { name: /Portugal.*\+351/i }),
     );
-    await user.type(
-      screen.getByRole("textbox", { name: "WhatsApp" }),
-      "912345678",
-    );
+    const input = screen.getByRole("textbox", { name: "WhatsApp" });
+    await user.click(input);
+    await user.paste("912345678");
 
     await waitFor(() => {
       expect(screen.getByLabelText("Valor E.164")).toHaveTextContent(

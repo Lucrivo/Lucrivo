@@ -6,6 +6,8 @@ import { requireUser } from "@/modules/auth/services/require-user";
 import { OnboardingForm } from "@/modules/onboarding/components/onboarding-form";
 import { getOnboardingData } from "@/modules/onboarding/get-onboarding.service";
 
+export const dynamic = "force-dynamic";
+
 export default async function AccountPage() {
   const { supabase } = await requireUser();
   const [claimsResult, onboardingData] = await Promise.all([

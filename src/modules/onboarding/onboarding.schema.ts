@@ -1,4 +1,4 @@
-import { isPossiblePhoneNumber } from "react-phone-number-input";
+import { isPossiblePhoneNumber } from "libphonenumber-js/min";
 import { z } from "zod";
 
 const ONBOARDING_CONSENT_COPY_VERSION = "whatsapp-marketing-v1" as const;
@@ -10,7 +10,11 @@ const positiveIdSchema = z
   .positive()
   .max(Number.MAX_SAFE_INTEGER);
 const catalogOrderSchema = z.number().int().min(0).max(10_000);
-const versionSchema = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
+const versionSchema = z
+  .number()
+  .int()
+  .nonnegative()
+  .max(Number.MAX_SAFE_INTEGER);
 
 function normalizeSpaces(value: string) {
   return value.trim().replace(/\s+/gu, " ");
@@ -29,11 +33,7 @@ function normalizedTextSchema(min: number, max: number, label: string) {
 }
 
 const fullNameSchema = normalizedTextSchema(2, 120, "Nome");
-const customSubcategorySchema = normalizedTextSchema(
-  2,
-  80,
-  "Subcategoria",
-);
+const customSubcategorySchema = normalizedTextSchema(2, 80, "Subcategoria");
 const whatsappE164Schema = z
   .string()
   .regex(E164_PATTERN, "Informe um WhatsApp válido com código do país.")
@@ -128,9 +128,7 @@ const onboardingInputSchema = z
     if (hasCatalogSubcategory === hasCustomSubcategory) {
       context.addIssue({
         code: "custom",
-        path: hasCustomSubcategory
-          ? ["customSubcategory"]
-          : ["subcategoryId"],
+        path: hasCustomSubcategory ? ["customSubcategory"] : ["subcategoryId"],
         message: "Escolha uma subcategoria ou informe a opção Outro.",
       });
     }

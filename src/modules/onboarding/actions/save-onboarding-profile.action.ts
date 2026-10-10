@@ -43,16 +43,15 @@ async function saveOnboardingProfile(
   try {
     const { supabase } = await requireUser();
     const rpcArgs = {
-        p_full_name: parsedInput.data.fullName,
-        p_whatsapp_e164: parsedInput.data.whatsappE164,
-        p_segment_id: parsedInput.data.segmentId,
-        p_subcategory_id: parsedInput.data.subcategoryId,
-        p_custom_subcategory: parsedInput.data.customSubcategory,
-        p_whatsapp_marketing_consent:
-          parsedInput.data.whatsappMarketingConsent,
-        p_consent_copy_version: ONBOARDING_CONSENT_COPY_VERSION,
-        p_expected_version: parsedInput.data.expectedVersion,
-      } as unknown as GeneratedSaveOnboardingRpcArgs;
+      p_full_name: parsedInput.data.fullName,
+      p_whatsapp_e164: parsedInput.data.whatsappE164,
+      p_segment_id: parsedInput.data.segmentId,
+      p_subcategory_id: parsedInput.data.subcategoryId,
+      p_custom_subcategory: parsedInput.data.customSubcategory,
+      p_whatsapp_marketing_consent: parsedInput.data.whatsappMarketingConsent,
+      p_consent_copy_version: ONBOARDING_CONSENT_COPY_VERSION,
+      p_expected_version: parsedInput.data.expectedVersion,
+    } as unknown as GeneratedSaveOnboardingRpcArgs;
     const { data, error } = await supabase.rpc(
       "save_onboarding_profile_v1",
       rpcArgs,

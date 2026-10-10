@@ -7,6 +7,8 @@ import {
   requireUser,
 } from "@/modules/auth/services/require-user";
 
+export const dynamic = "force-dynamic";
+
 export default async function OnboardingLayout({
   children,
 }: {
