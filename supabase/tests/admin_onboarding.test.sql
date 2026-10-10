@@ -559,5 +559,420 @@ select is(
 );
 reset role;
 
+select has_function(
+  'public',
+  'save_admin_business_segment_v1',
+  array['bigint', 'text', 'integer', 'boolean', 'integer'],
+  'versioned segment mutation RPC exists'
+);
+select has_function(
+  'public',
+  'save_admin_business_subcategory_v1',
+  array['bigint', 'bigint', 'text', 'integer', 'boolean', 'integer'],
+  'versioned subcategory mutation RPC exists'
+);
+select ok(
+  (
+    select pg_catalog.bool_and(
+      prosecdef
+      and provolatile = 'v'
+      and proconfig = array['search_path=""']::text[]
+    )
+    from pg_catalog.pg_proc
+    where oid in (
+      pg_catalog.to_regprocedure(
+        'public.save_admin_business_segment_v1(bigint,text,integer,boolean,integer)'
+      ),
+      pg_catalog.to_regprocedure(
+        'public.save_admin_business_subcategory_v1(bigint,bigint,text,integer,boolean,integer)'
+      )
+    )
+  ),
+  'catalog mutations are volatile security definers with empty search paths'
+);
+select ok(
+  not pg_catalog.has_function_privilege(
+    'anon',
+    'public.save_admin_business_segment_v1(bigint,text,integer,boolean,integer)',
+    'execute'
+  )
+  and not pg_catalog.has_function_privilege(
+    'service_role',
+    'public.save_admin_business_subcategory_v1(bigint,bigint,text,integer,boolean,integer)',
+    'execute'
+  ),
+  'unintended roles cannot execute catalog mutations'
+);
+select ok(
+  not pg_catalog.has_table_privilege(
+    'authenticated', 'public.business_segments', 'delete'
+  )
+  and not pg_catalog.has_table_privilege(
+    'authenticated', 'public.business_subcategories', 'delete'
+  ),
+  'catalog entries have no authenticated delete grant'
+);
+
+set local role authenticated;
+select pg_catalog.set_config(
+  'request.jwt.claim.sub',
+  '97000000-0000-4000-8000-000000000002',
+  true
+);
+select pg_catalog.set_config(
+  'request.jwt.claims',
+  '{"sub":"97000000-0000-4000-8000-000000000002","role":"authenticated","aal":"aal2"}',
+  true
+);
+select throws_ok(
+  $$ select public.save_admin_business_segment_v1(null,'Novo segmento',10,true,null) $$,
+  '42501', 'administrator access required',
+  'ordinary users cannot mutate segments'
+);
+select throws_ok(
+  $$ select public.save_admin_business_subcategory_v1(null,1,'Nova subcategoria',10,true,null) $$,
+  '42501', 'administrator access required',
+  'ordinary users cannot mutate subcategories'
+);
+reset role;
+
+set local role authenticated;
+select pg_catalog.set_config(
+  'request.jwt.claim.sub',
+  '97000000-0000-4000-8000-000000000001',
+  true
+);
+select pg_catalog.set_config(
+  'request.jwt.claims',
+  '{"sub":"97000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal1"}',
+  true
+);
+select throws_ok(
+  $$ select public.save_admin_business_segment_v1(null,'Novo segmento',10,true,null) $$,
+  '42501', 'administrator access required',
+  'administrator at aal1 cannot mutate segments'
+);
+select throws_ok(
+  $$ select public.save_admin_business_subcategory_v1(null,1,'Nova subcategoria',10,true,null) $$,
+  '42501', 'administrator access required',
+  'administrator at aal1 cannot mutate subcategories'
+);
+reset role;
+
+create temporary table saved_segment (payload jsonb) on commit drop;
+create temporary table saved_subcategory (payload jsonb) on commit drop;
+grant select, insert, update on saved_segment to authenticated;
+grant select, insert, update on saved_subcategory to authenticated;
+
+set local role authenticated;
+select pg_catalog.set_config(
+  'request.jwt.claim.sub',
+  '97000000-0000-4000-8000-000000000001',
+  true
+);
+select pg_catalog.set_config(
+  'request.jwt.claims',
+  '{"sub":"97000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal2"}',
+  true
+);
+
+insert into saved_segment (payload)
+select public.save_admin_business_segment_v1(
+  null, '  Serviços   criativos  ', 900, true, null
+);
+select is(
+  (select payload - 'item' from saved_segment),
+  '{"status":"saved"}'::jsonb,
+  'segment create returns saved status'
+);
+select is(
+  (select payload -> 'item' from saved_segment),
+  (
+    select pg_catalog.jsonb_build_object(
+      'id', (payload #>> '{item,id}')::bigint,
+      'name', 'Serviços criativos',
+      'sortOrder', 900,
+      'isActive', true,
+      'version', 0
+    )
+    from saved_segment
+  ),
+  'segment create normalizes its name and starts at version zero'
+);
+
+update saved_segment
+set payload = public.save_admin_business_segment_v1(
+  (payload #>> '{item,id}')::bigint,
+  'Serviços profissionais',
+  900,
+  true,
+  0
+);
+select is(
+  (select payload #>> '{item,name}' from saved_segment),
+  'Serviços profissionais',
+  'segment rename saves with the exact expected version'
+);
+select is(
+  (select payload #>> '{item,version}' from saved_segment),
+  '1',
+  'segment rename increments the version exactly once'
+);
+
+update saved_segment
+set payload = public.save_admin_business_segment_v1(
+  (payload #>> '{item,id}')::bigint,
+  payload #>> '{item,name}',
+  901,
+  true,
+  1
+);
+select is(
+  (select payload #>> '{item,sortOrder}' from saved_segment),
+  '901',
+  'segment ordering can be changed'
+);
+
+update saved_segment
+set payload = public.save_admin_business_segment_v1(
+  (payload #>> '{item,id}')::bigint,
+  payload #>> '{item,name}',
+  (payload #>> '{item,sortOrder}')::integer,
+  false,
+  2
+);
+select is(
+  (select payload #>> '{item,isActive}' from saved_segment),
+  'false',
+  'segment can be archived without deletion'
+);
+
+select is(
+  public.save_admin_business_segment_v1(
+    (select (payload #>> '{item,id}')::bigint from saved_segment),
+    'Tentativa antiga',
+    1,
+    true,
+    2
+  ),
+  '{"status":"conflict"}'::jsonb,
+  'stale segment versions return conflict'
+);
+select is(
+  public.save_admin_business_segment_v1(
+    999999, 'Ausente', 1, true, 0
+  ),
+  '{"status":"not_found"}'::jsonb,
+  'missing segment IDs return not_found'
+);
+select is(
+  public.save_admin_business_segment_v1(
+    null, 'bElEzA', 1, true, null
+  ),
+  '{"status":"duplicate"}'::jsonb,
+  'segment duplicates are case-insensitive'
+);
+select throws_ok(
+  $$ select public.save_admin_business_segment_v1(null,'x',1,true,null) $$,
+  '22023', 'invalid business segment input',
+  'invalid segment name lengths are rejected'
+);
+select throws_ok(
+  $$ select public.save_admin_business_segment_v1(null,'Segmento válido',10001,true,null) $$,
+  '22023', 'invalid business segment input',
+  'invalid segment ordering is rejected'
+);
+
+update saved_segment
+set payload = public.save_admin_business_segment_v1(
+  (payload #>> '{item,id}')::bigint,
+  payload #>> '{item,name}',
+  (payload #>> '{item,sortOrder}')::integer,
+  true,
+  3
+);
+select is(
+  (select payload #>> '{item,version}' from saved_segment),
+  '4',
+  'segment can be restored with the next version'
+);
+
+insert into saved_subcategory (payload)
+select public.save_admin_business_subcategory_v1(
+  null,
+  (select (payload #>> '{item,id}')::bigint from saved_segment),
+  '  Consultoria   estratégica  ',
+  700,
+  true,
+  null
+);
+select is(
+  (select payload #>> '{item,name}' from saved_subcategory),
+  'Consultoria estratégica',
+  'subcategory create normalizes its name'
+);
+select is(
+  (select payload #>> '{item,version}' from saved_subcategory),
+  '0',
+  'subcategory create starts at version zero'
+);
+
+update saved_subcategory
+set payload = public.save_admin_business_subcategory_v1(
+  (payload #>> '{item,id}')::bigint,
+  (payload #>> '{item,segmentId}')::bigint,
+  'Consultoria financeira',
+  700,
+  true,
+  0
+);
+select is(
+  (select payload #>> '{item,name}' from saved_subcategory),
+  'Consultoria financeira',
+  'subcategory rename saves with the exact expected version'
+);
+
+update saved_subcategory
+set payload = public.save_admin_business_subcategory_v1(
+  (payload #>> '{item,id}')::bigint,
+  (payload #>> '{item,segmentId}')::bigint,
+  payload #>> '{item,name}',
+  701,
+  true,
+  1
+);
+select is(
+  (select payload #>> '{item,sortOrder}' from saved_subcategory),
+  '701',
+  'subcategory ordering can be changed'
+);
+
+update saved_subcategory
+set payload = public.save_admin_business_subcategory_v1(
+  (payload #>> '{item,id}')::bigint,
+  (payload #>> '{item,segmentId}')::bigint,
+  payload #>> '{item,name}',
+  (payload #>> '{item,sortOrder}')::integer,
+  false,
+  2
+);
+select is(
+  (select payload #>> '{item,isActive}' from saved_subcategory),
+  'false',
+  'subcategory can be archived without deletion'
+);
+select is(
+  public.save_admin_business_subcategory_v1(
+    (select (payload #>> '{item,id}')::bigint from saved_subcategory),
+    (select (payload #>> '{item,segmentId}')::bigint from saved_subcategory),
+    'Tentativa antiga',
+    1,
+    true,
+    2
+  ),
+  '{"status":"conflict"}'::jsonb,
+  'stale subcategory versions return conflict'
+);
+select is(
+  public.save_admin_business_subcategory_v1(
+    999999,
+    (select (payload #>> '{item,id}')::bigint from saved_segment),
+    'Ausente', 1, true, 0
+  ),
+  '{"status":"not_found"}'::jsonb,
+  'missing subcategory IDs return not_found'
+);
+select is(
+  public.save_admin_business_subcategory_v1(
+    null,
+    (select id from public.business_segments where name = 'Beleza'),
+    'sAlÃo De BeLeZa',
+    1,
+    true,
+    null
+  ),
+  '{"status":"duplicate"}'::jsonb,
+  'subcategory duplicates are case-insensitive within a segment'
+);
+select throws_ok(
+  $$ select public.save_admin_business_subcategory_v1(null,1,'x',1,true,null) $$,
+  '22023', 'invalid business subcategory input',
+  'invalid subcategory name lengths are rejected'
+);
+select throws_ok(
+  $$ select public.save_admin_business_subcategory_v1(null,1,'Subcategoria válida',-1,true,null) $$,
+  '22023', 'invalid business subcategory input',
+  'invalid subcategory ordering is rejected'
+);
+select throws_ok(
+  $$
+    select public.save_admin_business_subcategory_v1(
+      (select (payload #>> '{item,id}')::bigint from saved_subcategory),
+      (select id from public.business_segments where name = 'Beleza'),
+      'Consultoria financeira', 701, false, 3
+    )
+  $$,
+  '22023', 'business subcategory segment is immutable',
+  'existing subcategories cannot move between segments'
+);
+
+update saved_subcategory
+set payload = public.save_admin_business_subcategory_v1(
+  (payload #>> '{item,id}')::bigint,
+  (payload #>> '{item,segmentId}')::bigint,
+  payload #>> '{item,name}',
+  (payload #>> '{item,sortOrder}')::integer,
+  true,
+  3
+);
+select is(
+  (select payload #>> '{item,version}' from saved_subcategory),
+  '4',
+  'subcategory can be restored with the next version'
+);
+
+update saved_segment
+set payload = public.save_admin_business_segment_v1(
+  (payload #>> '{item,id}')::bigint,
+  payload #>> '{item,name}',
+  (payload #>> '{item,sortOrder}')::integer,
+  false,
+  4
+);
+select throws_ok(
+  $$
+    select public.save_admin_business_subcategory_v1(
+      null,
+      (select (payload #>> '{item,id}')::bigint from saved_segment),
+      'Nova em segmento inativo', 1, true, null
+    )
+  $$,
+  '22023', 'new subcategories require an active segment',
+  'new subcategories cannot attach to archived segments'
+);
+
+select is(
+  public.save_admin_business_segment_v1(
+    (select id from public.business_segments where name = 'Alimentação atualizada'),
+    'Alimentação atualizada',
+    (select sort_order from public.business_segments where name = 'Alimentação atualizada'),
+    false,
+    0
+  ) ->> 'status',
+  'saved',
+  'a referenced segment can be archived'
+);
+reset role;
+select is(
+  (
+    select pg_catalog.count(*)
+    from public.onboarding_profiles as profile
+    join public.business_segments as segment on segment.id = profile.segment_id
+    where segment.name = 'Alimentação atualizada'
+  ),
+  2::bigint,
+  'archiving preserves profiles that reference the segment'
+);
+
 select * from finish();
 rollback;
