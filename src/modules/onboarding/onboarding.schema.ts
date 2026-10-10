@@ -3,6 +3,12 @@ import { z } from "zod";
 
 const ONBOARDING_CONSENT_COPY_VERSION = "whatsapp-marketing-v1" as const;
 const E164_PATTERN = /^\+[1-9][0-9]{7,14}$/;
+const INVALID_WHATSAPP_MESSAGE =
+  "Informe um WhatsApp válido com código do país.";
+const STALE_PROFILE_MESSAGE =
+  "Os dados do perfil estão desatualizados. Atualize a página e tente novamente.";
+const INVALID_FORM_MESSAGE =
+  "Os dados enviados são inválidos. Atualize a página e tente novamente.";
 
 const positiveIdSchema = z
   .number()
@@ -20,9 +26,14 @@ function normalizeSpaces(value: string) {
   return value.trim().replace(/\s+/gu, " ");
 }
 
-function normalizedTextSchema(min: number, max: number, label: string) {
+function normalizedTextSchema(
+  min: number,
+  max: number,
+  label: string,
+  invalidMessage: string,
+) {
   return z
-    .string()
+    .string({ error: invalidMessage })
     .transform(normalizeSpaces)
     .pipe(
       z
@@ -32,15 +43,52 @@ function normalizedTextSchema(min: number, max: number, label: string) {
     );
 }
 
-const fullNameSchema = normalizedTextSchema(2, 120, "Nome");
-const customSubcategorySchema = normalizedTextSchema(2, 80, "Subcategoria");
+const fullNameSchema = normalizedTextSchema(
+  2,
+  120,
+  "Nome",
+  "Informe seu nome.",
+);
+const customSubcategorySchema = normalizedTextSchema(
+  2,
+  80,
+  "Subcategoria",
+  "Informe uma subcategoria válida.",
+);
 const whatsappE164Schema = z
-  .string()
-  .regex(E164_PATTERN, "Informe um WhatsApp válido com código do país.")
-  .refine(
-    (value) => isPossiblePhoneNumber(value),
-    "Informe um número de telefone possível.",
-  );
+  .string({ error: INVALID_WHATSAPP_MESSAGE })
+  .superRefine((value, context) => {
+    if (!E164_PATTERN.test(value)) {
+      context.addIssue({
+        code: "custom",
+        message: INVALID_WHATSAPP_MESSAGE,
+      });
+      return;
+    }
+
+    if (!isPossiblePhoneNumber(value)) {
+      context.addIssue({
+        code: "custom",
+        message: "Informe um número de telefone possível.",
+      });
+    }
+  });
+
+const inputSegmentIdSchema = z
+  .number({ error: "Escolha um segmento principal." })
+  .int("Escolha um segmento principal válido.")
+  .positive("Escolha um segmento principal.")
+  .max(Number.MAX_SAFE_INTEGER, "Escolha um segmento principal válido.");
+const inputSubcategoryIdSchema = z
+  .number({ error: "Escolha uma subcategoria válida." })
+  .int("Escolha uma subcategoria válida.")
+  .positive("Escolha uma subcategoria válida.")
+  .max(Number.MAX_SAFE_INTEGER, "Escolha uma subcategoria válida.");
+const inputVersionSchema = z
+  .number({ error: STALE_PROFILE_MESSAGE })
+  .int(STALE_PROFILE_MESSAGE)
+  .nonnegative(STALE_PROFILE_MESSAGE)
+  .max(Number.MAX_SAFE_INTEGER, STALE_PROFILE_MESSAGE);
 
 const businessSubcategorySchema = z.strictObject({
   id: positiveIdSchema,
@@ -112,15 +160,22 @@ const onboardingProfileSchema = z
 const onboardingProfileRpcSchema = onboardingProfileSchema.nullable();
 
 const onboardingInputSchema = z
-  .strictObject({
-    fullName: fullNameSchema,
-    whatsappE164: whatsappE164Schema,
-    segmentId: positiveIdSchema,
-    subcategoryId: positiveIdSchema.nullable(),
-    customSubcategory: z.union([customSubcategorySchema, z.null()]),
-    whatsappMarketingConsent: z.boolean(),
-    expectedVersion: versionSchema.nullable(),
-  })
+  .strictObject(
+    {
+      fullName: fullNameSchema,
+      whatsappE164: whatsappE164Schema,
+      segmentId: inputSegmentIdSchema,
+      subcategoryId: inputSubcategoryIdSchema.nullable(),
+      customSubcategory: z.union([customSubcategorySchema, z.null()], {
+        error: "Informe uma subcategoria válida.",
+      }),
+      whatsappMarketingConsent: z.boolean({
+        error: "A escolha de consentimento do WhatsApp é inválida.",
+      }),
+      expectedVersion: inputVersionSchema.nullable(),
+    },
+    INVALID_FORM_MESSAGE,
+  )
   .superRefine((input, context) => {
     const hasCatalogSubcategory = input.subcategoryId !== null;
     const hasCustomSubcategory = input.customSubcategory !== null;

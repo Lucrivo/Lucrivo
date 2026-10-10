@@ -48,6 +48,24 @@ describe("saveOnboardingProfile", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
+  it("returns localized messages for an incomplete catalog selection", async () => {
+    const result = await saveOnboardingProfile({
+      ...validInput,
+      segmentId: 0,
+      subcategoryId: null,
+    });
+
+    expect(result).toEqual({
+      status: "invalid",
+      fieldErrors: {
+        segmentId: ["Escolha um segmento principal."],
+        subcategoryId: ["Escolha uma subcategoria ou informe a opção Outro."],
+      },
+    });
+    expect(requireUser).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it("passes normalized fields and the fixed consent copy to the RPC", async () => {
     await expect(saveOnboardingProfile(validInput)).resolves.toEqual({
       status: "saved",

@@ -18,6 +18,17 @@ const validInput = {
   expectedVersion: null,
 };
 
+function fieldMessages(input: Record<string, unknown>, field: string) {
+  const parsed = onboardingInputSchema.safeParse(input);
+
+  expect(parsed.success).toBe(false);
+  if (parsed.success) return [];
+
+  return parsed.error.issues
+    .filter((issue) => issue.path[0] === field)
+    .map((issue) => issue.message);
+}
+
 describe("onboardingInputSchema", () => {
   it("accepts the bounded catalog selection contract", () => {
     expect(onboardingInputSchema.safeParse(validInput).success).toBe(true);
@@ -83,11 +94,90 @@ describe("onboardingInputSchema", () => {
     ).toBe(false);
   });
 
+  it.each([
+    {
+      field: "fullName",
+      value: undefined,
+      message: "Informe seu nome.",
+    },
+    {
+      field: "segmentId",
+      value: 0,
+      message: "Escolha um segmento principal.",
+    },
+    {
+      field: "segmentId",
+      value: 1.2,
+      message: "Escolha um segmento principal válido.",
+    },
+    {
+      field: "subcategoryId",
+      value: -1,
+      message: "Escolha uma subcategoria válida.",
+    },
+    {
+      field: "customSubcategory",
+      value: 42,
+      message: "Informe uma subcategoria válida.",
+    },
+    {
+      field: "whatsappMarketingConsent",
+      value: "yes",
+      message: "A escolha de consentimento do WhatsApp é inválida.",
+    },
+    {
+      field: "expectedVersion",
+      value: -1,
+      message:
+        "Os dados do perfil estão desatualizados. Atualize a página e tente novamente.",
+    },
+  ])(
+    "returns a Portuguese message for invalid $field variants",
+    ({ field, value, message }) => {
+      const input = {
+        ...validInput,
+        [field]: value,
+        ...(field === "customSubcategory" ? { subcategoryId: null } : {}),
+      };
+
+      expect(fieldMessages(input, field)).toContain(message);
+    },
+  );
+
+  it.each([
+    {
+      value: undefined,
+      message: "Informe um WhatsApp válido com código do país.",
+    },
+    {
+      value: "11999999999",
+      message: "Informe um WhatsApp válido com código do país.",
+    },
+    {
+      value: "+99999999",
+      message: "Informe um número de telefone possível.",
+    },
+  ])(
+    "returns one Portuguese WhatsApp message for $value",
+    ({ value, message }) => {
+      expect(
+        fieldMessages({ ...validInput, whatsappE164: value }, "whatsappE164"),
+      ).toEqual([message]);
+    },
+  );
+
   it("strictly rejects unknown input keys", () => {
-    expect(
-      onboardingInputSchema.safeParse({ ...validInput, userId: "spoofed" })
-        .success,
-    ).toBe(false);
+    const parsed = onboardingInputSchema.safeParse({
+      ...validInput,
+      userId: "spoofed",
+    });
+
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      expect(parsed.error.issues.map((issue) => issue.message)).toContain(
+        "Os dados enviados são inválidos. Atualize a página e tente novamente.",
+      );
+    }
   });
 });
 
