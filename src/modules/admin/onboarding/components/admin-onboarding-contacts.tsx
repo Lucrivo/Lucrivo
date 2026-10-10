@@ -21,6 +21,7 @@ import type {
   AdminOnboardingContact,
   AdminOnboardingContacts as Contacts,
 } from "../admin-onboarding.schema";
+import { AdminOnboardingExportButton } from "./admin-onboarding-export-button";
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
@@ -60,14 +61,17 @@ function AdminOnboardingContacts({
 
   return (
     <Card className="border-border/70 min-w-0 rounded-2xl shadow-sm">
-      <CardHeader>
-        <CardTitle>
-          <h2>Contatos concluídos</h2>
-        </CardTitle>
-        <p className="text-muted-foreground text-sm">
-          Dados operacionais informados no onboarding, ordenados pelos mais
-          recentes.
-        </p>
+      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:justify-between">
+        <div className="space-y-1">
+          <CardTitle>
+            <h2>Contatos concluídos</h2>
+          </CardTitle>
+          <p className="text-muted-foreground text-sm">
+            Dados operacionais informados no onboarding, ordenados pelos mais
+            recentes.
+          </p>
+        </div>
+        <AdminOnboardingExportButton filters={navigation.filters} />
       </CardHeader>
       <CardContent className="min-w-0 space-y-5">
         {data.items.length === 0 ? (

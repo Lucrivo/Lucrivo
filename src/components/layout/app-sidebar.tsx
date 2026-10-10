@@ -8,6 +8,7 @@ import {
   FileChartColumnIcon,
   LayoutDashboardIcon,
   LandmarkIcon,
+  ListChecksIcon,
   ShieldCheckIcon,
   UsersIcon,
   WalletCardsIcon,
@@ -79,6 +80,11 @@ const adminNavigationItems: NavigationItem[] = [
     label: "Usuários",
     href: "/admin/users",
     icon: UsersIcon,
+  },
+  {
+    label: "Onboarding",
+    href: "/admin/onboarding",
+    icon: ListChecksIcon,
   },
   {
     label: "Assinaturas",

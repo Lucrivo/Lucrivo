@@ -196,6 +196,7 @@ describe("AppSidebar", () => {
     for (const [label, href] of [
       ["Dashboard", "/admin"],
       ["Usuários", "/admin/users"],
+      ["Onboarding", "/admin/onboarding"],
       ["Assinaturas", "/admin/subscriptions"],
       ["Área financeira", "/dashboard"],
     ]) {
@@ -205,6 +206,21 @@ describe("AppSidebar", () => {
       );
     }
     expect(screen.getByText("Administração")).toBeVisible();
+  });
+
+  it("marks Onboarding active on its nested admin route", () => {
+    usePathname.mockReturnValue("/admin/onboarding/exports");
+
+    render(<AppSidebar variant="admin" />);
+
+    expect(screen.getByRole("link", { name: "Onboarding" })).toHaveAttribute(
+      "data-active",
+      "true",
+    );
+    expect(screen.getByRole("link", { name: "Dashboard" })).not.toHaveAttribute(
+      "data-active",
+      "true",
+    );
   });
 
   it("does not keep the admin dashboard active on nested routes", () => {
