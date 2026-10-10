@@ -24,6 +24,14 @@ vi.mock(
   "@/modules/admin/onboarding/components/admin-onboarding-filters",
   () => ({ AdminOnboardingFilters: () => <div>filters-content</div> }),
 );
+vi.mock(
+  "@/modules/admin/onboarding/components/admin-onboarding-catalog",
+  () => ({
+    AdminOnboardingCatalog: ({ catalog }: { catalog: unknown[] }) => (
+      <div>catalog-content:{catalog.length}</div>
+    ),
+  }),
+);
 
 import AdminOnboardingPage from "./page";
 
@@ -57,13 +65,13 @@ describe("AdminOnboardingPage", () => {
     expect(getOverview).not.toHaveBeenCalled();
   });
 
-  it("loads only the catalog for its addressable placeholder", async () => {
+  it("loads only the catalog for its addressable section", async () => {
     render(
       await AdminOnboardingPage({
         searchParams: Promise.resolve({ tab: "catalog" }),
       }),
     );
-    expect(screen.getByText(/gerenciamento do catálogo/i)).toBeVisible();
+    expect(screen.getByText("catalog-content:0")).toBeVisible();
     expect(getCatalog).toHaveBeenCalledOnce();
     expect(getOverview).not.toHaveBeenCalled();
     expect(getContacts).not.toHaveBeenCalled();

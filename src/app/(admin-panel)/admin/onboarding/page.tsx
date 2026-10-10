@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminOnboardingCatalog } from "@/modules/admin/onboarding/components/admin-onboarding-catalog";
 import { AdminOnboardingContacts } from "@/modules/admin/onboarding/components/admin-onboarding-contacts";
 import { AdminOnboardingFilters } from "@/modules/admin/onboarding/components/admin-onboarding-filters";
 import { AdminOnboardingNav } from "@/modules/admin/onboarding/components/admin-onboarding-nav";
@@ -34,29 +34,7 @@ async function AdminOnboardingPage({
     );
   } else if (navigation.tab === "catalog") {
     const catalog = await getAdminBusinessCatalog();
-    const subcategoryCount = catalog.reduce(
-      (total, segment) => total + segment.subcategories.length,
-      0,
-    );
-    content = (
-      <Card className="border-border/70 rounded-2xl shadow-sm">
-        <CardHeader>
-          <CardTitle>
-            <h2>Gerenciamento do catálogo</h2>
-          </CardTitle>
-          <p className="text-muted-foreground text-sm">
-            A edição versionada de segmentos e subcategorias será concluída na
-            próxima etapa.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm tabular-nums">
-            {catalog.length} segmento(s) e {subcategoryCount} subcategoria(s)
-            carregados.
-          </p>
-        </CardContent>
-      </Card>
-    );
+    content = <AdminOnboardingCatalog catalog={catalog} />;
   } else {
     const overview = await getAdminOnboardingOverview({
       from: navigation.filters.from,
