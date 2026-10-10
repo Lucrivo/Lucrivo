@@ -1364,6 +1364,15 @@ export type Database = {
       current_courtesy_access_expires_at: { Args: never; Returns: string };
       current_user_has_completed_onboarding: { Args: never; Returns: boolean };
       current_user_is_admin: { Args: never; Returns: boolean };
+      export_admin_onboarding_contacts_v1: {
+        Args: {
+          p_from?: string;
+          p_segment_id?: number;
+          p_subcategory_id?: number;
+          p_to?: string;
+        };
+        Returns: Json;
+      };
       fail_report_ai_turn_v1: {
         Args: {
           p_counts_toward_quota: boolean;
@@ -1373,6 +1382,10 @@ export type Database = {
         Returns: string;
       };
       get_admin_dashboard_v1: { Args: never; Returns: Json };
+      get_admin_onboarding_overview_v1: {
+        Args: { p_from: string; p_to: string };
+        Returns: Json;
+      };
       get_admin_user_v1: { Args: { p_user_id: string }; Returns: Json };
       get_client_dashboard_v1: {
         Args: {
@@ -1389,6 +1402,20 @@ export type Database = {
         Returns: Json;
       };
       get_my_onboarding_profile_v1: { Args: never; Returns: Json };
+      list_admin_onboarding_contacts_v1: {
+        Args: {
+          p_consent?: string;
+          p_cursor_completed_at?: string;
+          p_cursor_user_id?: string;
+          p_from?: string;
+          p_limit?: number;
+          p_query?: string;
+          p_segment_id?: number;
+          p_subcategory_id?: number;
+          p_to?: string;
+        };
+        Returns: Json;
+      };
       list_admin_recent_subscriptions_v1: {
         Args: { p_billing_mode: string; p_period: string; p_state: string };
         Returns: Json;
@@ -1558,6 +1585,27 @@ export type Database = {
           p_question: string;
           p_report_version: number;
           p_request_id: string;
+        };
+        Returns: Json;
+      };
+      save_admin_business_segment_v1: {
+        Args: {
+          p_expected_version: number;
+          p_id: number;
+          p_is_active: boolean;
+          p_name: string;
+          p_sort_order: number;
+        };
+        Returns: Json;
+      };
+      save_admin_business_subcategory_v1: {
+        Args: {
+          p_expected_version: number;
+          p_id: number;
+          p_is_active: boolean;
+          p_name: string;
+          p_segment_id: number;
+          p_sort_order: number;
         };
         Returns: Json;
       };

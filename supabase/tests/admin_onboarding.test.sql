@@ -974,5 +974,351 @@ select is(
   'archiving preserves profiles that reference the segment'
 );
 
+select has_table(
+  'private',
+  'admin_onboarding_export_events',
+  'PII-free onboarding export audit table exists'
+);
+select has_function(
+  'public',
+  'export_admin_onboarding_contacts_v1',
+  array['bigint', 'bigint', 'date', 'date'],
+  'versioned authorized-contact export RPC exists'
+);
+select ok(
+  (
+    select prosecdef
+      and provolatile = 'v'
+      and proconfig = array['search_path=""']::text[]
+    from pg_catalog.pg_proc
+    where oid = pg_catalog.to_regprocedure(
+      'public.export_admin_onboarding_contacts_v1(bigint,bigint,date,date)'
+    )
+  ),
+  'export RPC is a volatile security definer with an empty search path'
+);
+select ok(
+  not pg_catalog.has_function_privilege(
+    'anon',
+    'public.export_admin_onboarding_contacts_v1(bigint,bigint,date,date)',
+    'execute'
+  )
+  and not pg_catalog.has_function_privilege(
+    'service_role',
+    'public.export_admin_onboarding_contacts_v1(bigint,bigint,date,date)',
+    'execute'
+  ),
+  'unintended roles cannot execute the export RPC'
+);
+select table_privs_are(
+  'private',
+  'admin_onboarding_export_events',
+  'authenticated',
+  array[]::text[],
+  'authenticated callers cannot read or mutate export audits'
+);
+select table_privs_are(
+  'private',
+  'admin_onboarding_export_events',
+  'service_role',
+  array[]::text[],
+  'service role has no direct export-audit access'
+);
+select ok(
+  (
+    select pg_catalog.count(*) >= 1
+    from pg_catalog.pg_constraint
+    where conrelid = 'private.admin_onboarding_export_events'::regclass
+      and contype = 'c'
+      and pg_catalog.pg_get_constraintdef(oid)
+        like '%row_count >= 0%row_count <= 5000%'
+  ),
+  'audit rows constrain exported row counts to zero through five thousand'
+);
+select ok(
+  (
+    select pg_catalog.count(*) >= 1
+    from pg_catalog.pg_indexes
+    where schemaname = 'private'
+      and tablename = 'admin_onboarding_export_events'
+      and indexdef like '%actor_id%created_at%'
+  ),
+  'export audits are indexed by actor and time'
+);
+
+set local role authenticated;
+select pg_catalog.set_config(
+  'request.jwt.claim.sub',
+  '97000000-0000-4000-8000-000000000002',
+  true
+);
+select pg_catalog.set_config(
+  'request.jwt.claims',
+  '{"sub":"97000000-0000-4000-8000-000000000002","role":"authenticated","aal":"aal2"}',
+  true
+);
+select throws_ok(
+  $$ select public.export_admin_onboarding_contacts_v1(null,null,null,null) $$,
+  '42501', 'administrator access required',
+  'ordinary users cannot export onboarding contacts'
+);
+reset role;
+
+set local role authenticated;
+select pg_catalog.set_config(
+  'request.jwt.claim.sub',
+  '97000000-0000-4000-8000-000000000001',
+  true
+);
+select pg_catalog.set_config(
+  'request.jwt.claims',
+  '{"sub":"97000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal1"}',
+  true
+);
+select throws_ok(
+  $$ select public.export_admin_onboarding_contacts_v1(null,null,null,null) $$,
+  '42501', 'administrator access required',
+  'administrator at aal1 cannot export onboarding contacts'
+);
+reset role;
+
+create temporary table export_result (payload jsonb) on commit drop;
+grant select, insert, update, delete on export_result to authenticated;
+
+set local role authenticated;
+select pg_catalog.set_config(
+  'request.jwt.claim.sub',
+  '97000000-0000-4000-8000-000000000001',
+  true
+);
+select pg_catalog.set_config(
+  'request.jwt.claims',
+  '{"sub":"97000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal2"}',
+  true
+);
+insert into export_result (payload)
+select public.export_admin_onboarding_contacts_v1(null, null, null, null);
+select is(
+  (select payload ->> 'status' from export_result),
+  'ready',
+  'authorized contacts produce a ready export'
+);
+select is(
+  (select pg_catalog.jsonb_array_length(payload -> 'items') from export_result),
+  3,
+  'declined and deleted contacts never appear in an unfiltered export'
+);
+select ok(
+  (select payload::text not like '%Bruno Bloqueado%' from export_result)
+  and (select payload::text not like '%+5511999990003%' from export_result)
+  and (select payload::text not like '%Pessoa Excluída%' from export_result),
+  'export payload excludes declined and logically deleted profiles'
+);
+select is(
+  (
+    select item ->> 'subcategory'
+    from export_result,
+      pg_catalog.jsonb_array_elements(payload -> 'items') as item
+    where item ->> 'fullName' = 'Carla Construção'
+  ),
+  'Reformas residenciais',
+  'Outro exports its current custom description'
+);
+select is(
+  (
+    select item ->> 'consentedAt'
+    from export_result,
+      pg_catalog.jsonb_array_elements(payload -> 'items') as item
+    where item ->> 'fullName' = 'Ana Fórmula'
+  ),
+  '2026-10-02T15:00:00+00:00',
+  'export uses the current active consent timestamp'
+);
+
+delete from export_result;
+insert into export_result (payload)
+select public.export_admin_onboarding_contacts_v1(
+  (select id from public.business_segments where name = 'Construção'),
+  null,
+  null,
+  null
+);
+select is(
+  (select pg_catalog.jsonb_array_length(payload -> 'items') from export_result),
+  1,
+  'segment filter is applied to export rows'
+);
+
+delete from export_result;
+insert into export_result (payload)
+select public.export_admin_onboarding_contacts_v1(
+  null,
+  (select id from public.business_subcategories where name = 'Confeitaria atualizada'),
+  '2026-10-02',
+  '2026-10-03'
+);
+select is(
+  (select payload #>> '{items,0,fullName}' from export_result),
+  'Ana Fórmula',
+  'subcategory and Sao Paulo completion-date filters are applied'
+);
+
+delete from export_result;
+insert into export_result (payload)
+select public.export_admin_onboarding_contacts_v1(
+  (select id from public.business_segments where name = 'Educação'),
+  null,
+  null,
+  null
+);
+select is(
+  (select payload from export_result),
+  '{"status":"empty"}'::jsonb,
+  'zero authorized rows return empty without an item array'
+);
+reset role;
+
+select is(
+  (
+    select pg_catalog.count(*)
+    from private.admin_onboarding_export_events
+  ),
+  3::bigint,
+  'only ready exports created audit rows'
+);
+select ok(
+  (
+    select pg_catalog.bool_and(
+      actor_id = '97000000-0000-4000-8000-000000000001'
+      and row_count between 1 and 5000
+      and pg_catalog.char_length(filters::text) <= 2000
+      and filters::text not like '%+55%'
+      and filters::text not like '%Ana Fórmula%'
+      and filters::text not like '%csv%'
+    )
+    from private.admin_onboarding_export_events
+  ),
+  'audit rows contain actor, bounded filters, count, and no exported PII'
+);
+
+insert into auth.users (
+  id, aud, role, email, email_confirmed_at, created_at
+)
+select
+  (
+    '98000000-0000-4000-8000-'
+    || pg_catalog.lpad(series.value::text, 12, '0')
+  )::uuid,
+  'authenticated',
+  'authenticated',
+  'bulk-' || series.value || '@onboarding-export.test',
+  '2026-10-08T12:00:00Z',
+  '2026-10-08T12:00:00Z'
+from pg_catalog.generate_series(1, 5001) as series(value);
+
+insert into public.onboarding_profiles (
+  user_id,
+  full_name,
+  whatsapp_e164,
+  segment_id,
+  subcategory_id,
+  custom_subcategory,
+  whatsapp_marketing_consent,
+  marketing_consent_granted_at,
+  completed_at,
+  updated_at
+)
+select
+  (
+    '98000000-0000-4000-8000-'
+    || pg_catalog.lpad(series.value::text, 12, '0')
+  )::uuid,
+  'Contato autorizado ' || series.value,
+  '+5511888888888',
+  case
+    when series.value <= 5000 then technology.id
+    else education.id
+  end,
+  case
+    when series.value <= 5000 then support.id
+    else null
+  end,
+  case
+    when series.value <= 5000 then null
+    else 'Aulas particulares'
+  end,
+  true,
+  '2026-10-08T13:00:00Z',
+  '2026-10-08T13:00:00Z'::timestamptz
+    + series.value * interval '1 microsecond',
+  '2026-10-08T13:00:00Z'
+from pg_catalog.generate_series(1, 5001) as series(value)
+cross join public.business_segments as technology
+cross join public.business_segments as education
+cross join public.business_subcategories as support
+where technology.name = 'Tecnologia'
+  and education.name = 'Educação'
+  and support.name = 'Assistência técnica'
+  and support.segment_id = technology.id;
+
+set local role authenticated;
+select pg_catalog.set_config(
+  'request.jwt.claim.sub',
+  '97000000-0000-4000-8000-000000000001',
+  true
+);
+select pg_catalog.set_config(
+  'request.jwt.claims',
+  '{"sub":"97000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal2"}',
+  true
+);
+
+delete from export_result;
+insert into export_result (payload)
+select public.export_admin_onboarding_contacts_v1(
+  (select id from public.business_segments where name = 'Tecnologia'),
+  null,
+  null,
+  null
+);
+select is(
+  (select payload ->> 'status' from export_result),
+  'ready',
+  'exactly five thousand authorized rows remain exportable'
+);
+select is(
+  (select pg_catalog.jsonb_array_length(payload -> 'items') from export_result),
+  5000,
+  'ready export is capped at five thousand rows'
+);
+
+delete from export_result;
+insert into export_result (payload)
+select public.export_admin_onboarding_contacts_v1(null, null, null, null);
+select is(
+  (select payload from export_result),
+  '{"status":"limit_exceeded"}'::jsonb,
+  'five thousand and one filtered rows return limit_exceeded without partial items'
+);
+reset role;
+
+select is(
+  (
+    select pg_catalog.count(*)
+    from private.admin_onboarding_export_events
+    where row_count = 5000
+  ),
+  1::bigint,
+  'the five-thousand-row ready export writes one audit event'
+);
+select is(
+  (
+    select pg_catalog.count(*)
+    from private.admin_onboarding_export_events
+  ),
+  4::bigint,
+  'limit-exceeded exports do not write audit events'
+);
+
 select * from finish();
 rollback;
