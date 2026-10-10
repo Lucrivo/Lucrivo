@@ -18,6 +18,12 @@ select has_function(
   ],
   'versioned onboarding contact-list RPC exists'
 );
+select has_function(
+  'public',
+  'get_admin_business_catalog_v1',
+  array[]::text[],
+  'versioned admin business-catalog RPC exists'
+);
 
 select ok(
   (
@@ -33,6 +39,9 @@ select ok(
       ),
       pg_catalog.to_regprocedure(
         'public.list_admin_onboarding_contacts_v1(text,bigint,bigint,text,date,date,timestamptz,uuid,integer)'
+      ),
+      pg_catalog.to_regprocedure(
+        'public.get_admin_business_catalog_v1()'
       )
     )
   ),
@@ -77,6 +86,24 @@ select ok(
     'execute'
   ),
   'authenticated callers reach the internal admin authorization check'
+);
+select ok(
+  not pg_catalog.has_function_privilege(
+    'anon',
+    'public.get_admin_business_catalog_v1()',
+    'execute'
+  )
+  and not pg_catalog.has_function_privilege(
+    'service_role',
+    'public.get_admin_business_catalog_v1()',
+    'execute'
+  )
+  and pg_catalog.has_function_privilege(
+    'authenticated',
+    'public.get_admin_business_catalog_v1()',
+    'execute'
+  ),
+  'only authenticated callers reach the admin catalog authorization check'
 );
 
 alter table private.whatsapp_consent_events
@@ -634,6 +661,11 @@ select throws_ok(
   '42501', 'administrator access required',
   'ordinary users cannot mutate subcategories'
 );
+select throws_ok(
+  $$ select public.get_admin_business_catalog_v1() $$,
+  '42501', 'administrator access required',
+  'ordinary users cannot read the versioned admin catalog'
+);
 reset role;
 
 set local role authenticated;
@@ -657,6 +689,11 @@ select throws_ok(
   '42501', 'administrator access required',
   'administrator at aal1 cannot mutate subcategories'
 );
+select throws_ok(
+  $$ select public.get_admin_business_catalog_v1() $$,
+  '42501', 'administrator access required',
+  'administrator at aal1 cannot read the versioned admin catalog'
+);
 reset role;
 
 create temporary table saved_segment (payload jsonb) on commit drop;
@@ -674,6 +711,25 @@ select pg_catalog.set_config(
   'request.jwt.claims',
   '{"sub":"97000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal2"}',
   true
+);
+select ok(
+  (
+    select pg_catalog.bool_and(
+      segment ? 'version'
+      and segment ? 'subcategories'
+      and not exists (
+        select 1
+        from pg_catalog.jsonb_array_elements(
+          segment -> 'subcategories'
+        ) as subcategory(value)
+        where not subcategory.value ? 'version'
+      )
+    )
+    from pg_catalog.jsonb_array_elements(
+      public.get_admin_business_catalog_v1()
+    ) as catalog(segment)
+  ),
+  'admin catalog returns segment and subcategory versions in one payload'
 );
 
 insert into saved_segment (payload)

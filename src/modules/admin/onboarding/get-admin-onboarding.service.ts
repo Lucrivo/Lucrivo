@@ -94,43 +94,9 @@ async function getAdminOnboardingContacts(filters: AdminOnboardingFilters) {
 
 async function getAdminBusinessCatalog() {
   const { supabase } = await requireAdmin();
-  const [segmentsResult, subcategoriesResult] = await Promise.all([
-    supabase
-      .from("business_segments")
-      .select("id,name,sort_order,is_active,version")
-      .order("sort_order", { ascending: true })
-      .order("id", { ascending: true }),
-    supabase
-      .from("business_subcategories")
-      .select("id,segment_id,name,sort_order,is_active,version")
-      .order("sort_order", { ascending: true })
-      .order("id", { ascending: true }),
-  ]);
-
-  if (segmentsResult.error || subcategoriesResult.error) {
-    throw new AdminOnboardingUnavailableError();
-  }
-
-  const subcategories = (subcategoriesResult.data ?? []).map((subcategory) => ({
-    id: subcategory.id,
-    segmentId: subcategory.segment_id,
-    name: subcategory.name,
-    sortOrder: subcategory.sort_order,
-    isActive: subcategory.is_active,
-    version: subcategory.version,
-  }));
-  const catalog = (segmentsResult.data ?? []).map((segment) => ({
-    id: segment.id,
-    name: segment.name,
-    sortOrder: segment.sort_order,
-    isActive: segment.is_active,
-    version: segment.version,
-    subcategories: subcategories.filter(
-      (subcategory) => subcategory.segmentId === segment.id,
-    ),
-  }));
-  const parsed = adminBusinessCatalogSchema.safeParse(catalog);
-  if (!parsed.success) throw new AdminOnboardingUnavailableError();
+  const { data, error } = await supabase.rpc("get_admin_business_catalog_v1");
+  const parsed = adminBusinessCatalogSchema.safeParse(data);
+  if (error || !parsed.success) throw new AdminOnboardingUnavailableError();
   return parsed.data;
 }
 

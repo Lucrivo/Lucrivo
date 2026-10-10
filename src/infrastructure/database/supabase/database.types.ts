@@ -1381,6 +1381,7 @@ export type Database = {
         };
         Returns: string;
       };
+      get_admin_business_catalog_v1: { Args: never; Returns: Json };
       get_admin_dashboard_v1: { Args: never; Returns: Json };
       get_admin_onboarding_overview_v1: {
         Args: { p_from: string; p_to: string };

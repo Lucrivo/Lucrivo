@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { from, requireAdmin, rpc } = vi.hoisted(() => ({
-  from: vi.fn(),
+const { requireAdmin, rpc } = vi.hoisted(() => ({
   requireAdmin: vi.fn(),
   rpc: vi.fn(),
 }));
@@ -29,16 +28,10 @@ const overview = {
   subcategories: [{ id: null, name: "Outro", count: 1 }],
 };
 
-function orderedResult(result: unknown) {
-  const secondOrder = vi.fn().mockResolvedValue(result);
-  const firstOrder = vi.fn().mockReturnValue({ order: secondOrder });
-  return { select: vi.fn().mockReturnValue({ order: firstOrder }) };
-}
-
 describe("admin onboarding read services", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    requireAdmin.mockResolvedValue({ supabase: { from, rpc } });
+    requireAdmin.mockResolvedValue({ supabase: { rpc } });
     rpc.mockResolvedValue({ data: overview, error: null });
   });
 
@@ -93,37 +86,7 @@ describe("admin onboarding read services", () => {
   });
 
   it("loads versioned catalog rows after authorization", async () => {
-    from.mockImplementation((table: string) => {
-      if (table === "business_segments") {
-        return orderedResult({
-          data: [
-            {
-              id: 1,
-              name: "Alimentação",
-              sort_order: 10,
-              is_active: true,
-              version: 2,
-            },
-          ],
-          error: null,
-        });
-      }
-      return orderedResult({
-        data: [
-          {
-            id: 2,
-            segment_id: 1,
-            name: "Confeitaria",
-            sort_order: 10,
-            is_active: false,
-            version: 3,
-          },
-        ],
-        error: null,
-      });
-    });
-
-    await expect(getAdminBusinessCatalog()).resolves.toEqual([
+    const catalog = [
       {
         id: 1,
         name: "Alimentação",
@@ -141,9 +104,15 @@ describe("admin onboarding read services", () => {
           },
         ],
       },
-    ]);
-    expect(from).toHaveBeenCalledWith("business_segments");
-    expect(from).toHaveBeenCalledWith("business_subcategories");
+    ];
+    rpc.mockResolvedValue({
+      data: catalog,
+      error: null,
+    });
+
+    await expect(getAdminBusinessCatalog()).resolves.toEqual(catalog);
+    expect(rpc).toHaveBeenCalledOnce();
+    expect(rpc).toHaveBeenCalledWith("get_admin_business_catalog_v1");
   });
 
   it("never converts database errors or malformed JSON to empty success", async () => {
