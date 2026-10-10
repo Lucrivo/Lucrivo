@@ -117,4 +117,24 @@ describe("admin onboarding navigation and filters", () => {
       scroll: false,
     });
   });
+
+  it("allows long active-filter labels to shrink on narrow screens", () => {
+    const longSegmentName =
+      "Alimentação artesanal e experiências gastronômicas personalizadas";
+    render(
+      <AdminOnboardingFilters
+        navigation={parseAdminOnboardingNavigation({
+          tab: "contacts",
+          segmentId: "1",
+        })}
+        catalog={[{ ...catalog[0], name: longSegmentName }]}
+      />,
+    );
+
+    const removeButton = screen.getByRole("button", {
+      name: `Remover segmento ${longSegmentName}`,
+    });
+    expect(removeButton).toHaveClass("max-w-full", "min-w-0");
+    expect(removeButton.querySelector("span")).toHaveClass("truncate");
+  });
 });

@@ -27,7 +27,7 @@ async function AdminOnboardingPage({
       getAdminBusinessCatalog(),
     ]);
     content = (
-      <div className="grid gap-5">
+      <div className="grid min-w-0 gap-5">
         <AdminOnboardingFilters navigation={navigation} catalog={catalog} />
         <AdminOnboardingContacts data={data} navigation={navigation} />
       </div>
@@ -41,7 +41,7 @@ async function AdminOnboardingPage({
       to: navigation.filters.to,
     });
     content = (
-      <div className="grid gap-5">
+      <div className="grid min-w-0 gap-5">
         <AdminOnboardingFilters
           navigation={navigation}
           catalog={[]}

@@ -121,7 +121,7 @@ function AdminOnboardingFilters({
   }
 
   return (
-    <div className="grid gap-3">
+    <div className="grid min-w-0 gap-3">
       <form
         role="search"
         aria-label={
@@ -132,8 +132,8 @@ function AdminOnboardingFilters({
         onSubmit={submit}
         className={
           variant === "overview"
-            ? "grid gap-3 sm:grid-cols-[minmax(9rem,12rem)_minmax(9rem,12rem)_auto] sm:items-end"
-            : "grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(12rem,1.5fr)_minmax(10rem,1fr)_minmax(10rem,1fr)_minmax(10rem,0.8fr)_9.5rem_9.5rem_auto] xl:items-end"
+            ? "grid min-w-0 gap-3 sm:grid-cols-[minmax(9rem,12rem)_minmax(9rem,12rem)_auto] sm:items-end"
+            : "grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(12rem,1.5fr)_minmax(10rem,1fr)_minmax(10rem,1fr)_minmax(10rem,0.8fr)_9.5rem_9.5rem_auto] xl:items-end"
         }
       >
         {variant === "contacts" ? (
@@ -236,7 +236,10 @@ function AdminOnboardingFilters({
         </Button>
       </form>
       {activeFilters.length ? (
-        <div className="flex flex-wrap gap-2" aria-label="Filtros ativos">
+        <div
+          className="flex min-w-0 flex-wrap gap-2"
+          aria-label="Filtros ativos"
+        >
           {activeFilters.map((filter) => (
             <Button
               key={filter.key}
@@ -245,9 +248,9 @@ function AdminOnboardingFilters({
               size="sm"
               aria-label={filter.removeLabel}
               onClick={() => navigate(filter.patch)}
-              className="h-8 rounded-full font-normal"
+              className="h-8 max-w-full min-w-0 rounded-full font-normal"
             >
-              {filter.label}
+              <span className="truncate">{filter.label}</span>
               <XIcon aria-hidden="true" />
             </Button>
           ))}
