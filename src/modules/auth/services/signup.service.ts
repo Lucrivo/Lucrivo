@@ -6,8 +6,8 @@ import type { RegisterInput } from "@/schemas/auth/register.schema";
 type SignupCredentials = Pick<RegisterInput, "email" | "password">;
 
 type SignupServiceResult =
-  | { status: "authenticated" }
-  | { status: "confirmation_required" }
+  | { status: "authenticated"; userId: string }
+  | { status: "confirmation_required"; userId: string | null }
   | {
       status: "error";
       error:
@@ -39,9 +39,18 @@ async function signup(
       return { status: "error", error: "signup_failed" };
     }
 
-    return data.session
-      ? { status: "authenticated" }
-      : { status: "confirmation_required" };
+    if (data.session) {
+      if (!data.user?.id) return { status: "error", error: "signup_failed" };
+      return { status: "authenticated", userId: data.user.id };
+    }
+
+    const identities = data.user?.identities;
+    const userId =
+      data.user?.id && Array.isArray(identities) && identities.length > 0
+        ? data.user.id
+        : null;
+
+    return { status: "confirmation_required", userId };
   } catch {
     return { status: "error", error: "signup_failed" };
   }
