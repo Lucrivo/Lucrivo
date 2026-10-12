@@ -8,7 +8,10 @@ const { revalidatePath, requireUser, rpc } = vi.hoisted(() => ({
 
 vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ revalidatePath }));
-vi.mock("@/modules/auth/services/require-user", () => ({ requireUser }));
+vi.mock("@/modules/auth/services/require-user", () => ({
+  requireUser,
+  requireClientAccess: requireUser,
+}));
 
 import { saveOnboardingProfile } from "./save-onboarding-profile.action";
 

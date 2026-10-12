@@ -6,7 +6,13 @@ const { revalidatePath, requireUser } = vi.hoisted(() => ({
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath }));
-vi.mock("@/modules/auth/services/require-user", () => ({ requireUser }));
+vi.mock("@/modules/auth/services/require-user", () => ({
+  requireUser,
+  requireClientAccess: requireUser,
+  AuthRequiredError: class AuthRequiredError extends Error {},
+  AccountUnavailableError: class AccountUnavailableError extends Error {},
+  LegalAcceptanceRequiredError: class LegalAcceptanceRequiredError extends Error {},
+}));
 
 import { deleteReport } from "./delete-report.action";
 

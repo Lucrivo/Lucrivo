@@ -10,7 +10,8 @@ import { serviceFlowSubmissionSchema } from "@/modules/quick-diagnosis/schemas/s
 import {
   AccountUnavailableError,
   AuthRequiredError,
-  requireUser,
+  LegalAcceptanceRequiredError,
+  requireClientAccess,
 } from "@/modules/auth/services/require-user";
 
 import type {
@@ -151,7 +152,7 @@ async function saveReportEdit({
     const preview = calculateReportPreview(draft);
     if (preview.status === "invalid") return preview;
 
-    const { supabase, userId } = await requireUser();
+    const { supabase, userId } = await requireClientAccess();
     const billing = await getBillingOverview({ supabase, userId });
     if (billing.status !== "success") return { status: "error" };
     if (billing.overview.tier !== "paid") return { status: "plan_required" };
@@ -176,7 +177,8 @@ async function saveReportEdit({
   } catch (error) {
     if (
       error instanceof AuthRequiredError ||
-      error instanceof AccountUnavailableError
+      error instanceof AccountUnavailableError ||
+      error instanceof LegalAcceptanceRequiredError
     )
       return { status: "error" };
     return { status: "error" };

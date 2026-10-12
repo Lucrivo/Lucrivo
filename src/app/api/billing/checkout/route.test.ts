@@ -20,7 +20,9 @@ const {
 
 vi.mock("@/modules/auth/services/require-user", () => ({
   AuthRequiredError: class AuthRequiredError extends Error {},
+  LegalAcceptanceRequiredError: class LegalAcceptanceRequiredError extends Error {},
   requireUser,
+  requireClientAccess: requireUser,
 }));
 vi.mock("@/config/billing-environment", () => ({ readBillingEnvironment }));
 vi.mock("@/config/launch-offer-environment", () => ({
@@ -36,7 +38,10 @@ vi.mock("@/modules/billing/services/create-hosted-checkout.service", () => ({
   createHostedCheckout,
 }));
 
-import { AuthRequiredError } from "@/modules/auth/services/require-user";
+import {
+  AuthRequiredError,
+  LegalAcceptanceRequiredError,
+} from "@/modules/auth/services/require-user";
 
 import { POST } from "./route";
 
@@ -99,6 +104,16 @@ describe("POST /api/billing/checkout", () => {
     expect(readLaunchOfferEnvironment).not.toHaveBeenCalled();
     expect(createAdminClient).not.toHaveBeenCalled();
     expect(createAsaasGateway).not.toHaveBeenCalled();
+  });
+
+  it("blocks checkout before legal acceptance", async () => {
+    requireUser.mockRejectedValue(new LegalAcceptanceRequiredError());
+
+    const { response, json } = await post();
+
+    expect(response.status).toBe(403);
+    expect(json).toEqual({ error: "legal_acceptance_required" });
+    expect(createHostedCheckout).not.toHaveBeenCalled();
   });
 
   it.each([

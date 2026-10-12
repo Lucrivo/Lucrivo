@@ -28,7 +28,9 @@ const {
 
 vi.mock("@/modules/auth/services/require-user", () => ({
   AuthRequiredError,
+  LegalAcceptanceRequiredError: class LegalAcceptanceRequiredError extends Error {},
   requireUser,
+  requireClientAccess: requireUser,
 }));
 vi.mock(
   "@/modules/detailed-diagnosis/domain/calculate-detailed-diagnosis",

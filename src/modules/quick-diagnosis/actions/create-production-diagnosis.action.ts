@@ -2,7 +2,8 @@
 
 import {
   AuthRequiredError,
-  requireUser,
+  LegalAcceptanceRequiredError,
+  requireClientAccess,
 } from "@/modules/auth/services/require-user";
 import { buildProductionReportSnapshot } from "@/modules/reports/domain/build-production-report-snapshot";
 import { calculateProductionReport } from "@/modules/reports/domain/calculate-production-report";
@@ -29,14 +30,17 @@ async function createProductionDiagnosis(
   }
 
   try {
-    const { supabase } = await requireUser();
+    const { supabase } = await requireClientAccess();
     const command = composeProductionDiagnosisCommand(parsed.data);
     const calculation = calculateProductionReport(command);
     const snapshot = buildProductionReportSnapshot(command, calculation);
 
     return await createProductionReport({ supabase, command, snapshot });
   } catch (error) {
-    if (error instanceof AuthRequiredError) {
+    if (
+      error instanceof AuthRequiredError ||
+      error instanceof LegalAcceptanceRequiredError
+    ) {
       return { status: "error", error: "unauthorized" };
     }
 

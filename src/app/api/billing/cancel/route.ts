@@ -5,7 +5,8 @@ import { createAdminClient } from "@/infrastructure/database/supabase/clients/ad
 import { createAsaasGateway } from "@/infrastructure/payments/asaas/asaas.client";
 import {
   AuthRequiredError,
-  requireUser,
+  LegalAcceptanceRequiredError,
+  requireClientAccess,
 } from "@/modules/auth/services/require-user";
 import { cancelMonthlyBilling } from "@/modules/billing/services/cancel-monthly-billing.service";
 
@@ -20,11 +21,15 @@ async function POST() {
   let userId: string;
 
   try {
-    ({ userId } = await requireUser());
+    ({ userId } = await requireClientAccess());
   } catch (error) {
-    return error instanceof AuthRequiredError
-      ? json({ error: "unauthorized" }, 401)
-      : json({ error: "service_unavailable" }, 503);
+    if (error instanceof AuthRequiredError) {
+      return json({ error: "unauthorized" }, 401);
+    }
+    if (error instanceof LegalAcceptanceRequiredError) {
+      return json({ error: "legal_acceptance_required" }, 403);
+    }
+    return json({ error: "service_unavailable" }, 503);
   }
 
   try {

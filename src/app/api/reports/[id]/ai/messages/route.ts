@@ -4,7 +4,8 @@ import { readReportAiEnvironment } from "@/config/report-ai-environment";
 import { createOpenAiReportAiGateway } from "@/infrastructure/ai/openai/report-ai.gateway";
 import {
   AuthRequiredError,
-  requireUser,
+  LegalAcceptanceRequiredError,
+  requireClientAccess,
 } from "@/modules/auth/services/require-user";
 import { getBillingOverview } from "@/modules/billing/services/get-billing-overview.service";
 import { buildReportAiContext } from "@/modules/report-ai/domain/build-report-ai-context";
@@ -55,11 +56,15 @@ async function POST(
   try {
     let auth: Awaited<ReturnType<typeof requireUser>>;
     try {
-      auth = await requireUser();
+      auth = await requireClientAccess();
     } catch (error) {
-      return error instanceof AuthRequiredError
-        ? json({ error: "unauthorized" }, 401)
-        : json({ error: "service_unavailable" }, 503);
+      if (error instanceof AuthRequiredError) {
+        return json({ error: "unauthorized" }, 401);
+      }
+      if (error instanceof LegalAcceptanceRequiredError) {
+        return json({ error: "legal_acceptance_required" }, 403);
+      }
+      return json({ error: "service_unavailable" }, 503);
     }
 
     let requestBody: unknown;
