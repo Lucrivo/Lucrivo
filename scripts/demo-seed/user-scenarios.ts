@@ -7,6 +7,7 @@ import type {
   SeedContract,
   SeedContractStatus,
   SeedCreatedBucket,
+  SeedOnboardingProfile,
   SeedPayment,
   SeedPaymentStatus,
   SeedRelativeTime,
@@ -16,6 +17,17 @@ import { currentReportTemplates } from "./report-scenarios";
 
 const MONTHLY_PRICE_ID = "20000000-0000-4000-8000-000000000001";
 const SEMIANNUAL_PRICE_ID = "20000000-0000-4000-8000-000000000002";
+
+const segmentCatalog = [
+  ["Alimentação", "Confeitaria"],
+  ["Beleza", "Salão de beleza"],
+  ["Vestuário", "Loja de roupas"],
+  ["Tecnologia", "Assistência técnica"],
+  ["Educação", "Curso online"],
+  ["Construção", null],
+  ["Saúde", null],
+  ["Comércio", null],
+] as const;
 
 const contractStatuses = [
   "pending",
@@ -126,6 +138,43 @@ function buildUsers(): { admin: SeedUser; clients: SeedUser[] } {
     };
   });
   return { admin, clients };
+}
+
+function profileCompletedAt(client: SeedUser): SeedRelativeTime {
+  if (client.createdBucket === "today") {
+    return relativeTime(0, 0, -(client.ordinal % 12) + 0.5, "now");
+  }
+  if (client.createdBucket === "week") {
+    return relativeTime(0, -((client.ordinal % 5) + 1), -1, "now");
+  }
+  if (client.createdBucket === "month") {
+    return relativeTime(0, -((client.ordinal - 17) % 10), -1, "now");
+  }
+
+  const months = -Number(client.createdBucket.slice("month-".length));
+  return relativeTime(months, (client.ordinal % 20) + 1, 10);
+}
+
+function buildProfiles(clients: SeedUser[]): SeedOnboardingProfile[] {
+  return clients.map((client) => {
+    const [segmentName, subcategoryName] =
+      segmentCatalog[(client.ordinal - 1) % segmentCatalog.length]!;
+    const suffix = String(client.ordinal).padStart(3, "0");
+
+    return {
+      userId: client.id,
+      fullName: `Cliente Demonstração ${suffix}`,
+      whatsappE164: `+5511900000${suffix}`,
+      segmentName,
+      subcategoryName,
+      customSubcategory:
+        subcategoryName === null
+          ? `Atendimento especializado ${suffix}`
+          : null,
+      marketingConsent: client.ordinal % 2 === 0,
+      completedAt: profileCompletedAt(client),
+    };
+  });
 }
 
 function buildReports(
@@ -485,10 +534,20 @@ function buildStatesAndEvents(
 
 function buildDemoCatalog(): DemoSeedCatalog {
   const { admin, clients } = buildUsers();
+  const profiles = buildProfiles(clients);
   const reports = buildReports(admin, clients);
   const { contracts, payments } = buildBilling(admin, clients);
   const { states, events } = buildStatesAndEvents(admin, clients);
-  return { admin, clients, reports, contracts, payments, states, events };
+  return {
+    admin,
+    clients,
+    profiles,
+    reports,
+    contracts,
+    payments,
+    states,
+    events,
+  };
 }
 
 export {
