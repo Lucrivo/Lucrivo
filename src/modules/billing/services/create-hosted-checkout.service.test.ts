@@ -93,6 +93,7 @@ describe("createHostedCheckout", () => {
   const asaas = {
     createCheckout,
     cancelCheckout,
+    updateSubscriptionRenewal: vi.fn(),
     deleteSubscription: vi.fn(),
     refundPayment: vi.fn(),
     refundInstallment: vi.fn(),

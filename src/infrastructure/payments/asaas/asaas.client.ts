@@ -26,7 +26,10 @@ type AsaasCheckoutRequest = AsaasCheckoutRequestBase &
     | {
         billingTypes: ["CREDIT_CARD"];
         chargeTypes: ["RECURRENT"];
-        subscription: { cycle: "MONTHLY"; nextDueDate: string };
+        subscription: {
+          cycle: "MONTHLY" | "BIMONTHLY";
+          nextDueDate: string;
+        };
         installment?: never;
       }
     | {
@@ -49,9 +52,18 @@ type AsaasCheckout = {
   status: "ACTIVE";
 };
 
+type AsaasSubscriptionRenewalInput = {
+  cycle: "MONTHLY";
+  nextDueDate: string;
+};
+
 interface AsaasGateway {
   createCheckout(input: AsaasCheckoutRequest): Promise<AsaasCheckout>;
   cancelCheckout(id: string): Promise<{ id: string; status: "CANCELED" }>;
+  updateSubscriptionRenewal(
+    id: string,
+    input: AsaasSubscriptionRenewalInput,
+  ): Promise<{ id: string; cycle: "MONTHLY"; nextDueDate: string }>;
   deleteSubscription(id: string): Promise<{ id: string; deleted: true }>;
   refundPayment(id: string): Promise<{ id: string }>;
   refundInstallment(id: string): Promise<{ id: string }>;
@@ -98,6 +110,12 @@ const checkoutResponseSchema = z.looseObject({
 const cancelCheckoutResponseSchema = z.looseObject({
   id: z.string().min(1),
   status: z.literal("CANCELED"),
+});
+
+const subscriptionRenewalResponseSchema = z.looseObject({
+  id: z.string().min(1),
+  cycle: z.literal("MONTHLY"),
+  nextDueDate: z.iso.date(),
 });
 
 const deleteResponseSchema = z.looseObject({
@@ -247,6 +265,34 @@ function createAsaasGateway(input: {
       return { id: checkout.id, status: checkout.status };
     },
 
+    async updateSubscriptionRenewal(id, renewal) {
+      const subscription = await request(
+        `/v3/subscriptions/${encodeURIComponent(id)}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            cycle: renewal.cycle,
+            nextDueDate: renewal.nextDueDate,
+            updatePendingPayments: true,
+          }),
+        },
+        subscriptionRenewalResponseSchema,
+      );
+
+      if (
+        subscription.id !== id ||
+        subscription.nextDueDate !== renewal.nextDueDate
+      ) {
+        throw new AsaasGatewayError("ambiguous", 200);
+      }
+
+      return {
+        id: subscription.id,
+        cycle: subscription.cycle,
+        nextDueDate: subscription.nextDueDate,
+      };
+    },
+
     deleteSubscription(id) {
       return request(
         `/v3/subscriptions/${encodeURIComponent(id)}`,
@@ -266,4 +312,9 @@ function createAsaasGateway(input: {
 }
 
 export { AsaasGatewayError, createAsaasGateway };
-export type { AsaasCheckout, AsaasCheckoutRequest, AsaasGateway };
+export type {
+  AsaasCheckout,
+  AsaasCheckoutRequest,
+  AsaasGateway,
+  AsaasSubscriptionRenewalInput,
+};

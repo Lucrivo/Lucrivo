@@ -24,6 +24,11 @@ function buildCheckoutRequest({
   customerId,
   today,
 }: BuildCheckoutRequestInput): AsaasCheckoutRequest {
+  const description =
+    price.billingMode === "monthly"
+      ? `Acesso inicial ao Lucrivo por ${price.accessMonths} ${price.accessMonths === 1 ? "mês" : "meses"}`
+      : `Acesso ao Lucrivo por ${price.accessMonths} meses`;
+
   const baseRequest = {
     minutesToExpire: 60 as const,
     externalReference: contractId,
@@ -39,10 +44,7 @@ function buildCheckoutRequest({
           price.billingMode === "monthly"
             ? "Diagnóstico Pro Mensal"
             : "Diagnóstico Pro Semestral",
-        description:
-          price.billingMode === "monthly"
-            ? "Acesso ao Lucrivo por um mês"
-            : "Acesso ao Lucrivo por 6 meses",
+        description,
         imageBase64: CHECKOUT_ITEM_IMAGE_BASE64,
         quantity: 1 as const,
         value: price.amountCents / 100,
@@ -60,7 +62,16 @@ function buildCheckoutRequest({
   }
 
   if (price.billingMode === "monthly") {
-    if (price.installmentLimit !== null || price.accessMonths !== 1) {
+    const hasValidMonthlyTerms =
+      price.installmentLimit === null &&
+      ((price.catalogCode === "launch" &&
+        price.accessMonths === 2 &&
+        price.bonusMonths === 1) ||
+        (price.catalogCode === "standard" &&
+          price.accessMonths === 1 &&
+          price.bonusMonths === 0));
+
+    if (!hasValidMonthlyTerms) {
       throw new Error("Invalid monthly billing price");
     }
 
@@ -68,11 +79,23 @@ function buildCheckoutRequest({
       ...baseRequest,
       billingTypes: ["CREDIT_CARD"],
       chargeTypes: ["RECURRENT"],
-      subscription: { cycle: "MONTHLY", nextDueDate: today },
+      subscription: {
+        cycle: price.catalogCode === "launch" ? "BIMONTHLY" : "MONTHLY",
+        nextDueDate: today,
+      },
     };
   }
 
-  if (price.installmentLimit !== 6 || price.accessMonths !== 6) {
+  const hasValidSemiannualTerms =
+    price.installmentLimit === 6 &&
+    ((price.catalogCode === "launch" &&
+      price.accessMonths === 12 &&
+      price.bonusMonths === 6) ||
+      (price.catalogCode === "standard" &&
+        price.accessMonths === 6 &&
+        price.bonusMonths === 0));
+
+  if (!hasValidSemiannualTerms) {
     throw new Error("Invalid semiannual billing price");
   }
 
@@ -80,7 +103,7 @@ function buildCheckoutRequest({
     ...baseRequest,
     billingTypes: ["CREDIT_CARD"],
     chargeTypes: ["DETACHED", "INSTALLMENT"],
-    installment: { maxInstallmentCount: price.installmentLimit },
+    installment: { maxInstallmentCount: 6 },
   };
 }
 
