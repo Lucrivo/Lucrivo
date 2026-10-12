@@ -31,12 +31,14 @@ describe("getReportAiBusinessContext", () => {
       error: null,
     });
 
-    await expect(get()).resolves.toEqual({
+    const result = await get();
+
+    expect(result).toEqual({
       segment: "Alimentação",
       subcategory: "Confeitaria",
     });
     expect(rpc).toHaveBeenCalledWith("get_my_onboarding_profile_v1");
-    expect(Object.keys(await get())).toEqual(["segment", "subcategory"]);
+    expect(Object.keys(result ?? {})).toEqual(["segment", "subcategory"]);
   });
 
   it("uses the trimmed custom subcategory for Outro", async () => {

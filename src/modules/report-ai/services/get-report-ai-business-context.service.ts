@@ -43,9 +43,7 @@ async function getReportAiBusinessContext({
   supabase,
 }: GetReportAiBusinessContextInput): Promise<ReportAiBusinessContext | null> {
   try {
-    const { data, error } = await supabase.rpc(
-      "get_my_onboarding_profile_v1",
-    );
+    const { data, error } = await supabase.rpc("get_my_onboarding_profile_v1");
     if (error) return null;
 
     const profile = businessContextProfileSchema.safeParse(data);
