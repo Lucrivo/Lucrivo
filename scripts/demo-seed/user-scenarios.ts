@@ -17,6 +17,7 @@ import { currentReportTemplates } from "./report-scenarios";
 
 const MONTHLY_PRICE_ID = "20000000-0000-4000-8000-000000000001";
 const SEMIANNUAL_PRICE_ID = "20000000-0000-4000-8000-000000000002";
+const consentReplacementOrdinals = new Set([1, 3, 5, 7]);
 
 const segmentCatalog = [
   ["Alimentação", "Confeitaria"],
@@ -168,10 +169,11 @@ function buildProfiles(clients: SeedUser[]): SeedOnboardingProfile[] {
       segmentName,
       subcategoryName,
       customSubcategory:
-        subcategoryName === null
-          ? `Atendimento especializado ${suffix}`
-          : null,
-      marketingConsent: client.ordinal % 2 === 0,
+        subcategoryName === null ? `Atendimento especializado ${suffix}` : null,
+      marketingConsent:
+        client.accountState !== "deleted" &&
+        (client.ordinal % 2 === 0 ||
+          consentReplacementOrdinals.has(client.ordinal)),
       completedAt: profileCompletedAt(client),
     };
   });

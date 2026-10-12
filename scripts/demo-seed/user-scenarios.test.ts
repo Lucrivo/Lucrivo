@@ -14,16 +14,18 @@ const catalog = buildDemoCatalog();
 describe("demo user and operations catalog", () => {
   it("creates one deterministic onboarding profile for every client only", () => {
     expect(catalog.profiles).toHaveLength(96);
-    expect(catalog.profiles.some(({ userId }) => userId === catalog.admin.id)).toBe(
-      false,
-    );
+    expect(
+      catalog.profiles.some(({ userId }) => userId === catalog.admin.id),
+    ).toBe(false);
     expect(new Set(catalog.profiles.map(({ userId }) => userId))).toEqual(
       new Set(catalog.clients.map(({ id }) => id)),
     );
   });
 
   it("covers every seeded segment, catalog subcategory, and custom Outro", () => {
-    expect(new Set(catalog.profiles.map(({ segmentName }) => segmentName))).toEqual(
+    expect(
+      new Set(catalog.profiles.map(({ segmentName }) => segmentName)),
+    ).toEqual(
       new Set([
         "Alimentação",
         "Beleza",
@@ -65,6 +67,40 @@ describe("demo user and operations catalog", () => {
       catalog.profiles.filter(({ marketingConsent }) => !marketingConsent),
     ).toHaveLength(48);
 
+    const deletedIds = new Set(
+      catalog.clients
+        .filter(({ accountState }) => accountState === "deleted")
+        .map(({ id }) => id),
+    );
+    expect(
+      catalog.profiles.filter(
+        ({ userId, marketingConsent }) =>
+          deletedIds.has(userId) && marketingConsent,
+      ),
+    ).toHaveLength(0);
+    expect(
+      catalog.profiles
+        .filter(({ marketingConsent }) => marketingConsent)
+        .map(
+          ({ userId }) =>
+            catalog.clients.find(({ id }) => id === userId)!.ordinal,
+        ),
+    ).toEqual([
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      ...Array.from({ length: 36 }, (_, index) => 10 + index * 2),
+      90,
+      92,
+      94,
+      96,
+    ]);
+
     const phones = catalog.profiles.map(({ whatsappE164 }) => whatsappE164);
     expect(new Set(phones).size).toBe(96);
     expect(phones.every((phone) => /^\+5511900000\d{3}$/.test(phone))).toBe(
@@ -74,8 +110,7 @@ describe("demo user and operations catalog", () => {
       catalog.profiles.every(
         ({ fullName, customSubcategory }) =>
           !/^[=+\-@]/.test(fullName) &&
-          (customSubcategory === null ||
-            !/^[=+\-@]/.test(customSubcategory)),
+          (customSubcategory === null || !/^[=+\-@]/.test(customSubcategory)),
       ),
     ).toBe(true);
   });
