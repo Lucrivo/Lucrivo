@@ -156,9 +156,21 @@ type SeedAdminUserEvent = {
   createdAt: SeedRelativeTime;
 };
 
+type SeedOnboardingProfile = {
+  userId: string;
+  fullName: string;
+  whatsappE164: string;
+  segmentName: string;
+  subcategoryName: string | null;
+  customSubcategory: string | null;
+  marketingConsent: boolean;
+  completedAt: SeedRelativeTime;
+};
+
 type DemoSeedCatalog = {
   admin: SeedUser;
   clients: SeedUser[];
+  profiles: SeedOnboardingProfile[];
   reports: SeedAssignedReport[];
   contracts: SeedContract[];
   payments: SeedPayment[];
@@ -176,6 +188,7 @@ export type {
   SeedContract,
   SeedContractStatus,
   SeedCreatedBucket,
+  SeedOnboardingProfile,
   SeedPayment,
   SeedPaymentStatus,
   SeedRelativeTime,

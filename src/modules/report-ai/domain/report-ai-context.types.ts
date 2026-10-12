@@ -38,8 +38,14 @@ type ReportAiItemContext = {
   } | null;
 };
 
+type ReportAiBusinessContext = {
+  segment: string;
+  subcategory: string;
+};
+
 type ReportAiContextV2 = {
   schemaVersion: 2;
+  businessContext?: ReportAiBusinessContext;
   report: {
     id: number;
     version: number;
@@ -66,6 +72,7 @@ type ReportAiContextV2 = {
 
 export type {
   ReportAiAvailability,
+  ReportAiBusinessContext,
   ReportAiContextV2,
   ReportAiFact,
   ReportAiFactScope,

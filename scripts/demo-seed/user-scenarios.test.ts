@@ -12,6 +12,148 @@ import {
 const catalog = buildDemoCatalog();
 
 describe("demo user and operations catalog", () => {
+  it("creates one deterministic onboarding profile for every client only", () => {
+    expect(catalog.profiles).toHaveLength(96);
+    expect(
+      catalog.profiles.some(({ userId }) => userId === catalog.admin.id),
+    ).toBe(false);
+    expect(new Set(catalog.profiles.map(({ userId }) => userId))).toEqual(
+      new Set(catalog.clients.map(({ id }) => id)),
+    );
+  });
+
+  it("covers every seeded segment, catalog subcategory, and custom Outro", () => {
+    expect(
+      new Set(catalog.profiles.map(({ segmentName }) => segmentName)),
+    ).toEqual(
+      new Set([
+        "Alimentação",
+        "Beleza",
+        "Vestuário",
+        "Tecnologia",
+        "Educação",
+        "Construção",
+        "Saúde",
+        "Comércio",
+      ]),
+    );
+
+    for (const subcategory of [
+      "Confeitaria",
+      "Salão de beleza",
+      "Loja de roupas",
+      "Assistência técnica",
+      "Curso online",
+    ]) {
+      expect(
+        catalog.profiles.filter(
+          ({ subcategoryName }) => subcategoryName === subcategory,
+        ).length,
+      ).toBeGreaterThanOrEqual(5);
+    }
+    expect(
+      catalog.profiles.filter(
+        ({ subcategoryName, customSubcategory }) =>
+          subcategoryName === null && customSubcategory !== null,
+      ).length,
+    ).toBeGreaterThanOrEqual(8);
+  });
+
+  it("splits consent evenly and creates safe unique contact fields", () => {
+    expect(
+      catalog.profiles.filter(({ marketingConsent }) => marketingConsent),
+    ).toHaveLength(48);
+    expect(
+      catalog.profiles.filter(({ marketingConsent }) => !marketingConsent),
+    ).toHaveLength(48);
+
+    const deletedIds = new Set(
+      catalog.clients
+        .filter(({ accountState }) => accountState === "deleted")
+        .map(({ id }) => id),
+    );
+    expect(
+      catalog.profiles.filter(
+        ({ userId, marketingConsent }) =>
+          deletedIds.has(userId) && marketingConsent,
+      ),
+    ).toHaveLength(0);
+    expect(
+      catalog.profiles
+        .filter(({ marketingConsent }) => marketingConsent)
+        .map(
+          ({ userId }) =>
+            catalog.clients.find(({ id }) => id === userId)!.ordinal,
+        ),
+    ).toEqual([
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      ...Array.from({ length: 36 }, (_, index) => 10 + index * 2),
+      90,
+      92,
+      94,
+      96,
+    ]);
+
+    const phones = catalog.profiles.map(({ whatsappE164 }) => whatsappE164);
+    expect(new Set(phones).size).toBe(96);
+    expect(phones.every((phone) => /^\+5511900000\d{3}$/.test(phone))).toBe(
+      true,
+    );
+    expect(
+      catalog.profiles.every(
+        ({ fullName, customSubcategory }) =>
+          !/^[=+\-@]/.test(fullName) &&
+          (customSubcategory === null || !/^[=+\-@]/.test(customSubcategory)),
+      ),
+    ).toBe(true);
+  });
+
+  it("derives every completion time from its account-age cohort", () => {
+    const clientsById = new Map(
+      catalog.clients.map((client) => [client.id, client]),
+    );
+
+    for (const profile of catalog.profiles) {
+      const client = clientsById.get(profile.userId)!;
+      if (client.createdBucket === "today") {
+        expect(profile.completedAt).toEqual({
+          anchor: "now",
+          months: 0,
+          days: 0,
+          hours: -(client.ordinal % 12) + 0.5,
+        });
+      } else if (client.createdBucket === "week") {
+        expect(profile.completedAt).toEqual({
+          anchor: "now",
+          months: 0,
+          days: -((client.ordinal % 5) + 1),
+          hours: -1,
+        });
+      } else if (client.createdBucket === "month") {
+        expect(profile.completedAt).toEqual({
+          anchor: "now",
+          months: 0,
+          days: -((client.ordinal - 17) % 10),
+          hours: -1,
+        });
+      } else {
+        expect(profile.completedAt).toEqual({
+          anchor: "month_start",
+          months: -Number(client.createdBucket.slice("month-".length)),
+          days: (client.ordinal % 20) + 1,
+          hours: 10,
+        });
+      }
+    }
+  });
+
   it("creates 96 clients with the exact report-count distribution", () => {
     expect(catalog.clients).toHaveLength(96);
     expect(

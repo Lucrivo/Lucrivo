@@ -31,6 +31,54 @@ describe("renderDemoSeed", () => {
     expect(sql).toContain("delete from private.admin_user_state");
   });
 
+  it("cleans onboarding history and profiles before replacing seeded Auth rows", () => {
+    const consentCleanup = sql.indexOf(
+      "delete from private.whatsapp_consent_events",
+    );
+    const profileCleanup = sql.indexOf(
+      "delete from public.onboarding_profiles",
+    );
+    const authReplacement = sql.indexOf("insert into auth.users");
+
+    expect(consentCleanup).toBeGreaterThan(0);
+    expect(profileCleanup).toBeGreaterThan(consentCleanup);
+    expect(authReplacement).toBeGreaterThan(profileCleanup);
+  });
+
+  it("renders all client profiles through exact catalog-name joins", () => {
+    const profileInsert = sql.indexOf("insert into public.onboarding_profiles");
+    const identityInsert = sql.indexOf("insert into auth.identities");
+    const firstReport = sql.indexOf("select public.create_");
+
+    expect(profileInsert).toBeGreaterThan(identityInsert);
+    expect(profileInsert).toBeLessThan(firstReport);
+    expect(sql).toContain("join public.business_segments as segment");
+    expect(sql).toContain("segment.name = seed.segment_name");
+    expect(sql).toContain(
+      "left join public.business_subcategories as subcategory",
+    );
+    expect(sql).toContain("subcategory.name = seed.subcategory_name");
+    expect(sql.match(/Cliente Demonstração \d{3}/g)).toHaveLength(96);
+    expect(sql).not.toContain("Cliente Demonstração 000");
+  });
+
+  it("renders one matching initial consent event for every profile", () => {
+    const eventInsert = sql.indexOf(
+      "insert into private.whatsapp_consent_events",
+    );
+    const eventSection = sql.slice(
+      eventInsert,
+      sql.indexOf("insert into public.billing_customers"),
+    );
+
+    expect(eventInsert).toBeGreaterThan(0);
+    expect(eventSection).toContain("whatsapp-marketing-v1");
+    expect(eventSection).toContain("'onboarding'::text");
+    expect(eventSection.match(/'(?:granted|declined)'::text/g)).toHaveLength(
+      96,
+    );
+  });
+
   it("batches operational data and emits exactly 288 report calls", () => {
     expect(sql).toContain("insert into auth.users");
     expect(sql).toContain("insert into auth.identities");

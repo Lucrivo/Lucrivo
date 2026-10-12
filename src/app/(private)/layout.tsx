@@ -35,6 +35,17 @@ export default async function PrivateLayout({
 
   const { data: isAdminUser } = await supabase.rpc("current_user_is_admin");
 
+  if (isAdminUser !== true) {
+    const { data: hasCompletedOnboarding, error: onboardingError } =
+      await supabase.rpc("current_user_has_completed_onboarding");
+
+    if (onboardingError || typeof hasCompletedOnboarding !== "boolean") {
+      redirect("/account-unavailable");
+    }
+
+    if (!hasCompletedOnboarding) redirect("/onboarding");
+  }
+
   return (
     <AppShell
       email={email}

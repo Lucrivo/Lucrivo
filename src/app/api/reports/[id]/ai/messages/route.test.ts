@@ -9,6 +9,7 @@ const {
   readReportAiEnvironment,
   createOpenAiReportAiGateway,
   buildReportAiContext,
+  getReportAiBusinessContext,
   runReportAiTurn,
 } = vi.hoisted(() => ({
   requireUser: vi.fn(),
@@ -17,6 +18,7 @@ const {
   readReportAiEnvironment: vi.fn(),
   createOpenAiReportAiGateway: vi.fn(),
   buildReportAiContext: vi.fn(),
+  getReportAiBusinessContext: vi.fn(),
   runReportAiTurn: vi.fn(),
 }));
 
@@ -37,6 +39,10 @@ vi.mock("@/infrastructure/ai/openai/report-ai.gateway", () => ({
 vi.mock("@/modules/report-ai/domain/build-report-ai-context", () => ({
   buildReportAiContext,
 }));
+vi.mock(
+  "@/modules/report-ai/services/get-report-ai-business-context.service",
+  () => ({ getReportAiBusinessContext }),
+);
 vi.mock("@/modules/report-ai/services/run-report-ai-turn.service", () => ({
   ReportAiPreStreamError: class ReportAiPreStreamError extends Error {
     code: string;
@@ -123,6 +129,10 @@ describe("POST /api/reports/:id/ai/messages", () => {
       model: "gpt-6-luna",
     });
     createOpenAiReportAiGateway.mockReturnValue({ gateway: true });
+    getReportAiBusinessContext.mockResolvedValue({
+      segment: "Alimentação",
+      subcategory: "Confeitaria",
+    });
     buildReportAiContext.mockReturnValue('{"margin":"low"}');
     runReportAiTurn.mockImplementation(successEvents);
   });
@@ -136,6 +146,7 @@ describe("POST /api/reports/:id/ai/messages", () => {
     expect(result.body).toEqual({ error: "unauthorized" });
     expect(readReportAiEnvironment).not.toHaveBeenCalled();
     expect(createOpenAiReportAiGateway).not.toHaveBeenCalled();
+    expect(getReportAiBusinessContext).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -158,6 +169,7 @@ describe("POST /api/reports/:id/ai/messages", () => {
       expect(result.response.status).toBe(404);
       expect(result.body).toEqual({ error: "not_found" });
       expect(getBillingOverview).not.toHaveBeenCalled();
+      expect(getReportAiBusinessContext).not.toHaveBeenCalled();
     },
   );
 
@@ -187,6 +199,7 @@ describe("POST /api/reports/:id/ai/messages", () => {
       expect(result.response.status).toBe(402);
       expect(result.body).toEqual({ error: "plan_required" });
       expect(readReportAiEnvironment).not.toHaveBeenCalled();
+      expect(getReportAiBusinessContext).not.toHaveBeenCalled();
     },
   );
 
@@ -204,6 +217,28 @@ describe("POST /api/reports/:id/ai/messages", () => {
     });
     expect(getBillingOverview).not.toHaveBeenCalled();
     expect(readReportAiEnvironment).not.toHaveBeenCalled();
+    expect(getReportAiBusinessContext).not.toHaveBeenCalled();
+  });
+
+  it("loads business context only for an eligible paid report", async () => {
+    const result = await post();
+
+    expect(result.response.status).toBe(200);
+    expect(getReportAiBusinessContext).toHaveBeenCalledWith({ supabase });
+    expect(buildReportAiContext).toHaveBeenCalledWith(report, {
+      segment: "Alimentação",
+      subcategory: "Confeitaria",
+    });
+  });
+
+  it("keeps streaming when the business context is unavailable", async () => {
+    getReportAiBusinessContext.mockResolvedValue(null);
+
+    const result = await post();
+
+    expect(result.response.status).toBe(200);
+    expect(buildReportAiContext).toHaveBeenCalledWith(report, null);
+    expect(result.text).toContain('"type":"completed"');
   });
 
   it("streams one semantic NDJSON event per line", async () => {

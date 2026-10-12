@@ -40,6 +40,13 @@ diagnóstico.
 
 ## Operating Context
 
+Depois de confirmar o e-mail, todo cliente conclui um onboarding obrigatório
+antes de acessar as demais áreas privadas. O perfil registra nome, WhatsApp,
+segmento e subcategoria do negócio. Esses dados podem ser corrigidos em
+**Minha conta**. A autorização para receber novidades, conteúdos e ofertas por
+WhatsApp é opcional, pode ser concedida ou revogada a qualquer momento e não
+limita funcionalidades do produto.
+
 O usuário autenticado inicia um diagnóstico e escolhe entre quatro contextos de
 negócio:
 
@@ -84,6 +91,9 @@ que foram criados.
 ## Capabilities and Constraints
 
 - Cadastro, autenticação, recuperação e atualização de senha.
+- Onboarding obrigatório após a confirmação do e-mail, com perfil editável em
+  **Minha conta**, catálogo de segmento e subcategoria e consentimento comercial
+  de WhatsApp opcional.
 - Diagnóstico rápido para revenda, produto digital, produção própria e serviços.
 - Diagnóstico detalhado para revenda, produto digital e produção própria, com
   um cenário uniforme por análise e múltiplos itens. A criação exige acesso
@@ -99,6 +109,10 @@ que foram criados.
 - Edição de relatórios compatíveis para assinantes pagos, com substituição ou
   salvamento de uma nova cópia.
 - Exclusão lógica de relatórios pelo proprietário.
+- Administração do onboarding com indicadores agregados, contatos filtráveis e
+  gestão versionada do catálogo. A exportação inclui somente contatos com
+  consentimento vigente, respeita os filtros autorizados e neutraliza fórmulas
+  de planilha; o Lucrivo não envia mensagens de WhatsApp nesta capacidade.
 - Remoções de itens e ingredientes preenchidos exigem confirmação; ações
   indisponíveis explicam o motivo e diálogos devolvem o foco ao acionador.
 - Valores monetários apresentados em real brasileiro (`BRL`) e conteúdo de
@@ -114,8 +128,12 @@ que foram criados.
 - O diagnóstico detalhado analisa financeiramente um mix; não controla estoque
   físico. Compartilhamento público e comparação histórica não fazem parte da
   experiência atual.
-- Interpretação por IA não é uma capacidade confirmada da versão atual e não
-  realiza os cálculos financeiros centrais.
+- Clientes com acesso pago podem conversar com o Assistente Lucrivo sobre o
+  relatório aberto. O motor determinístico continua responsável pelos cálculos;
+  a IA apenas interpreta os fatos persistidos. Somente os rótulos atuais de
+  segmento e subcategoria podem complementar o contexto como declarações não
+  verificadas. Nome, WhatsApp, consentimento, e-mail e identificadores não são
+  enviados ao modelo, e o perfil não é usado para treinamento ou fine-tuning.
 - Identificadores técnicos e código usam inglês; textos apresentados ao usuário
   permanecem em português brasileiro.
 

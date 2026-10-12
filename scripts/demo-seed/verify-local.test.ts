@@ -28,6 +28,9 @@ describe("buildLocalVerificationCommands", () => {
       "e0000000-0000-4000-8000-000000000001",
     );
     expect(commands[2]?.args.join(" ")).toContain("json_build_object");
+    expect(commands[2]?.args.join(" ")).toContain("'profiles'");
+    expect(commands[2]?.args.join(" ")).toContain("'activeConsents'");
+    expect(commands[2]?.args.join(" ")).toContain("'consentEvents'");
     expect(commands[3]?.args.join(" ")).toContain(
       "delete from auth.users where id = 'e0000000-0000-4000-8000-000000000001'",
     );

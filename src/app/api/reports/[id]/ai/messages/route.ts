@@ -12,6 +12,7 @@ import {
   reportAiDiagnosisIdSchema,
   reportAiMessageSchema,
 } from "@/modules/report-ai/schemas/report-ai.schema";
+import { getReportAiBusinessContext } from "@/modules/report-ai/services/get-report-ai-business-context.service";
 import {
   ReportAiPreStreamError,
   runReportAiTurn,
@@ -102,6 +103,9 @@ async function POST(
       return json({ error: "plan_required" }, 402);
     }
 
+    const businessContext = await getReportAiBusinessContext({
+      supabase: auth.supabase,
+    });
     const environment = readReportAiEnvironment();
     const gateway = createOpenAiReportAiGateway(environment);
     const iterator = runReportAiTurn({
@@ -112,7 +116,7 @@ async function POST(
       requestId: message.data.requestId,
       question: message.data.question,
       model: environment.model,
-      reportContext: buildReportAiContext(report.report),
+      reportContext: buildReportAiContext(report.report, businessContext),
       gateway,
       signal: request.signal,
     })[Symbol.asyncIterator]();

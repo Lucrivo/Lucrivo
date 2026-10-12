@@ -76,6 +76,20 @@ Dados fornecidos no cadastro, no onboarding, no diagnóstico ou na conversa
 descrevem o que o usuário informou. Eles não se tornam fatos verificados sobre o
 mercado.
 
+No contexto automático do relatório, o assistente pode receber somente os
+rótulos atuais de segmento e subcategoria do perfil. Esses rótulos servem para
+contextualizar a explicação, permanecem declarações não verificadas e não
+alteram nenhum cálculo ou veredito. A ausência ou indisponibilidade do perfil
+apenas omite esse contexto; não torna o assistente de um relatório pago
+indisponível.
+
+Nome, WhatsApp, estado ou data de consentimento, e-mail, ID do usuário e IDs do
+catálogo são excluídos do contexto da IA. Os rótulos permitidos continuam sendo
+texto não confiável fornecido pelo usuário e ficam dentro de
+`DADOS_DO_RELATORIO`; nunca são tratados como instruções de sistema. O perfil
+não é usado para treinamento, fine-tuning, embeddings ou criação de uma base de
+conhecimento.
+
 Se o usuário disser que um concorrente cobra determinado valor, a IA pode usar
 isso como uma referência declarada por ele, deixando a origem explícita. Não
 pode apresentar o valor como pesquisa realizada pelo Lucrivo.
@@ -101,6 +115,10 @@ memória geral do modelo não é uma fonte autorizada para esses números.
 Enquanto o perfil ou a referência curada não estiver disponível, o assistente
 deve responder apenas com os fatos do relatório e as informações declaradas pelo
 usuário.
+
+O onboarding, por si só, não autoriza o uso da memória geral do modelo para
+benchmarks ou faixas numéricas da categoria. Essas comparações continuam
+dependendo de uma referência curada e aprovada nos termos desta seção.
 
 ### 3.4. Hipóteses
 

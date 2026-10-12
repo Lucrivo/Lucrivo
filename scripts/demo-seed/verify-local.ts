@@ -41,6 +41,17 @@ function buildLocalVerificationCommands(): VerificationCommand[] {
   'reports', (select count(*) from public.diagnoses where user_id between
     'd1000000-0000-4000-8000-000000000000'::uuid and
     'd1000000-0000-4000-8000-000000000060'::uuid),
+  'profiles', (select count(*) from public.onboarding_profiles where user_id between
+    'd1000000-0000-4000-8000-000000000001'::uuid and
+    'd1000000-0000-4000-8000-000000000060'::uuid),
+  'activeConsents', (select count(*) from public.onboarding_profiles where user_id between
+    'd1000000-0000-4000-8000-000000000001'::uuid and
+    'd1000000-0000-4000-8000-000000000060'::uuid
+    and whatsapp_marketing_consent),
+  'consentEvents', (select count(*) from private.whatsapp_consent_events where user_id between
+    'd1000000-0000-4000-8000-000000000001'::uuid and
+    'd1000000-0000-4000-8000-000000000060'::uuid
+    and source = 'onboarding' and copy_version = 'whatsapp-marketing-v1'),
   'sentinel', (select count(*) from auth.users where id = '${SENTINEL_ID}'::uuid)
 );`;
   const cleanupSentinel = `delete from auth.users where id = '${SENTINEL_ID}'::uuid;`;
@@ -78,11 +89,17 @@ function verifyLocalSeed(): void {
     const result = JSON.parse(run(counts!, true)) as {
       users: number;
       reports: number;
+      profiles: number;
+      activeConsents: number;
+      consentEvents: number;
       sentinel: number;
     };
     if (
       result.users !== 97 ||
       result.reports !== 288 ||
+      result.profiles !== 96 ||
+      result.activeConsents !== 48 ||
+      result.consentEvents !== 96 ||
       result.sentinel !== 1
     ) {
       throw new Error(
@@ -90,7 +107,7 @@ function verifyLocalSeed(): void {
       );
     }
     console.log(
-      "Local demo seed verified: 97 users, 288 reports, sentinel preserved.",
+      "Local demo seed verified: 97 users, 288 reports, 96 profiles, 48 active consents, 96 consent events, sentinel preserved.",
     );
   } finally {
     run(cleanup!);

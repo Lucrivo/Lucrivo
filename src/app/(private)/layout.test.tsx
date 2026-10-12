@@ -42,7 +42,10 @@ import PrivateLayout from "./layout";
 describe("PrivateLayout", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    rpc.mockResolvedValue({ data: false, error: null });
+    rpc.mockImplementation(async (name: string) => ({
+      data: name === "current_user_has_completed_onboarding",
+      error: null,
+    }));
     requireUser.mockResolvedValue({
       userId: "user-123",
       supabase: {
@@ -56,7 +59,7 @@ describe("PrivateLayout", () => {
     });
   });
 
-  it("renders private content for an eligible account", async () => {
+  it("renders private content for a client with completed onboarding", async () => {
     render(await PrivateLayout({ children: <p>Área privada</p> }));
 
     expect(screen.getByTestId("private-shell")).toHaveTextContent(
@@ -69,7 +72,10 @@ describe("PrivateLayout", () => {
   });
 
   it("identifies an admin user for the financial sidebar", async () => {
-    rpc.mockResolvedValue({ data: true, error: null });
+    rpc.mockImplementation(async (name: string) => ({
+      data: name === "current_user_is_admin",
+      error: null,
+    }));
 
     render(await PrivateLayout({ children: <p>Área privada</p> }));
 
@@ -78,10 +84,17 @@ describe("PrivateLayout", () => {
       "data-admin-user",
       "true",
     );
+    expect(rpc).not.toHaveBeenCalledWith(
+      "current_user_has_completed_onboarding",
+    );
   });
 
-  it("fails closed when the admin check returns an error", async () => {
-    rpc.mockResolvedValue({ data: null, error: new Error("rpc failed") });
+  it("treats an unusable admin result as a regular completed client", async () => {
+    rpc.mockImplementation(async (name: string) =>
+      name === "current_user_is_admin"
+        ? { data: null, error: new Error("rpc failed") }
+        : { data: true, error: null },
+    );
 
     render(await PrivateLayout({ children: <p>Área privada</p> }));
 
@@ -89,6 +102,26 @@ describe("PrivateLayout", () => {
       "data-admin-user",
       "false",
     );
+  });
+
+  it("redirects an incomplete regular client to onboarding", async () => {
+    rpc.mockResolvedValue({ data: false, error: null });
+
+    await expect(
+      PrivateLayout({ children: <p>Área privada</p> }),
+    ).rejects.toThrow("redirect:/onboarding");
+  });
+
+  it("fails closed when the onboarding check is unusable", async () => {
+    rpc.mockImplementation(async (name: string) =>
+      name === "current_user_is_admin"
+        ? { data: false, error: null }
+        : { data: null, error: new Error("rpc failed") },
+    );
+
+    await expect(
+      PrivateLayout({ children: <p>Área privada</p> }),
+    ).rejects.toThrow("redirect:/account-unavailable");
   });
 
   it("redirects unauthenticated users to login", async () => {

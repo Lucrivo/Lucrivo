@@ -22,20 +22,43 @@ describe("resolveAuthenticatedHome", () => {
       error: null,
     });
     rpc.mockImplementation(async (name: string) => ({
-      data: name === "current_account_is_eligible",
+      data:
+        name === "current_account_is_eligible" ||
+        name === "current_user_has_completed_onboarding",
       error: null,
     }));
   });
 
-  it("resolves the configured administrator to /admin", async () => {
-    rpc.mockResolvedValueOnce({ data: true, error: null });
-    rpc.mockResolvedValueOnce({ data: true, error: null });
-
+  it("checks eligibility then resolves an administrator without onboarding", async () => {
+    rpc.mockImplementation(async (name: string) => ({
+      data:
+        name === "current_account_is_eligible" ||
+        name === "current_user_is_admin",
+      error: null,
+    }));
     await expect(resolveAuthenticatedHome()).resolves.toBe("/admin");
+    expect(rpc.mock.calls.map(([name]) => name)).toEqual([
+      "current_account_is_eligible",
+      "current_user_is_admin",
+    ]);
   });
 
-  it("resolves a regular user to /dashboard", async () => {
+  it("resolves a complete regular user to /dashboard", async () => {
     await expect(resolveAuthenticatedHome()).resolves.toBe("/dashboard");
+    expect(rpc.mock.calls.map(([name]) => name)).toEqual([
+      "current_account_is_eligible",
+      "current_user_is_admin",
+      "current_user_has_completed_onboarding",
+    ]);
+  });
+
+  it("resolves an incomplete regular user to /onboarding", async () => {
+    rpc.mockImplementation(async (name: string) => ({
+      data: name === "current_account_is_eligible",
+      error: null,
+    }));
+
+    await expect(resolveAuthenticatedHome()).resolves.toBe("/onboarding");
   });
 
   it("routes a blocked user to the unavailable-account page", async () => {
@@ -51,14 +74,34 @@ describe("resolveAuthenticatedHome", () => {
     { data: null, error: { message: "unavailable" } },
     { data: "true", error: null },
     { data: null, error: null },
-  ])("falls back to /dashboard for an unusable role result", async (result) => {
+  ])("treats an unusable role result as a regular user", async (result) => {
     rpc.mockImplementation(async (name: string) =>
       name === "current_account_is_eligible"
         ? { data: true, error: null }
-        : result,
+        : name === "current_user_is_admin"
+          ? result
+          : { data: true, error: null },
     );
 
     await expect(resolveAuthenticatedHome()).resolves.toBe("/dashboard");
+  });
+
+  it.each([
+    { data: null, error: { message: "unavailable" } },
+    { data: "true", error: null },
+    { data: null, error: null },
+  ])("fails closed for an unusable onboarding result", async (result) => {
+    rpc.mockImplementation(async (name: string) =>
+      name === "current_account_is_eligible"
+        ? { data: true, error: null }
+        : name === "current_user_is_admin"
+          ? { data: false, error: null }
+          : result,
+    );
+
+    await expect(resolveAuthenticatedHome()).resolves.toBe(
+      "/account-unavailable",
+    );
   });
 
   it("falls back to /dashboard when the role RPC throws", async () => {

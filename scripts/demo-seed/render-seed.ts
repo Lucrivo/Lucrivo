@@ -2,6 +2,7 @@ import type {
   DemoSeedCatalog,
   SeedContract,
   SeedCreatedBucket,
+  SeedOnboardingProfile,
   SeedRelativeTime,
   SeedSqlValue,
   SeedUser,
@@ -37,10 +38,10 @@ function createdAtFor(user: SeedUser) {
     today: { anchor: "now", months: 0, days: 0, hours: -(ordinal % 12) },
     week: { anchor: "now", months: 0, days: -((ordinal % 5) + 1), hours: -2 },
     month: {
-      anchor: "month_start",
+      anchor: "now",
       months: 0,
-      days: (ordinal % 18) + 1,
-      hours: 9,
+      days: -((ordinal - 17) % 10),
+      hours: -2,
     },
     "month-1": {
       anchor: "month_start",
@@ -93,6 +94,8 @@ function cleanupSql(seedUsers: string): string {
     `delete from public.billing_contracts where user_id = any(${seedUsers});`,
     `delete from public.billing_customers where user_id = any(${seedUsers});`,
     `delete from private.admin_user_state where user_id = any(${seedUsers});`,
+    `delete from private.whatsapp_consent_events where user_id = any(${seedUsers});`,
+    `delete from public.onboarding_profiles where user_id = any(${seedUsers});`,
   ].join("\n");
 }
 
@@ -251,6 +254,80 @@ function renderIdentities(users: SeedUser[]): string {
   created_at = excluded.created_at,
   updated_at = excluded.updated_at`,
   });
+}
+
+function profileSeedRows(profiles: SeedOnboardingProfile[]): string {
+  return profiles
+    .map(
+      (profile) =>
+        `  (${[
+          sqlLiteral(profile.userId, "uuid"),
+          sqlLiteral(profile.fullName, "text"),
+          sqlLiteral(profile.whatsappE164, "text"),
+          sqlLiteral(profile.segmentName, "text"),
+          sqlLiteral(profile.subcategoryName, "text"),
+          sqlLiteral(profile.customSubcategory, "text"),
+          sqlLiteral(profile.marketingConsent, "boolean"),
+          sqlLiteral(relativeTimeSql(profile.completedAt), "timestamptz"),
+        ].join(", ")})`,
+    )
+    .join(",\n");
+}
+
+function renderOnboardingProfiles(profiles: SeedOnboardingProfile[]): string {
+  return `insert into public.onboarding_profiles (
+  user_id, full_name, whatsapp_e164, segment_id, subcategory_id,
+  custom_subcategory, whatsapp_marketing_consent,
+  marketing_consent_granted_at, completed_at, updated_at, version
+)
+select
+  seed.user_id,
+  seed.full_name,
+  seed.whatsapp_e164,
+  segment.id,
+  subcategory.id,
+  seed.custom_subcategory,
+  seed.marketing_consent,
+  case when seed.marketing_consent then seed.completed_at else null end,
+  seed.completed_at,
+  seed.completed_at,
+  0
+from (values
+${profileSeedRows(profiles)}
+) as seed(
+  user_id, full_name, whatsapp_e164, segment_name, subcategory_name,
+  custom_subcategory, marketing_consent, completed_at
+)
+join public.business_segments as segment
+  on segment.name = seed.segment_name
+left join public.business_subcategories as subcategory
+  on subcategory.segment_id = segment.id
+ and subcategory.name = seed.subcategory_name;`;
+}
+
+function renderOnboardingConsentEvents(
+  profiles: SeedOnboardingProfile[],
+): string {
+  const rows = profiles
+    .map(
+      (profile) =>
+        `  (${[
+          sqlLiteral(profile.userId, "uuid"),
+          sqlLiteral(profile.marketingConsent ? "granted" : "declined", "text"),
+        ].join(", ")})`,
+    )
+    .join(",\n");
+
+  return `insert into private.whatsapp_consent_events (
+  user_id, decision, copy_version, source, created_at
+)
+select seed.user_id, seed.decision, 'whatsapp-marketing-v1'::text,
+  'onboarding'::text, profile.completed_at
+from (values
+${rows}
+) as seed(user_id, decision)
+join public.onboarding_profiles as profile
+  on profile.user_id = seed.user_id;`;
 }
 
 function renderBillingCustomers(catalog: DemoSeedCatalog): string {
@@ -631,6 +708,9 @@ declare
   courtesy_client_count bigint;
   blocked_client_count bigint;
   deleted_client_count bigint;
+  profile_count bigint;
+  active_consent_count bigint;
+  initial_consent_event_count bigint;
 begin
   select count(*) into seeded_user_count from auth.users where id = any(${seedUsers});
   select count(*) into client_count from auth.users where id = any(${seedUsers}) and id <> ${sqlLiteral(adminId, "uuid")};
@@ -655,6 +735,18 @@ begin
   select count(*) into deleted_client_count
   from private.admin_user_state as state
   where state.user_id = any(${seedUsers}) and state.deleted_at is not null;
+  select count(*) into profile_count
+  from public.onboarding_profiles as profile
+  where profile.user_id = any(${seedUsers});
+  select count(*) into active_consent_count
+  from public.onboarding_profiles as profile
+  where profile.user_id = any(${seedUsers})
+    and profile.whatsapp_marketing_consent;
+  select count(*) into initial_consent_event_count
+  from private.whatsapp_consent_events as event
+  where event.user_id = any(${seedUsers})
+    and event.source = 'onboarding'
+    and event.copy_version = 'whatsapp-marketing-v1';
 
   if seeded_user_count <> 97
     or client_count <> 96
@@ -665,6 +757,9 @@ begin
     or courtesy_client_count <> 12
     or blocked_client_count <> 8
     or deleted_client_count <> 8
+    or profile_count <> 96
+    or active_consent_count <> 48
+    or initial_consent_event_count <> 96
     or not exists (
       select 1
       from public.billing_contracts as contract
@@ -715,6 +810,8 @@ values (1, ${sqlLiteral(catalog.admin.id, "uuid")})
 on conflict (singleton) do update set
   user_id = excluded.user_id,
   created_at = pg_catalog.statement_timestamp();`,
+    renderOnboardingProfiles(catalog.profiles),
+    renderOnboardingConsentEvents(catalog.profiles),
     renderBillingCustomers(catalog),
     renderInitialContracts(catalog.contracts),
     calls,

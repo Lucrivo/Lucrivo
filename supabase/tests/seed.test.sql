@@ -501,6 +501,114 @@ select is(
 select is(
   (
     select count(*)::bigint
+    from public.onboarding_profiles
+    where user_id between
+      'd1000000-0000-4000-8000-000000000001'::uuid and
+      'd1000000-0000-4000-8000-000000000060'::uuid
+  ),
+  96::bigint,
+  'every demo client has onboarding'
+);
+
+select is(
+  (
+    select count(*)::bigint
+    from public.onboarding_profiles
+    where user_id between
+      'd1000000-0000-4000-8000-000000000001'::uuid and
+      'd1000000-0000-4000-8000-000000000060'::uuid
+      and whatsapp_marketing_consent
+  ),
+  48::bigint,
+  'half of demo clients actively consent'
+);
+
+select ok(
+  not exists (
+    select 1
+    from public.onboarding_profiles
+    where user_id = 'd1000000-0000-4000-8000-000000000000'::uuid
+  ),
+  'the demo administrator has no onboarding profile'
+);
+
+select is(
+  (
+    select count(*)::bigint
+    from public.onboarding_profiles as profile
+    join auth.users as app_user on app_user.id = profile.user_id
+    left join public.business_subcategories as subcategory
+      on subcategory.id = profile.subcategory_id
+     and subcategory.segment_id = profile.segment_id
+    where profile.user_id between
+      'd1000000-0000-4000-8000-000000000001'::uuid and
+      'd1000000-0000-4000-8000-000000000060'::uuid
+      and (
+        profile.completed_at <= app_user.created_at
+        or profile.completed_at >= statement_timestamp()
+        or (
+          profile.subcategory_id is not null
+          and (subcategory.id is null or profile.custom_subcategory is not null)
+        )
+        or (
+          profile.subcategory_id is null
+          and profile.custom_subcategory is null
+        )
+      )
+  ),
+  0::bigint,
+  'demo onboarding uses valid catalog pairs and completion times'
+);
+
+select ok(
+  (
+    select count(*)
+    from public.onboarding_profiles
+    where user_id between
+      'd1000000-0000-4000-8000-000000000001'::uuid and
+      'd1000000-0000-4000-8000-000000000060'::uuid
+      and subcategory_id is null
+      and custom_subcategory is not null
+  ) >= 8,
+  'demo onboarding covers custom Outro descriptions'
+);
+
+select is(
+  (
+    select count(distinct profile.segment_id)::bigint
+    from public.onboarding_profiles as profile
+    where profile.user_id between
+      'd1000000-0000-4000-8000-000000000001'::uuid and
+      'd1000000-0000-4000-8000-000000000060'::uuid
+  ),
+  8::bigint,
+  'demo onboarding covers every seeded business segment'
+);
+
+select is(
+  (
+    select count(*)::bigint
+    from private.whatsapp_consent_events as event
+    join public.onboarding_profiles as profile
+      on profile.user_id = event.user_id
+     and event.created_at = profile.completed_at
+     and event.decision = case
+       when profile.whatsapp_marketing_consent then 'granted'
+       else 'declined'
+     end
+    where event.user_id between
+      'd1000000-0000-4000-8000-000000000001'::uuid and
+      'd1000000-0000-4000-8000-000000000060'::uuid
+      and event.source = 'onboarding'
+      and event.copy_version = 'whatsapp-marketing-v1'
+  ),
+  96::bigint,
+  'every demo profile has one matching initial consent event'
+);
+
+select is(
+  (
+    select count(*)::bigint
     from public.diagnoses
     where user_id = 'd1000000-0000-4000-8000-000000000060'
   ),
@@ -543,6 +651,15 @@ select set_config(
 select ok(
   public.current_user_is_admin(),
   'demo administrator passes the application authorization check'
+);
+
+select is(
+  jsonb_array_length(
+    public.export_admin_onboarding_contacts_v1(null, null, null, null)
+      -> 'items'
+  ),
+  48,
+  'aal2 demo administrator exports exactly 48 authorized contacts'
 );
 
 select is(
