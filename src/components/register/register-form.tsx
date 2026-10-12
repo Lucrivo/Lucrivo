@@ -20,6 +20,8 @@ const errorMessages = {
   invalid_fields: "Preencha todos os campos corretamente.",
   password_mismatch: "As senhas não coincidem. Verifique e tente novamente.",
   captcha_required: "Conclua a verificação de segurança para continuar.",
+  legal_acceptance_required:
+    "Aceite os Termos de Uso e a Política de Privacidade para criar a conta.",
   weak_password:
     "Use uma senha mais forte, com 10 a 72 caracteres, pelo menos uma letra e um número.",
   signup_disabled: "Novos cadastros estão temporariamente indisponíveis.",
@@ -89,6 +91,19 @@ function RegisterForm({ action }: RegisterFormProps) {
         />
 
         <TurnstileField siteKey={turnstileSiteKey} resetSignal={state} />
+
+        <label className="flex items-start gap-3 text-sm leading-6">
+          <input
+            type="checkbox"
+            name="acceptedLegalTerms"
+            value="on"
+            className="mt-1 size-4"
+          />
+          <span>
+            Li e aceito os <a href="/terms">Termos de Uso</a> e a{" "}
+            <a href="/privacy">Política de Privacidade</a>.
+          </span>
+        </label>
 
         {hasError && <AuthFeedback>{errorMessages[state.error]}</AuthFeedback>}
         {state?.status === "success" && (

@@ -23,6 +23,23 @@ describe("RegisterForm", () => {
     sessionStorage.clear();
   });
 
+  it("starts with legal acceptance unchecked and links to both documents", () => {
+    const action = vi.fn(async (): Promise<RegisterActionState> => null);
+
+    render(<RegisterForm action={action} />);
+
+    expect(
+      screen.getByRole("checkbox", { name: /Li e aceito/ }),
+    ).not.toBeChecked();
+    expect(screen.getByRole("link", { name: "Termos de Uso" })).toHaveAttribute(
+      "href",
+      "/terms",
+    );
+    expect(
+      screen.getByRole("link", { name: "Política de Privacidade" }),
+    ).toHaveAttribute("href", "/privacy");
+  });
+
   it("does not show an inoperable Google registration", () => {
     const action = vi.fn(async (): Promise<RegisterActionState> => null);
 
