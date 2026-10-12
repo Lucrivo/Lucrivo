@@ -24,6 +24,7 @@ describe("resolveAuthenticatedHome", () => {
     rpc.mockImplementation(async (name: string) => ({
       data:
         name === "current_account_is_eligible" ||
+        name === "current_user_has_accepted_legal_copy_v1" ||
         name === "current_user_has_completed_onboarding",
       error: null,
     }));
@@ -48,13 +49,39 @@ describe("resolveAuthenticatedHome", () => {
     expect(rpc.mock.calls.map(([name]) => name)).toEqual([
       "current_account_is_eligible",
       "current_user_is_admin",
+      "current_user_has_accepted_legal_copy_v1",
       "current_user_has_completed_onboarding",
     ]);
   });
 
-  it("resolves an incomplete regular user to /onboarding", async () => {
+  it("sends a client without the current acceptance to /accept-terms", async () => {
     rpc.mockImplementation(async (name: string) => ({
       data: name === "current_account_is_eligible",
+      error: null,
+    }));
+
+    await expect(resolveAuthenticatedHome()).resolves.toBe("/accept-terms");
+  });
+
+  it("sends a failed acceptance lookup to /accept-terms", async () => {
+    rpc.mockImplementation(async (name: string) => {
+      if (name === "current_user_has_accepted_legal_copy_v1") {
+        return { data: null, error: { message: "unavailable" } };
+      }
+      return {
+        data: name === "current_account_is_eligible",
+        error: null,
+      };
+    });
+
+    await expect(resolveAuthenticatedHome()).resolves.toBe("/accept-terms");
+  });
+
+  it("resolves an incomplete regular user to /onboarding", async () => {
+    rpc.mockImplementation(async (name: string) => ({
+      data:
+        name === "current_account_is_eligible" ||
+        name === "current_user_has_accepted_legal_copy_v1",
       error: null,
     }));
 
@@ -91,20 +118,23 @@ describe("resolveAuthenticatedHome", () => {
     { data: "true", error: null },
     { data: null, error: null },
   ])("fails closed for an unusable onboarding result", async (result) => {
-    rpc.mockImplementation(async (name: string) =>
-      name === "current_account_is_eligible"
-        ? { data: true, error: null }
-        : name === "current_user_is_admin"
-          ? { data: false, error: null }
-          : result,
-    );
+    rpc.mockImplementation(async (name: string) => {
+      if (name === "current_account_is_eligible") {
+        return { data: true, error: null };
+      }
+      if (name === "current_user_is_admin") return { data: false, error: null };
+      if (name === "current_user_has_accepted_legal_copy_v1") {
+        return { data: true, error: null };
+      }
+      return result;
+    });
 
     await expect(resolveAuthenticatedHome()).resolves.toBe(
       "/account-unavailable",
     );
   });
 
-  it("falls back to /dashboard when the role RPC throws", async () => {
+  it("treats a thrown role lookup as a non-admin and still enforces legal acceptance", async () => {
     rpc.mockImplementation(async (name: string) => {
       if (name === "current_account_is_eligible") {
         return { data: true, error: null };
@@ -112,9 +142,7 @@ describe("resolveAuthenticatedHome", () => {
       throw new Error("unavailable");
     });
 
-    await expect(resolveAuthenticatedHome()).resolves.toBe(
-      "/account-unavailable",
-    );
+    await expect(resolveAuthenticatedHome()).resolves.toBe("/accept-terms");
   });
 
   it.each([
