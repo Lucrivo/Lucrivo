@@ -2,6 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
+const { buildCheckoutRequest } = vi.hoisted(() => ({
+  buildCheckoutRequest: vi.fn((input: { customerId?: string }) =>
+    input.customerId === undefined ? {} : { customer: input.customerId },
+  ),
+}));
+
+vi.mock("../domain/build-checkout-request", () => ({ buildCheckoutRequest }));
+
 import { AsaasGatewayError } from "@/infrastructure/payments/asaas/asaas.client";
 
 import { createHostedCheckout } from "./create-hosted-checkout.service";
@@ -10,31 +18,62 @@ const now = new Date("2026-09-09T12:00:00.000Z");
 const contractId = "10000000-0000-4000-8000-000000000001";
 const monthlyPriceId = "20000000-0000-4000-8000-000000000001";
 const semiannualPriceId = "20000000-0000-4000-8000-000000000002";
+const standardMonthlyPriceId = "20000000-0000-4000-8000-000000000003";
+const standardSemiannualPriceId = "20000000-0000-4000-8000-000000000004";
 
 const monthlyPrice = {
   id: monthlyPriceId,
   product_code: "quick_diagnosis_pro",
+  catalog_code: "launch",
   billing_mode: "monthly",
   amount_cents: 3990,
   currency: "BRL",
   installment_limit: null,
-  access_months: 1,
+  access_months: 2,
+  bonus_months: 1,
 };
 
 const semiannualPrice = {
   id: semiannualPriceId,
   product_code: "quick_diagnosis_pro",
+  catalog_code: "launch",
   billing_mode: "semiannual",
   amount_cents: 17940,
   currency: "BRL",
   installment_limit: 6,
+  access_months: 12,
+  bonus_months: 6,
+};
+
+const standardMonthlyPrice = {
+  id: standardMonthlyPriceId,
+  product_code: "quick_diagnosis_pro",
+  catalog_code: "standard",
+  billing_mode: "monthly",
+  amount_cents: 4990,
+  currency: "BRL",
+  installment_limit: null,
+  access_months: 1,
+  bonus_months: 0,
+};
+
+const standardSemiannualPrice = {
+  id: standardSemiannualPriceId,
+  product_code: "quick_diagnosis_pro",
+  catalog_code: "standard",
+  billing_mode: "semiannual",
+  amount_cents: 23940,
+  currency: "BRL",
+  installment_limit: 6,
   access_months: 6,
+  bonus_months: 0,
 };
 
 describe("createHostedCheckout", () => {
   const priceSelect = vi.fn();
   const priceActive = vi.fn();
   const priceProduct = vi.fn();
+  const priceCatalog = vi.fn();
   const contractSelect = vi.fn();
   const contractsByUser = vi.fn();
   const contractInsert = vi.fn();
@@ -62,6 +101,9 @@ describe("createHostedCheckout", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.clearAllMocks();
+    buildCheckoutRequest.mockImplementation((input: { customerId?: string }) =>
+      input.customerId === undefined ? {} : { customer: input.customerId },
+    );
     vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValue(contractId);
 
     from.mockImplementation((table: string) => {
@@ -79,7 +121,8 @@ describe("createHostedCheckout", () => {
 
     priceSelect.mockReturnValue({ eq: priceActive });
     priceActive.mockReturnValue({ eq: priceProduct });
-    priceProduct.mockResolvedValue({
+    priceProduct.mockReturnValue({ eq: priceCatalog });
+    priceCatalog.mockResolvedValue({
       data: [semiannualPrice, monthlyPrice],
       error: null,
     });
@@ -124,12 +167,14 @@ describe("createHostedCheckout", () => {
     overrides: Partial<{
       priceId: string;
       paymentMethod: "credit_card" | "pix";
+      catalogCode: "launch" | "standard";
     }> = {},
   ) {
     return createHostedCheckout({
       userId: "user-123",
       priceId: overrides.priceId ?? monthlyPriceId,
       paymentMethod: overrides.paymentMethod ?? "credit_card",
+      catalogCode: overrides.catalogCode ?? "launch",
       admin: admin as never,
       asaas,
       appUrl: new URL("https://app.lucrivo.test"),
@@ -137,12 +182,12 @@ describe("createHostedCheckout", () => {
     });
   }
 
-  it("rejects an unknown or inactive price before creating a contract", async () => {
+  it("rejects an unknown or inactive price after checking existing contracts", async () => {
     await expect(
       create({ priceId: "30000000-0000-4000-8000-000000000003" }),
     ).resolves.toEqual({ status: "not_found" });
 
-    expect(contractSelect).not.toHaveBeenCalled();
+    expect(contractSelect).toHaveBeenCalled();
     expect(contractInsert).not.toHaveBeenCalled();
     expect(createCheckout).not.toHaveBeenCalled();
   });
@@ -153,6 +198,7 @@ describe("createHostedCheckout", () => {
         userId: "user-123",
         priceId: monthlyPriceId,
         paymentMethod: "boleto" as never,
+        catalogCode: "launch",
         admin: admin as never,
         asaas,
         appUrl: new URL("https://app.lucrivo.test"),
@@ -212,7 +258,7 @@ describe("createHostedCheckout", () => {
     expect(createCheckout).not.toHaveBeenCalled();
   });
 
-  it("reuses a non-expired pending Checkout for the same offer and method", async () => {
+  it("reuses a promotional Checkout after the selected catalog becomes standard", async () => {
     contractsByUser.mockResolvedValue({
       data: [
         {
@@ -231,16 +277,36 @@ describe("createHostedCheckout", () => {
       error: null,
     });
 
-    await expect(create()).resolves.toEqual({
+    await expect(create({ catalogCode: "standard" })).resolves.toEqual({
       status: "reused",
       checkoutUrl: "https://sandbox.asaas.com/checkoutSession/show/existing",
     });
     expect(contractInsert).not.toHaveBeenCalled();
     expect(createCheckout).not.toHaveBeenCalled();
     expect(cancelCheckout).not.toHaveBeenCalled();
+    expect(priceSelect).not.toHaveBeenCalled();
   });
 
-  it("cancels a non-expired pending Checkout before creating a different offer", async () => {
+  it("rejects a promotional price when no reusable Checkout exists after expiry", async () => {
+    priceCatalog.mockResolvedValue({
+      data: [standardSemiannualPrice, standardMonthlyPrice],
+      error: null,
+    });
+
+    await expect(
+      create({ priceId: monthlyPriceId, catalogCode: "standard" }),
+    ).resolves.toEqual({ status: "not_found" });
+
+    expect(contractSelect).toHaveBeenCalled();
+    expect(priceCatalog).toHaveBeenCalledWith("catalog_code", "standard");
+    expect(contractInsert).not.toHaveBeenCalled();
+  });
+
+  it("cancels a different pending Checkout before creating a standard Checkout", async () => {
+    priceCatalog.mockResolvedValue({
+      data: [standardSemiannualPrice, standardMonthlyPrice],
+      error: null,
+    });
     contractsByUser.mockResolvedValue({
       data: [
         {
@@ -260,7 +326,11 @@ describe("createHostedCheckout", () => {
     });
 
     await expect(
-      create({ priceId: semiannualPriceId, paymentMethod: "pix" }),
+      create({
+        priceId: standardSemiannualPriceId,
+        paymentMethod: "pix",
+        catalogCode: "standard",
+      }),
     ).resolves.toEqual({
       status: "created",
       checkoutUrl:
@@ -284,6 +354,9 @@ describe("createHostedCheckout", () => {
     );
     expect(updatedContractMaybeSingle.mock.invocationCallOrder[0]).toBeLessThan(
       contractInsert.mock.invocationCallOrder[0],
+    );
+    expect(priceCatalog.mock.invocationCallOrder[0]).toBeLessThan(
+      cancelCheckout.mock.invocationCallOrder[0],
     );
   });
 
@@ -432,6 +505,7 @@ describe("createHostedCheckout", () => {
         user_id: "user-123",
         price_id: price.id,
         external_reference: contractId,
+        catalog_code: price.catalog_code,
         billing_mode: price.billing_mode,
         payment_method: paymentMethod,
         charge_type: chargeType,
@@ -439,6 +513,13 @@ describe("createHostedCheckout", () => {
         currency: price.currency,
         installment_limit: price.installment_limit,
         access_months: price.access_months,
+        bonus_months: price.bonus_months,
+        renewal_adjustment_status:
+          price.catalog_code === "launch" &&
+          price.billing_mode === "monthly" &&
+          paymentMethod === "credit_card"
+            ? "pending"
+            : "not_required",
         status: "pending",
       });
       expect(contractInsert.mock.invocationCallOrder[0]).toBeLessThan(
@@ -446,6 +527,29 @@ describe("createHostedCheckout", () => {
       );
     },
   );
+
+  it("does not schedule renewal adjustment for a standard monthly card", async () => {
+    priceCatalog.mockResolvedValue({
+      data: [standardSemiannualPrice, standardMonthlyPrice],
+      error: null,
+    });
+
+    await expect(
+      create({
+        priceId: standardMonthlyPriceId,
+        paymentMethod: "credit_card",
+        catalogCode: "standard",
+      }),
+    ).resolves.toMatchObject({ status: "created" });
+
+    expect(contractInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        catalog_code: "standard",
+        billing_mode: "monthly",
+        renewal_adjustment_status: "not_required",
+      }),
+    );
+  });
 
   it("stores the successful Checkout conditionally with its expiration", async () => {
     await expect(create()).resolves.toMatchObject({ status: "created" });

@@ -3,6 +3,7 @@ import { CircleCheckIcon, Clock3Icon, CircleXIcon } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { readLaunchOfferEnvironment } from "@/config/launch-offer-environment";
 import { requireUser } from "@/modules/auth/services/require-user";
 import { BillingPlans } from "@/modules/billing/components/billing-plans";
 import { ResumeDetailedDiagnosisLink } from "@/modules/detailed-diagnosis/components/resume-detailed-diagnosis-link";
@@ -60,11 +61,24 @@ export default async function BillingReturnPage({
   searchParams,
 }: BillingReturnPageProps) {
   const { supabase, userId } = await requireUser();
+  const launchOffer = readLaunchOfferEnvironment();
+
+  if (launchOffer.phase === "invalid") {
+    console.error(
+      JSON.stringify({ event: "launch_offer_configuration_invalid" }),
+    );
+  }
+
   const [{ outcome: rawOutcome }, overviewResult, pricesResult] =
     await Promise.all([
       searchParams,
       getBillingOverview({ supabase, userId }),
-      listActivePrices({ supabase }),
+      launchOffer.catalogCode === null
+        ? Promise.resolve(null)
+        : listActivePrices({
+            supabase,
+            catalogCode: launchOffer.catalogCode,
+          }),
     ]);
 
   if (overviewResult.status === "read_failed") {
@@ -73,7 +87,7 @@ export default async function BillingReturnPage({
 
   const outcome = typeof rawOutcome === "string" ? rawOutcome : "unknown";
   const { overview } = overviewResult;
-  const prices = pricesResult.status === "success" ? pricesResult.prices : [];
+  const prices = pricesResult?.status === "success" ? pricesResult.prices : [];
 
   if (outcome === "success") {
     if (overview.tier === "paid") {

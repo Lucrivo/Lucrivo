@@ -1,3 +1,5 @@
+import type { BillingCatalogCode } from "./domain/launch-offer";
+
 type BillingContractStatus =
   | "pending"
   | "pending_reconciliation"
@@ -22,11 +24,13 @@ type BillingRefundStatus =
 type ActiveBillingPrice = {
   id: string;
   productCode: "quick_diagnosis_pro";
+  catalogCode: BillingCatalogCode;
   billingMode: BillingMode;
   amountCents: number;
   currency: "BRL";
   installmentLimit: number | null;
   accessMonths: number;
+  bonusMonths: number;
 };
 
 type BillingRefundSummary = {

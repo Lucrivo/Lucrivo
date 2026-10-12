@@ -7,6 +7,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { readLaunchOfferEnvironment } from "@/config/launch-offer-environment";
 import { requireUser } from "@/modules/auth/services/require-user";
 import { BillingPlans } from "@/modules/billing/components/billing-plans";
 import { CancelSubscriptionButton } from "@/modules/billing/components/cancel-subscription-button";
@@ -132,9 +133,22 @@ function currentPlan(overview: BillingOverview) {
 
 export default async function BillingPage() {
   const { supabase, userId } = await requireUser();
+  const launchOffer = readLaunchOfferEnvironment();
+
+  if (launchOffer.phase === "invalid") {
+    console.error(
+      JSON.stringify({ event: "launch_offer_configuration_invalid" }),
+    );
+  }
+
   const [overviewResult, pricesResult] = await Promise.all([
     getBillingOverview({ supabase, userId }),
-    listActivePrices({ supabase }),
+    launchOffer.catalogCode === null
+      ? Promise.resolve(null)
+      : listActivePrices({
+          supabase,
+          catalogCode: launchOffer.catalogCode,
+        }),
   ]);
 
   if (overviewResult.status === "read_failed") {
@@ -142,7 +156,7 @@ export default async function BillingPage() {
   }
 
   const { overview } = overviewResult;
-  const prices = pricesResult.status === "success" ? pricesResult.prices : [];
+  const prices = pricesResult?.status === "success" ? pricesResult.prices : [];
   const hasBlockingRefund =
     overview.refund !== null && overview.refund.status !== "rejected";
 

@@ -106,8 +106,9 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
   const catalogReady =
     monthly !== undefined &&
     semiannual !== undefined &&
+    monthly.catalogCode === semiannual.catalogCode &&
     semiannual.installmentLimit === 6 &&
-    semiannual.accessMonths === 6 &&
+    (semiannual.accessMonths === 6 || semiannual.accessMonths === 12) &&
     semiannual.amountCents % semiannual.installmentLimit === 0;
 
   const Heading = context === "public" ? "h3" : "h2";

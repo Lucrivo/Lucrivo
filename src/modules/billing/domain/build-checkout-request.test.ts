@@ -14,21 +14,25 @@ const today = "2026-09-09";
 const monthlyPrice: ActiveBillingPrice = {
   id: "20000000-0000-4000-8000-000000000001",
   productCode: "quick_diagnosis_pro",
+  catalogCode: "standard",
   billingMode: "monthly",
   amountCents: 3990,
   currency: "BRL",
   installmentLimit: null,
   accessMonths: 1,
+  bonusMonths: 0,
 };
 
 const semiannualPrice: ActiveBillingPrice = {
   id: "20000000-0000-4000-8000-000000000002",
   productCode: "quick_diagnosis_pro",
+  catalogCode: "standard",
   billingMode: "semiannual",
   amountCents: 17940,
   currency: "BRL",
   installmentLimit: 6,
   accessMonths: 6,
+  bonusMonths: 0,
 };
 
 function build(

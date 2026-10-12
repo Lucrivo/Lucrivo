@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { readBillingEnvironment } from "@/config/billing-environment";
+import { readLaunchOfferEnvironment } from "@/config/launch-offer-environment";
 import { createAdminClient } from "@/infrastructure/database/supabase/clients/admin.client";
 import { createAsaasGateway } from "@/infrastructure/payments/asaas/asaas.client";
 import {
@@ -44,6 +45,14 @@ async function POST(request: Request) {
   if (!parsed.success) return json({ error: "invalid_request" }, 400);
 
   try {
+    const launchOffer = readLaunchOfferEnvironment();
+    if (launchOffer.phase === "invalid") {
+      console.error(
+        JSON.stringify({ event: "launch_offer_configuration_invalid" }),
+      );
+      return json({ error: "service_unavailable" }, 503);
+    }
+
     const environment = readBillingEnvironment();
     const admin = createAdminClient();
     const asaas = createAsaasGateway({
@@ -54,6 +63,7 @@ async function POST(request: Request) {
       userId,
       priceId: parsed.data.priceId,
       paymentMethod: parsed.data.paymentMethod,
+      catalogCode: launchOffer.catalogCode,
       admin,
       asaas,
       appUrl: environment.appUrl,

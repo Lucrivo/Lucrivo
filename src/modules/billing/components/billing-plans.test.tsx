@@ -8,20 +8,24 @@ const prices: ActiveBillingPrice[] = [
   {
     id: "11111111-1111-4111-8111-111111111111",
     productCode: "quick_diagnosis_pro",
+    catalogCode: "standard",
     billingMode: "monthly",
     amountCents: 3990,
     currency: "BRL",
     installmentLimit: null,
     accessMonths: 1,
+    bonusMonths: 0,
   },
   {
     id: "22222222-2222-4222-8222-222222222222",
     productCode: "quick_diagnosis_pro",
+    catalogCode: "standard",
     billingMode: "semiannual",
     amountCents: 17940,
     currency: "BRL",
     installmentLimit: 6,
     accessMonths: 6,
+    bonusMonths: 0,
   },
 ];
 

@@ -1,16 +1,21 @@
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { createClient, listActivePrices } = vi.hoisted(() => ({
-  createClient: vi.fn(),
-  listActivePrices: vi.fn(),
-}));
+const { createClient, listActivePrices, readLaunchOfferEnvironment } =
+  vi.hoisted(() => ({
+    createClient: vi.fn(),
+    listActivePrices: vi.fn(),
+    readLaunchOfferEnvironment: vi.fn(),
+  }));
 
 vi.mock("@/infrastructure/database/supabase/clients/server.client", () => ({
   createClient,
 }));
 vi.mock("@/modules/billing/services/list-active-prices.service", () => ({
   listActivePrices,
+}));
+vi.mock("@/config/launch-offer-environment", () => ({
+  readLaunchOfferEnvironment,
 }));
 
 vi.hoisted(() => {
@@ -30,26 +35,30 @@ vi.hoisted(() => {
   });
 });
 
-import Home from "@/app/page";
+import Home, { dynamic } from "@/app/page";
 
 const prices = [
   {
     id: "11111111-1111-4111-8111-111111111111",
     productCode: "quick_diagnosis_pro" as const,
+    catalogCode: "launch" as const,
     billingMode: "monthly" as const,
     amountCents: 3990,
     currency: "BRL" as const,
     installmentLimit: null,
-    accessMonths: 1,
+    accessMonths: 2,
+    bonusMonths: 1,
   },
   {
     id: "22222222-2222-4222-8222-222222222222",
     productCode: "quick_diagnosis_pro" as const,
+    catalogCode: "launch" as const,
     billingMode: "semiannual" as const,
     amountCents: 17940,
     currency: "BRL" as const,
     installmentLimit: 6,
-    accessMonths: 6,
+    accessMonths: 12,
+    bonusMonths: 6,
   },
 ];
 
@@ -59,6 +68,12 @@ describe("Home", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     createClient.mockResolvedValue(supabase);
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "active",
+      catalogCode: "launch",
+      startsAt: "2026-10-20T12:00:00.000Z",
+      endsAt: "2026-11-04T12:00:00.000Z",
+    });
     listActivePrices.mockResolvedValue({ status: "success", prices });
   });
 
@@ -95,7 +110,30 @@ describe("Home", () => {
     expect(view.getByText("Sem cartão para começar")).toBeInTheDocument();
     expect(view.getByText("Sem planilhas")).toBeInTheDocument();
     expect(view.getByText("Sem falar contabilês")).toBeInTheDocument();
-    expect(listActivePrices).toHaveBeenCalledWith({ supabase });
+    expect(listActivePrices).toHaveBeenCalledWith({
+      supabase,
+      catalogCode: "launch",
+    });
+    expect(dynamic).toBe("force-dynamic");
+  });
+
+  it("suppresses paid offers and logs safely for invalid launch configuration", async () => {
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "invalid",
+      catalogCode: null,
+      startsAt: null,
+      endsAt: null,
+    });
+
+    await renderHome();
+
+    expect(createClient).not.toHaveBeenCalled();
+    expect(listActivePrices).not.toHaveBeenCalled();
+    expect(errorLog).toHaveBeenCalledWith(
+      JSON.stringify({ event: "launch_offer_configuration_invalid" }),
+    );
+    expect(errorLog.mock.calls[0][0]).not.toContain("LAUNCH_OFFER_START_AT");
   });
 
   it("introduces every factor that shapes a viable price", async () => {
