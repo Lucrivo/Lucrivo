@@ -1,0 +1,968 @@
+do $guard$
+begin
+  if exists (select 1 from public.billing_contracts) then
+    raise exception using
+      errcode = '55000',
+      message = 'launch catalog migration requires an empty billing_contracts table';
+  end if;
+end
+$guard$;
+
+drop trigger if exists billing_prices_prevent_commercial_update
+on public.billing_prices;
+
+alter table public.billing_prices
+  add column catalog_code text,
+  add column bonus_months integer;
+
+alter table public.billing_prices
+  drop constraint billing_prices_catalog_shape_check;
+
+update public.billing_prices
+set catalog_code = 'launch',
+    access_months = case billing_mode when 'monthly' then 2 else 12 end,
+    bonus_months = case billing_mode when 'monthly' then 1 else 6 end;
+
+alter table public.billing_prices
+  alter column catalog_code set not null,
+  alter column bonus_months set not null,
+  alter column bonus_months set default 0;
+
+drop index public.billing_prices_one_active_mode_idx;
+
+alter table public.billing_prices
+  add constraint billing_prices_catalog_code_check
+    check (catalog_code in ('launch', 'standard')),
+  add constraint billing_prices_bonus_months_check
+    check (bonus_months >= 0),
+  add constraint billing_prices_catalog_shape_check check (
+    (
+      catalog_code = 'launch'
+      and billing_mode = 'monthly'
+      and amount_cents = 3990
+      and installment_limit is null
+      and access_months = 2
+      and bonus_months = 1
+    )
+    or (
+      catalog_code = 'launch'
+      and billing_mode = 'semiannual'
+      and amount_cents = 17940
+      and installment_limit = 6
+      and access_months = 12
+      and bonus_months = 6
+      and amount_cents % installment_limit = 0
+    )
+    or (
+      catalog_code = 'standard'
+      and billing_mode = 'monthly'
+      and amount_cents = 4990
+      and installment_limit is null
+      and access_months = 1
+      and bonus_months = 0
+    )
+    or (
+      catalog_code = 'standard'
+      and billing_mode = 'semiannual'
+      and amount_cents = 23940
+      and installment_limit = 6
+      and access_months = 6
+      and bonus_months = 0
+      and amount_cents % installment_limit = 0
+    )
+  );
+
+create unique index billing_prices_one_active_catalog_mode_idx
+on public.billing_prices (product_code, catalog_code, billing_mode)
+where is_active;
+
+insert into public.billing_prices (
+  id,
+  product_code,
+  catalog_code,
+  billing_mode,
+  version,
+  amount_cents,
+  currency,
+  installment_limit,
+  access_months,
+  bonus_months,
+  is_active
+) values
+  (
+    '20000000-0000-4000-8000-000000000003',
+    'quick_diagnosis_pro',
+    'standard',
+    'monthly',
+    2,
+    4990,
+    'BRL',
+    null,
+    1,
+    0,
+    true
+  ),
+  (
+    '20000000-0000-4000-8000-000000000004',
+    'quick_diagnosis_pro',
+    'standard',
+    'semiannual',
+    2,
+    23940,
+    'BRL',
+    6,
+    6,
+    0,
+    true
+  );
+
+create or replace function private.prevent_billing_price_commercial_update()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.id is distinct from old.id
+    or new.product_code is distinct from old.product_code
+    or new.catalog_code is distinct from old.catalog_code
+    or new.billing_mode is distinct from old.billing_mode
+    or new.version is distinct from old.version
+    or new.amount_cents is distinct from old.amount_cents
+    or new.currency is distinct from old.currency
+    or new.installment_limit is distinct from old.installment_limit
+    or new.access_months is distinct from old.access_months
+    or new.bonus_months is distinct from old.bonus_months
+    or new.created_at is distinct from old.created_at
+  then
+    raise exception using
+      errcode = 'P0001',
+      message = 'billing prices are immutable';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke execute on function private.prevent_billing_price_commercial_update()
+from public, anon, authenticated, service_role;
+
+create trigger billing_prices_prevent_commercial_update
+before update on public.billing_prices
+for each row
+execute function private.prevent_billing_price_commercial_update();
+
+alter table public.billing_contracts
+  add column catalog_code text not null,
+  add column bonus_months integer not null default 0,
+  add column renewal_adjustment_status text not null default 'not_required',
+  add column renewal_adjustment_attempt_count integer not null default 0,
+  add column renewal_adjusted_at timestamptz,
+  add column renewal_adjustment_last_error_code text;
+
+alter table public.billing_contracts
+  drop constraint billing_contracts_snapshot_shape_check;
+
+alter table public.billing_contracts
+  add constraint billing_contracts_catalog_code_check
+    check (catalog_code in ('launch', 'standard')),
+  add constraint billing_contracts_bonus_months_check
+    check (bonus_months >= 0),
+  add constraint billing_contracts_snapshot_shape_check check (
+    (
+      catalog_code = 'launch'
+      and billing_mode = 'monthly'
+      and amount_cents = 3990
+      and installment_limit is null
+      and access_months = 2
+      and bonus_months = 1
+    )
+    or (
+      catalog_code = 'launch'
+      and billing_mode = 'semiannual'
+      and amount_cents = 17940
+      and installment_limit = 6
+      and access_months = 12
+      and bonus_months = 6
+      and amount_cents % installment_limit = 0
+    )
+    or (
+      catalog_code = 'standard'
+      and billing_mode = 'monthly'
+      and amount_cents = 4990
+      and installment_limit is null
+      and access_months = 1
+      and bonus_months = 0
+    )
+    or (
+      catalog_code = 'standard'
+      and billing_mode = 'semiannual'
+      and amount_cents = 23940
+      and installment_limit = 6
+      and access_months = 6
+      and bonus_months = 0
+      and amount_cents % installment_limit = 0
+    )
+  ),
+  add constraint billing_contracts_renewal_adjustment_check check (
+    (
+      catalog_code = 'launch'
+      and billing_mode = 'monthly'
+      and payment_method = 'credit_card'
+      and charge_type = 'recurring'
+      and renewal_adjustment_status in (
+        'pending', 'processing', 'completed', 'pending_reconciliation'
+      )
+    )
+    or (
+      not (
+        catalog_code = 'launch'
+        and billing_mode = 'monthly'
+        and payment_method = 'credit_card'
+        and charge_type = 'recurring'
+      )
+      and renewal_adjustment_status = 'not_required'
+      and renewal_adjustment_attempt_count = 0
+      and renewal_adjusted_at is null
+      and renewal_adjustment_last_error_code is null
+    )
+  ),
+  add constraint billing_contracts_renewal_adjustment_attempt_count_check
+    check (renewal_adjustment_attempt_count >= 0),
+  add constraint billing_contracts_renewal_adjustment_error_code_check check (
+    renewal_adjustment_last_error_code is null
+    or renewal_adjustment_last_error_code in (
+      'provider_rejected',
+      'provider_ambiguous',
+      'state_persist_failed'
+    )
+  );
+
+create index billing_contracts_renewal_adjustment_idx
+on public.billing_contracts (updated_at)
+where renewal_adjustment_status in (
+  'pending', 'processing', 'pending_reconciliation'
+);
+
+grant select (catalog_code, bonus_months)
+on public.billing_contracts
+to authenticated;
+
+create function public.begin_billing_renewal_adjustment(p_event_id text)
+returns jsonb
+language plpgsql
+security invoker
+set search_path = ''
+as $function$
+declare
+  v_now timestamptz := pg_catalog.transaction_timestamp();
+  v_contract_id uuid;
+  v_contract public.billing_contracts%rowtype;
+  v_initial_due_date date;
+begin
+  select event.contract_id
+  into v_contract_id
+  from public.asaas_webhook_events as event
+  where event.id = p_event_id;
+
+  if v_contract_id is null then
+    return pg_catalog.jsonb_build_object('status', 'not_required');
+  end if;
+
+  select contract.*
+  into v_contract
+  from public.billing_contracts as contract
+  where contract.id = v_contract_id
+  for update;
+
+  if not found
+    or v_contract.catalog_code <> 'launch'
+    or v_contract.billing_mode <> 'monthly'
+    or v_contract.payment_method <> 'credit_card'
+    or v_contract.charge_type <> 'recurring'
+  then
+    return pg_catalog.jsonb_build_object('status', 'not_required');
+  end if;
+
+  if v_contract.renewal_adjustment_status = 'completed' then
+    return pg_catalog.jsonb_build_object('status', 'completed');
+  end if;
+
+  if v_contract.renewal_adjustment_status = 'processing'
+    and v_contract.updated_at > v_now - interval '5 minutes'
+  then
+    return pg_catalog.jsonb_build_object(
+      'status', 'not_ready', 'retry', true
+    );
+  end if;
+
+  select payment.due_date
+  into v_initial_due_date
+  from public.billing_payments as payment
+  where payment.contract_id = v_contract.id
+    and payment.status in ('confirmed', 'received')
+    and payment.due_date is not null
+  order by payment.due_date, payment.id
+  limit 1;
+
+  if v_contract.asaas_subscription_id is null
+    or v_contract.access_starts_at is null
+    or v_contract.access_ends_at is null
+    or v_initial_due_date is null
+  then
+    return pg_catalog.jsonb_build_object(
+      'status', 'not_ready', 'retry', true
+    );
+  end if;
+
+  update public.billing_contracts
+  set renewal_adjustment_status = 'processing',
+      renewal_adjustment_attempt_count = renewal_adjustment_attempt_count + 1,
+      renewal_adjustment_last_error_code = null,
+      updated_at = v_now
+  where id = v_contract.id
+    and (
+      renewal_adjustment_status in ('pending', 'pending_reconciliation')
+      or (
+        renewal_adjustment_status = 'processing'
+        and updated_at <= v_now - interval '5 minutes'
+      )
+    );
+
+  if not found then
+    return pg_catalog.jsonb_build_object(
+      'status', 'not_ready', 'retry', true
+    );
+  end if;
+
+  return pg_catalog.jsonb_build_object(
+    'status', 'ready',
+    'contractId', v_contract.id,
+    'subscriptionId', v_contract.asaas_subscription_id,
+    'nextDueDate', (v_initial_due_date + interval '2 months')::date
+  );
+end;
+$function$;
+
+create function public.record_billing_renewal_adjustment_result(
+  p_contract_id uuid,
+  p_status text,
+  p_error_code text
+)
+returns boolean
+language plpgsql
+security invoker
+set search_path = ''
+as $function$
+begin
+  if p_status not in ('completed', 'pending_reconciliation') then
+    raise exception using
+      errcode = '22023',
+      message = 'invalid renewal adjustment result';
+  end if;
+
+  if (p_status = 'completed' and p_error_code is not null)
+    or (
+      p_status = 'pending_reconciliation'
+      and (
+        p_error_code is null
+        or p_error_code not in (
+          'provider_rejected',
+          'provider_ambiguous',
+          'state_persist_failed'
+        )
+      )
+    )
+  then
+    raise exception using
+      errcode = '22023',
+      message = 'invalid renewal adjustment error code';
+  end if;
+
+  update public.billing_contracts
+  set renewal_adjustment_status = p_status,
+      renewal_adjusted_at = case
+        when p_status = 'completed'
+          then pg_catalog.transaction_timestamp()
+        else null
+      end,
+      renewal_adjustment_last_error_code = case
+        when p_status = 'completed' then null
+        else p_error_code
+      end,
+      updated_at = pg_catalog.transaction_timestamp()
+  where id = p_contract_id
+    and renewal_adjustment_status = 'processing';
+
+  return found;
+end;
+$function$;
+
+revoke all on function public.begin_billing_renewal_adjustment(text)
+from public, anon, authenticated, service_role;
+grant execute on function public.begin_billing_renewal_adjustment(text)
+to service_role;
+
+revoke all on function public.record_billing_renewal_adjustment_result(
+  uuid, text, text
+)
+from public, anon, authenticated, service_role;
+grant execute on function public.record_billing_renewal_adjustment_result(
+  uuid, text, text
+)
+to service_role;
+
+create or replace function private.apply_asaas_webhook_event_v1(
+  p_event_id text,
+  p_event_type text,
+  p_payload jsonb
+)
+returns text
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_inserted boolean;
+  v_ledger_status text;
+  v_known_event boolean;
+  v_contract_id uuid;
+  v_contract public.billing_contracts%rowtype;
+  v_external_reference text;
+  v_checkout_id text;
+  v_subscription_id text;
+  v_installment_id text;
+  v_payment_id text;
+  v_customer_id text;
+  v_event_at timestamptz;
+  v_payment_status text;
+  v_payment_value_cents bigint;
+  v_payment_installment_number integer;
+  v_payment_due_date date;
+  v_existing_payment_contract_id uuid;
+  v_existing_payment_status text;
+  v_new_access_end timestamptz;
+  v_refund_request_found boolean;
+begin
+  if p_event_id is null or length(btrim(p_event_id)) = 0 then
+    raise exception using errcode = '22023', message = 'invalid webhook event id';
+  end if;
+
+  if p_event_type is null or length(btrim(p_event_type)) = 0 then
+    raise exception using errcode = '22023', message = 'invalid webhook event type';
+  end if;
+
+  if p_payload is null or jsonb_typeof(p_payload) <> 'object' then
+    raise exception using errcode = '22023', message = 'invalid webhook payload';
+  end if;
+
+  insert into public.asaas_webhook_events (
+    id,
+    event_type,
+    payload,
+    processing_status,
+    attempt_count
+  ) values (
+    p_event_id,
+    p_event_type,
+    p_payload,
+    'received',
+    1
+  )
+  on conflict (id) do nothing
+  returning true into v_inserted;
+
+  select processing_status
+  into v_ledger_status
+  from public.asaas_webhook_events
+  where id = p_event_id
+  for update;
+
+  if not coalesce(v_inserted, false) then
+    if v_ledger_status in ('processed', 'ignored') then
+      return 'duplicate';
+    end if;
+
+    update public.asaas_webhook_events
+    set event_type = p_event_type,
+        payload = p_payload,
+        processing_status = 'received',
+        attempt_count = attempt_count + 1,
+        last_error = null,
+        processed_at = null
+    where id = p_event_id;
+  end if;
+
+  v_known_event := p_event_type in (
+    'CHECKOUT_CREATED',
+    'CHECKOUT_PAID',
+    'CHECKOUT_CANCELED',
+    'CHECKOUT_EXPIRED',
+    'SUBSCRIPTION_CREATED',
+    'SUBSCRIPTION_INACTIVATED',
+    'SUBSCRIPTION_DELETED',
+    'PAYMENT_CONFIRMED',
+    'PAYMENT_RECEIVED',
+    'PAYMENT_CREDIT_CARD_CAPTURE_REFUSED',
+    'PAYMENT_OVERDUE',
+    'PAYMENT_REFUNDED',
+    'PAYMENT_PARTIALLY_REFUNDED',
+    'PAYMENT_CHARGEBACK_REQUESTED',
+    'PAYMENT_CHARGEBACK_DISPUTE'
+  );
+
+  if not v_known_event then
+    update public.asaas_webhook_events
+    set processing_status = 'ignored',
+        last_error = null,
+        processed_at = statement_timestamp()
+    where id = p_event_id;
+
+    return 'ignored';
+  end if;
+
+  begin
+    v_event_at := private.parse_asaas_event_instant(
+      nullif(btrim(p_payload ->> 'dateCreated'), '')
+    );
+    v_checkout_id := nullif(btrim(p_payload -> 'checkout' ->> 'id'), '');
+    v_subscription_id := coalesce(
+      nullif(btrim(p_payload -> 'payment' ->> 'subscription'), ''),
+      nullif(btrim(p_payload -> 'subscription' ->> 'id'), '')
+    );
+    v_installment_id := nullif(
+      btrim(p_payload -> 'payment' ->> 'installment'),
+      ''
+    );
+    v_payment_id := nullif(btrim(p_payload -> 'payment' ->> 'id'), '');
+    v_customer_id := coalesce(
+      nullif(btrim(p_payload -> 'checkout' ->> 'customer'), ''),
+      nullif(btrim(p_payload -> 'payment' ->> 'customer'), ''),
+      nullif(btrim(p_payload -> 'subscription' ->> 'customer'), '')
+    );
+    v_external_reference := coalesce(
+      nullif(btrim(p_payload -> 'checkout' ->> 'externalReference'), ''),
+      nullif(btrim(p_payload -> 'payment' ->> 'externalReference'), ''),
+      nullif(btrim(p_payload -> 'subscription' ->> 'externalReference'), '')
+    );
+
+    if v_external_reference is not null then
+      select id into v_contract_id
+      from public.billing_contracts
+      where external_reference = v_external_reference;
+    end if;
+
+    if v_contract_id is null and v_checkout_id is not null then
+      select id into v_contract_id
+      from public.billing_contracts
+      where asaas_checkout_id = v_checkout_id;
+    end if;
+
+    if v_contract_id is null and v_subscription_id is not null then
+      select id into v_contract_id
+      from public.billing_contracts
+      where asaas_subscription_id = v_subscription_id;
+    end if;
+
+    if v_contract_id is null and v_installment_id is not null then
+      select id into v_contract_id
+      from public.billing_contracts
+      where asaas_installment_id = v_installment_id;
+    end if;
+
+    if v_contract_id is null and v_payment_id is not null then
+      select contract_id into v_contract_id
+      from public.billing_payments
+      where asaas_payment_id = v_payment_id;
+    end if;
+
+    if v_contract_id is null and v_customer_id is not null then
+      select case
+        when count(*) = 1 then (array_agg(contract.id))[1]
+        else null
+      end
+      into v_contract_id
+      from public.billing_customers as customer
+      join public.billing_contracts as contract
+        on contract.user_id = customer.user_id
+      where customer.asaas_customer_id = v_customer_id
+        and contract.status in (
+          'pending',
+          'pending_reconciliation',
+          'active',
+          'cancel_at_period_end',
+          'refund_pending'
+        );
+    end if;
+
+    if v_contract_id is null then
+      update public.asaas_webhook_events
+      set processing_status = 'failed',
+          last_error = 'contract_unresolved',
+          processed_at = null
+      where id = p_event_id;
+
+      return 'unresolved';
+    end if;
+
+    select * into strict v_contract
+    from public.billing_contracts
+    where id = v_contract_id
+    for update;
+
+    update public.asaas_webhook_events
+    set contract_id = v_contract.id
+    where id = p_event_id;
+
+    if v_customer_id is not null then
+      insert into public.billing_customers (
+        user_id,
+        asaas_customer_id,
+        updated_at
+      ) values (
+        v_contract.user_id,
+        v_customer_id,
+        statement_timestamp()
+      )
+      on conflict (user_id) do update
+      set asaas_customer_id = excluded.asaas_customer_id,
+          updated_at = excluded.updated_at;
+    end if;
+
+    update public.billing_contracts
+    set asaas_checkout_id = coalesce(asaas_checkout_id, v_checkout_id),
+        asaas_subscription_id = case
+          when billing_mode = 'monthly'
+            and payment_method = 'credit_card'
+            and charge_type = 'recurring'
+          then coalesce(asaas_subscription_id, v_subscription_id)
+          else asaas_subscription_id
+        end,
+        asaas_installment_id = case
+          when billing_mode = 'semiannual'
+            and payment_method = 'credit_card'
+            and charge_type = 'installment'
+          then coalesce(asaas_installment_id, v_installment_id)
+          else asaas_installment_id
+        end,
+        updated_at = statement_timestamp()
+    where id = v_contract.id;
+
+    if p_event_type = 'CHECKOUT_PAID' then
+      update public.billing_contracts
+      set status = 'active',
+          access_starts_at = v_event_at,
+          access_ends_at = v_event_at
+            + make_interval(months => access_months),
+          updated_at = statement_timestamp()
+      where id = v_contract.id
+        and access_starts_at is null
+        and status in ('pending', 'pending_reconciliation');
+
+    elsif p_event_type in ('CHECKOUT_CANCELED', 'CHECKOUT_EXPIRED') then
+      update public.billing_contracts
+      set status = case p_event_type
+            when 'CHECKOUT_CANCELED' then 'canceled'
+            else 'expired'
+          end,
+          canceled_at = case p_event_type
+            when 'CHECKOUT_CANCELED' then v_event_at
+            else canceled_at
+          end,
+          updated_at = statement_timestamp()
+      where id = v_contract.id
+        and status = 'pending';
+
+    elsif p_event_type in (
+      'SUBSCRIPTION_INACTIVATED',
+      'SUBSCRIPTION_DELETED'
+    ) then
+      update public.billing_refund_requests
+      set recurrence_canceled_at = coalesce(
+            recurrence_canceled_at,
+            v_event_at
+          ),
+          provider_submitted_at = coalesce(
+            provider_submitted_at,
+            v_event_at
+          ),
+          status = case
+            when refund_confirmed_at is not null then 'confirmed'
+            else 'submitted'
+          end,
+          last_error_code = null,
+          updated_at = statement_timestamp()
+      where contract_id = v_contract.id
+        and status in (
+          'processing',
+          'submitted',
+          'pending_reconciliation'
+        )
+      returning true into v_refund_request_found;
+
+      if not coalesce(v_refund_request_found, false) then
+        update public.billing_contracts
+        set status = 'cancel_at_period_end',
+            cancel_at_period_end = true,
+            cancellation_confirmed_at = v_event_at,
+            updated_at = statement_timestamp()
+        where id = v_contract.id
+          and billing_mode = 'monthly'
+          and payment_method = 'credit_card'
+          and charge_type = 'recurring'
+          and status in ('active', 'cancel_at_period_end');
+      end if;
+
+    elsif p_event_type like 'PAYMENT\_%' escape '\' then
+      if v_payment_id is null
+        or jsonb_typeof(p_payload -> 'payment') <> 'object'
+      then
+        raise exception using
+          errcode = '22023',
+          message = 'invalid payment webhook payload';
+      end if;
+
+      v_payment_value_cents := round(
+        (p_payload -> 'payment' ->> 'value')::numeric * 100
+      )::bigint;
+      v_payment_due_date := case
+        when nullif(btrim(p_payload -> 'payment' ->> 'dueDate'), '') is null
+          then null
+        else (p_payload -> 'payment' ->> 'dueDate')::date
+      end;
+      v_payment_installment_number := case
+        when nullif(
+          btrim(p_payload -> 'payment' ->> 'installmentNumber'),
+          ''
+        ) is null then null
+        else (p_payload -> 'payment' ->> 'installmentNumber')::integer
+      end;
+      v_payment_status := case p_event_type
+        when 'PAYMENT_CONFIRMED' then 'confirmed'
+        when 'PAYMENT_RECEIVED' then 'received'
+        when 'PAYMENT_CREDIT_CARD_CAPTURE_REFUSED' then 'capture_refused'
+        when 'PAYMENT_OVERDUE' then 'overdue'
+        when 'PAYMENT_REFUNDED' then 'refunded'
+        when 'PAYMENT_PARTIALLY_REFUNDED' then 'partially_refunded'
+        when 'PAYMENT_CHARGEBACK_REQUESTED' then 'chargeback_requested'
+        when 'PAYMENT_CHARGEBACK_DISPUTE' then 'chargeback_dispute'
+      end;
+
+      select contract_id, status
+      into v_existing_payment_contract_id, v_existing_payment_status
+      from public.billing_payments
+      where asaas_payment_id = v_payment_id
+      for update;
+
+      if v_existing_payment_contract_id is not null
+        and v_existing_payment_contract_id <> v_contract.id
+      then
+        raise exception using
+          errcode = '23505',
+          message = 'payment already belongs to another contract';
+      end if;
+
+      insert into public.billing_payments (
+        contract_id,
+        asaas_payment_id,
+        status,
+        value_cents,
+        installment_number,
+        due_date,
+        confirmed_at,
+        received_at,
+        refunded_at,
+        chargeback_at,
+        updated_at
+      ) values (
+        v_contract.id,
+        v_payment_id,
+        v_payment_status,
+        v_payment_value_cents,
+        v_payment_installment_number,
+        v_payment_due_date,
+        case when p_event_type = 'PAYMENT_CONFIRMED' then v_event_at end,
+        case when p_event_type = 'PAYMENT_RECEIVED' then v_event_at end,
+        case when p_event_type = 'PAYMENT_REFUNDED' then v_event_at end,
+        case when p_event_type in (
+          'PAYMENT_CHARGEBACK_REQUESTED',
+          'PAYMENT_CHARGEBACK_DISPUTE'
+        ) then v_event_at end,
+        statement_timestamp()
+      )
+      on conflict (asaas_payment_id) do update
+      set status = excluded.status,
+          value_cents = excluded.value_cents,
+          installment_number = coalesce(
+            excluded.installment_number,
+            public.billing_payments.installment_number
+          ),
+          due_date = coalesce(
+            excluded.due_date,
+            public.billing_payments.due_date
+          ),
+          confirmed_at = coalesce(
+            public.billing_payments.confirmed_at,
+            excluded.confirmed_at
+          ),
+          received_at = coalesce(
+            public.billing_payments.received_at,
+            excluded.received_at
+          ),
+          refunded_at = coalesce(
+            public.billing_payments.refunded_at,
+            excluded.refunded_at
+          ),
+          chargeback_at = coalesce(
+            public.billing_payments.chargeback_at,
+            excluded.chargeback_at
+          ),
+          updated_at = excluded.updated_at;
+
+      if p_event_type = 'PAYMENT_CONFIRMED'
+        and coalesce(v_existing_payment_status, '') not in (
+          'confirmed',
+          'received',
+          'refunded',
+          'partially_refunded',
+          'chargeback_requested',
+          'chargeback_dispute'
+        )
+      then
+        if v_contract.billing_mode = 'monthly'
+          and v_contract.payment_method = 'credit_card'
+        then
+          if v_payment_due_date is null then
+            raise exception using
+              errcode = '22023',
+              message = 'monthly card payment requires due date';
+          end if;
+
+          v_new_access_end := (
+            v_payment_due_date::text || ' 00:00:00+00'
+          )::timestamptz + case
+            when v_contract.access_starts_at is null then
+              make_interval(months => v_contract.access_months)
+            else interval '1 month'
+          end;
+
+          update public.billing_contracts
+          set status = case
+                when status in ('pending', 'pending_reconciliation')
+                  then 'active'
+                else status
+              end,
+              access_starts_at = coalesce(access_starts_at, v_event_at),
+              access_ends_at = greatest(
+                coalesce(access_ends_at, v_new_access_end),
+                v_new_access_end
+              ),
+              updated_at = statement_timestamp()
+          where id = v_contract.id
+            and status in (
+              'pending',
+              'pending_reconciliation',
+              'active',
+              'cancel_at_period_end'
+            );
+
+        elsif v_contract.billing_mode = 'monthly'
+          and v_contract.payment_method = 'pix'
+        then
+          update public.billing_contracts
+          set status = 'active',
+              access_starts_at = v_event_at,
+              access_ends_at = v_event_at
+                + make_interval(months => access_months),
+              updated_at = statement_timestamp()
+          where id = v_contract.id
+            and access_starts_at is null
+            and status in ('pending', 'pending_reconciliation');
+
+        elsif v_contract.billing_mode = 'semiannual' then
+          update public.billing_contracts
+          set status = 'active',
+              access_starts_at = v_event_at,
+              access_ends_at = v_event_at
+                + make_interval(months => access_months),
+              updated_at = statement_timestamp()
+          where id = v_contract.id
+            and access_starts_at is null
+            and status in ('pending', 'pending_reconciliation');
+        end if;
+      end if;
+
+      if p_event_type = 'PAYMENT_REFUNDED' then
+        update public.billing_contracts
+        set status = 'refunded',
+            access_ends_at = case
+              when access_ends_at is null then null
+              else least(access_ends_at, statement_timestamp())
+            end,
+            cancel_at_period_end = false,
+            cancellation_confirmed_at = null,
+            updated_at = statement_timestamp()
+        where id = v_contract.id;
+
+        update public.billing_refund_requests
+        set refund_confirmed_at = coalesce(refund_confirmed_at, v_event_at),
+            provider_submitted_at = coalesce(
+              provider_submitted_at,
+              v_event_at
+            ),
+            status = case
+              when v_contract.billing_mode <> 'monthly'
+                or v_contract.payment_method <> 'credit_card'
+                or recurrence_canceled_at is not null
+              then 'confirmed'
+              else 'submitted'
+            end,
+            last_error_code = null,
+            updated_at = statement_timestamp()
+        where contract_id = v_contract.id
+          and status in (
+            'processing',
+            'submitted',
+            'pending_reconciliation',
+            'rejected'
+          );
+
+      elsif p_event_type in (
+        'PAYMENT_CHARGEBACK_REQUESTED',
+        'PAYMENT_CHARGEBACK_DISPUTE'
+      ) then
+        update public.billing_contracts
+        set status = 'chargeback',
+            access_ends_at = case
+              when access_ends_at is null then null
+              else least(access_ends_at, statement_timestamp())
+            end,
+            cancel_at_period_end = false,
+            cancellation_confirmed_at = null,
+            updated_at = statement_timestamp()
+        where id = v_contract.id;
+      end if;
+    end if;
+
+    update public.asaas_webhook_events
+    set processing_status = 'processed',
+        last_error = case
+          when p_event_type = 'PAYMENT_PARTIALLY_REFUNDED'
+            then 'manual_review_required'
+          else null
+        end,
+        processed_at = statement_timestamp()
+    where id = p_event_id;
+
+    return 'processed';
+  exception
+    when others then
+      update public.asaas_webhook_events
+      set processing_status = 'failed',
+          last_error = 'processing_failed',
+          processed_at = null
+      where id = p_event_id;
+
+      return 'unresolved';
+  end;
+end;
+$$;

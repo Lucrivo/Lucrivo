@@ -19,6 +19,92 @@ select has_table(
   'Asaas webhook ledger exists'
 );
 
+select has_function(
+  'public',
+  'begin_billing_renewal_adjustment',
+  array['text'],
+  'renewal adjustment claim RPC exists'
+);
+select has_function(
+  'public',
+  'record_billing_renewal_adjustment_result',
+  array['uuid', 'text', 'text'],
+  'renewal adjustment result RPC exists'
+);
+select ok(
+  (
+    select not prosecdef
+      and proconfig = array['search_path=""']::text[]
+    from pg_proc
+    where oid =
+      'public.begin_billing_renewal_adjustment(text)'::regprocedure
+  ),
+  'renewal claim is security invoker with an empty search path'
+);
+select ok(
+  (
+    select not prosecdef
+      and proconfig = array['search_path=""']::text[]
+    from pg_proc
+    where oid =
+      'public.record_billing_renewal_adjustment_result(uuid,text,text)'::regprocedure
+  ),
+  'renewal result is security invoker with an empty search path'
+);
+
+select ok(
+  has_function_privilege(
+    'service_role',
+    'public.begin_billing_renewal_adjustment(text)',
+    'execute'
+  ),
+  'service_role may claim renewal adjustments'
+);
+select ok(
+  has_function_privilege(
+    'service_role',
+    'public.record_billing_renewal_adjustment_result(uuid,text,text)',
+    'execute'
+  ),
+  'service_role may record renewal adjustment results'
+);
+select ok(
+  not has_function_privilege(
+    'public',
+    'public.begin_billing_renewal_adjustment(text)',
+    'execute'
+  )
+  and not has_function_privilege(
+    'anon',
+    'public.begin_billing_renewal_adjustment(text)',
+    'execute'
+  )
+  and not has_function_privilege(
+    'authenticated',
+    'public.begin_billing_renewal_adjustment(text)',
+    'execute'
+  ),
+  'client roles cannot claim renewal adjustments'
+);
+select ok(
+  not has_function_privilege(
+    'public',
+    'public.record_billing_renewal_adjustment_result(uuid,text,text)',
+    'execute'
+  )
+  and not has_function_privilege(
+    'anon',
+    'public.record_billing_renewal_adjustment_result(uuid,text,text)',
+    'execute'
+  )
+  and not has_function_privilege(
+    'authenticated',
+    'public.record_billing_renewal_adjustment_result(uuid,text,text)',
+    'execute'
+  ),
+  'client roles cannot record renewal adjustment results'
+);
+
 select columns_are(
   'public',
   'billing_prices',
@@ -33,7 +119,9 @@ select columns_are(
     'access_months',
     'is_active',
     'created_at',
-    'retired_at'
+    'retired_at',
+    'catalog_code',
+    'bonus_months'
   ],
   'price catalog has only the approved columns'
 );
@@ -103,7 +191,13 @@ select columns_are(
     'cancellation_confirmed_at',
     'canceled_at',
     'created_at',
-    'updated_at'
+    'updated_at',
+    'catalog_code',
+    'bonus_months',
+    'renewal_adjustment_status',
+    'renewal_adjustment_attempt_count',
+    'renewal_adjusted_at',
+    'renewal_adjustment_last_error_code'
   ],
   'contracts contain commercial snapshots and provider mappings'
 );
@@ -213,8 +307,8 @@ select fk_ok(
 select has_index(
   'public',
   'billing_prices',
-  'billing_prices_one_active_mode_idx',
-  'catalog has one-active-price index'
+  'billing_prices_one_active_catalog_mode_idx',
+  'catalog has one-active-price-per-catalog index'
 );
 select has_trigger(
   'public',
@@ -254,6 +348,12 @@ select has_index(
 );
 select has_index(
   'public',
+  'billing_contracts',
+  'billing_contracts_renewal_adjustment_idx',
+  'renewal adjustment backlog is indexed'
+);
+select has_index(
+  'public',
   'billing_payments',
   'billing_payments_contract_id_idx',
   'payment contract foreign key is indexed'
@@ -276,7 +376,7 @@ select ok(
     select pg_get_expr(indpred, indrelid)
     from pg_index
     where indexrelid =
-      'public.billing_prices_one_active_mode_idx'::regclass
+      'public.billing_prices_one_active_catalog_mode_idx'::regclass
   ) = 'is_active',
   'one-active-price index uses the expected predicate'
 );
@@ -379,6 +479,13 @@ select table_privs_are(
   array['SELECT'],
   'anon can only select public prices'
 );
+select table_privs_are(
+  'public',
+  'billing_prices',
+  'authenticated',
+  array['SELECT'],
+  'authenticated can only select public prices'
+);
 
 select results_eq(
   $$
@@ -411,7 +518,9 @@ select results_eq(
     ('cancellation_confirmed_at'::information_schema.sql_identifier),
     ('canceled_at'::information_schema.sql_identifier),
     ('created_at'::information_schema.sql_identifier),
-    ('updated_at'::information_schema.sql_identifier)
+    ('updated_at'::information_schema.sql_identifier),
+    ('catalog_code'::information_schema.sql_identifier),
+    ('bonus_months'::information_schema.sql_identifier)
   $$,
   'authenticated receives only safe contract columns'
 );
@@ -487,25 +596,26 @@ select results_eq(
 
 select results_eq(
   $$
-    select billing_mode, amount_cents, currency, installment_limit,
-      access_months, is_active
+    select catalog_code, billing_mode, amount_cents, installment_limit,
+           access_months, bonus_months, is_active
     from public.billing_prices
-    where product_code = 'quick_diagnosis_pro'
-    order by billing_mode desc
+    order by catalog_code, billing_mode
   $$,
   $$ values
-    ('semiannual'::text, 17940::bigint, 'BRL'::text, 6, 6, true),
-    ('monthly'::text, 3990::bigint, 'BRL'::text, null::integer, 1, true)
+    ('launch'::text, 'monthly'::text, 3990::bigint, null::integer, 2, 1, true),
+    ('launch'::text, 'semiannual'::text, 17940::bigint, 6, 12, 6, true),
+    ('standard'::text, 'monthly'::text, 4990::bigint, null::integer, 1, 0, true),
+    ('standard'::text, 'semiannual'::text, 23940::bigint, 6, 6, 0, true)
   $$,
-  'v1 catalog contains the approved monthly and semiannual prices'
+  'both immutable catalogs expose the approved commercial terms'
 );
 
 select throws_ok(
   $$
     insert into public.billing_prices (
-      product_code, billing_mode, version, amount_cents, currency,
-      installment_limit, access_months
-    ) values ('legacy', 'annual', 1, 47880, 'BRL', 12, 12)
+      product_code, catalog_code, billing_mode, version, amount_cents, currency,
+      installment_limit, access_months, bonus_months
+    ) values ('legacy', 'launch', 'annual', 1, 47880, 'BRL', 12, 12, 0)
   $$,
   '23514',
   null,
@@ -523,25 +633,99 @@ select throws_ok(
   'commercial price fields cannot be changed'
 );
 
+select throws_ok(
+  $$
+    update public.billing_prices
+    set catalog_code = 'standard'
+    where id = '20000000-0000-4000-8000-000000000001'
+  $$,
+  'P0001',
+  'billing prices are immutable',
+  'price catalog code cannot be changed'
+);
+
+select throws_ok(
+  $$
+    update public.billing_prices
+    set bonus_months = 0
+    where id = '20000000-0000-4000-8000-000000000001'
+  $$,
+  'P0001',
+  'billing prices are immutable',
+  'price bonus cannot be changed'
+);
+
+select throws_ok(
+  $$
+    insert into public.billing_prices (
+      product_code, catalog_code, billing_mode, version, amount_cents, currency,
+      installment_limit, access_months, bonus_months
+    ) values ('wrong-launch-amount', 'launch', 'monthly', 1, 4990, 'BRL', null, 2, 1)
+  $$,
+  '23514',
+  null,
+  'launch catalog rejects a mismatched amount'
+);
+
+select throws_ok(
+  $$
+    insert into public.billing_prices (
+      product_code, catalog_code, billing_mode, version, amount_cents, currency,
+      installment_limit, access_months, bonus_months
+    ) values ('wrong-launch-access', 'launch', 'monthly', 1, 3990, 'BRL', null, 1, 1)
+  $$,
+  '23514',
+  null,
+  'launch catalog rejects mismatched access'
+);
+
+select throws_ok(
+  $$
+    insert into public.billing_prices (
+      product_code, catalog_code, billing_mode, version, amount_cents, currency,
+      installment_limit, access_months, bonus_months
+    ) values ('wrong-launch-bonus', 'launch', 'monthly', 1, 3990, 'BRL', null, 2, 0)
+  $$,
+  '23514',
+  null,
+  'launch catalog rejects a mismatched bonus'
+);
+
+select throws_ok(
+  $$
+    insert into public.billing_prices (
+      product_code, catalog_code, billing_mode, version, amount_cents, currency,
+      installment_limit, access_months, bonus_months
+    ) values ('unknown-catalog', 'legacy', 'monthly', 1, 3990, 'BRL', null, 2, 1)
+  $$,
+  '23514',
+  null,
+  'unknown catalog codes are rejected'
+);
+
 insert into public.billing_prices (
   id,
   product_code,
+  catalog_code,
   billing_mode,
   version,
   amount_cents,
   currency,
   installment_limit,
   access_months,
+  bonus_months,
   is_active
 ) values (
   '20000000-0000-4000-8000-000000000099',
   'retirement_test',
+  'standard',
   'monthly',
   1,
-  100,
+  4990,
   'BRL',
   null,
   1,
+  0,
   true
 );
 
@@ -558,15 +742,15 @@ select lives_ok(
 select throws_ok(
   $$
     insert into public.billing_prices (
-      product_code, billing_mode, version, amount_cents, currency,
-      installment_limit, access_months, is_active
+      product_code, catalog_code, billing_mode, version, amount_cents, currency,
+      installment_limit, access_months, bonus_months, is_active
     ) values (
-      'quick_diagnosis_pro', 'monthly', 2, 5990, 'BRL', null, 1, true
+      'quick_diagnosis_pro', 'launch', 'monthly', 2, 3990, 'BRL', null, 2, 1, true
     )
   $$,
   '23505',
   null,
-  'only one price can be active for a product and billing mode'
+  'only one price can be active for a product, catalog, and billing mode'
 );
 
 insert into auth.users (id, aud, role, email)
@@ -582,6 +766,12 @@ values
     'authenticated',
     'authenticated',
     'billing-b@example.com'
+  ),
+  (
+    '81000000-0000-4000-8000-000000000003',
+    'authenticated',
+    'authenticated',
+    'billing-renewal@example.com'
   );
 
 create function pg_temp.assert_invalid_billing_flows()
@@ -610,6 +800,7 @@ begin
         user_id,
         price_id,
         external_reference,
+        catalog_code,
         billing_mode,
         payment_method,
         charge_type,
@@ -617,6 +808,7 @@ begin
         currency,
         installment_limit,
         access_months,
+        bonus_months,
         status
       ) values (
         '81000000-0000-4000-8000-000000000001',
@@ -625,12 +817,14 @@ begin
           else '20000000-0000-4000-8000-000000000002'::uuid
         end,
         gen_random_uuid()::text,
+        'launch',
         candidate.billing_mode,
         candidate.payment_method,
         candidate.charge_type,
         case candidate.billing_mode when 'monthly' then 3990 else 17940 end,
         'BRL',
         case candidate.billing_mode when 'monthly' then null else 6 end,
+        case candidate.billing_mode when 'monthly' then 2 else 12 end,
         case candidate.billing_mode when 'monthly' then 1 else 6 end,
         'failed'
       );
@@ -651,16 +845,18 @@ select lives_ok(
 select lives_ok(
   $$
     insert into public.billing_contracts (
-      id, user_id, price_id, external_reference, billing_mode,
+      id, user_id, price_id, external_reference, catalog_code, billing_mode,
       payment_method, charge_type, amount_cents, currency,
-      installment_limit, access_months, status
+      installment_limit, access_months, bonus_months,
+      renewal_adjustment_status, status
     ) values
       (
         '82000000-0000-4000-8000-000000000091',
         '81000000-0000-4000-8000-000000000001',
         '20000000-0000-4000-8000-000000000001',
         '83000000-0000-4000-8000-000000000091',
-        'monthly', 'credit_card', 'recurring', 3990, 'BRL', null, 1,
+        'launch', 'monthly', 'credit_card', 'recurring', 3990, 'BRL', null, 2,
+        1, 'pending',
         'failed'
       ),
       (
@@ -668,11 +864,52 @@ select lives_ok(
         '81000000-0000-4000-8000-000000000002',
         '20000000-0000-4000-8000-000000000002',
         '83000000-0000-4000-8000-000000000092',
-        'semiannual', 'pix', 'detached', 17940, 'BRL', 6, 6,
+        'launch', 'semiannual', 'pix', 'detached', 17940, 'BRL', 6, 12,
+        6, 'not_required',
         'failed'
       )
   $$,
   'all four approved billing flows satisfy the contract constraints'
+);
+
+select throws_ok(
+  $$
+    insert into public.billing_contracts (
+      user_id, price_id, external_reference, catalog_code, billing_mode,
+      payment_method, charge_type, amount_cents, currency,
+      installment_limit, access_months, bonus_months,
+      renewal_adjustment_status, status
+    ) values (
+      '81000000-0000-4000-8000-000000000001',
+      '20000000-0000-4000-8000-000000000001',
+      'contract-invalid-renewal-status', 'launch', 'monthly',
+      'credit_card', 'recurring', 3990, 'BRL', null, 2, 1,
+      'unknown', 'failed'
+    )
+  $$,
+  '23514',
+  null,
+  'invalid renewal adjustment statuses are rejected'
+);
+
+select throws_ok(
+  $$
+    insert into public.billing_contracts (
+      user_id, price_id, external_reference, catalog_code, billing_mode,
+      payment_method, charge_type, amount_cents, currency,
+      installment_limit, access_months, bonus_months,
+      renewal_adjustment_status, status
+    ) values (
+      '81000000-0000-4000-8000-000000000001',
+      '20000000-0000-4000-8000-000000000001',
+      'contract-invalid-launch-bonus', 'launch', 'monthly',
+      'credit_card', 'recurring', 3990, 'BRL', null, 2, 0,
+      'pending', 'failed'
+    )
+  $$,
+  '23514',
+  null,
+  'promotional monthly contracts require one bonus month'
 );
 
 delete from public.billing_contracts
@@ -686,6 +923,7 @@ insert into public.billing_contracts (
   user_id,
   price_id,
   external_reference,
+  catalog_code,
   billing_mode,
   payment_method,
   charge_type,
@@ -693,6 +931,7 @@ insert into public.billing_contracts (
   currency,
   installment_limit,
   access_months,
+  bonus_months,
   status,
   access_starts_at,
   access_ends_at
@@ -702,32 +941,36 @@ insert into public.billing_contracts (
     '81000000-0000-4000-8000-000000000001',
     '20000000-0000-4000-8000-000000000001',
     '83000000-0000-4000-8000-000000000001',
+    'launch',
     'monthly',
     'pix',
     'detached',
     3990,
     'BRL',
     null,
+    2,
     1,
     'active',
     '2026-09-01T00:00:00Z',
-    '2026-10-01T00:00:00Z'
+    '2026-11-01T00:00:00Z'
   ),
   (
     '82000000-0000-4000-8000-000000000002',
     '81000000-0000-4000-8000-000000000002',
     '20000000-0000-4000-8000-000000000002',
     '83000000-0000-4000-8000-000000000002',
+    'launch',
     'semiannual',
     'credit_card',
     'installment',
     17940,
     'BRL',
     6,
+    12,
     6,
     'active',
     '2026-09-01T00:00:00Z',
-    '2027-03-01T00:00:00Z'
+    '2027-09-01T00:00:00Z'
   );
 
 insert into public.billing_customers (user_id, asaas_customer_id)
@@ -760,6 +1003,117 @@ insert into public.billing_payments (
     '2026-09-01'
   );
 
+insert into public.billing_contracts (
+  id,
+  user_id,
+  price_id,
+  external_reference,
+  catalog_code,
+  billing_mode,
+  payment_method,
+  charge_type,
+  amount_cents,
+  currency,
+  installment_limit,
+  access_months,
+  bonus_months,
+  asaas_subscription_id,
+  status,
+  access_starts_at,
+  access_ends_at,
+  renewal_adjustment_status
+) values (
+  '82000000-0000-4000-8000-000000000003',
+  '81000000-0000-4000-8000-000000000003',
+  '20000000-0000-4000-8000-000000000001',
+  'contract-renewal-due-date',
+  'launch',
+  'monthly',
+  'credit_card',
+  'recurring',
+  3990,
+  'BRL',
+  null,
+  2,
+  1,
+  'sub_renewal_due_date',
+  'active',
+  '2026-10-21T15:00:00Z',
+  '2026-12-21T15:00:00Z',
+  'pending'
+);
+
+insert into public.billing_payments (
+  id,
+  contract_id,
+  asaas_payment_id,
+  status,
+  value_cents,
+  due_date,
+  confirmed_at
+) values (
+  '84000000-0000-4000-8000-000000000003',
+  '82000000-0000-4000-8000-000000000003',
+  'pay_renewal_due_date',
+  'confirmed',
+  3990,
+  '2026-10-20',
+  '2026-10-20T12:00:00Z'
+);
+
+insert into public.asaas_webhook_events (
+  id,
+  event_type,
+  contract_id,
+  payload
+) values (
+  'evt_renewal_due_date',
+  'PAYMENT_CONFIRMED',
+  '82000000-0000-4000-8000-000000000003',
+  '{"id":"evt_renewal_due_date","event":"PAYMENT_CONFIRMED"}'::jsonb
+);
+
+set local role service_role;
+
+select results_eq(
+  $$
+    select public.begin_billing_renewal_adjustment(
+      'evt_renewal_due_date'
+    )
+  $$,
+  $$ values (
+    '{
+      "status":"ready",
+      "contractId":"82000000-0000-4000-8000-000000000003",
+      "subscriptionId":"sub_renewal_due_date",
+      "nextDueDate":"2026-12-20"
+    }'::jsonb
+  ) $$,
+  'renewal adjustment uses the initial payment due date, not access start'
+);
+
+select is(
+  public.record_billing_renewal_adjustment_result(
+    '82000000-0000-4000-8000-000000000003',
+    'completed',
+    null
+  ),
+  true,
+  'a processing renewal adjustment can be completed once'
+);
+
+select results_eq(
+  $$
+    select public.begin_billing_renewal_adjustment(
+      'evt_renewal_due_date'
+    )
+  $$,
+  $$ values ('{"status":"completed"}'::jsonb) $$,
+  'completed renewal adjustments are idempotent'
+);
+
+reset role;
+
 insert into public.asaas_webhook_events (
   id,
   event_type,
@@ -776,8 +1130,8 @@ set local role anon;
 
 select is(
   (select count(*)::bigint from public.billing_prices),
-  2::bigint,
-  'anon reads exactly the two active public prices'
+  4::bigint,
+  'anon reads exactly the four active public prices'
 );
 select throws_ok(
   $$ select id from public.billing_contracts $$,
@@ -837,13 +1191,14 @@ select throws_ok(
 select throws_ok(
   $$
     insert into public.billing_contracts (
-      user_id, price_id, external_reference, billing_mode, payment_method,
-      charge_type, amount_cents, currency, installment_limit, access_months
+      user_id, price_id, external_reference, catalog_code, billing_mode,
+      payment_method, charge_type, amount_cents, currency, installment_limit,
+      access_months, bonus_months
     ) values (
       '81000000-0000-4000-8000-000000000001',
       '20000000-0000-4000-8000-000000000001',
       '83000000-0000-4000-8000-000000000099',
-      'monthly', 'pix', 'detached', 3990, 'BRL', null, 1
+      'launch', 'monthly', 'pix', 'detached', 3990, 'BRL', null, 2, 1
     )
   $$,
   '42501',

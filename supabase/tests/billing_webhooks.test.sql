@@ -71,6 +71,7 @@ insert into public.billing_contracts (
   user_id,
   price_id,
   external_reference,
+  catalog_code,
   billing_mode,
   payment_method,
   charge_type,
@@ -78,6 +79,8 @@ insert into public.billing_contracts (
   currency,
   installment_limit,
   access_months,
+  bonus_months,
+  renewal_adjustment_status,
   status
 ) values
   (
@@ -85,84 +88,96 @@ insert into public.billing_contracts (
     '91000000-0000-4000-8000-000000000001',
     '20000000-0000-4000-8000-000000000001',
     'contract-monthly-card',
-    'monthly', 'credit_card', 'recurring', 3990, 'BRL', null, 1, 'pending'
+    'launch', 'monthly', 'credit_card', 'recurring', 3990, 'BRL', null, 2,
+    1, 'pending', 'pending'
   ),
   (
     '92000000-0000-4000-8000-000000000002',
     '91000000-0000-4000-8000-000000000002',
     '20000000-0000-4000-8000-000000000001',
     'contract-monthly-pix',
-    'monthly', 'pix', 'detached', 3990, 'BRL', null, 1, 'pending'
+    'launch', 'monthly', 'pix', 'detached', 3990, 'BRL', null, 2,
+    1, 'not_required', 'pending'
   ),
   (
     '92000000-0000-4000-8000-000000000003',
     '91000000-0000-4000-8000-000000000003',
     '20000000-0000-4000-8000-000000000002',
     'contract-semiannual-card',
-    'semiannual', 'credit_card', 'installment', 17940, 'BRL', 6, 6, 'pending'
+    'launch', 'semiannual', 'credit_card', 'installment', 17940, 'BRL', 6, 12,
+    6, 'not_required', 'pending'
   ),
   (
     '92000000-0000-4000-8000-000000000004',
     '91000000-0000-4000-8000-000000000004',
     '20000000-0000-4000-8000-000000000002',
     'contract-semiannual-pix',
-    'semiannual', 'pix', 'detached', 17940, 'BRL', 6, 6, 'pending'
+    'launch', 'semiannual', 'pix', 'detached', 17940, 'BRL', 6, 12,
+    6, 'not_required', 'pending'
   ),
   (
     '92000000-0000-4000-8000-000000000005',
     '91000000-0000-4000-8000-000000000005',
     '20000000-0000-4000-8000-000000000001',
     'contract-cancel',
-    'monthly', 'pix', 'detached', 3990, 'BRL', null, 1, 'pending'
+    'launch', 'monthly', 'pix', 'detached', 3990, 'BRL', null, 2,
+    1, 'not_required', 'pending'
   ),
   (
     '92000000-0000-4000-8000-000000000006',
     '91000000-0000-4000-8000-000000000006',
     '20000000-0000-4000-8000-000000000001',
     'contract-expire',
-    'monthly', 'pix', 'detached', 3990, 'BRL', null, 1, 'pending'
+    'launch', 'monthly', 'pix', 'detached', 3990, 'BRL', null, 2,
+    1, 'not_required', 'pending'
   ),
   (
     '92000000-0000-4000-8000-000000000007',
     '91000000-0000-4000-8000-000000000007',
     '20000000-0000-4000-8000-000000000001',
     'contract-retry',
-    'monthly', 'credit_card', 'recurring', 3990, 'BRL', null, 1, 'pending'
+    'launch', 'monthly', 'credit_card', 'recurring', 3990, 'BRL', null, 2,
+    1, 'pending', 'pending'
   ),
   (
     '92000000-0000-4000-8000-000000000008',
     '91000000-0000-4000-8000-000000000008',
     '20000000-0000-4000-8000-000000000001',
     'contract-customer-fallback',
-    'monthly', 'pix', 'detached', 3990, 'BRL', null, 1, 'pending'
+    'launch', 'monthly', 'pix', 'detached', 3990, 'BRL', null, 2,
+    1, 'not_required', 'pending'
   ),
   (
     '92000000-0000-4000-8000-000000000009',
     '91000000-0000-4000-8000-000000000009',
     '20000000-0000-4000-8000-000000000001',
     'contract-ambiguous-a',
-    'monthly', 'pix', 'detached', 3990, 'BRL', null, 1, 'active'
+    'launch', 'monthly', 'pix', 'detached', 3990, 'BRL', null, 2,
+    1, 'not_required', 'active'
   ),
   (
     '92000000-0000-4000-8000-000000000010',
     '91000000-0000-4000-8000-000000000009',
     '20000000-0000-4000-8000-000000000002',
     'contract-ambiguous-b',
-    'semiannual', 'pix', 'detached', 17940, 'BRL', 6, 6, 'active'
+    'launch', 'semiannual', 'pix', 'detached', 17940, 'BRL', 6, 12,
+    6, 'not_required', 'active'
   ),
   (
     '92000000-0000-4000-8000-000000000011',
     '91000000-0000-4000-8000-000000000011',
     '20000000-0000-4000-8000-000000000001',
     'contract-payment-checkout-session',
-    'monthly', 'credit_card', 'recurring', 3990, 'BRL', null, 1, 'pending'
+    'launch', 'monthly', 'credit_card', 'recurring', 3990, 'BRL', null, 2,
+    1, 'pending', 'pending'
   ),
   (
     '92000000-0000-4000-8000-000000000012',
     '91000000-0000-4000-8000-000000000012',
     '20000000-0000-4000-8000-000000000001',
     'contract-subscription-checkout-session',
-    'monthly', 'credit_card', 'recurring', 3990, 'BRL', null, 1, 'pending'
+    'launch', 'monthly', 'credit_card', 'recurring', 3990, 'BRL', null, 2,
+    1, 'pending', 'pending'
   );
 
 update public.billing_contracts
@@ -330,7 +345,7 @@ select results_eq(
   $$ values (
     'active'::text,
     '2026-09-09T13:00:00Z'::timestamptz,
-    '2026-10-09T13:00:00Z'::timestamptz
+    '2026-11-09T13:00:00Z'::timestamptz
   ) $$,
   'documented local event datetime is normalized to UTC'
 );
@@ -359,7 +374,7 @@ select results_eq(
   $$,
   $$ values (
     'sub_monthly_card'::text,
-    '2026-10-09T13:00:00Z'::timestamptz
+    '2026-11-09T13:00:00Z'::timestamptz
   ) $$,
   'subscription creation does not extend access'
 );
@@ -388,7 +403,7 @@ select results_eq(
     from public.billing_contracts
     where id = '92000000-0000-4000-8000-000000000001'
   $$,
-  $$ values ('2026-10-09T13:00:00Z'::timestamptz) $$,
+  $$ values ('2026-11-09T13:00:00Z'::timestamptz) $$,
   'the first card confirmation does not duplicate Checkout access'
 );
 select results_eq(
@@ -411,13 +426,13 @@ select is(
     'evt-payment-mc-second',
     'PAYMENT_CONFIRMED',
     '{
-      "dateCreated":"2026-10-09T12:00:00Z",
+      "dateCreated":"2026-11-09T12:00:00Z",
       "payment":{
         "id":"pay_monthly_card_2",
         "subscription":"sub_monthly_card",
         "customer":"cus_monthly_card",
         "value":49.99,
-        "dueDate":"2026-10-09"
+        "dueDate":"2026-11-09"
       }
     }'::jsonb
   ),
@@ -430,7 +445,7 @@ select results_eq(
     from public.billing_contracts
     where id = '92000000-0000-4000-8000-000000000001'
   $$,
-  $$ values ('2026-11-09T00:00:00Z'::timestamptz) $$,
+  $$ values ('2026-12-09T00:00:00Z'::timestamptz) $$,
   'a new card cycle advances access from its due-date boundary'
 );
 select results_eq(
@@ -466,7 +481,7 @@ select results_eq(
     from public.billing_contracts
     where id = '92000000-0000-4000-8000-000000000001'
   $$,
-  $$ values ('2026-11-09T00:00:00Z'::timestamptz) $$,
+  $$ values ('2026-12-09T00:00:00Z'::timestamptz) $$,
   'an out-of-order payment never shortens access'
 );
 
@@ -475,12 +490,12 @@ select is(
     'evt-payment-received',
     'PAYMENT_RECEIVED',
     '{
-      "dateCreated":"2026-10-10T12:00:00Z",
+      "dateCreated":"2026-11-10T12:00:00Z",
       "payment":{
         "id":"pay_monthly_card_2",
         "subscription":"sub_monthly_card",
         "value":49.99,
-        "dueDate":"2026-10-09"
+        "dueDate":"2026-11-09"
       }
     }'::jsonb
   ),
@@ -495,9 +510,9 @@ select results_eq(
     where p.asaas_payment_id = 'pay_monthly_card_2'
   $$,
   $$ values (
-    '2026-11-09T00:00:00Z'::timestamptz,
+    '2026-12-09T00:00:00Z'::timestamptz,
     'received'::text,
-    '2026-10-10T12:00:00Z'::timestamptz
+    '2026-11-10T12:00:00Z'::timestamptz
   ) $$,
   'settlement does not grant another interval'
 );
@@ -546,7 +561,7 @@ select results_eq(
   $$ values (
     'active'::text,
     '2026-09-10T12:00:00Z'::timestamptz,
-    '2026-10-10T12:00:00Z'::timestamptz
+    '2026-11-10T12:00:00Z'::timestamptz
   ) $$,
   'monthly Pix is never silently renewed'
 );
@@ -565,7 +580,7 @@ select is(
     }'::jsonb
   ),
   'processed',
-  'semiannual card Checkout grants six months once'
+  'semiannual card Checkout grants twelve months once'
 );
 select is(
   public.apply_asaas_webhook_event(
@@ -594,7 +609,7 @@ select results_eq(
   $$,
   $$ values (
     '2026-08-11T12:00:00Z'::timestamptz,
-    '2027-02-11T12:00:00Z'::timestamptz,
+    '2027-08-11T12:00:00Z'::timestamptz,
     'ins_semiannual_card'::text
   ) $$,
   'semiannual card installments never multiply semiannual access'
@@ -615,7 +630,7 @@ select is(
     }'::jsonb
   ),
   'processed',
-  'semiannual Pix grants six months once'
+  'semiannual Pix grants twelve months once'
 );
 select is(
   public.apply_asaas_webhook_event(
@@ -642,7 +657,7 @@ select results_eq(
   $$,
   $$ values (
     '2026-08-12T12:00:00Z'::timestamptz,
-    '2027-02-12T12:00:00Z'::timestamptz
+    '2027-08-12T12:00:00Z'::timestamptz
   ) $$,
   'semiannual Pix is never silently renewed'
 );
@@ -691,7 +706,7 @@ select results_eq(
     where asaas_payment_id in ('pay_semiannual_card_2', 'pay_semiannual_card_3')
   $$,
   $$ values (
-    '2027-02-11T12:00:00Z'::timestamptz,
+    '2027-08-11T12:00:00Z'::timestamptz,
     array['capture_refused', 'overdue']::text[]
   ) $$,
   'refused and overdue events never grant or extend access'
@@ -723,7 +738,7 @@ select results_eq(
     where p.asaas_payment_id = 'pay_semiannual_card_1'
   $$,
   $$ values (
-    '2027-02-11T12:00:00Z'::timestamptz,
+    '2027-08-11T12:00:00Z'::timestamptz,
     'partially_refunded'::text,
     'manual_review_required'::text
   ) $$,
@@ -854,7 +869,7 @@ select results_eq(
   $$,
   $$ values (
     'active'::text,
-    '2026-11-09T00:00:00Z'::timestamptz
+    '2026-12-09T00:00:00Z'::timestamptz
   ) $$,
   'late Checkout cancellation cannot close active access'
 );
@@ -885,7 +900,7 @@ select results_eq(
     'cancel_at_period_end'::text,
     true,
     '2026-10-20T12:30:00Z'::timestamptz,
-    '2026-11-09T00:00:00Z'::timestamptz
+    '2026-12-09T00:00:00Z'::timestamptz
   ) $$,
   'subscription cancellation preserves prepaid access'
 );
@@ -916,7 +931,7 @@ select results_eq(
     'cancel_at_period_end'::text,
     true,
     '2026-10-21T12:30:00Z'::timestamptz,
-    '2026-11-09T00:00:00Z'::timestamptz
+    '2026-12-09T00:00:00Z'::timestamptz
   ) $$,
   'subscription deletion keeps the already-paid interval intact'
 );

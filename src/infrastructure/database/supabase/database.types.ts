@@ -64,10 +64,12 @@ export type Database = {
           asaas_installment_id: string | null;
           asaas_subscription_id: string | null;
           billing_mode: string;
+          bonus_months: number;
           cancel_at_period_end: boolean;
           canceled_at: string | null;
           cancellation_confirmed_at: string | null;
           cancellation_requested_at: string | null;
+          catalog_code: string;
           charge_type: string;
           checkout_expires_at: string | null;
           created_at: string;
@@ -77,6 +79,10 @@ export type Database = {
           installment_limit: number | null;
           payment_method: string;
           price_id: string;
+          renewal_adjusted_at: string | null;
+          renewal_adjustment_attempt_count: number;
+          renewal_adjustment_last_error_code: string | null;
+          renewal_adjustment_status: string;
           status: string;
           updated_at: string;
           user_id: string;
@@ -91,10 +97,12 @@ export type Database = {
           asaas_installment_id?: string | null;
           asaas_subscription_id?: string | null;
           billing_mode: string;
+          bonus_months?: number;
           cancel_at_period_end?: boolean;
           canceled_at?: string | null;
           cancellation_confirmed_at?: string | null;
           cancellation_requested_at?: string | null;
+          catalog_code: string;
           charge_type: string;
           checkout_expires_at?: string | null;
           created_at?: string;
@@ -104,6 +112,10 @@ export type Database = {
           installment_limit?: number | null;
           payment_method: string;
           price_id: string;
+          renewal_adjusted_at?: string | null;
+          renewal_adjustment_attempt_count?: number;
+          renewal_adjustment_last_error_code?: string | null;
+          renewal_adjustment_status?: string;
           status?: string;
           updated_at?: string;
           user_id: string;
@@ -118,10 +130,12 @@ export type Database = {
           asaas_installment_id?: string | null;
           asaas_subscription_id?: string | null;
           billing_mode?: string;
+          bonus_months?: number;
           cancel_at_period_end?: boolean;
           canceled_at?: string | null;
           cancellation_confirmed_at?: string | null;
           cancellation_requested_at?: string | null;
+          catalog_code?: string;
           charge_type?: string;
           checkout_expires_at?: string | null;
           created_at?: string;
@@ -131,6 +145,10 @@ export type Database = {
           installment_limit?: number | null;
           payment_method?: string;
           price_id?: string;
+          renewal_adjusted_at?: string | null;
+          renewal_adjustment_attempt_count?: number;
+          renewal_adjustment_last_error_code?: string | null;
+          renewal_adjustment_status?: string;
           status?: string;
           updated_at?: string;
           user_id?: string;
@@ -227,6 +245,8 @@ export type Database = {
           access_months: number;
           amount_cents: number;
           billing_mode: string;
+          bonus_months: number;
+          catalog_code: string;
           created_at: string;
           currency: string;
           id: string;
@@ -240,6 +260,8 @@ export type Database = {
           access_months: number;
           amount_cents: number;
           billing_mode: string;
+          bonus_months?: number;
+          catalog_code: string;
           created_at?: string;
           currency: string;
           id?: string;
@@ -253,6 +275,8 @@ export type Database = {
           access_months?: number;
           amount_cents?: number;
           billing_mode?: string;
+          bonus_months?: number;
+          catalog_code?: string;
           created_at?: string;
           currency?: string;
           id?: string;
@@ -1077,6 +1101,10 @@ export type Database = {
         Returns: string;
       };
       begin_billing_refund: { Args: { p_user_id: string }; Returns: Json };
+      begin_billing_renewal_adjustment: {
+        Args: { p_event_id: string };
+        Returns: Json;
+      };
       change_admin_user_v1: {
         Args: {
           p_action: string;
@@ -1451,6 +1479,10 @@ export type Database = {
           p_result: string;
         };
         Returns: string;
+      };
+      record_billing_renewal_adjustment_result: {
+        Args: { p_contract_id: string; p_error_code: string; p_status: string };
+        Returns: boolean;
       };
       replace_detailed_diagnosis_report_v1: {
         Args: {
