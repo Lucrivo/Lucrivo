@@ -206,7 +206,7 @@ Extend `DemoSeedCatalog` with `profiles: SeedOnboardingProfile[]`.
 
 - [ ] **Step 4: Build deterministic profiles**
 
-Rotate the approved segments by client ordinal. Rotate the five known subcategories only when they belong to the chosen segment; otherwise assign a bounded Portuguese custom description. Use names `Cliente Demonstração 001` through `096`, phones `+5511900000001` through `+5511900000096`, even ordinals consented, and completion after creation but before the current time. Preserve blocked/deleted users to exercise admin filters.
+Rotate the approved segments by client ordinal. Rotate the five known subcategories only when they belong to the chosen segment; otherwise assign a bounded Portuguese custom description. Use names `Cliente Demonstração 001` through `096`, phones `+5511900000001` through `+5511900000096`, exactly 48 deterministically consented clients and 48 declined clients, with no active consent on a deleted account, and completion after creation but before the current time. Preserve blocked/deleted users to exercise admin filters.
 
 - [ ] **Step 5: Pass tests and commit**
 
