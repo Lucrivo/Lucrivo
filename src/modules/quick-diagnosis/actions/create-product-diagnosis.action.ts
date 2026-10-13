@@ -2,7 +2,8 @@
 
 import {
   AuthRequiredError,
-  requireUser,
+  LegalAcceptanceRequiredError,
+  requireClientAccess,
 } from "@/modules/auth/services/require-user";
 import { buildProductReportSnapshot } from "@/modules/reports/domain/build-product-report-snapshot";
 import { calculateProductReport } from "@/modules/reports/domain/calculate-product-report";
@@ -28,7 +29,7 @@ async function createProductDiagnosis(
   }
 
   try {
-    const { supabase } = await requireUser();
+    const { supabase } = await requireClientAccess();
     const calculation = calculateProductReport(parsed.data);
     const snapshot = buildProductReportSnapshot(parsed.data, calculation);
 
@@ -38,7 +39,10 @@ async function createProductDiagnosis(
       snapshot,
     });
   } catch (error) {
-    if (error instanceof AuthRequiredError) {
+    if (
+      error instanceof AuthRequiredError ||
+      error instanceof LegalAcceptanceRequiredError
+    ) {
       return { status: "error", error: "unauthorized" };
     }
 

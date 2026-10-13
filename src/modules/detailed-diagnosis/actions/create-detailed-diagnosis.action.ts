@@ -2,7 +2,8 @@
 
 import {
   AuthRequiredError,
-  requireUser,
+  LegalAcceptanceRequiredError,
+  requireClientAccess,
 } from "@/modules/auth/services/require-user";
 import { buildDetailedReportSnapshot } from "@/modules/reports/domain/build-detailed-report-snapshot";
 import { createDetailedReport } from "@/modules/reports/services/create-detailed-report.service";
@@ -35,7 +36,7 @@ async function createDetailedDiagnosis(
   if (!parsed.success) return invalidDetailedInput(parsed.error);
 
   try {
-    const { supabase } = await requireUser();
+    const { supabase } = await requireClientAccess();
     const calculation = calculateDetailedDiagnosis(parsed.data);
     const snapshot = buildDetailedReportSnapshot(parsed.data, calculation);
 
@@ -45,7 +46,10 @@ async function createDetailedDiagnosis(
       snapshot,
     });
   } catch (error) {
-    if (error instanceof AuthRequiredError) {
+    if (
+      error instanceof AuthRequiredError ||
+      error instanceof LegalAcceptanceRequiredError
+    ) {
       return { status: "error", error: "unauthorized" };
     }
 

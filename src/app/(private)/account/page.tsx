@@ -47,6 +47,21 @@ export default async function AccountPage() {
         </p>
       </section>
 
+      <nav aria-label="Documentos legais" className="flex gap-4 text-sm">
+        <a
+          href="/terms"
+          className="text-primary underline-offset-4 hover:underline"
+        >
+          Termos de uso
+        </a>
+        <a
+          href="/privacy"
+          className="text-primary underline-offset-4 hover:underline"
+        >
+          Política de privacidade
+        </a>
+      </nav>
+
       <OnboardingForm data={onboardingData} mode="account" />
     </main>
   );

@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { requireUser, redirect, rpc } = vi.hoisted(() => ({
-  requireUser: vi.fn(),
+const { requireClientAccess, redirect, rpc } = vi.hoisted(() => ({
+  requireClientAccess: vi.fn(),
   rpc: vi.fn(),
   redirect: vi.fn((destination: string) => {
     throw new Error(`redirect:${destination}`);
@@ -29,12 +29,13 @@ vi.mock("@/modules/auth/services/require-user", async (importOriginal) => {
     await importOriginal<
       typeof import("@/modules/auth/services/require-user")
     >();
-  return { ...original, requireUser };
+  return { ...original, requireClientAccess };
 });
 
 import {
   AccountUnavailableError,
   AuthRequiredError,
+  LegalAcceptanceRequiredError,
 } from "@/modules/auth/services/require-user";
 
 import PrivateLayout from "./layout";
@@ -46,8 +47,9 @@ describe("PrivateLayout", () => {
       data: name === "current_user_has_completed_onboarding",
       error: null,
     }));
-    requireUser.mockResolvedValue({
+    requireClientAccess.mockResolvedValue({
       userId: "user-123",
+      isAdmin: false,
       supabase: {
         auth: {
           getClaims: vi.fn().mockResolvedValue({
@@ -72,35 +74,27 @@ describe("PrivateLayout", () => {
   });
 
   it("identifies an admin user for the financial sidebar", async () => {
-    rpc.mockImplementation(async (name: string) => ({
-      data: name === "current_user_is_admin",
-      error: null,
-    }));
+    requireClientAccess.mockResolvedValue({
+      userId: "user-123",
+      isAdmin: true,
+      supabase: {
+        auth: {
+          getClaims: vi.fn().mockResolvedValue({
+            data: { claims: { sub: "user-123", email: "user@example.com" } },
+          }),
+        },
+        rpc,
+      },
+    });
 
     render(await PrivateLayout({ children: <p>Área privada</p> }));
 
-    expect(rpc).toHaveBeenCalledWith("current_user_is_admin");
     expect(screen.getByTestId("private-shell")).toHaveAttribute(
       "data-admin-user",
       "true",
     );
     expect(rpc).not.toHaveBeenCalledWith(
       "current_user_has_completed_onboarding",
-    );
-  });
-
-  it("treats an unusable admin result as a regular completed client", async () => {
-    rpc.mockImplementation(async (name: string) =>
-      name === "current_user_is_admin"
-        ? { data: null, error: new Error("rpc failed") }
-        : { data: true, error: null },
-    );
-
-    render(await PrivateLayout({ children: <p>Área privada</p> }));
-
-    expect(screen.getByTestId("private-shell")).toHaveAttribute(
-      "data-admin-user",
-      "false",
     );
   });
 
@@ -113,19 +107,23 @@ describe("PrivateLayout", () => {
   });
 
   it("fails closed when the onboarding check is unusable", async () => {
-    rpc.mockImplementation(async (name: string) =>
-      name === "current_user_is_admin"
-        ? { data: false, error: null }
-        : { data: null, error: new Error("rpc failed") },
-    );
+    rpc.mockResolvedValue({ data: null, error: new Error("rpc failed") });
 
     await expect(
       PrivateLayout({ children: <p>Área privada</p> }),
     ).rejects.toThrow("redirect:/account-unavailable");
   });
 
+  it("redirects a client who has not accepted the current terms", async () => {
+    requireClientAccess.mockRejectedValue(new LegalAcceptanceRequiredError());
+
+    await expect(PrivateLayout({ children: null })).rejects.toThrow(
+      "redirect:/accept-terms",
+    );
+  });
+
   it("redirects unauthenticated users to login", async () => {
-    requireUser.mockRejectedValue(new AuthRequiredError());
+    requireClientAccess.mockRejectedValue(new AuthRequiredError());
 
     await expect(PrivateLayout({ children: null })).rejects.toThrow(
       "redirect:/login",
@@ -133,7 +131,7 @@ describe("PrivateLayout", () => {
   });
 
   it("redirects blocked and soft-deleted accounts to an explanation", async () => {
-    requireUser.mockRejectedValue(new AccountUnavailableError());
+    requireClientAccess.mockRejectedValue(new AccountUnavailableError());
 
     await expect(PrivateLayout({ children: null })).rejects.toThrow(
       "redirect:/account-unavailable",

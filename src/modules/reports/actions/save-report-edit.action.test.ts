@@ -13,8 +13,10 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/modules/auth/services/require-user", () => ({
   requireUser: mocks.requireUser,
+  requireClientAccess: mocks.requireUser,
   AuthRequiredError: class AuthRequiredError extends Error {},
   AccountUnavailableError: class AccountUnavailableError extends Error {},
+  LegalAcceptanceRequiredError: class LegalAcceptanceRequiredError extends Error {},
 }));
 vi.mock("@/modules/billing/services/get-billing-overview.service", () => ({
   getBillingOverview: mocks.getBillingOverview,

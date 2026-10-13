@@ -24,7 +24,9 @@ const {
 
 vi.mock("@/modules/auth/services/require-user", () => ({
   AuthRequiredError: class AuthRequiredError extends Error {},
+  LegalAcceptanceRequiredError: class LegalAcceptanceRequiredError extends Error {},
   requireUser,
+  requireClientAccess: requireUser,
 }));
 vi.mock("@/modules/reports/services/get-report.service", () => ({
   getOwnedReport,
@@ -56,7 +58,10 @@ vi.mock("@/modules/report-ai/services/run-report-ai-turn.service", () => ({
   runReportAiTurn,
 }));
 
-import { AuthRequiredError } from "@/modules/auth/services/require-user";
+import {
+  AuthRequiredError,
+  LegalAcceptanceRequiredError,
+} from "@/modules/auth/services/require-user";
 import { ReportAiPreStreamError } from "@/modules/report-ai/services/run-report-ai-turn.service";
 
 import { POST } from "./route";
@@ -147,6 +152,20 @@ describe("POST /api/reports/:id/ai/messages", () => {
     expect(readReportAiEnvironment).not.toHaveBeenCalled();
     expect(createOpenAiReportAiGateway).not.toHaveBeenCalled();
     expect(getReportAiBusinessContext).not.toHaveBeenCalled();
+  });
+
+  it("blocks a message before legal acceptance", async () => {
+    requireUser.mockRejectedValue(new LegalAcceptanceRequiredError());
+
+    const result = await post({
+      requestId,
+      reportVersion: 3,
+      question: "Pergunta",
+    });
+
+    expect(result.response.status).toBe(403);
+    expect(result.body).toEqual({ error: "legal_acceptance_required" });
+    expect(createOpenAiReportAiGateway).not.toHaveBeenCalled();
   });
 
   it.each([

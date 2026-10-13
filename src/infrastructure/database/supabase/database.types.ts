@@ -1096,6 +1096,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      accept_current_legal_terms_v1: {
+        Args: { p_copy_version: string };
+        Returns: Json;
+      };
       apply_asaas_webhook_event: {
         Args: { p_event_id: string; p_event_type: string; p_payload: Json };
         Returns: string;
@@ -1390,6 +1394,10 @@ export type Database = {
       };
       current_account_is_eligible: { Args: never; Returns: boolean };
       current_courtesy_access_expires_at: { Args: never; Returns: string };
+      current_user_has_accepted_legal_copy_v1: {
+        Args: { p_copy_version: string };
+        Returns: boolean;
+      };
       current_user_has_completed_onboarding: { Args: never; Returns: boolean };
       current_user_is_admin: { Args: never; Returns: boolean };
       export_admin_onboarding_contacts_v1: {
@@ -1483,6 +1491,10 @@ export type Database = {
       record_billing_renewal_adjustment_result: {
         Args: { p_contract_id: string; p_error_code: string; p_status: string };
         Returns: boolean;
+      };
+      record_signup_legal_acceptance_v1: {
+        Args: { p_copy_version: string; p_user_id: string };
+        Returns: Json;
       };
       replace_detailed_diagnosis_report_v1: {
         Args: {

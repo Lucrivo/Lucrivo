@@ -1,11 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { redirect, requireUser } = vi.hoisted(() => ({
+const { redirect, requireClientAccess } = vi.hoisted(() => ({
   redirect: vi.fn((destination: string) => {
     throw new Error(`redirect:${destination}`);
   }),
-  requireUser: vi.fn(),
+  requireClientAccess: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
@@ -18,12 +18,13 @@ vi.mock("@/modules/auth/services/require-user", async (importOriginal) => {
     await importOriginal<
       typeof import("@/modules/auth/services/require-user")
     >();
-  return { ...original, requireUser };
+  return { ...original, requireClientAccess };
 });
 
 import {
   AccountUnavailableError,
   AuthRequiredError,
+  LegalAcceptanceRequiredError,
 } from "@/modules/auth/services/require-user";
 
 import OnboardingLayout from "./layout";
@@ -31,11 +32,23 @@ import OnboardingLayout from "./layout";
 describe("OnboardingLayout", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    requireUser.mockResolvedValue({ userId: "client-123", supabase: {} });
+    requireClientAccess.mockResolvedValue({
+      userId: "client-123",
+      isAdmin: false,
+      supabase: {},
+    });
+  });
+
+  it("redirects a client who has not accepted the current terms", async () => {
+    requireClientAccess.mockRejectedValue(new LegalAcceptanceRequiredError());
+
+    await expect(OnboardingLayout({ children: null })).rejects.toThrow(
+      "redirect:/accept-terms",
+    );
   });
 
   it("redirects unauthenticated users to login", async () => {
-    requireUser.mockRejectedValue(new AuthRequiredError());
+    requireClientAccess.mockRejectedValue(new AuthRequiredError());
 
     await expect(OnboardingLayout({ children: null })).rejects.toThrow(
       "redirect:/login",
@@ -43,7 +56,7 @@ describe("OnboardingLayout", () => {
   });
 
   it("redirects unavailable accounts to the explanation", async () => {
-    requireUser.mockRejectedValue(new AccountUnavailableError());
+    requireClientAccess.mockRejectedValue(new AccountUnavailableError());
 
     await expect(OnboardingLayout({ children: null })).rejects.toThrow(
       "redirect:/account-unavailable",

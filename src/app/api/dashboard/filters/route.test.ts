@@ -8,10 +8,11 @@ vi.mock("@/modules/auth/services/require-user", async (importOriginal) => {
     await importOriginal<
       typeof import("@/modules/auth/services/require-user")
     >();
-  return { ...actual, requireUser };
+  return { ...actual, requireUser, requireClientAccess: requireUser };
 });
 
 import { CLIENT_DASHBOARD_FILTER_COOKIE } from "@/modules/client-dashboard/client-dashboard-filter-cookie";
+import { LegalAcceptanceRequiredError } from "@/modules/auth/services/require-user";
 
 import { DELETE, POST } from "./route";
 
@@ -51,6 +52,24 @@ describe("client dashboard filter route", () => {
     expect(response.headers.get("set-cookie")).toContain("HttpOnly");
     expect(response.headers.get("set-cookie")).toContain("Max-Age=7776000");
     expect(response.headers.get("set-cookie")).toContain("Path=/dashboard");
+  });
+
+  it("blocks filter changes before legal acceptance", async () => {
+    requireUser.mockRejectedValue(new LegalAcceptanceRequiredError());
+
+    const response = await POST(
+      new Request("http://localhost/api/dashboard/filters", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validFilters),
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      error: "legal_acceptance_required",
+    });
+    expect(response.headers.get("set-cookie")).toBeNull();
   });
 
   it("rejects invalid or focused filters without setting a cookie", async () => {
