@@ -1,0 +1,192 @@
+# Product
+
+<!-- impeccable:product-schema 1 -->
+
+## Platform
+
+web
+
+## Users
+
+O público principal são micro e pequenos empreendedores brasileiros — incluindo
+revendedores, produtores e prestadores de serviço — que precisam validar seus
+preços e resultados sem depender de conhecimento financeiro avançado.
+
+Eles usam o Lucrivo para entender se cada venda ou atendimento gera lucro, se o
+preço cobre a operação e qual ajuste deve ser priorizado.
+
+## Product Purpose
+
+O Lucrivo transforma dados simples do negócio em um diagnóstico financeiro
+determinístico. O produto calcula referências de preço e rentabilidade, explica
+o resultado em linguagem acessível e indica uma ação prioritária.
+
+O sucesso do produto significa permitir que o empreendedor tome decisões de
+preço com clareza, compreenda o que realmente sobra depois dos custos e saiba o
+que corrigir primeiro sem precisar operar planilhas ou interpretar linguagem
+contábil especializada.
+
+## Positioning
+
+O diferencial central é combinar um fluxo guiado de baixa complexidade com um
+motor de regras financeiras determinístico e uma explicação acionável. O
+Lucrivo não apresenta apenas números: conecta os dados informados pelo usuário
+a um veredito, referências financeiras e uma prioridade de correção.
+
+O produto não pesquisa concorrentes nem determina um “preço correto de
+mercado”. Suas referências são calculadas exclusivamente a partir da realidade
+financeira informada pelo usuário e das políticas de margem adotadas em cada
+diagnóstico.
+
+## Operating Context
+
+Depois de confirmar o e-mail, todo cliente conclui um onboarding obrigatório
+antes de acessar as demais áreas privadas. O perfil registra nome, WhatsApp,
+segmento e subcategoria do negócio. Esses dados podem ser corrigidos em
+**Minha conta**. A autorização para receber novidades, conteúdos e ofertas por
+WhatsApp é opcional, pode ser concedida ou revogada a qualquer momento e não
+limita funcionalidades do produto.
+
+O usuário autenticado inicia um diagnóstico e escolhe entre quatro contextos de
+negócio:
+
+- produto adquirido para revenda;
+- produto digital, com custo direto por venda opcional;
+- produção própria de uma unidade;
+- prestação de serviço cobrada por hora, minuto ou atendimento.
+
+Produto e Produção oferecem as modalidades rápida e detalhada. Em Produto, a
+modalidade detalhada escolhe uma única vez entre revenda e digital e aplica o
+cenário a todos os itens; Digital usa apenas o gasto direto por venda e mantém a
+embalagem oculta e igual a zero. Em Produção, novos itens começam pelo custo
+resumido, com a ficha técnica completa disponível como alternativa. Serviço
+permanece no fluxo rápido. O plano gratuito permite um diagnóstico rápido.
+Diagnósticos detalhados exigem acesso pago ou cortesia vigente e não consomem
+o benefício rápido gratuito. A necessidade de plano é informada antes do
+formulário detalhado.
+
+Os fluxos coletam preço, custos e demais dados pertinentes à categoria,
+apresentam uma revisão antes da confirmação e geram um relatório privado. O
+relatório rápido responde se há lucro, compara o preço atual com referências
+financeiras, identifica a principal correção, destaca a quantidade necessária de
+vendas e permite simular descontos. O detalhado consolida o mix, mostra a
+contribuição e as referências de cada item e estima a quantidade necessária
+mantendo a proporção informada entre os itens. Essa estimativa fica indisponível,
+com motivo explícito, quando faltam volumes, o volume total é zero ou a
+contribuição mensal total não é positiva.
+
+Os diagnósticos confirmados podem ser reabertos na biblioteca privada de
+relatórios. A visão geral privada permite filtrar esse histórico, apresenta
+contagens por situação e prioridade e detalha os valores persistidos de um único
+relatório em foco, sem somar ou calcular médias financeiras entre diagnósticos.
+Relatórios gerados durante uma assinatura continuam disponíveis depois do fim
+do acesso. Clientes com plano pago podem editar os dados com uma prévia
+calculada em tempo real e escolher entre substituir o relatório atual ou salvar
+uma nova cópia. A substituição é atômica: preserva o identificador e a data de
+criação, incrementa a versão uma vez e remove integralmente o registro
+temporário usado na validação. A exclusão explícita é lógica e o remove da
+biblioteca. Snapshots legados continuam sendo lidos com as regras da versão em
+que foram criados.
+
+O catálogo padrão cobra R$ 49,90 no mensal por um mês de acesso e R$ 239,40 no
+semestral por seis meses, com parcelamento em até 6x. A campanha de lançamento
+é uma condição temporária de 15 dias resolvida exclusivamente no servidor: o
+mensal custa R$ 39,90 e libera dois meses (um de bônus), enquanto o semestral
+custa R$ 179,40 e libera doze meses (seis de bônus), também em até 6x. Depois da
+janela, novos Checkouts voltam ao catálogo padrão; compras e Checkouts ainda
+válidos preservam o snapshot adquirido.
+
+## Capabilities and Constraints
+
+- Cadastro, autenticação, recuperação e atualização de senha.
+- Onboarding obrigatório após a confirmação do e-mail, com perfil editável em
+  **Minha conta**, catálogo de segmento e subcategoria e consentimento comercial
+  de WhatsApp opcional.
+- Diagnóstico rápido para revenda, produto digital, produção própria e serviços.
+- Diagnóstico detalhado para revenda, produto digital e produção própria, com
+  um cenário uniforme por análise e múltiplos itens. A criação exige acesso
+  pago ou cortesia vigente e não consome o diagnóstico rápido gratuito.
+- Produção detalhada inicia pelo custo total por unidade e permite optar pela
+  ficha técnica completa para itens fabricados.
+- Cálculos financeiros determinísticos separados por categoria de negócio.
+- Relatórios privados com resumo executivo, números principais, explicações e
+  simulação de desconto.
+- Visão geral privada e filtrável com contagens dos diagnósticos e valores de um
+  único relatório em foco.
+- Histórico paginado de diagnósticos pertencentes ao usuário autenticado.
+- Edição de relatórios compatíveis para assinantes pagos, com substituição ou
+  salvamento de uma nova cópia.
+- Exclusão lógica de relatórios pelo proprietário.
+- Administração do onboarding com indicadores agregados, contatos filtráveis e
+  gestão versionada do catálogo. A exportação inclui somente contatos com
+  consentimento vigente, respeita os filtros autorizados e neutraliza fórmulas
+  de planilha; o Lucrivo não envia mensagens de WhatsApp nesta capacidade.
+- Remoções de itens e ingredientes preenchidos exigem confirmação; ações
+  indisponíveis explicam o motivo e diálogos devolvem o foco ao acionador.
+- Valores monetários apresentados em real brasileiro (`BRL`) e conteúdo de
+  interface em português brasileiro.
+- Catálogos de billing imutáveis, seleção de campanha e termos de Checkout
+  decididos no servidor; o navegador não controla preço, bônus, duração,
+  recorrência ou prazo promocional.
+- Faixa interna de atenção abaixo de R$ 20 a cada R$ 100 para produto e
+  produção; ela não é uma meta universal nem gera preço recomendado. Serviço
+  mantém suas próprias regras versionadas.
+- Os resultados dependem dos dados fornecidos pelo usuário. Volume mensal vazio
+  significa dado desconhecido: o relatório fica parcial, sem resultado mensal e
+  sem uma quantidade proporcional de vendas. Zero significa um mês conhecido sem
+  vendas; se o volume total for zero ou a contribuição mensal não for positiva,
+  a meta também permanece indisponível com uma explicação.
+- O diagnóstico detalhado analisa financeiramente um mix; não controla estoque
+  físico. Compartilhamento público e comparação histórica não fazem parte da
+  experiência atual.
+- Clientes com acesso pago podem conversar com o Assistente Lucrivo sobre o
+  relatório aberto. O motor determinístico continua responsável pelos cálculos;
+  a IA apenas interpreta os fatos persistidos. Somente os rótulos atuais de
+  segmento e subcategoria podem complementar o contexto como declarações não
+  verificadas. Nome, WhatsApp, consentimento, e-mail e identificadores não são
+  enviados ao modelo, e o perfil não é usado para treinamento ou fine-tuning.
+- Identificadores técnicos e código usam inglês; textos apresentados ao usuário
+  permanecem em português brasileiro.
+
+## Brand Commitments
+
+- Nome do produto: **Lucrivo**.
+- Voz simples, direta, respeitosa e orientada à ação.
+- Explicações devem evitar “contabilês”, promessas absolutas e a impressão de
+  que o produto conhece o preço praticado pelo mercado.
+- A marca possui versões de logo para contextos claros e escuros em
+  `src/public/brand/logo.png` e `src/public/brand/logo-dark.png`.
+
+## Evidence on Hand
+
+- Regras de negócio documentadas em `docs/QUICK-DIAGNOSIS.md`.
+- Especificações aprovadas dos diagnósticos e relatórios em
+  `docs/superpowers/specs/`.
+- Fluxos implementados e cobertos por testes automatizados para autenticação,
+  diagnósticos, cálculos, persistência, relatórios e componentes.
+- Logos oficiais disponíveis no repositório para fundos claros e escuros.
+- Não há depoimentos, nomes de clientes, estudos de caso, benchmarks ou provas
+  comerciais confirmados. Os preços e condições de acesso dos catálogos padrão
+  e de lançamento são verdade de produto; outros conteúdos comerciais da
+  landing page não devem ser apresentados como evidência factual.
+
+## Product Principles
+
+1. **Clareza antes da complexidade.** Traduzir conceitos financeiros sem exigir
+   que o usuário domine planilhas ou terminologia especializada.
+2. **Cálculo antes da explicação.** Resultados financeiros vêm de regras
+   determinísticas; qualquer camada narrativa apenas explica o que foi
+   calculado.
+3. **Ação antes do excesso de métricas.** Cada diagnóstico deve deixar evidente
+   o que o usuário precisa corrigir ou acompanhar primeiro.
+4. **Realidade do negócio antes de achismos de mercado.** As referências devem
+   respeitar os dados informados e declarar claramente seus limites.
+5. **Confiança no histórico.** Diagnósticos salvos preservam o contexto, o
+   cálculo e o conteúdo apresentados no momento da confirmação.
+
+## Accessibility & Inclusion
+
+A experiência web deve permanecer navegável por teclado, usar controles e
+rótulos semânticos, comunicar estados por texto além de cor e preservar suporte
+a movimento reduzido. Os fluxos principais devem manter cobertura automatizada
+de acessibilidade e comportamento responsivo.

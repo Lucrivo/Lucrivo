@@ -1,22 +1,37 @@
 import { redirect } from "next/navigation";
 
-import { AppSidebar } from "@/components/layout/app-sidebar";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { AppShell } from "@/components/layout/app-shell";
+import { readLaunchOfferEnvironment } from "@/config/launch-offer-environment";
 import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { createClient } from "@/infrastructure/database/supabase/clients/server.client";
-import { logout } from "@/modules/auth/actions/logout.action";
+  AccountUnavailableError,
+  AuthRequiredError,
+  LegalAcceptanceRequiredError,
+  requireClientAccess,
+} from "@/modules/auth/services/require-user";
+import type { LaunchOfferStripView } from "@/modules/billing/components/launch-offer-strip";
+import { getBillingOverview } from "@/modules/billing/services/get-billing-overview.service";
 
 export default async function PrivateLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
+  let access: Awaited<ReturnType<typeof requireClientAccess>>;
 
+  try {
+    access = await requireClientAccess();
+  } catch (error) {
+    if (error instanceof AuthRequiredError) redirect("/login");
+    if (error instanceof AccountUnavailableError) {
+      redirect("/account-unavailable");
+    }
+    if (error instanceof LegalAcceptanceRequiredError) {
+      redirect("/accept-terms");
+    }
+    throw error;
+  }
+
+  const { supabase, isAdmin, userId } = access;
   const { data } = await supabase.auth.getClaims();
 
   if (!data?.claims?.sub) {
@@ -26,24 +41,44 @@ export default async function PrivateLayout({
   const email =
     typeof data.claims.email === "string" ? data.claims.email : "Sua conta";
 
+  if (!isAdmin) {
+    const { data: hasCompletedOnboarding, error: onboardingError } =
+      await supabase.rpc("current_user_has_completed_onboarding");
+
+    if (onboardingError || typeof hasCompletedOnboarding !== "boolean") {
+      redirect("/account-unavailable");
+    }
+
+    if (!hasCompletedOnboarding) redirect("/onboarding");
+  }
+
+  let launchOfferStrip: LaunchOfferStripView | null = null;
+  const launchOffer = readLaunchOfferEnvironment();
+
+  if (!isAdmin && launchOffer.phase === "active") {
+    try {
+      const billing = await getBillingOverview({ supabase, userId });
+      if (billing.status === "success" && billing.overview.tier === "free") {
+        launchOfferStrip = {
+          endsAt: launchOffer.endsAt,
+          freeQuickDiagnosisUsed: billing.overview.freeQuickDiagnosisUsed,
+        };
+      }
+    } catch {
+      launchOfferStrip = null;
+    }
+  }
+
   return (
-    <SidebarProvider>
-      <AppSidebar email={email} logoutAction={logout} />
-      <SidebarInset>
-        <header className="bg-background/85 sticky top-0 z-10 flex h-16 shrink-0 items-center gap-3 border-b px-4 backdrop-blur-md md:px-6">
-          <SidebarTrigger aria-label="Alternar menu lateral" />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold tracking-tight">
-              Área financeira
-            </p>
-            <p className="text-muted-foreground hidden text-xs sm:block">
-              Acompanhe e organize suas decisões em um só lugar.
-            </p>
-          </div>
-          <ThemeToggle />
-        </header>
-        <div className="flex flex-1 flex-col p-4 sm:p-6 lg:p-8">{children}</div>
-      </SidebarInset>
-    </SidebarProvider>
+    <AppShell
+      email={email}
+      sidebarVariant="financial"
+      isAdminUser={isAdmin}
+      contextTitle="Área financeira"
+      contextDescription="Acompanhe e organize suas decisões em um só lugar."
+      launchOfferStrip={launchOfferStrip}
+    >
+      {children}
+    </AppShell>
   );
 }

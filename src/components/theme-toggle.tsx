@@ -3,6 +3,7 @@
 import { LaptopIcon, MoonIcon, SunIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { type Theme, useTheme } from "@/providers/theme-provider";
 
 const options: { value: Theme; label: string; icon: typeof SunIcon }[] = [
@@ -11,12 +12,15 @@ const options: { value: Theme; label: string; icon: typeof SunIcon }[] = [
   { value: "system", label: "Sistema", icon: LaptopIcon },
 ];
 
-function ThemeToggle() {
+function ThemeToggle({ className }: { className?: string }) {
   const { theme, setTheme } = useTheme();
 
   return (
     <div
-      className="bg-card inline-flex rounded-xl border p-1 shadow-xs"
+      className={cn(
+        "bg-card inline-flex rounded-xl border p-1 shadow-xs",
+        className,
+      )}
       aria-label="Selecionar tema"
     >
       {options.map(({ value, label, icon: Icon }) => (
@@ -27,10 +31,10 @@ function ThemeToggle() {
           size="sm"
           aria-pressed={theme === value}
           onClick={() => setTheme(value)}
-          className="shadow-none"
+          className="min-w-0 flex-1 shadow-none"
         >
           <Icon aria-hidden="true" />
-          <span className="hidden sm:inline">{label}</span>
+          <span>{label}</span>
         </Button>
       ))}
     </div>

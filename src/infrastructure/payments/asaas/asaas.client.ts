@@ -1,0 +1,320 @@
+import "server-only";
+
+import { z } from "zod";
+
+type AsaasCheckoutRequestBase = {
+  minutesToExpire: 60;
+  externalReference: string;
+  callback: {
+    successUrl: string;
+    cancelUrl: string;
+    expiredUrl: string;
+  };
+  items: Array<{
+    externalReference: string;
+    name: string;
+    description: string;
+    imageBase64: string;
+    quantity: 1;
+    value: number;
+  }>;
+  customer?: string;
+};
+
+type AsaasCheckoutRequest = AsaasCheckoutRequestBase &
+  (
+    | {
+        billingTypes: ["CREDIT_CARD"];
+        chargeTypes: ["RECURRENT"];
+        subscription: {
+          cycle: "MONTHLY" | "BIMONTHLY";
+          nextDueDate: string;
+        };
+        installment?: never;
+      }
+    | {
+        billingTypes: ["CREDIT_CARD"];
+        chargeTypes: ["DETACHED", "INSTALLMENT"];
+        subscription?: never;
+        installment: { maxInstallmentCount: 6 };
+      }
+    | {
+        billingTypes: ["PIX"];
+        chargeTypes: ["DETACHED"];
+        subscription?: never;
+        installment?: never;
+      }
+  );
+
+type AsaasCheckout = {
+  id: string;
+  link: string;
+  status: "ACTIVE";
+};
+
+type AsaasSubscriptionRenewalInput = {
+  cycle: "MONTHLY";
+  nextDueDate: string;
+};
+
+interface AsaasGateway {
+  createCheckout(input: AsaasCheckoutRequest): Promise<AsaasCheckout>;
+  cancelCheckout(id: string): Promise<{ id: string; status: "CANCELED" }>;
+  updateSubscriptionRenewal(
+    id: string,
+    input: AsaasSubscriptionRenewalInput,
+  ): Promise<{ id: string; cycle: "MONTHLY"; nextDueDate: string }>;
+  deleteSubscription(id: string): Promise<{ id: string; deleted: true }>;
+  refundPayment(id: string): Promise<{ id: string }>;
+  refundInstallment(id: string): Promise<{ id: string }>;
+}
+
+type AsaasGatewayErrorKind = "rejected" | "ambiguous";
+
+class AsaasGatewayError extends Error {
+  readonly kind: AsaasGatewayErrorKind;
+  readonly status?: number;
+  readonly providerCodes: readonly string[];
+
+  constructor(
+    kind: AsaasGatewayErrorKind,
+    status?: number,
+    providerCodes: readonly string[] = [],
+  ) {
+    super(
+      kind === "rejected"
+        ? "Asaas rejected the request"
+        : "The Asaas request outcome is ambiguous",
+    );
+    this.name = "AsaasGatewayError";
+    this.kind = kind;
+    this.status = status;
+    this.providerCodes = Object.freeze([...providerCodes]);
+  }
+}
+
+const providerErrorResponseSchema = z.looseObject({
+  errors: z.array(z.unknown()).max(20),
+});
+
+const providerErrorItemSchema = z.looseObject({
+  code: z.string().regex(/^[A-Za-z0-9_.-]{1,100}$/),
+});
+
+const checkoutResponseSchema = z.looseObject({
+  id: z.string().min(1),
+  link: z.url(),
+  status: z.literal("ACTIVE"),
+});
+
+const cancelCheckoutResponseSchema = z.looseObject({
+  id: z.string().min(1),
+  status: z.literal("CANCELED"),
+});
+
+const subscriptionRenewalResponseSchema = z.looseObject({
+  id: z.string().min(1),
+  cycle: z.literal("MONTHLY"),
+  nextDueDate: z.iso.date(),
+});
+
+const deleteResponseSchema = z.looseObject({
+  id: z.string().min(1),
+  deleted: z.literal(true),
+});
+
+const refundResponseSchema = z.looseObject({
+  id: z.string().trim().min(1),
+});
+
+const safeCheckoutHosts = new Set([
+  "sandbox.asaas.com",
+  "www.asaas.com",
+  "asaas.com",
+]);
+
+function classifyHttpFailure(status: number): AsaasGatewayErrorKind {
+  if (status >= 400 && status < 500 && ![408, 425, 429].includes(status)) {
+    return "rejected";
+  }
+
+  return "ambiguous";
+}
+
+function hasSafeCheckoutLink(link: string): boolean {
+  let url: URL;
+
+  try {
+    url = new URL(link);
+  } catch {
+    return false;
+  }
+
+  return (
+    url.protocol === "https:" &&
+    url.username === "" &&
+    url.password === "" &&
+    safeCheckoutHosts.has(url.hostname)
+  );
+}
+
+async function readProviderErrorCodes(response: Response): Promise<string[]> {
+  try {
+    const parsed = providerErrorResponseSchema.safeParse(await response.json());
+    if (!parsed.success) return [];
+
+    const codes = parsed.data.errors.flatMap((error) => {
+      const item = providerErrorItemSchema.safeParse(error);
+      return item.success ? [item.data.code] : [];
+    });
+
+    return [...new Set(codes)];
+  } catch {
+    return [];
+  }
+}
+
+function createAsaasGateway(input: {
+  apiUrl: URL;
+  apiKey: string;
+  fetch?: typeof fetch;
+}): AsaasGateway {
+  const fetchImplementation = input.fetch ?? globalThis.fetch;
+
+  async function request<ResponseValue>(
+    path: string,
+    init: RequestInit,
+    schema: z.ZodType<ResponseValue>,
+  ): Promise<ResponseValue> {
+    let response: Response;
+
+    try {
+      response = await fetchImplementation(
+        new URL(path, input.apiUrl).toString(),
+        {
+          ...init,
+          headers: {
+            access_token: input.apiKey,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+    } catch {
+      throw new AsaasGatewayError("ambiguous");
+    }
+
+    if (!response.ok) {
+      const providerCodes = await readProviderErrorCodes(response);
+      throw new AsaasGatewayError(
+        classifyHttpFailure(response.status),
+        response.status,
+        providerCodes,
+      );
+    }
+
+    try {
+      return schema.parse(await response.json());
+    } catch {
+      throw new AsaasGatewayError("ambiguous", response.status);
+    }
+  }
+
+  async function refund(path: string, expectedId: string) {
+    const result = await request(
+      path,
+      { method: "POST", body: JSON.stringify({}) },
+      refundResponseSchema,
+    );
+
+    if (result.id !== expectedId) {
+      throw new AsaasGatewayError("ambiguous", 200);
+    }
+
+    return { id: result.id };
+  }
+
+  return {
+    async createCheckout(checkoutRequest) {
+      const checkout = await request(
+        "/v3/checkouts",
+        {
+          method: "POST",
+          body: JSON.stringify(checkoutRequest),
+        },
+        checkoutResponseSchema,
+      );
+
+      if (!hasSafeCheckoutLink(checkout.link)) {
+        throw new AsaasGatewayError("ambiguous", 200);
+      }
+
+      return checkout;
+    },
+
+    async cancelCheckout(id) {
+      const checkout = await request(
+        `/v3/checkouts/${encodeURIComponent(id)}/cancel`,
+        { method: "POST" },
+        cancelCheckoutResponseSchema,
+      );
+
+      if (checkout.id !== id) {
+        throw new AsaasGatewayError("ambiguous", 200);
+      }
+
+      return { id: checkout.id, status: checkout.status };
+    },
+
+    async updateSubscriptionRenewal(id, renewal) {
+      const subscription = await request(
+        `/v3/subscriptions/${encodeURIComponent(id)}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            cycle: renewal.cycle,
+            nextDueDate: renewal.nextDueDate,
+            updatePendingPayments: true,
+          }),
+        },
+        subscriptionRenewalResponseSchema,
+      );
+
+      if (
+        subscription.id !== id ||
+        subscription.nextDueDate !== renewal.nextDueDate
+      ) {
+        throw new AsaasGatewayError("ambiguous", 200);
+      }
+
+      return {
+        id: subscription.id,
+        cycle: subscription.cycle,
+        nextDueDate: subscription.nextDueDate,
+      };
+    },
+
+    deleteSubscription(id) {
+      return request(
+        `/v3/subscriptions/${encodeURIComponent(id)}`,
+        { method: "DELETE" },
+        deleteResponseSchema,
+      );
+    },
+
+    refundPayment(id) {
+      return refund(`/v3/payments/${encodeURIComponent(id)}/refund`, id);
+    },
+
+    refundInstallment(id) {
+      return refund(`/v3/installments/${encodeURIComponent(id)}/refund`, id);
+    },
+  };
+}
+
+export { AsaasGatewayError, createAsaasGateway };
+export type {
+  AsaasCheckout,
+  AsaasCheckoutRequest,
+  AsaasGateway,
+  AsaasSubscriptionRenewalInput,
+};

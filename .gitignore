@@ -10,9 +10,15 @@
 
 # testing
 /coverage
+/.playwright-mcp/
+/.superpowers/
+
+# local report AI evaluations
+/.report-ai-evals/
 
 # environment variables
-.env*
+.env
+.env.local
 !.env.example
 
 # miscellaneous

@@ -1,7 +1,9 @@
 .agents/**
 .codex/**
+.superpowers/**
 .next/**
 coverage/**
+.playwright-mcp/**
 node_modules/**
 pnpm-lock.yaml
 supabase/.temp/**

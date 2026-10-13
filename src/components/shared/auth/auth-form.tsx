@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { passwordPolicy } from "@/schemas/auth/password-policy";
 
 type AuthFormShellProps = {
   title: string;
@@ -63,7 +64,17 @@ function AuthFormShell({
   );
 }
 
-function AuthEmailField({ invalid = false }: { invalid?: boolean }) {
+type AuthEmailFieldProps = {
+  value: string;
+  onValueChange: (value: string) => void;
+  invalid?: boolean;
+};
+
+function AuthEmailField({
+  value,
+  onValueChange,
+  invalid = false,
+}: AuthEmailFieldProps) {
   return (
     <div className="space-y-2.5">
       <Label htmlFor="email">E-mail</Label>
@@ -79,6 +90,8 @@ function AuthEmailField({ invalid = false }: { invalid?: boolean }) {
           autoComplete="email"
           placeholder="Digite seu e-mail"
           required
+          value={value}
+          onChange={(event) => onValueChange(event.target.value)}
           className="h-12 pr-4 pl-11"
           aria-invalid={invalid || undefined}
         />
@@ -95,6 +108,8 @@ type AuthPasswordFieldProps = {
   autoComplete?: "current-password" | "new-password";
   invalid?: boolean;
   describedBy?: string;
+  value: string;
+  onValueChange: (value: string) => void;
 };
 
 function AuthPasswordField({
@@ -105,6 +120,8 @@ function AuthPasswordField({
   autoComplete = "current-password",
   invalid = false,
   describedBy,
+  value,
+  onValueChange,
 }: AuthPasswordFieldProps) {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -123,7 +140,18 @@ function AuthPasswordField({
           autoComplete={autoComplete}
           placeholder={placeholder}
           required
-          minLength={10}
+          minLength={
+            autoComplete === "new-password"
+              ? passwordPolicy.minLength
+              : undefined
+          }
+          maxLength={
+            autoComplete === "new-password"
+              ? passwordPolicy.maxLength
+              : undefined
+          }
+          value={value}
+          onChange={(event) => onValueChange(event.target.value)}
           className="h-12 pr-12 pl-11"
           aria-invalid={invalid || undefined}
           aria-describedby={describedBy}

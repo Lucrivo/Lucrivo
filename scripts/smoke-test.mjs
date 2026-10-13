@@ -113,6 +113,9 @@ async function runSmokeTest() {
   const dashboard = await request(baseUrl, "/dashboard", timeoutMs);
   expectRedirect(dashboard, "/dashboard", "/login");
 
+  const admin = await request(baseUrl, "/admin", timeoutMs);
+  expectRedirect(admin, "/admin", "/login");
+
   const updatePassword = await request(baseUrl, "/update-password", timeoutMs);
   expectStatus(updatePassword, "/update-password", [200]);
 

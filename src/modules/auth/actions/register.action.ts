@@ -8,6 +8,7 @@ import {
 } from "@/config/auth-environment";
 import { registerSchema } from "@/schemas/auth/register.schema";
 
+import { recordSignupLegalAcceptance } from "@/modules/legal/record-signup-legal-acceptance";
 import {
   signup,
   type SignupServiceResult,
@@ -26,6 +27,7 @@ type RegisterActionState =
         | "invalid_fields"
         | "password_mismatch"
         | "captcha_required"
+        | "legal_acceptance_required"
         | SignupActionError;
     }
   | null;
@@ -54,10 +56,21 @@ async function register(
     const passwordMismatch = parsed.error.issues.some(
       (issue) => issue.path[0] === "confirmPassword" && issue.code === "custom",
     );
+    const weakPassword = parsed.error.issues.some(
+      (issue) => issue.path[0] === "password",
+    );
     return {
       status: "error",
-      error: passwordMismatch ? "password_mismatch" : "invalid_fields",
+      error: passwordMismatch
+        ? "password_mismatch"
+        : weakPassword
+          ? "weak_password"
+          : "invalid_fields",
     };
+  }
+
+  if (formData.get("acceptedLegalTerms") !== "on") {
+    return { status: "error", error: "legal_acceptance_required" };
   }
 
   const result = await signup(
@@ -68,11 +81,12 @@ async function register(
     captchaToken,
   );
   if (result.status === "error") return result;
+  if (result.userId) await recordSignupLegalAcceptance(result.userId);
   if (result.status === "confirmation_required") {
     return { status: "success", outcome: "confirmation_required" };
   }
 
-  redirect("/dashboard");
+  redirect("/auth/continue");
 }
 
 export { register, type RegisterActionState };

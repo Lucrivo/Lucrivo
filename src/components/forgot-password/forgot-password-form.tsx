@@ -10,6 +10,7 @@ import {
   AuthSubmitButton,
 } from "@/components/shared/auth/auth-form";
 import { TurnstileField } from "@/components/shared/auth/turnstile-field";
+import { usePersistedAuthEmail } from "@/components/shared/auth/use-persisted-auth-email";
 import { getTurnstileSiteKey } from "@/config/auth-environment";
 import type { PasswordRecoveryActionState } from "@/modules/auth/actions/request-password-recovery.action";
 
@@ -34,6 +35,7 @@ type ForgotPasswordFormProps = {
 
 function ForgotPasswordForm({ action }: ForgotPasswordFormProps) {
   const [state, formAction] = useActionState(action, null);
+  const [email, setEmail] = usePersistedAuthEmail();
   const hasError = state?.status === "error";
 
   return (
@@ -42,7 +44,11 @@ function ForgotPasswordForm({ action }: ForgotPasswordFormProps) {
       subtitle="Enviaremos um link seguro para você criar uma nova senha."
     >
       <form action={formAction} className="space-y-5" noValidate>
-        <AuthEmailField invalid={hasError} />
+        <AuthEmailField
+          value={email}
+          onValueChange={setEmail}
+          invalid={hasError}
+        />
         <TurnstileField siteKey={turnstileSiteKey} resetSignal={state} />
 
         {hasError && <AuthFeedback>{errorMessages[state.error]}</AuthFeedback>}

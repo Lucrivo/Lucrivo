@@ -29,7 +29,9 @@ describe("GET /api/health", () => {
   it("never reflects arbitrary environment values or secrets", async () => {
     vi.stubEnv("VERCEL_ENV", "secret-environment-value");
     vi.stubEnv("VERCEL_GIT_COMMIT_SHA", "secret-revision-value");
-    vi.stubEnv("SUPABASE_SECRET_KEY", "must-not-leak");
+    vi.stubEnv("SUPABASE_SECRET_KEY", "supabase-secret");
+    vi.stubEnv("ASAAS_API_KEY", "asaas-api-secret");
+    vi.stubEnv("ASAAS_WEBHOOK_TOKEN", "asaas-webhook-secret");
 
     const response = GET();
     const body = await response.json();
@@ -40,7 +42,9 @@ describe("GET /api/health", () => {
       environment: "unknown",
       revision: "unknown",
     });
-    expect(JSON.stringify(body)).not.toContain("must-not-leak");
+    expect(JSON.stringify(body)).not.toMatch(
+      /supabase-secret|asaas-api-secret|asaas-webhook-secret/,
+    );
     expect(Object.keys(body)).toEqual([
       "status",
       "service",

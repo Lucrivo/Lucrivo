@@ -1,0 +1,495 @@
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
+
+import type { DetailedProductItemInput } from "../../types";
+import { createInitialDetailedWizardState } from "../detailed-wizard-state";
+import { DetailedFeesStep } from "./detailed-fees-step";
+import { DetailedFixedExpensesStep } from "./detailed-fixed-expenses-step";
+import { DetailedItemNameStep } from "./detailed-item-name-step";
+import { DetailedItemVolumeStep } from "./detailed-item-volume-step";
+import { DetailedOwnerCompensationStep } from "./detailed-owner-compensation-step";
+import { DetailedProductCostsStep } from "./detailed-product-costs-step";
+import { DetailedProductKindStep } from "./detailed-product-kind-step";
+import { DetailedProductionCostsStep } from "./detailed-production-costs-step";
+import { DetailedReviewStep } from "./detailed-review-step";
+
+function ids(...values: string[]) {
+  let index = 0;
+  return () => values[index++] ?? `generated-${index}`;
+}
+
+function productState() {
+  return createInitialDetailedWizardState(
+    "product",
+    ids("submission-1", "item-1"),
+  );
+}
+
+function productionState() {
+  return createInitialDetailedWizardState(
+    "production",
+    ids("submission-1", "item-1", "ingredient-1"),
+  );
+}
+
+describe("detailed common steps", () => {
+  it("connects a visible fixed-expense label and inline error", () => {
+    const state = {
+      ...productState(),
+      values: { ...productState().values, fixedMonthlyExpenses: "1000" },
+      fieldErrors: { fixedMonthlyExpenses: ["Informe um valor válido."] },
+    };
+
+    render(<DetailedFixedExpensesStep state={state} dispatch={vi.fn()} />);
+
+    const field = screen.getByLabelText("Gastos que existem todo mês");
+    expect(field).toHaveValue("1000");
+    expect(field).toHaveAccessibleDescription(/Informe um valor válido\./);
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Informe um valor válido.",
+    );
+  });
+
+  it("uses a labelled switch and exposes owner compensation only when enabled", () => {
+    const state = productState();
+    const { rerender } = render(
+      <DetailedOwnerCompensationStep state={state} dispatch={vi.fn()} />,
+    );
+
+    expect(
+      screen.getByRole("switch", {
+        name: "Você quer incluir o valor que recebe pelo seu trabalho?",
+      }),
+    ).not.toBeChecked();
+    expect(
+      screen.queryByLabelText("Quanto você quer receber por mês?"),
+    ).not.toBeInTheDocument();
+
+    rerender(
+      <DetailedOwnerCompensationStep
+        state={{
+          ...state,
+          values: { ...state.values, proLaboreIncluded: true },
+        }}
+        dispatch={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByLabelText("Quanto você quer receber por mês?"),
+    ).toBeEnabled();
+  });
+
+  it("makes both global fees explicit with category-specific guidance", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <DetailedFeesStep state={productState()} dispatch={vi.fn()} />,
+    );
+
+    expect(
+      screen.getByLabelText("Qual porcentagem da venda vai para impostos?"),
+    ).toBeEnabled();
+    expect(
+      screen.getByLabelText(
+        "Qual porcentagem fica com o cartão ou a plataforma?",
+      ),
+    ).toBeEnabled();
+    expect(
+      screen.queryByLabelText(/margem mínima para simular promoções/i),
+    ).not.toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "Como preencher os impostos?" }),
+    );
+    expect(screen.getByText(/etapa 6/i)).toBeVisible();
+    await user.keyboard("{Escape}");
+
+    rerender(<DetailedFeesStep state={productionState()} dispatch={vi.fn()} />);
+    await user.click(
+      screen.getByRole("button", { name: "Como preencher os impostos?" }),
+    );
+    expect(screen.getByText(/etapa 5/i)).toBeVisible();
+  });
+
+  it("separates the item name and shared optional-volume guidance", async () => {
+    const user = userEvent.setup();
+    const state = productState();
+    const { rerender } = render(
+      <DetailedItemNameStep state={state} dispatch={vi.fn()} />,
+    );
+
+    expect(screen.getByLabelText("Nome do produto")).toBeEnabled();
+    expect(
+      screen.queryByLabelText("Por quanto você vende cada unidade?"),
+    ).not.toBeInTheDocument();
+
+    rerender(<DetailedItemVolumeStep state={state} dispatch={vi.fn()} />);
+    expect(
+      screen.getByLabelText("Quantas unidades você vende por mês?"),
+    ).toBeEnabled();
+    await user.click(
+      screen.getByRole("button", { name: "Por que é opcional?" }),
+    );
+    expect(
+      screen.getByText(/Digite 0 se não vendeu nenhuma unidade/),
+    ).toBeVisible();
+  });
+});
+
+describe("category-specific detailed costs", () => {
+  it("renders the shared Product scenario control", async () => {
+    const user = userEvent.setup();
+    const dispatch = vi.fn();
+    render(
+      <DetailedProductKindStep state={productState()} dispatch={dispatch} />,
+    );
+
+    expect(
+      screen.getByRole("radiogroup", { name: "Tipo de produto" }),
+    ).toBeVisible();
+    await user.click(screen.getByRole("radio", { name: "Produto digital" }));
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "setProductKind",
+      value: "digital",
+    });
+  });
+
+  it("uses digital direct-cost wording without supplier or packaging", () => {
+    const initial = productState();
+    const item = initial.values.items[0] as DetailedProductItemInput;
+    const state = {
+      ...initial,
+      productKind: "digital" as const,
+      values: {
+        ...initial.values,
+        items: [{ ...item, kind: "digital" as const, packagingUnitCost: "0" }],
+      },
+    };
+    const { rerender } = render(
+      <DetailedProductCostsStep state={state} dispatch={vi.fn()} />,
+    );
+
+    expect(
+      screen.getByLabelText("Existe algum gasto a cada venda?"),
+    ).toBeEnabled();
+    expect(screen.queryByText(/fornecedor/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/embalagem/i)).not.toBeInTheDocument();
+
+    rerender(
+      <DetailedReviewStep
+        state={{ ...state, phase: "review" }}
+        dispatch={vi.fn()}
+        onSubmit={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Custo direto por venda")).toBeVisible();
+    expect(
+      screen.queryByText(/ficha técnica|fabricação/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps Product focused on shared resale cost and sale price", () => {
+    const state = productState();
+    render(<DetailedProductCostsStep state={state} dispatch={vi.fn()} />);
+
+    expect(
+      screen.getByLabelText("Quanto você paga ao fornecedor por unidade?"),
+    ).toBeEnabled();
+    expect(
+      screen.getByLabelText("Por quanto você vende cada unidade?"),
+    ).toBeEnabled();
+    expect(screen.getByLabelText("Embalagem por unidade")).toBeEnabled();
+    expect(screen.queryByText(/ingrediente/i)).not.toBeInTheDocument();
+  });
+
+  it("renders both Production modes without discarding technical-sheet fields", async () => {
+    const user = userEvent.setup();
+    const dispatch = vi.fn();
+    const initial = productionState();
+    const initialItem = initial.values.items[0];
+    if (initialItem.kind !== "manufacturing")
+      throw new Error("unexpected item");
+    const state = {
+      ...initial,
+      pendingIngredientNameId: initialItem.ingredients[0].id,
+      values: {
+        ...initial.values,
+        items: [{ ...initialItem, costMode: "technical_sheet" as const }],
+      },
+    };
+    const { rerender } = render(
+      <DetailedProductionCostsStep state={state} dispatch={dispatch} />,
+    );
+
+    expect(
+      screen.getByRole("radio", { name: /ficha técnica completa/i }),
+    ).toBeChecked();
+    expect(screen.getByLabelText("Rendimento da receita")).toHaveValue("1");
+    expect(screen.getByLabelText("Perda da produção")).toHaveValue("0");
+    expect(
+      screen.getByRole("group", { name: "Ingredientes da receita" }),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Nome do ingrediente")).toHaveValue(
+      "Ingrediente 1",
+    );
+    expect(screen.queryByLabelText("Quantidade usada")).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Continuar com Ingrediente 1" }),
+    );
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "confirmIngredientName",
+      itemId: "item-1",
+      ingredientId: "ingredient-1",
+    });
+
+    await user.click(
+      screen.getByRole("radio", { name: /custo total por unidade/i }),
+    );
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "setCostMode",
+      itemId: "item-1",
+      costMode: "summarized",
+    });
+
+    const item = state.values.items[0];
+    if (item.kind !== "manufacturing") throw new Error("unexpected item");
+    rerender(
+      <DetailedProductionCostsStep
+        state={{
+          ...state,
+          values: {
+            ...state.values,
+            items: [{ ...item, costMode: "summarized" }],
+          },
+        }}
+        dispatch={dispatch}
+      />,
+    );
+    expect(
+      screen.getByLabelText("Quanto custa produzir uma unidade?"),
+    ).toBeEnabled();
+    expect(
+      screen.getByLabelText("Por quanto você vende cada unidade?"),
+    ).toBeEnabled();
+    expect(
+      screen.queryByText("Ingredientes da receita"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("dispatches ingredient additions and accessible removals", async () => {
+    const user = userEvent.setup();
+    const dispatch = vi.fn();
+    const state = productionState();
+    const item = state.values.items[0];
+    if (item.kind !== "manufacturing") throw new Error("unexpected item");
+    const withTwo = {
+      ...state,
+      pendingIngredientNameId: null,
+      values: {
+        ...state.values,
+        items: [
+          {
+            ...item,
+            costMode: "technical_sheet" as const,
+            ingredients: [
+              ...item.ingredients,
+              {
+                id: "ingredient-2",
+                name: "Açúcar",
+                quantity: "1",
+                unit: "kg",
+                unitCost: "4",
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    render(<DetailedProductionCostsStep state={withTwo} dispatch={dispatch} />);
+    await user.click(
+      screen.getByRole("button", { name: "Adicionar ingrediente" }),
+    );
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "addIngredient",
+      itemId: "item-1",
+      createId: expect.any(Function),
+    });
+
+    await user.click(screen.getByRole("button", { name: "Remover Açúcar" }));
+    expect(dispatch).not.toHaveBeenCalledWith({
+      type: "removeIngredient",
+      itemId: "item-1",
+      ingredientId: "ingredient-2",
+    });
+    expect(
+      screen.getByRole("alertdialog", { name: "Remover Açúcar?" }),
+    ).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(dispatch).not.toHaveBeenCalledWith({
+      type: "removeIngredient",
+      itemId: "item-1",
+      ingredientId: "ingredient-2",
+    });
+
+    await user.click(screen.getByRole("button", { name: "Remover Açúcar" }));
+    await user.click(
+      screen.getByRole("button", { name: "Remover ingrediente" }),
+    );
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "removeIngredient",
+      itemId: "item-1",
+      ingredientId: "ingredient-2",
+    });
+  });
+});
+
+describe("detailed review", () => {
+  it("summarizes the business, offers exact edits, and confirms removal", async () => {
+    const user = userEvent.setup();
+    const dispatch = vi.fn();
+    const state = productState();
+    const item = state.values.items[0] as DetailedProductItemInput;
+    const withTwo = {
+      ...state,
+      phase: "review" as const,
+      productKind: "resale" as const,
+      values: {
+        ...state.values,
+        fixedMonthlyExpenses: "1000",
+        proLaboreIncluded: true,
+        proLabore: "2500",
+        taxRate: "6",
+        cardFeeRate: "3,5",
+        items: [
+          {
+            ...item,
+            name: "Caneca",
+            purchaseUnitCost: "10",
+            unitSalePrice: "30",
+            monthlySalesVolume: "37",
+          },
+          { ...item, id: "item-2", name: "Caderno", monthlySalesVolume: "0" },
+        ],
+      },
+    };
+    const { rerender } = render(
+      <DetailedReviewStep
+        state={withTwo}
+        dispatch={dispatch}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Dados do negócio")).toBeVisible();
+    expect(screen.getByText(/R\$\s*1\.000,00/)).toBeVisible();
+    expect(screen.getByText(/R\$\s*2\.500,00/)).toBeVisible();
+    expect(screen.getByText("3,5%")).toBeVisible();
+
+    await user.click(
+      screen.getByRole("button", { name: "Editar gastos mensais" }),
+    );
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "editGeneral",
+      phase: "fixedExpenses",
+    });
+    await user.click(
+      screen.getByRole("button", { name: "Editar identificação de Caneca" }),
+    );
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "editItem",
+      itemId: "item-1",
+      phase: "itemName",
+    });
+    await user.click(
+      screen.getByRole("button", { name: "Editar custos e preço de Caneca" }),
+    );
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "editItem",
+      itemId: "item-1",
+      phase: "itemValues",
+    });
+    await user.click(
+      screen.getByRole("button", { name: "Editar volume de Caneca" }),
+    );
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "editItem",
+      itemId: "item-1",
+      phase: "itemVolume",
+    });
+    await user.click(screen.getByRole("button", { name: "Remover Caneca" }));
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "requestRemoveItem",
+      itemId: "item-1",
+    });
+    expect(
+      screen.getByRole("button", { name: "Adicionar outro produto" }),
+    ).toBeEnabled();
+
+    rerender(
+      <DetailedReviewStep
+        state={{ ...withTwo, pendingRemovalItemId: "item-1" }}
+        dispatch={dispatch}
+        onSubmit={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(dispatch).toHaveBeenCalledWith({ type: "cancelRemoveItem" });
+    expect(dispatch).not.toHaveBeenCalledWith({ type: "confirmRemoveItem" });
+
+    rerender(
+      <DetailedReviewStep
+        state={{ ...withTwo, pendingRemovalItemId: "item-1" }}
+        dispatch={dispatch}
+        onSubmit={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Confirmar remoção" }));
+    expect(dispatch).toHaveBeenCalledWith({ type: "confirmRemoveItem" });
+  });
+
+  it("distinguishes missing, zero, and known volumes and allows partial submit", () => {
+    const state = productState();
+    const item = state.values.items[0] as DetailedProductItemInput;
+    const onSubmit = vi.fn();
+    render(
+      <DetailedReviewStep
+        state={{
+          ...state,
+          phase: "review",
+          values: {
+            ...state.values,
+            items: [
+              { ...item, name: "Sem volume", monthlySalesVolume: "" },
+              {
+                ...item,
+                id: "item-2",
+                name: "Sem vendas",
+                monthlySalesVolume: "0",
+              },
+              {
+                ...item,
+                id: "item-3",
+                name: "Caneca",
+                monthlySalesVolume: "37",
+              },
+            ],
+          },
+        }}
+        dispatch={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    expect(screen.getByText("Volume ainda não informado")).toBeVisible();
+    expect(screen.getByText("Nenhuma venda no mês")).toBeVisible();
+    expect(screen.getByText("37 unidades por mês")).toBeVisible();
+    expect(
+      screen.getByText(/ponto de equilíbrio como referência/i),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Gerar diagnóstico detalhado" }),
+    ).toBeEnabled();
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+  });
+});

@@ -89,6 +89,41 @@ O disparo manual deve selecionar `main`. Os workflows de deploy e backup de
 produção compartilham o grupo de concorrência `production`; não executam ao
 mesmo tempo.
 
+## Ativação da oferta de lançamento
+
+`LAUNCH_OFFER_START_AT` é uma variável server-only. Ela aceita somente um
+instante ISO 8601 com offset explícito (`Z` ou `±HH:MM`) e nunca usa o prefixo
+`NEXT_PUBLIC_`. A janela começa no instante configurado, inclui esse início e
+termina exatamente 15 dias depois, sem incluir o instante final.
+
+Siga esta ordem em staging e, depois de homologada, em produção:
+
+1. Faça o primeiro deploy com `LAUNCH_OFFER_START_AT` ausente. Confirme que a
+   aplicação oferece apenas o catálogo padrão — mensal de R$ 49,90 e semestral
+   de R$ 239,40 — e rejeita os IDs do catálogo de lançamento no Checkout.
+2. Escolha o instante de início no fuso de São Paulo e converta a decisão para
+   uma string com offset explícito, por exemplo
+   `2026-10-20T09:00:00-03:00`. Registre a decisão de negócio e o responsável,
+   nunca um secret.
+3. Cadastre `LAUNCH_OFFER_START_AT` na Vercel e faça o deploy antes desse
+   instante. Antes do início, confirme estado `scheduled`, catálogo padrão e
+   ausência de contador.
+4. No instante exato do início, confirme catálogo `launch`, contador com prazo
+   absoluto e preços R$ 39,90/R$ 179,40. Um milissegundo antes ainda deve ser
+   padrão.
+5. No instante final exato, confirme retorno ao catálogo padrão e rejeição de
+   novos Checkouts promocionais. Um milissegundo antes ainda deve aceitar a
+   criação promocional e preservar somente a validade de uma hora daquele
+   Checkout já criado.
+6. Em uma validação isolada, use um valor vazio, sem offset ou inválido e
+   confirme que ofertas pagas e Checkout ficam indisponíveis, sem preço de
+   fallback.
+
+O término normal ocorre pelo relógio; não remova a variável ao fim da campanha.
+Remova `LAUNCH_OFFER_START_AT` apenas para desativação emergencial e registre o
+incidente. A remoção seleciona o catálogo padrão imediatamente, mas não altera
+contratos ou Checkouts já persistidos.
+
 ## Falhas e rollback
 
 - Falha no `dry-run`: não force o push. Corrija a migration ou o histórico antes

@@ -19,7 +19,7 @@ describe("GET /auth/confirm", () => {
     verifyOtp.mockResolvedValue({ error: null });
   });
 
-  it("confirma o e-mail, cria a sessão e redireciona para o dashboard", async () => {
+  it("confirma o e-mail e encaminha a sessão ao resolvedor", async () => {
     const request = new NextRequest(
       "http://localhost:3000/auth/confirm?token_hash=valid-token&type=email",
     );
@@ -32,7 +32,7 @@ describe("GET /auth/confirm", () => {
       type: "email",
     });
     expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/dashboard",
+      "http://localhost:3000/auth/continue",
     );
   });
 
@@ -61,6 +61,35 @@ describe("GET /auth/confirm", () => {
     });
     expect(response.headers.get("location")).toBe(
       "http://localhost:3000/update-password",
+    );
+  });
+
+  it("confirma um convite e encaminha para a criação da senha", async () => {
+    const request = new NextRequest(
+      "http://localhost:3000/auth/confirm?token_hash=invite-token&type=invite",
+    );
+
+    const response = await GET(request);
+
+    expect(verifyOtp).toHaveBeenCalledWith({
+      token_hash: "invite-token",
+      type: "invite",
+    });
+    expect(response.headers.get("location")).toBe(
+      "http://localhost:3000/update-password?flow=invite",
+    );
+  });
+
+  it("rejeita um convite sem token pelo destino seguro do fluxo", async () => {
+    const request = new NextRequest(
+      "http://localhost:3000/auth/confirm?type=invite",
+    );
+
+    const response = await GET(request);
+
+    expect(createClient).not.toHaveBeenCalled();
+    expect(response.headers.get("location")).toBe(
+      "http://localhost:3000/login?error=invalid_or_expired_invite",
     );
   });
 
@@ -144,5 +173,20 @@ describe("GET /auth/confirm", () => {
     expect(response.headers.get("location")).toBe(
       "http://localhost:3000/forgot-password?error=invalid_or_expired_link",
     );
+  });
+
+  it("remove o token da URL quando o convite falha", async () => {
+    verifyOtp.mockResolvedValue({ error: new Error("expired invite") });
+    const request = new NextRequest(
+      "http://localhost:3000/auth/confirm?token_hash=expired-invite&type=invite",
+    );
+
+    const response = await GET(request);
+    const location = response.headers.get("location");
+
+    expect(location).toBe(
+      "http://localhost:3000/login?error=invalid_or_expired_invite",
+    );
+    expect(location).not.toContain("expired-invite");
   });
 });

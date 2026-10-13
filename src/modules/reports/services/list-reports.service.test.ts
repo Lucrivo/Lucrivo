@@ -1,0 +1,359 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("server-only", () => ({}));
+
+import {
+  decodeReportsCursor,
+  encodeReportsCursor,
+  listOwnedReports,
+} from "./list-reports.service";
+
+const createdAt = "2026-08-28T22:30:00.000Z";
+
+function row(
+  id: number,
+  timestamp = createdAt,
+  identity: {
+    category: "service" | "product" | "production";
+    scenario: string;
+  } = {
+    category: "service",
+    scenario: "hour",
+  },
+) {
+  return {
+    id,
+    business_category: identity.category,
+    scenario: identity.scenario,
+    created_at: timestamp,
+    analysis_mode: "quick",
+    current_price_cents: 8_000,
+    real_margin_basis_points: 1_700,
+    unit_profit_cents: 1_360,
+    verdict: "positive_result",
+    priority: "volume",
+    unit: "hour",
+    schema_version: 3,
+    calculation_version: 2,
+    content_version: 4,
+    monthly_gross_revenue_cents: null,
+    monthly_result_cents: null,
+    item_count: null,
+    is_partial: null,
+    snapshot_monthly_sales_goal: 82,
+    snapshot_monthly_sales_volume_used: null,
+    snapshot_input_items: null,
+    snapshot_result_items: null,
+    snapshot_effective_fixed_cost_cents: null,
+    snapshot_monthly_contribution_cents: null,
+  };
+}
+
+describe("report cursor", () => {
+  it("round-trips a stable opaque tuple", () => {
+    const value = { createdAt, id: 42 };
+    const encoded = encodeReportsCursor(value);
+
+    expect(encoded).not.toContain(createdAt);
+    expect(decodeReportsCursor(encoded)).toEqual(value);
+    expect(encodeReportsCursor(decodeReportsCursor(encoded)!)).toBe(encoded);
+  });
+
+  it.each(["", "not-base64", "e30", "eyJpZCI6NDJ9"])(
+    "rejects malformed cursor %s",
+    (cursor) => {
+      expect(decodeReportsCursor(cursor)).toBeNull();
+    },
+  );
+});
+
+describe("listOwnedReports", () => {
+  const select = vi.fn();
+  const byUser = vi.fn();
+  const activeOnly = vi.fn();
+  const or = vi.fn();
+  const firstOrder = vi.fn();
+  const secondOrder = vi.fn();
+  const limit = vi.fn();
+  const from = vi.fn();
+  const supabase = { from };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    from.mockReturnValue({ select });
+    select.mockReturnValue({ eq: byUser });
+    byUser.mockReturnValue({ is: activeOnly });
+    activeOnly.mockReturnValue({ or, order: firstOrder });
+    or.mockReturnValue({ order: firstOrder });
+    firstOrder.mockReturnValue({ order: secondOrder });
+    secondOrder.mockReturnValue({ limit });
+    limit.mockResolvedValue({ data: [row(42)], error: null });
+  });
+
+  async function list(cursor?: string) {
+    return listOwnedReports({
+      supabase: supabase as never,
+      userId: "trusted-user",
+      cursor,
+    });
+  }
+
+  it("selects only owned summary columns in deterministic order", async () => {
+    await expect(list()).resolves.toEqual({
+      status: "success",
+      reports: [
+        {
+          id: 42,
+          businessCategory: "service",
+          scenario: "hour",
+          createdAt,
+          analysisMode: "quick",
+          currentPriceCents: 8_000,
+          realMarginBasisPoints: 1_700,
+          unitProfitCents: 1_360,
+          verdict: "positive_result",
+          priority: "volume",
+          unit: "hour",
+          schemaVersion: 3,
+          calculationVersion: 2,
+          contentVersion: 4,
+          monthlyGrossRevenueCents: null,
+          monthlyResultCents: null,
+          itemCount: null,
+          isPartial: null,
+          monthlySalesGoal: 82,
+          monthlySalesVolume: null,
+        },
+      ],
+      nextCursor: null,
+    });
+
+    expect(from).toHaveBeenCalledWith("diagnoses");
+    expect(select).toHaveBeenCalledWith(
+      "id, business_category, scenario, created_at, analysis_mode, current_price_cents, real_margin_basis_points, unit_profit_cents, verdict, priority, unit, schema_version, calculation_version, content_version, monthly_gross_revenue_cents, monthly_result_cents, item_count, is_partial, snapshot_monthly_sales_goal:report_snapshot->results->monthlySalesGoal, snapshot_monthly_sales_volume_used:report_snapshot->results->monthlySalesVolumeUsed, snapshot_input_items:report_snapshot->inputs->items, snapshot_result_items:report_snapshot->results->items, snapshot_effective_fixed_cost_cents:report_snapshot->results->effectiveFixedCostCents, snapshot_monthly_contribution_cents:report_snapshot->results->monthlyContributionCents",
+    );
+    expect(select.mock.calls[0]?.[0]).not.toMatch(
+      /(?:^|, )report_snapshot(?:,|$)/,
+    );
+    expect(byUser).toHaveBeenCalledWith("user_id", "trusted-user");
+    expect(activeOnly).toHaveBeenCalledWith("deleted_at", null);
+    expect(firstOrder).toHaveBeenCalledWith("created_at", {
+      ascending: false,
+    });
+    expect(secondOrder).toHaveBeenCalledWith("id", { ascending: false });
+    expect(limit).toHaveBeenCalledWith(13);
+    expect(or).not.toHaveBeenCalled();
+  });
+
+  it("maps Product enum values without loading the full snapshot", async () => {
+    limit.mockResolvedValue({
+      data: [
+        row(84, "2026-08-31T15:00:00.000Z", {
+          category: "product",
+          scenario: "resale",
+        }),
+      ],
+      error: null,
+    });
+
+    await expect(list()).resolves.toMatchObject({
+      status: "success",
+      reports: [
+        expect.objectContaining({
+          id: 84,
+          businessCategory: "product",
+          scenario: "resale",
+        }),
+      ],
+    });
+    expect(select.mock.calls[0]?.[0]).not.toMatch(
+      /(?:^|, )report_snapshot(?:,|$)/,
+    );
+  });
+
+  it("maps Production enum values without loading the full snapshot", async () => {
+    limit.mockResolvedValue({
+      data: [
+        row(126, "2026-09-01T15:00:00.000Z", {
+          category: "production",
+          scenario: "manufacturing",
+        }),
+      ],
+      error: null,
+    });
+
+    await expect(list()).resolves.toMatchObject({
+      status: "success",
+      reports: [
+        expect.objectContaining({
+          id: 126,
+          businessCategory: "production",
+          scenario: "manufacturing",
+        }),
+      ],
+    });
+    expect(select.mock.calls[0]?.[0]).not.toMatch(
+      /(?:^|, )report_snapshot(?:,|$)/,
+    );
+  });
+
+  it("maps nullable Detailed mix summaries", async () => {
+    limit.mockResolvedValue({
+      data: [
+        {
+          ...row(168, createdAt, {
+            category: "product",
+            scenario: "resale",
+          }),
+          analysis_mode: "detailed",
+          current_price_cents: null,
+          unit_profit_cents: null,
+          unit: "mix",
+          schema_version: 1,
+          calculation_version: 1,
+          content_version: 1,
+          monthly_gross_revenue_cents: null,
+          monthly_result_cents: null,
+          item_count: 3,
+          is_partial: false,
+          snapshot_monthly_sales_goal: null,
+          snapshot_monthly_sales_volume_used: null,
+          snapshot_input_items: [
+            { monthlySalesVolume: 10 },
+            { monthlySalesVolume: 20 },
+            { monthlySalesVolume: 30 },
+          ],
+          snapshot_result_items: [
+            { unitContributionCents: 2_000 },
+            { unitContributionCents: 3_000 },
+            { unitContributionCents: 4_000 },
+          ],
+          snapshot_effective_fixed_cost_cents: 10_000,
+          snapshot_monthly_contribution_cents: 20_000,
+        },
+      ],
+      error: null,
+    });
+
+    await expect(list()).resolves.toMatchObject({
+      status: "success",
+      reports: [
+        {
+          id: 168,
+          analysisMode: "detailed",
+          currentPriceCents: null,
+          monthlyGrossRevenueCents: null,
+          monthlyResultCents: null,
+          itemCount: 3,
+          isPartial: false,
+          monthlySalesGoal: 30,
+          monthlySalesVolume: 60,
+        },
+      ],
+    });
+  });
+
+  it("keeps unavailable detailed sales metrics nullable when the mix is partial", async () => {
+    limit.mockResolvedValue({
+      data: [
+        {
+          ...row(169, createdAt, {
+            category: "product",
+            scenario: "resale",
+          }),
+          analysis_mode: "detailed",
+          current_price_cents: null,
+          unit_profit_cents: null,
+          unit: "mix",
+          item_count: 2,
+          is_partial: true,
+          snapshot_monthly_sales_goal: null,
+          snapshot_monthly_sales_volume_used: null,
+          snapshot_input_items: [
+            { monthlySalesVolume: null },
+            { monthlySalesVolume: 20 },
+          ],
+          snapshot_result_items: [
+            { unitContributionCents: 2_000 },
+            { unitContributionCents: 3_000 },
+          ],
+          snapshot_effective_fixed_cost_cents: 10_000,
+          snapshot_monthly_contribution_cents: null,
+        },
+      ],
+      error: null,
+    });
+
+    await expect(list()).resolves.toMatchObject({
+      status: "success",
+      reports: [
+        {
+          id: 169,
+          monthlySalesGoal: null,
+          monthlySalesVolume: null,
+        },
+      ],
+    });
+  });
+
+  it("applies a validated tuple-equivalent keyset cursor", async () => {
+    const cursor = encodeReportsCursor({ createdAt, id: 42 });
+
+    await list(cursor);
+
+    expect(or).toHaveBeenCalledWith(
+      `created_at.lt.${createdAt},and(created_at.eq.${createdAt},id.lt.42)`,
+    );
+  });
+
+  it("treats a malformed cursor as the first page", async () => {
+    await list("malformed-by-the-browser");
+
+    expect(or).not.toHaveBeenCalled();
+    expect(limit).toHaveBeenCalledWith(13);
+  });
+
+  it("returns twelve rows and a cursor only when a thirteenth exists", async () => {
+    const rows = Array.from({ length: 13 }, (_, index) =>
+      row(
+        100 - index,
+        `2026-08-${String(28 - index).padStart(2, "0")}T22:30:00.000Z`,
+      ),
+    );
+    limit.mockResolvedValue({ data: rows, error: null });
+
+    const result = await list();
+
+    expect(result.status).toBe("success");
+    if (result.status !== "success") throw new Error("unexpected result");
+    expect(result.reports).toHaveLength(12);
+    expect(result.reports.at(-1)?.id).toBe(89);
+    expect(decodeReportsCursor(result.nextCursor!)).toEqual({
+      createdAt: rows[11]?.created_at,
+      id: 89,
+    });
+  });
+
+  it("does not return a cursor for exactly twelve rows", async () => {
+    limit.mockResolvedValue({
+      data: Array.from({ length: 12 }, (_, index) => row(20 - index)),
+      error: null,
+    });
+
+    await expect(list()).resolves.toMatchObject({
+      status: "success",
+      nextCursor: null,
+    });
+  });
+
+  it("sanitizes provider errors and thrown failures", async () => {
+    limit.mockResolvedValueOnce({
+      data: null,
+      error: { code: "XX001", message: "private provider detail" },
+    });
+    await expect(list()).resolves.toEqual({ status: "read_failed" });
+
+    limit.mockRejectedValueOnce(new Error("private provider detail"));
+    await expect(list()).resolves.toEqual({ status: "read_failed" });
+  });
+});

@@ -7,6 +7,22 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Lucrivo",
   description: "Inteligência financeira para decisões mais lucrativas.",
+  icons: {
+    icon: [
+      {
+        url: "/icon.png",
+        type: "image/png",
+        sizes: "512x512",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/icon2.png",
+        type: "image/png",
+        sizes: "512x512",
+        media: "(prefers-color-scheme: dark)",
+      },
+    ],
+  },
 };
 
 const themeScript = `

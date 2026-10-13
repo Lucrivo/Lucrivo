@@ -190,6 +190,9 @@
   html {
     @apply font-sans;
   }
+  html:has([data-smooth-report-scroll]) {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-background text-foreground min-h-screen antialiased;
     background-image: var(--gradient-surface);

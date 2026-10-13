@@ -8,8 +8,8 @@
   <body
     style="
       margin: 0;
-      background-color: #f4f4f5;
-      color: #18181b;
+      background-color: #f4f8fd;
+      color: #09172b;
       font-family: Arial, Helvetica, sans-serif;
     "
   >
@@ -23,7 +23,7 @@
       cellspacing="0"
       cellpadding="0"
       border="0"
-      style="background-color: #f4f4f5"
+      style="background-color: #f4f8fd"
     >
       <tr>
         <td align="center" style="padding: 40px 16px">
@@ -35,29 +35,54 @@
             border="0"
             style="
               max-width: 560px;
-              border: 1px solid #e4e4e7;
-              border-radius: 16px;
-              background-color: #ffffff;
+              border: 1px solid #cedaea;
+              border-radius: 12px;
+              background-color: #fdffff;
             "
           >
             <tr>
               <td style="padding: 40px">
-                <p
-                  style="
-                    margin: 0 0 32px;
-                    color: #166534;
-                    font-size: 20px;
-                    font-weight: 700;
-                    letter-spacing: -0.02em;
-                  "
+                <table
+                  role="presentation"
+                  cellspacing="0"
+                  cellpadding="0"
+                  border="0"
+                  style="margin: 0 0 32px"
                 >
-                  Lucrivo
-                </p>
+                  <tr>
+                    <td style="padding: 0 12px 0 0; vertical-align: middle">
+                      <img
+                        src="{{ .SiteURL }}/brand/logo.png"
+                        width="40"
+                        height="40"
+                        alt="Símbolo Lucrivo"
+                        style="
+                          display: block;
+                          width: 40px;
+                          height: 40px;
+                          border: 0;
+                          border-radius: 8px;
+                        "
+                      />
+                    </td>
+                    <td
+                      style="
+                        color: #09172b;
+                        font-size: 20px;
+                        font-weight: 600;
+                        letter-spacing: -0.02em;
+                        vertical-align: middle;
+                      "
+                    >
+                      Lucrivo
+                    </td>
+                  </tr>
+                </table>
 
                 <h1
                   style="
                     margin: 0 0 16px;
-                    color: #18181b;
+                    color: #09172b;
                     font-size: 28px;
                     line-height: 1.2;
                   "
@@ -68,13 +93,13 @@
                 <p
                   style="
                     margin: 0 0 28px;
-                    color: #52525b;
+                    color: #58677d;
                     font-size: 16px;
                     line-height: 1.6;
                   "
                 >
-                  Seu cadastro está quase pronto. Confirme seu endereço de
-                  e-mail para acessar o Lucrivo com segurança.
+                  Seu cadastro está quase pronto. Confirme este endereço para
+                  entrar no Lucrivo. O link vale por 1 hora.
                 </p>
 
                 <table
@@ -86,7 +111,7 @@
                   <tr>
                     <td
                       align="center"
-                      style="border-radius: 10px; background-color: #166534"
+                      style="border-radius: 12px; background-color: #0072fc"
                     >
                       <a
                         href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email"
@@ -95,7 +120,7 @@
                           padding: 14px 22px;
                           color: #ffffff;
                           font-size: 16px;
-                          font-weight: 700;
+                          font-weight: 600;
                           text-decoration: none;
                         "
                       >
@@ -108,7 +133,22 @@
                 <p
                   style="
                     margin: 28px 0 0;
-                    color: #71717a;
+                    color: #58677d;
+                    font-size: 13px;
+                    line-height: 1.6;
+                  "
+                >
+                  Se o botão não funcionar, copie e cole este link no navegador:
+                </p>
+                <!-- prettier-ignore -->
+                <p style="margin: 8px 0 0; font-size: 13px; line-height: 1.6; word-break: break-all">
+                  <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email" style="color: #0072fc; text-decoration: underline">{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email</a>
+                </p>
+
+                <p
+                  style="
+                    margin: 28px 0 0;
+                    color: #58677d;
                     font-size: 13px;
                     line-height: 1.6;
                   "

@@ -76,6 +76,10 @@ describe("UpdatePasswordForm", () => {
 
     expect(action).toHaveBeenCalledOnce();
     expect(await screen.findByRole("alert")).toHaveTextContent(message);
+    expect(screen.getByLabelText("Nova senha")).toHaveValue("nova-senha1");
+    expect(screen.getByLabelText("Confirmação da senha")).toHaveValue(
+      "nova-senha1",
+    );
   });
 
   it("links to requesting another recovery email", () => {
@@ -86,5 +90,20 @@ describe("UpdatePasswordForm", () => {
     expect(
       screen.getByRole("link", { name: "Solicitar outro link" }),
     ).toHaveAttribute("href", "/forgot-password");
+  });
+
+  it("uses invitation copy and submits the closed flow value", () => {
+    const action = vi.fn(async (): Promise<UpdatePasswordActionState> => null);
+
+    render(<UpdatePasswordForm action={action} flow="invite" />);
+
+    expect(
+      screen.getByRole("heading", { name: "Crie sua senha" }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Criar senha" })).toBeVisible();
+    expect(screen.getByDisplayValue("invite")).toHaveAttribute("name", "flow");
+    expect(
+      screen.getByRole("link", { name: "Voltar ao login" }),
+    ).toHaveAttribute("href", "/login");
   });
 });

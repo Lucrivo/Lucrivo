@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import type { LoginActionState } from "@/modules/auth/actions/login.action";
 import { getTurnstileSiteKey } from "@/config/auth-environment";
@@ -14,6 +14,7 @@ import {
   AuthSubmitButton,
 } from "@/components/shared/auth/auth-form";
 import { TurnstileField } from "@/components/shared/auth/turnstile-field";
+import { usePersistedAuthEmail } from "@/components/shared/auth/use-persisted-auth-email";
 
 const errorMessages = {
   invalid_fields: "Preencha o e-mail e a senha corretamente.",
@@ -36,18 +37,29 @@ type LoginFormProps = {
     formData: FormData,
   ) => Promise<LoginActionState>;
   signupEnabled: boolean;
+  notice?: string;
 };
 
-function LoginForm({ action, signupEnabled }: LoginFormProps) {
+function LoginForm({ action, signupEnabled, notice }: LoginFormProps) {
   const [state, formAction] = useActionState(action, null);
+  const [email, setEmail] = usePersistedAuthEmail();
+  const [password, setPassword] = useState("");
   const hasError = state?.status === "error";
 
   return (
     <AuthFormShell title="Bem-vindo de volta" subtitle="Entre na sua conta">
       <form action={formAction} className="space-y-5" noValidate>
-        <AuthEmailField invalid={hasError} />
+        <AuthEmailField
+          value={email}
+          onValueChange={setEmail}
+          invalid={hasError}
+        />
         <div className="space-y-2.5">
-          <AuthPasswordField invalid={hasError} />
+          <AuthPasswordField
+            value={password}
+            onValueChange={setPassword}
+            invalid={hasError}
+          />
           <div className="text-right">
             <Link
               href="/forgot-password"
@@ -58,6 +70,7 @@ function LoginForm({ action, signupEnabled }: LoginFormProps) {
           </div>
         </div>
         <TurnstileField siteKey={turnstileSiteKey} resetSignal={state} />
+        {notice && <AuthFeedback variant="success">{notice}</AuthFeedback>}
         {hasError && <AuthFeedback>{errorMessages[state.error]}</AuthFeedback>}
         <AuthSubmitButton idleLabel="Entrar" pendingLabel="Entrando…" />
       </form>

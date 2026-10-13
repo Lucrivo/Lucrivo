@@ -1,11 +1,34 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { usePathname } = vi.hoisted(() => ({
   usePathname: vi.fn(() => "/dashboard"),
 }));
 
 vi.mock("next/navigation", () => ({ usePathname }));
+
+vi.mock("next/image", () => ({
+  default: ({
+    src,
+    alt,
+    className,
+  }: {
+    src: string | { src: string };
+    alt: string;
+    className?: string;
+  }) => (
+    <span
+      role="img"
+      aria-label={alt}
+      className={className}
+      data-src={typeof src === "string" ? src : src.src}
+    />
+  ),
+}));
+
+vi.mock("@/components/theme-toggle", () => ({
+  ThemeToggle: () => <div aria-label="Selecionar tema">Tema</div>,
+}));
 
 vi.mock("@/components/ui/sidebar", () => ({
   Sidebar: ({ children }: { children: React.ReactNode }) => (
@@ -73,10 +96,22 @@ vi.mock("@/components/ui/sidebar", () => ({
 import { AppSidebar } from "./app-sidebar";
 
 describe("AppSidebar", () => {
-  it("exibe a navegação principal e a conta autenticada", () => {
-    render(<AppSidebar email="pessoa@lucrivo.local" logoutAction={vi.fn()} />);
+  beforeEach(() => {
+    usePathname.mockReturnValue("/dashboard");
+  });
+
+  it("exibe a marca, a navegação principal e o controle de tema", () => {
+    render(<AppSidebar />);
 
     expect(screen.getByText("Lucrivo")).toBeInTheDocument();
+    const logos = screen.getAllByRole("img", { name: "Lucrivo" });
+    expect(logos).toHaveLength(2);
+    expect(logos[0]).toHaveClass("dark:hidden");
+    expect(logos[1]).toHaveClass("hidden", "dark:block");
+    expect(logos[0]).not.toHaveAttribute(
+      "data-src",
+      logos[1].getAttribute("data-src"),
+    );
     expect(screen.getByRole("link", { name: /dashboard/i })).toHaveAttribute(
       "href",
       "/dashboard",
@@ -85,19 +120,140 @@ describe("AppSidebar", () => {
       "data-active",
       "true",
     );
-    expect(screen.getByText("pessoa@lucrivo.local")).toBeInTheDocument();
+    expect(screen.getByText("Aparência")).toBeInTheDocument();
+    expect(screen.getByLabelText("Selecionar tema")).toBeInTheDocument();
   });
 
-  it("disponibiliza o logout como ação de formulário", () => {
-    const logoutAction = vi.fn();
+  it("não mistura informações da conta com a navegação", () => {
+    render(<AppSidebar />);
 
-    render(
-      <AppSidebar email="pessoa@lucrivo.local" logoutAction={logoutAction} />,
-    );
+    expect(screen.queryByText(/@lucrivo\.local/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /sair/i }),
+    ).not.toBeInTheDocument();
+  });
 
-    expect(screen.getByRole("button", { name: /sair/i })).toHaveAttribute(
-      "type",
-      "submit",
+  it("marca somente o diagnóstico rápido em sua rota exata", () => {
+    usePathname.mockReturnValue("/quick-diagnosis");
+
+    render(<AppSidebar />);
+
+    expect(
+      screen.getByRole("link", { name: /diagnóstico rápido/i }),
+    ).toHaveAttribute("href", "/quick-diagnosis");
+    expect(
+      screen.getByRole("link", { name: /diagnóstico rápido/i }),
+    ).toHaveAttribute("data-active", "true");
+    expect(
+      screen.getByRole("link", { name: /dashboard/i }),
+    ).not.toHaveAttribute("data-active", "true");
+  });
+
+  it.each(["/reports", "/reports/42"])(
+    "marca Relatórios como ativo em %s",
+    (pathname) => {
+      usePathname.mockReturnValue(pathname);
+
+      render(<AppSidebar />);
+
+      expect(screen.getByRole("link", { name: "Relatórios" })).toHaveAttribute(
+        "href",
+        "/reports",
+      );
+      expect(screen.getByRole("link", { name: "Relatórios" })).toHaveAttribute(
+        "data-active",
+        "true",
+      );
+      expect(
+        screen.getByRole("link", { name: /diagnóstico rápido/i }),
+      ).not.toHaveAttribute("data-active", "true");
+    },
+  );
+
+  it("links to billing and marks its nested routes active", () => {
+    usePathname.mockReturnValue("/billing/return");
+
+    render(<AppSidebar />);
+
+    expect(screen.getByRole("link", { name: "Plano" })).toHaveAttribute(
+      "href",
+      "/billing",
     );
+    expect(screen.getByRole("link", { name: "Plano" })).toHaveAttribute(
+      "data-active",
+      "true",
+    );
+    expect(
+      screen.getByRole("link", { name: /dashboard/i }),
+    ).not.toHaveAttribute("data-active", "true");
+  });
+
+  it("renders the closed administrative navigation", () => {
+    usePathname.mockReturnValue("/admin");
+
+    render(<AppSidebar variant="admin" />);
+
+    for (const [label, href] of [
+      ["Dashboard", "/admin"],
+      ["Usuários", "/admin/users"],
+      ["Onboarding", "/admin/onboarding"],
+      ["Assinaturas", "/admin/subscriptions"],
+      ["Área financeira", "/dashboard"],
+    ]) {
+      expect(screen.getByRole("link", { name: label })).toHaveAttribute(
+        "href",
+        href,
+      );
+    }
+    expect(screen.getByText("Administração")).toBeVisible();
+  });
+
+  it("marks Onboarding active on its nested admin route", () => {
+    usePathname.mockReturnValue("/admin/onboarding/exports");
+
+    render(<AppSidebar variant="admin" />);
+
+    expect(screen.getByRole("link", { name: "Onboarding" })).toHaveAttribute(
+      "data-active",
+      "true",
+    );
+    expect(screen.getByRole("link", { name: "Dashboard" })).not.toHaveAttribute(
+      "data-active",
+      "true",
+    );
+  });
+
+  it("does not keep the admin dashboard active on nested routes", () => {
+    usePathname.mockReturnValue("/admin/users");
+
+    render(<AppSidebar variant="admin" />);
+
+    expect(screen.getByRole("link", { name: "Usuários" })).toHaveAttribute(
+      "data-active",
+      "true",
+    );
+    expect(screen.getByRole("link", { name: "Dashboard" })).not.toHaveAttribute(
+      "data-active",
+      "true",
+    );
+    expect(
+      screen.getByRole("link", { name: "Assinaturas" }),
+    ).not.toHaveAttribute("data-active", "true");
+  });
+
+  it("shows the administrative shortcut to admin users in the financial area", () => {
+    render(<AppSidebar isAdminUser />);
+
+    expect(
+      screen.getByRole("link", { name: "Área administrativa" }),
+    ).toHaveAttribute("href", "/admin");
+  });
+
+  it("hides the administrative shortcut from regular users", () => {
+    render(<AppSidebar />);
+
+    expect(
+      screen.queryByRole("link", { name: "Área administrativa" }),
+    ).not.toBeInTheDocument();
   });
 });

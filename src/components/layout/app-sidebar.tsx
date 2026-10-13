@@ -2,9 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboardIcon, LogOutIcon, TrendingUpIcon } from "lucide-react";
+import {
+  ClipboardCheckIcon,
+  CreditCardIcon,
+  FileChartColumnIcon,
+  LayoutDashboardIcon,
+  LandmarkIcon,
+  ListChecksIcon,
+  ShieldCheckIcon,
+  UsersIcon,
+  WalletCardsIcon,
+  type LucideIcon,
+} from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Logo } from "@/components/ui/logo";
 import {
   Sidebar,
   SidebarContent,
@@ -20,38 +32,112 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 
-type AppSidebarProps = {
-  email: string;
-  logoutAction: () => Promise<void>;
+type NavigationItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  exact?: boolean;
 };
 
-function accountInitial(email: string) {
-  return email.trim().charAt(0).toLocaleUpperCase("pt-BR") || "L";
-}
+type AppSidebarVariant = "financial" | "admin";
 
-function AppSidebar({ email, logoutAction }: AppSidebarProps) {
+type AppSidebarProps = {
+  variant?: AppSidebarVariant;
+  isAdminUser?: boolean;
+};
+
+const financialNavigationItems: NavigationItem[] = [
+  {
+    label: "Dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboardIcon,
+  },
+  {
+    label: "Diagnóstico rápido",
+    href: "/quick-diagnosis",
+    icon: ClipboardCheckIcon,
+  },
+  {
+    label: "Relatórios",
+    href: "/reports",
+    icon: FileChartColumnIcon,
+  },
+  {
+    label: "Plano",
+    href: "/billing",
+    icon: WalletCardsIcon,
+  },
+];
+
+const adminNavigationItems: NavigationItem[] = [
+  {
+    label: "Dashboard",
+    href: "/admin",
+    icon: LayoutDashboardIcon,
+    exact: true,
+  },
+  {
+    label: "Usuários",
+    href: "/admin/users",
+    icon: UsersIcon,
+  },
+  {
+    label: "Onboarding",
+    href: "/admin/onboarding",
+    icon: ListChecksIcon,
+  },
+  {
+    label: "Assinaturas",
+    href: "/admin/subscriptions",
+    icon: CreditCardIcon,
+  },
+];
+
+function AppSidebar({
+  variant = "financial",
+  isAdminUser = false,
+}: AppSidebarProps) {
   const pathname = usePathname();
 
+  const isAdminArea = variant === "admin";
+
+  const navigationItems = isAdminArea
+    ? adminNavigationItems
+    : financialNavigationItems;
+
+  const homeHref = isAdminArea ? "/admin" : "/dashboard";
+
+  const subtitle = isAdminArea ? "Administração" : "Finanças inteligentes";
+
+  const isActive = ({ href, exact }: NavigationItem) =>
+    pathname === href || (!exact && pathname.startsWith(`${href}/`));
+
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="px-3 pt-4 pb-3">
-        <SidebarMenu>
+    <Sidebar
+      collapsible="icon"
+      variant="floating"
+      className="**:data-[sidebar=sidebar]:rounded-2xl"
+    >
+      <SidebarHeader className="px-3 pt-3 pb-4 group-data-[collapsible=icon]:px-2">
+        <SidebarMenu className="group-data-[collapsible=icon]:items-center">
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
               tooltip="Lucrivo"
-              render={<Link href="/dashboard" aria-label="Lucrivo" />}
-              className="hover:bg-transparent active:bg-transparent"
+              render={<Link href={homeHref} aria-label="Lucrivo" />}
+              className="h-12 rounded-xl px-1 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 hover:bg-transparent active:bg-transparent"
             >
-              <span className="bg-brand-gradient text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-lg shadow-sm">
-                <TrendingUpIcon aria-hidden="true" />
+              <span className="flex size-9 shrink-0 items-center justify-center p-0.5">
+                <Logo />
               </span>
+
               <span className="grid min-w-0 flex-1 text-left leading-tight">
-                <span className="truncate font-semibold tracking-tight">
+                <span className="truncate text-base font-semibold tracking-tight">
                   Lucrivo
                 </span>
-                <span className="text-sidebar-foreground/60 truncate text-xs">
-                  Finanças inteligentes
+
+                <span className="text-sidebar-foreground/55 truncate text-[0.6875rem]">
+                  {subtitle}
                 </span>
               </span>
             </SidebarMenuButton>
@@ -59,57 +145,100 @@ function AppSidebar({ email, logoutAction }: AppSidebarProps) {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarSeparator />
+      <SidebarContent className="px-1 pt-1">
+        <SidebarGroup className="gap-1">
+          <SidebarGroupLabel className="px-3 text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
+            Visão geral
+          </SidebarGroupLabel>
 
-      <SidebarContent className="pt-2">
-        <SidebarGroup>
-          <SidebarGroupLabel>Visão geral</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  tooltip="Dashboard"
-                  isActive={pathname === "/dashboard"}
-                  render={<Link href="/dashboard" />}
-                >
-                  <LayoutDashboardIcon aria-hidden="true" />
-                  <span>Dashboard</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+            <SidebarMenu className="gap-1 group-data-[collapsible=icon]:items-center">
+              {navigationItems.map((item) => {
+                const { label, href, icon: Icon } = item;
+
+                return (
+                  <SidebarMenuItem key={href}>
+                    <SidebarMenuButton
+                      tooltip={label}
+                      isActive={isActive(item)}
+                      render={<Link href={href} />}
+                      className="transition-interactive data-active:bg-primary data-active:text-primary-foreground h-10 rounded-xl px-3 font-medium group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 hover:translate-x-0.5 group-data-[collapsible=icon]:hover:translate-x-0 data-active:shadow-sm"
+                    >
+                      <Icon aria-hidden="true" />
+                      <span>{label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {isAdminArea && (
+          <>
+            <SidebarSeparator className="mx-3 my-2 w-auto" />
+
+            <SidebarGroup className="gap-1">
+              <SidebarGroupLabel className="px-3 text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
+                Produto
+              </SidebarGroupLabel>
+
+              <SidebarGroupContent>
+                <SidebarMenu className="group-data-[collapsible=icon]:items-center">
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      tooltip="Área financeira"
+                      isActive={pathname === "/dashboard"}
+                      render={<Link href="/dashboard" />}
+                      className="transition-interactive h-10 rounded-xl px-3 font-medium group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
+                    >
+                      <LandmarkIcon aria-hidden="true" />
+                      <span>Área financeira</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
+
+        {isAdminUser && !isAdminArea && (
+          <>
+            <SidebarSeparator className="mx-3 my-2 w-auto" />
+
+            <SidebarGroup className="gap-1">
+              <SidebarGroupLabel className="px-3 text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">
+                Administração
+              </SidebarGroupLabel>
+
+              <SidebarGroupContent>
+                <SidebarMenu className="group-data-[collapsible=icon]:items-center">
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      tooltip="Área administrativa"
+                      isActive={pathname.startsWith("/admin")}
+                      render={<Link href="/admin" />}
+                      className="transition-interactive h-10 rounded-xl px-3 font-medium group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
+                    >
+                      <ShieldCheckIcon aria-hidden="true" />
+                      <span>Área administrativa</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
       </SidebarContent>
 
-      <SidebarSeparator />
+      <SidebarFooter className="p-3 pt-2">
+        <div className="border-sidebar-border bg-sidebar-accent/35 rounded-2xl border p-2 group-data-[collapsible=icon]:hidden">
+          <p className="text-sidebar-foreground/55 mb-2 px-1 text-[0.625rem] font-semibold tracking-[0.14em] uppercase">
+            Aparência
+          </p>
 
-      <SidebarFooter className="gap-3 p-3">
-        <div className="flex min-w-0 items-center gap-2 px-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
-          <Avatar size="sm" className="size-7">
-            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-              {accountInitial(email)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-            <p className="text-sidebar-foreground/60 text-[0.6875rem] font-medium tracking-wide uppercase">
-              Conta
-            </p>
-            <p className="truncate text-xs font-medium" title={email}>
-              {email}
-            </p>
-          </div>
+          <ThemeToggle className="border-sidebar-border bg-sidebar w-full rounded-xl shadow-none" />
         </div>
-
-        <form action={logoutAction}>
-          <SidebarMenuButton
-            type="submit"
-            tooltip="Sair"
-            className="text-sidebar-foreground/70 hover:text-destructive"
-          >
-            <LogOutIcon aria-hidden="true" />
-            <span>Sair</span>
-          </SidebarMenuButton>
-        </form>
       </SidebarFooter>
 
       <SidebarRail />
@@ -117,4 +246,4 @@ function AppSidebar({ email, logoutAction }: AppSidebarProps) {
   );
 }
 
-export { AppSidebar };
+export { AppSidebar, type AppSidebarVariant };
