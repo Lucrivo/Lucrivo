@@ -10,8 +10,8 @@ function AcceptTermsScreen({
   logoutAction,
   state,
 }: {
-  action: (state: AcceptLegalTermsState) => Promise<AcceptLegalTermsState>;
-  logoutAction: () => Promise<void>;
+  action: (formData: FormData) => void | Promise<void>;
+  logoutAction: (formData: FormData) => void | Promise<void>;
   state: AcceptLegalTermsState;
 }) {
   return (
@@ -44,8 +44,11 @@ function AcceptTermsForm({
   action,
   logoutAction,
 }: {
-  action: (state: AcceptLegalTermsState) => Promise<AcceptLegalTermsState>;
-  logoutAction: () => Promise<void>;
+  action: (
+    previousState: AcceptLegalTermsState,
+    formData: FormData,
+  ) => Promise<AcceptLegalTermsState>;
+  logoutAction: (formData: FormData) => void | Promise<void>;
 }) {
   const [state, formAction] = useActionState(action, null);
   return (
@@ -60,7 +63,7 @@ function AcceptTermsForm({
 function AcceptTermsUnavailable({
   logoutAction,
 }: {
-  logoutAction: () => Promise<void>;
+  logoutAction: (formData: FormData) => void | Promise<void>;
 }) {
   return (
     <section className="bg-card w-full max-w-md rounded-2xl border p-6 shadow-sm sm:p-8">

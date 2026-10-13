@@ -22,7 +22,7 @@ describe("acceptLegalTerms", () => {
   });
 
   it("records the current version and continues", async () => {
-    await expect(acceptLegalTerms(null)).rejects.toThrow(
+    await expect(acceptLegalTerms(null, new FormData())).rejects.toThrow(
       "redirect:/auth/continue",
     );
     expect(rpc).toHaveBeenCalledWith("accept_current_legal_terms_v1", {
@@ -33,7 +33,9 @@ describe("acceptLegalTerms", () => {
   it("stays on the gate when recording fails", async () => {
     rpc.mockResolvedValue({ data: null, error: { message: "unavailable" } });
 
-    await expect(acceptLegalTerms(null)).resolves.toEqual({ status: "error" });
+    await expect(acceptLegalTerms(null, new FormData())).resolves.toEqual({
+      status: "error",
+    });
     expect(redirect).not.toHaveBeenCalled();
   });
 });

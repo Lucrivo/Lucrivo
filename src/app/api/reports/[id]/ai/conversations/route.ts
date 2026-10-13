@@ -24,7 +24,7 @@ async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    let auth: Awaited<ReturnType<typeof requireUser>>;
+    let auth: Awaited<ReturnType<typeof requireClientAccess>>;
     try {
       auth = await requireClientAccess();
     } catch (error) {

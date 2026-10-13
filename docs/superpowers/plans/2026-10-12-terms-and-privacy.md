@@ -55,10 +55,12 @@
 ### Task 1: Legal copy model
 
 **Files:**
+
 - Create: `src/modules/legal/legal-copy.ts`
 - Test: `src/modules/legal/legal-copy.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing
 - Produces: `LEGAL_COPY_VERSION = "terms-privacy-v1"`; `LegalSupplier = { fullName: string; cpf: string; address: string; email: "atendimento@lucrivo.com.br" }`; `legalTermsSections(supplier: LegalSupplier): LegalSection[]`; `legalPrivacySections(supplier: LegalSupplier): LegalSection[]`; `LegalSection = { id: string; heading: string; paragraphs: string[] }`
 
@@ -273,11 +275,13 @@ EOF
 ### Task 2: Acceptance history in Postgres
 
 **Files:**
+
 - Create: `supabase/migrations/20261012233000_add_legal_acceptance.sql`
 - Test: `supabase/tests/legal_acceptance.test.sql`
 - Modify: `src/infrastructure/database/supabase/database.types.ts` by regeneration
 
 **Interfaces:**
+
 - Consumes: `LEGAL_COPY_VERSION` only as the value callers will pass. The database does not hardcode it.
 - Produces: `public.record_signup_legal_acceptance_v1(p_user_id uuid, p_copy_version text) returns jsonb`; `public.accept_current_legal_terms_v1(p_copy_version text) returns jsonb`; `public.current_user_has_accepted_legal_copy_v1(p_copy_version text) returns boolean`
 
@@ -642,10 +646,12 @@ EOF
 ### Task 3: Signup returns a real user id
 
 **Files:**
+
 - Modify: `src/modules/auth/services/signup.service.ts`
 - Modify: `src/modules/auth/services/signup.service.test.ts`
 
 **Interfaces:**
+
 - Consumes: Supabase `signUp` response `data.user` and `data.session`
 - Produces: `SignupServiceResult` with `status: "authenticated"` carrying `userId: string`, or `status: "confirmation_required"` carrying `userId: string | null`. Error variants stay unchanged.
 
@@ -744,6 +750,7 @@ EOF
 ### Task 4: Require and record acceptance during registration
 
 **Files:**
+
 - Create: `src/modules/legal/record-signup-legal-acceptance.ts`
 - Create: `src/modules/legal/record-signup-legal-acceptance.test.ts`
 - Modify: `src/modules/auth/actions/register.action.ts`
@@ -752,6 +759,7 @@ EOF
 - Modify: `src/components/register/register-form.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `LEGAL_COPY_VERSION`, `createAdminClient`, `record_signup_legal_acceptance_v1`, and `SignupServiceResult.userId`
 - Produces: `recordSignupLegalAcceptance(userId: string): Promise<"recorded" | "failed">`. `RegisterActionState` gains error `"legal_acceptance_required"`.
 
@@ -763,9 +771,7 @@ Recorder test, with `createAdminClient` mocked:
 it("sends the signup user and the current version", async () => {
   rpc.mockResolvedValue({ data: { status: "recorded" }, error: null });
 
-  await expect(recordSignupLegalAcceptance("user-1")).resolves.toBe(
-    "recorded",
-  );
+  await expect(recordSignupLegalAcceptance("user-1")).resolves.toBe("recorded");
   expect(rpc).toHaveBeenCalledWith("record_signup_legal_acceptance_v1", {
     p_user_id: "user-1",
     p_copy_version: "terms-privacy-v1",
@@ -904,10 +910,12 @@ EOF
 ### Task 5: Client access helper
 
 **Files:**
+
 - Modify: `src/modules/auth/services/require-user.ts`
 - Create: `src/modules/auth/services/require-client-access.test.ts`
 
 **Interfaces:**
+
 - Consumes: `requireUser`, `current_user_is_admin`, `current_user_has_accepted_legal_copy_v1`, `LEGAL_COPY_VERSION`
 - Produces: `class LegalAcceptanceRequiredError extends Error`; `requireClientAccess(): Promise<{ userId: string; supabase: SupabaseClient<Database>; isAdmin: boolean }>`
 
@@ -917,7 +925,8 @@ Create `src/modules/auth/services/require-client-access.test.ts`, mocking `creat
 
 ```ts
 rpc.mockImplementation(async (name: string) => {
-  if (name === "current_account_is_eligible") return { data: true, error: null };
+  if (name === "current_account_is_eligible")
+    return { data: true, error: null };
   if (name === "current_user_is_admin") return { data: false, error: null };
   if (name === "current_user_has_accepted_legal_copy_v1") {
     return { data: true, error: null };
@@ -945,10 +954,9 @@ it("allows a client who accepted the current version", async () => {
   await expect(requireClientAccess()).resolves.toMatchObject({
     isAdmin: false,
   });
-  expect(rpc).toHaveBeenCalledWith(
-    "current_user_has_accepted_legal_copy_v1",
-    { p_copy_version: "terms-privacy-v1" },
-  );
+  expect(rpc).toHaveBeenCalledWith("current_user_has_accepted_legal_copy_v1", {
+    p_copy_version: "terms-privacy-v1",
+  });
 });
 
 it("rejects a client who has not accepted", async () => {
@@ -1019,10 +1027,12 @@ EOF
 ### Task 6: Send unsigned clients to the gate
 
 **Files:**
+
 - Modify: `src/modules/auth/services/resolve-authenticated-home.ts`
 - Modify: `src/modules/auth/services/resolve-authenticated-home.test.ts`
 
 **Interfaces:**
+
 - Consumes: `LEGAL_COPY_VERSION` and `current_user_has_accepted_legal_copy_v1`
 - Produces: `AuthenticatedHome` includes `"/accept-terms"`. Order is login, account unavailable, admin, accept-terms, onboarding failure, onboarding, dashboard.
 
@@ -1036,7 +1046,7 @@ Change the default RPC mock so `current_user_has_accepted_legal_copy_v1` returns
   "current_user_is_admin",
   "current_user_has_accepted_legal_copy_v1",
   "current_user_has_completed_onboarding",
-]
+];
 ```
 
 Add:
@@ -1100,12 +1110,14 @@ EOF
 ### Task 7: Close direct client routes
 
 **Files:**
+
 - Modify: `src/app/(private)/layout.tsx`
 - Modify: `src/app/(private)/layout.test.tsx`
 - Modify: `src/app/(onboarding)/onboarding/layout.tsx`
 - Modify: `src/app/(onboarding)/onboarding/layout.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `requireClientAccess`, `LegalAcceptanceRequiredError`, `AuthRequiredError`, `AccountUnavailableError`
 - Produces: private and onboarding layouts redirect a missing acceptance to `/accept-terms`. Admin private layout still renders the shell.
 
@@ -1159,6 +1171,7 @@ EOF
 ### Task 8: Acceptance screen
 
 **Files:**
+
 - Create: `src/modules/legal/accept-legal-terms.action.ts`
 - Create: `src/modules/legal/accept-legal-terms.action.test.ts`
 - Create: `src/modules/legal/components/accept-terms-screen.tsx`
@@ -1167,6 +1180,7 @@ EOF
 - Create: `src/app/accept-terms/page.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `requireUser`, `accept_current_legal_terms_v1`, `current_user_has_accepted_legal_copy_v1`, `LEGAL_COPY_VERSION`, existing `logout`
 - Produces: `acceptLegalTerms(): Promise<{ status: "error" }>`; page redirects listed in the spec
 
@@ -1220,6 +1234,7 @@ EOF
 ### Task 9: Enforce acceptance on client mutations
 
 **Files:**
+
 - Modify these callers from `requireUser()` to `requireClientAccess()`:
   - `src/app/api/billing/checkout/route.ts`
   - `src/app/api/billing/refund/route.ts`
@@ -1237,6 +1252,7 @@ EOF
 - Modify the matching `*.test.ts` files so their `require-user` mock also exports `requireClientAccess` as the same mocked function.
 
 **Interfaces:**
+
 - Consumes: `requireClientAccess` and `LegalAcceptanceRequiredError`
 - Produces: HTTP `403` `{ error: "legal_acceptance_required" }` on the six API routes. Server actions map the same error to the unauthorized or generic error they already return for `AuthRequiredError`, so their result unions do not grow.
 
@@ -1323,6 +1339,7 @@ EOF
 ### Task 10: Public pages and reread links
 
 **Files:**
+
 - Create: `src/modules/legal/legal-supplier.ts`
 - Create: `src/modules/legal/legal-supplier.test.ts`
 - Create: `src/app/terms/page.tsx`
@@ -1335,6 +1352,7 @@ EOF
 - Modify: `src/app/(private)/account/page.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `legalTermsSections`, `legalPrivacySections`, `LegalSupplier`, `LEGAL_COPY_VERSION`
 - Produces: `LEGAL_SUPPLIER` used only by the two public pages. Footer and account links point at `/terms` and `/privacy`.
 
@@ -1417,9 +1435,11 @@ EOF
 ### Task 11: Full check
 
 **Files:**
+
 - No new production files.
 
 **Interfaces:**
+
 - Consumes: the previous tasks.
 - Produces: a green targeted database test and the project check.
 

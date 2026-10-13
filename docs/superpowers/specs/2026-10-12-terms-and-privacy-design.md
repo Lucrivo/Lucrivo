@@ -240,19 +240,19 @@ para esta versão, enquanto não há CNPJ.
 
 ## 8. Falhas
 
-| Situação | Comportamento |
-| --- | --- |
-| Checkbox ausente no cadastro | Erro no formulário, sem `signUp` |
-| Conta criada e gravação falha | Cadastro segue; a trava cobre no login |
-| `signUp` sem identity | Não grava; a trava cobre no login |
-| Mesma versão aceita de novo | Sucesso, sem linha duplicada |
-| Consulta do aceite falha | `/accept-terms` com tentar de novo e sair; sem botão de aceitar |
-| Sem sessão em `/accept-terms` | `/login` |
-| Administrador em `/accept-terms` | `/admin` |
-| Cliente já aceito em `/accept-terms` | `/auth/continue` |
-| Link direto sem aceite | `/accept-terms` |
-| API de cliente sem aceite | `403 legal_acceptance_required` |
-| Recusa na trava | Nenhuma linha; conta e assinatura intactas |
+| Situação                             | Comportamento                                                   |
+| ------------------------------------ | --------------------------------------------------------------- |
+| Checkbox ausente no cadastro         | Erro no formulário, sem `signUp`                                |
+| Conta criada e gravação falha        | Cadastro segue; a trava cobre no login                          |
+| `signUp` sem identity                | Não grava; a trava cobre no login                               |
+| Mesma versão aceita de novo          | Sucesso, sem linha duplicada                                    |
+| Consulta do aceite falha             | `/accept-terms` com tentar de novo e sair; sem botão de aceitar |
+| Sem sessão em `/accept-terms`        | `/login`                                                        |
+| Administrador em `/accept-terms`     | `/admin`                                                        |
+| Cliente já aceito em `/accept-terms` | `/auth/continue`                                                |
+| Link direto sem aceite               | `/accept-terms`                                                 |
+| API de cliente sem aceite            | `403 legal_acceptance_required`                                 |
+| Recusa na trava                      | Nenhuma linha; conta e assinatura intactas                      |
 
 A função de cadastro recusa chamada de `anon` e de `authenticated`. A função da
 trava não grava aceite de outro usuário.

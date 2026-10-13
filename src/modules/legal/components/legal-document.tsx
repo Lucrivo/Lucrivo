@@ -1,4 +1,7 @@
-import { LEGAL_COPY_VERSION, type LegalSection } from "@/modules/legal/legal-copy";
+import {
+  LEGAL_COPY_VERSION,
+  type LegalSection,
+} from "@/modules/legal/legal-copy";
 
 function LegalDocument({
   title,
@@ -32,7 +35,10 @@ function LegalDocument({
       ))}
       <footer className="text-muted-foreground flex flex-col gap-3 text-sm">
         <p>Versão {LEGAL_COPY_VERSION}</p>
-        <a href={siblingHref} className="text-primary underline-offset-4 hover:underline">
+        <a
+          href={siblingHref}
+          className="text-primary underline-offset-4 hover:underline"
+        >
           {siblingLabel}
         </a>
       </footer>

@@ -60,9 +60,7 @@ describe("AcceptTermsPage", () => {
       error: null,
     }));
 
-    await expect(AcceptTermsPage()).rejects.toThrow(
-      "redirect:/auth/continue",
-    );
+    await expect(AcceptTermsPage()).rejects.toThrow("redirect:/auth/continue");
   });
 
   it("asks a client who has not accepted to accept or leave", async () => {
@@ -85,7 +83,9 @@ describe("AcceptTermsPage", () => {
     render(await AcceptTermsPage());
 
     expect(
-      screen.getByRole("heading", { name: "Não foi possível verificar agora." }),
+      screen.getByRole("heading", {
+        name: "Não foi possível verificar agora.",
+      }),
     ).toBeVisible();
     expect(
       screen.getByRole("link", { name: "Tentar de novo" }),

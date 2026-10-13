@@ -48,7 +48,10 @@ export default async function AccountPage() {
       </section>
 
       <nav aria-label="Documentos legais" className="flex gap-4 text-sm">
-        <a href="/terms" className="text-primary underline-offset-4 hover:underline">
+        <a
+          href="/terms"
+          className="text-primary underline-offset-4 hover:underline"
+        >
           Termos de uso
         </a>
         <a

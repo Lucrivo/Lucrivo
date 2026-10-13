@@ -39,7 +39,7 @@ type SaveReportEditInput = {
 };
 
 async function createDraftReport(
-  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
+  supabase: Awaited<ReturnType<typeof requireClientAccess>>["supabase"],
   draft: EditableReportDraft,
   snapshot: ReturnType<typeof calculateReportPreview> & {
     status: "valid";
@@ -82,7 +82,7 @@ async function createDraftReport(
 }
 
 async function replaceDraftReport(
-  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
+  supabase: Awaited<ReturnType<typeof requireClientAccess>>["supabase"],
   diagnosisId: number,
   expectedVersion: number,
   draft: EditableReportDraft,

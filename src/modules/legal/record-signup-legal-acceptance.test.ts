@@ -32,9 +32,7 @@ describe("recordSignupLegalAcceptance", () => {
   it("reports failure without throwing", async () => {
     rpc.mockResolvedValue({ data: null, error: { message: "unavailable" } });
 
-    await expect(recordSignupLegalAcceptance("user-1")).resolves.toBe(
-      "failed",
-    );
+    await expect(recordSignupLegalAcceptance("user-1")).resolves.toBe("failed");
   });
 
   it("reports failure when the admin client cannot be created", async () => {
@@ -42,8 +40,6 @@ describe("recordSignupLegalAcceptance", () => {
       throw new Error("missing billing environment");
     });
 
-    await expect(recordSignupLegalAcceptance("user-1")).resolves.toBe(
-      "failed",
-    );
+    await expect(recordSignupLegalAcceptance("user-1")).resolves.toBe("failed");
   });
 });
