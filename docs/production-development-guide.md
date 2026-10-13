@@ -884,7 +884,7 @@ verificação do signup + validação pós-deploy
 
 | Assunto              | Referência                                          |
 | -------------------- | --------------------------------------------------- |
-| Produção             | https://lucrivo-sigma.vercel.app                    |
+| Produção             | https://lucrivo.com.br                   |
 | Staging              | https://lucrivo-git-staging-lucrivo-team.vercel.app |
 | CI                   | `.github/workflows/ci.yml`                          |
 | Deploy staging       | `.github/workflows/deploy-staging.yml`              |
