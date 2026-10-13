@@ -53,6 +53,13 @@ describe("AccountPage", () => {
       "data-mode",
       "account",
     );
+    expect(screen.getByRole("link", { name: "Termos de uso" })).toHaveAttribute(
+      "href",
+      "/terms",
+    );
+    expect(
+      screen.getByRole("link", { name: "Política de privacidade" }),
+    ).toHaveAttribute("href", "/privacy");
   });
 
   it("redirects an impossible missing profile back to onboarding", async () => {

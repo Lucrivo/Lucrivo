@@ -492,6 +492,8 @@ describe("Home", () => {
       ["Dúvidas", "#duvidas"],
       ["Criar conta", "/register"],
       ["Entrar", "/login"],
+      ["Termos de uso", "/terms"],
+      ["Política de privacidade", "/privacy"],
       ["atendimento@lucrivo.com.br", "mailto:atendimento@lucrivo.com.br"],
     ] as const) {
       expect(view.getByRole("link", { name: label })).toHaveAttribute(
