@@ -277,6 +277,126 @@ describe("BillingPage", () => {
     expect(screen.queryByRole("article", { name: /Plano/ })).toBeNull();
   });
 
+  it.each(["processing", "submitted"] as const)(
+    "keeps purchase actions hidden while the refund is %s",
+    async (status) => {
+      getBillingOverview.mockResolvedValue({
+        status: "success",
+        overview: {
+          tier: "free",
+          canCreateQuickDiagnosis: false,
+          canCreateDetailedDiagnosis: false,
+          freeQuickDiagnosisUsed: true,
+          courtesyExpiresAt: null,
+          contract: {
+            billingMode: "monthly",
+            paymentMethod: "credit_card",
+            status: "refund_pending",
+            accessEndsAt: "2026-09-15T12:00:00.000Z",
+            cancelAtPeriodEnd: false,
+            canRequestRefund: false,
+            refundEligibilityEndsAt: "2026-09-17T12:00:00.000Z",
+          },
+          refund: {
+            status,
+            eligibilityEndsAt: "2026-09-17T12:00:00.000Z",
+            requestedAt: "2026-09-15T10:00:00.000Z",
+            refundConfirmedAt: null,
+            lastErrorCode: null,
+          },
+        },
+      });
+
+      await renderPage();
+
+      expect(
+        screen.getByRole("region", { name: "Situação do reembolso" }),
+      ).toBeVisible();
+      expect(screen.queryByRole("button", { name: /Assinar/ })).toBeNull();
+      expect(screen.queryByText("Você está no plano gratuito")).toBeNull();
+    },
+  );
+
+  it("offers the current catalog again after a confirmed refund ends access", async () => {
+    getBillingOverview.mockResolvedValue({
+      status: "success",
+      overview: {
+        tier: "free",
+        canCreateQuickDiagnosis: false,
+        canCreateDetailedDiagnosis: false,
+        freeQuickDiagnosisUsed: true,
+        courtesyExpiresAt: null,
+        contract: {
+          billingMode: "monthly",
+          paymentMethod: "credit_card",
+          status: "refunded",
+          accessEndsAt: "2026-09-15T12:00:00.000Z",
+          cancelAtPeriodEnd: false,
+          canRequestRefund: false,
+          refundEligibilityEndsAt: "2026-09-17T12:00:00.000Z",
+        },
+        refund: {
+          status: "confirmed",
+          eligibilityEndsAt: "2026-09-17T12:00:00.000Z",
+          requestedAt: "2026-09-15T10:00:00.000Z",
+          refundConfirmedAt: "2026-09-15T12:00:00.000Z",
+          lastErrorCode: null,
+        },
+      },
+    });
+
+    await renderPage();
+
+    expect(screen.getByText("Reembolso confirmado")).toBeVisible();
+    expect(screen.getByText("Você está no plano gratuito")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Assinar mensal" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Assinar semestral" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("region", { name: "Seu plano atual" }),
+    ).toBeNull();
+  });
+
+  it("keeps an active paid plan from starting a second subscription", async () => {
+    getBillingOverview.mockResolvedValue({
+      status: "success",
+      overview: {
+        tier: "paid",
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: true,
+        freeQuickDiagnosisUsed: true,
+        courtesyExpiresAt: null,
+        contract: {
+          billingMode: "monthly",
+          paymentMethod: "credit_card",
+          status: "active",
+          accessEndsAt: "2026-10-10T12:00:00.000Z",
+          cancelAtPeriodEnd: false,
+          canRequestRefund: false,
+          refundEligibilityEndsAt: "2026-09-17T12:00:00.000Z",
+        },
+        refund: {
+          status: "confirmed",
+          eligibilityEndsAt: "2026-09-17T12:00:00.000Z",
+          requestedAt: "2026-09-15T10:00:00.000Z",
+          refundConfirmedAt: "2026-09-15T12:00:00.000Z",
+          lastErrorCode: null,
+        },
+      },
+    });
+
+    await renderPage();
+
+    expect(
+      screen.getByRole("region", { name: "Seu plano atual" }),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: /Assinar/ })).toBeNull();
+    expect(screen.queryByText("Reembolso confirmado")).toBeNull();
+  });
+
   it("shows a rejected status with an eligible retry", async () => {
     getBillingOverview.mockResolvedValue({
       status: "success",

@@ -40,31 +40,33 @@ function LaunchOfferStrip({ offer }: LaunchOfferStripProps) {
   return (
     <aside
       aria-label="Condição especial de lançamento"
-      className="mx-4 mt-4 grid gap-4 rounded-2xl border border-white/15 bg-[oklch(0.5_0.23_259)] p-4 text-white shadow-sm sm:mx-6 sm:p-5 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center lg:mx-8"
+      className="mx-4 mt-4 grid gap-4 rounded-2xl border border-white/15 bg-[oklch(0.5_0.23_259)] p-4 text-white shadow-sm sm:mx-6 sm:p-5 @min-[40rem]:grid-cols-[minmax(14rem,1fr)_auto] @min-[40rem]:items-center lg:mx-8"
     >
       <div className="flex min-w-0 items-start gap-3">
         <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white/12">
           <Icon aria-hidden="true" className="size-4" />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-semibold tracking-tight">
+          <p className="text-sm font-semibold tracking-tight text-balance">
             {content.title}
           </p>
-          <p className="mt-1 max-w-2xl text-xs leading-5 text-white/90 sm:text-sm">
+          <p className="mt-1 max-w-2xl text-xs leading-5 text-pretty text-white/90 sm:text-sm">
             {content.description}
           </p>
         </div>
       </div>
 
-      {offer.freeQuickDiagnosisUsed ? (
-        <div className="min-w-0 md:min-w-60">
-          <OfferCountdown endsAt={offer.endsAt} compact />
-        </div>
-      ) : null}
+      <div className="flex min-w-0 flex-wrap items-center gap-4">
+        {offer.freeQuickDiagnosisUsed ? (
+          <div className="w-max max-w-full shrink-0 [&_[data-countdown-digits]>div]:flex-none">
+            <OfferCountdown endsAt={offer.endsAt} compact />
+          </div>
+        ) : null}
 
-      <Link href={content.href} className={`${actionClassName} md:col-start-3`}>
-        {content.action}
-      </Link>
+        <Link href={content.href} className={actionClassName}>
+          {content.action}
+        </Link>
+      </div>
     </aside>
   );
 }

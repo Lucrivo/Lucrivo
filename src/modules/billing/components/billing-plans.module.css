@@ -346,6 +346,11 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: 28px;
+  padding: 16px 8px;
+  border: 1px solid var(--plans-line);
+  border-radius: 16px;
+  background: var(--plans-surface);
+  color: var(--plans-ink);
 }
 
 .trustRail > div {

@@ -118,6 +118,21 @@ describe("admin onboarding navigation and filters", () => {
     });
   });
 
+  it("keeps the overview filter action compact on the trailing edge", () => {
+    render(
+      <AdminOnboardingFilters
+        navigation={parseAdminOnboardingNavigation({ tab: "overview" })}
+        catalog={catalog}
+        variant="overview"
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Filtrar" })).toHaveClass(
+      "sm:w-fit",
+      "sm:justify-self-end",
+    );
+  });
+
   it("allows long active-filter labels to shrink on narrow screens", () => {
     const longSegmentName =
       "Alimentação artesanal e experiências gastronômicas personalizadas";

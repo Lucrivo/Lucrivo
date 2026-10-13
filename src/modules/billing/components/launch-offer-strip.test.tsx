@@ -64,6 +64,8 @@ describe("LaunchOfferStrip", () => {
     const strip = screen.getByRole("complementary", {
       name: "Condição especial de lançamento",
     });
+    expect(strip.className).toContain("@min-[40rem]:grid-cols-");
+    expect(strip.className).not.toContain("md:grid-cols");
     expect(within(strip).getByText("Oferta de lançamento")).toBeVisible();
     expect(within(strip).getByText(/mensal.*2 meses/i)).toBeVisible();
     expect(within(strip).getByText(/semestral.*12 meses/i)).toBeVisible();
