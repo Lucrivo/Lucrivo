@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import type { Database } from "@/infrastructure/database/supabase/database.types";
-import { requireUser } from "@/modules/auth/services/require-user";
+import { requireClientAccess } from "@/modules/auth/services/require-user";
 
 import {
   ONBOARDING_CONSENT_COPY_VERSION,
@@ -41,7 +41,7 @@ async function saveOnboardingProfile(
   }
 
   try {
-    const { supabase } = await requireUser();
+    const { supabase } = await requireClientAccess();
     const rpcArgs = {
       p_full_name: parsedInput.data.fullName,
       p_whatsapp_e164: parsedInput.data.whatsappE164,

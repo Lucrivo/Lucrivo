@@ -8,6 +8,7 @@ import {
 } from "@/config/auth-environment";
 import { registerSchema } from "@/schemas/auth/register.schema";
 
+import { recordSignupLegalAcceptance } from "@/modules/legal/record-signup-legal-acceptance";
 import {
   signup,
   type SignupServiceResult,
@@ -26,6 +27,7 @@ type RegisterActionState =
         | "invalid_fields"
         | "password_mismatch"
         | "captcha_required"
+        | "legal_acceptance_required"
         | SignupActionError;
     }
   | null;
@@ -67,6 +69,10 @@ async function register(
     };
   }
 
+  if (formData.get("acceptedLegalTerms") !== "on") {
+    return { status: "error", error: "legal_acceptance_required" };
+  }
+
   const result = await signup(
     {
       email: parsed.data.email,
@@ -75,6 +81,7 @@ async function register(
     captchaToken,
   );
   if (result.status === "error") return result;
+  if (result.userId) await recordSignupLegalAcceptance(result.userId);
   if (result.status === "confirmation_required") {
     return { status: "success", outcome: "confirmation_required" };
   }

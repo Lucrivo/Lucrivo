@@ -1,16 +1,25 @@
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { createClient, listActivePrices } = vi.hoisted(() => ({
-  createClient: vi.fn(),
-  listActivePrices: vi.fn(),
-}));
+const { createClient, listActivePrices, readLaunchOfferEnvironment, refresh } =
+  vi.hoisted(() => ({
+    createClient: vi.fn(),
+    listActivePrices: vi.fn(),
+    readLaunchOfferEnvironment: vi.fn(),
+    refresh: vi.fn(),
+  }));
 
 vi.mock("@/infrastructure/database/supabase/clients/server.client", () => ({
   createClient,
 }));
 vi.mock("@/modules/billing/services/list-active-prices.service", () => ({
   listActivePrices,
+}));
+vi.mock("@/config/launch-offer-environment", () => ({
+  readLaunchOfferEnvironment,
+}));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh }),
 }));
 
 vi.hoisted(() => {
@@ -30,26 +39,49 @@ vi.hoisted(() => {
   });
 });
 
-import Home from "@/app/page";
+import Home, { dynamic } from "@/app/page";
 
 const prices = [
   {
     id: "11111111-1111-4111-8111-111111111111",
     productCode: "quick_diagnosis_pro" as const,
+    catalogCode: "launch" as const,
     billingMode: "monthly" as const,
     amountCents: 3990,
     currency: "BRL" as const,
     installmentLimit: null,
-    accessMonths: 1,
+    accessMonths: 2,
+    bonusMonths: 1,
   },
   {
     id: "22222222-2222-4222-8222-222222222222",
     productCode: "quick_diagnosis_pro" as const,
+    catalogCode: "launch" as const,
     billingMode: "semiannual" as const,
     amountCents: 17940,
     currency: "BRL" as const,
     installmentLimit: 6,
+    accessMonths: 12,
+    bonusMonths: 6,
+  },
+];
+
+const standardPrices = [
+  {
+    ...prices[0],
+    id: "33333333-3333-4333-8333-333333333333",
+    catalogCode: "standard" as const,
+    amountCents: 4990,
+    accessMonths: 1,
+    bonusMonths: 0,
+  },
+  {
+    ...prices[1],
+    id: "44444444-4444-4444-8444-444444444444",
+    catalogCode: "standard" as const,
+    amountCents: 23940,
     accessMonths: 6,
+    bonusMonths: 0,
   },
 ];
 
@@ -59,6 +91,12 @@ describe("Home", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     createClient.mockResolvedValue(supabase);
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "active",
+      catalogCode: "launch",
+      startsAt: "2026-10-20T12:00:00.000Z",
+      endsAt: "2026-11-04T12:00:00.000Z",
+    });
     listActivePrices.mockResolvedValue({ status: "success", prices });
   });
 
@@ -95,7 +133,76 @@ describe("Home", () => {
     expect(view.getByText("Sem cartão para começar")).toBeInTheDocument();
     expect(view.getByText("Sem planilhas")).toBeInTheDocument();
     expect(view.getByText("Sem falar contabilês")).toBeInTheDocument();
-    expect(listActivePrices).toHaveBeenCalledWith({ supabase });
+    expect(view.queryByText("Oferta de lançamento")).not.toBeInTheDocument();
+    const offerBar = screen.getByRole("complementary", {
+      name: "Oferta de lançamento",
+    });
+    expect(offerBar).toHaveClass("launch-offer-bar");
+    expect(
+      within(offerBar).getByText(
+        "Primeiro pagamento mensal libera 2 meses de acesso.",
+      ),
+    ).toBeVisible();
+    expect(
+      within(offerBar).getByRole("link", { name: "Ver planos" }),
+    ).toHaveAttribute("href", "#planos");
+    expect(
+      within(offerBar).getByRole("region", {
+        name: "Tempo restante da oferta de lançamento",
+      }),
+    ).toBeInTheDocument();
+    expect(listActivePrices).toHaveBeenCalledWith({
+      supabase,
+      catalogCode: "launch",
+    });
+    expect(dynamic).toBe("force-dynamic");
+  });
+
+  it("renders the later standard catalog without promotional copy", async () => {
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "ended",
+      catalogCode: "standard",
+      startsAt: "2026-09-01T12:00:00.000Z",
+      endsAt: "2026-09-16T12:00:00.000Z",
+    });
+    listActivePrices.mockResolvedValue({
+      status: "success",
+      prices: standardPrices,
+    });
+
+    await renderHome();
+
+    expect(
+      screen.getByRole("link", { name: "Assinar agora por R$ 49,90/mês" }),
+    ).toBeVisible();
+    expect(screen.getByText(/ou R\$ 239,40 à vista/)).toBeVisible();
+    expect(screen.getByText("R$ 39,90")).toBeVisible();
+    expect(screen.queryByText("Oferta de lançamento")).not.toBeInTheDocument();
+    expect(screen.queryByText(/mês de bônus/)).not.toBeInTheDocument();
+    expect(screen.queryByText("R$ 39,90/mês")).not.toBeInTheDocument();
+  });
+
+  it("suppresses paid offers and logs safely for invalid launch configuration", async () => {
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "invalid",
+      catalogCode: null,
+      startsAt: null,
+      endsAt: null,
+    });
+
+    await renderHome();
+
+    expect(createClient).not.toHaveBeenCalled();
+    expect(listActivePrices).not.toHaveBeenCalled();
+    expect(errorLog).toHaveBeenCalledWith(
+      JSON.stringify({ event: "launch_offer_configuration_invalid" }),
+    );
+    expect(errorLog.mock.calls[0][0]).not.toContain("LAUNCH_OFFER_START_AT");
+    expect(
+      screen.getAllByRole("link", { name: "Conhecer os planos" }).length,
+    ).toBeGreaterThanOrEqual(1);
+    expect(document.body).not.toHaveTextContent("R$ 39,90");
   });
 
   it("introduces every factor that shapes a viable price", async () => {
@@ -395,7 +502,7 @@ describe("Home", () => {
 
     expect(
       view.getByText(
-        "A assinatura renova todo mês por R$ 39,90. Se não quiser continuar, é só cancelar antes da próxima cobrança.",
+        "No primeiro pagamento mensal, você recebe 2 meses de acesso. A próxima cobrança ocorre depois desses dois meses e, a partir daí, a assinatura renova mensalmente por R$ 39,90.",
       ),
     ).toBeInTheDocument();
     expect(view.getByText(/Não achou sua dúvida\?/)).toBeInTheDocument();
@@ -454,6 +561,8 @@ describe("Home", () => {
       ["Dúvidas", "#duvidas"],
       ["Criar conta", "/register"],
       ["Entrar", "/login"],
+      ["Termos de uso", "/terms"],
+      ["Política de privacidade", "/privacy"],
       ["atendimento@lucrivo.com.br", "mailto:atendimento@lucrivo.com.br"],
     ] as const) {
       expect(view.getByRole("link", { name: label })).toHaveAttribute(
@@ -558,7 +667,7 @@ describe("Home", () => {
     ).toHaveAttribute("href", "/register");
   });
 
-  it("reflects the live monthly price in the offer buttons", async () => {
+  it("fails closed instead of advertising an unapproved catalog price", async () => {
     listActivePrices.mockResolvedValue({
       status: "success",
       prices: [{ ...prices[0], amountCents: 5990 }, prices[1]],
@@ -566,12 +675,15 @@ describe("Home", () => {
     await renderHome();
 
     expect(
-      screen.getByRole("link", { name: "Assinar agora por R$ 59,90/mês" }),
-    ).toBeInTheDocument();
+      screen.getAllByRole("link", { name: "Conhecer os planos" }).length,
+    ).toBeGreaterThan(0);
     expect(
-      screen.getByRole("link", { name: "Quero assinar por R$ 59,90/mês" }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("R$ 59,90 não é caro?")).toBeInTheDocument();
+      screen.queryByRole("link", { name: "Assinar agora por R$ 59,90/mês" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Quero assinar por R$ 59,90/mês" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("R$ 59,90 não é caro?")).not.toBeInTheDocument();
   });
 
   it("keeps free available without inventing prices after a catalog failure", async () => {
@@ -584,7 +696,7 @@ describe("Home", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText("R$ 39,90/mês")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Assinar agora por R$ 39,90/mês" }),
-    ).toHaveAttribute("href", "/register");
+      screen.getAllByRole("link", { name: "Conhecer os planos" }),
+    ).not.toHaveLength(0);
   });
 });

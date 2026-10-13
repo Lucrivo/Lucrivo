@@ -106,7 +106,15 @@ type SeedContract = {
   chargeType: "recurring" | "installment" | "detached";
   amountCents: number;
   installmentLimit: number | null;
-  accessMonths: 1 | 6;
+  catalogCode: "launch" | "standard";
+  bonusMonths: 0 | 1 | 6;
+  accessMonths: 1 | 2 | 6 | 12;
+  renewalAdjustmentStatus:
+    "not_required" | "pending" | "completed" | "pending_reconciliation";
+  renewalAdjustmentAttemptCount: number;
+  renewalAdjustedAt: SeedRelativeTime | null;
+  renewalAdjustmentLastErrorCode:
+    "provider_rejected" | "provider_ambiguous" | "state_persist_failed" | null;
   status: SeedContractStatus;
   accessStartsAt: SeedRelativeTime | null;
   accessEndsAt: SeedRelativeTime | null;

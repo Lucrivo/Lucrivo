@@ -41,6 +41,7 @@ describe("cancelMonthlyBilling", () => {
   const asaas = {
     createCheckout: vi.fn(),
     cancelCheckout: vi.fn(),
+    updateSubscriptionRenewal: vi.fn(),
     deleteSubscription,
     refundPayment: vi.fn(),
     refundInstallment: vi.fn(),

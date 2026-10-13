@@ -18,7 +18,9 @@ const {
 
 vi.mock("@/modules/auth/services/require-user", () => ({
   AuthRequiredError: class AuthRequiredError extends Error {},
+  LegalAcceptanceRequiredError: class LegalAcceptanceRequiredError extends Error {},
   requireUser,
+  requireClientAccess: requireUser,
 }));
 vi.mock("@/config/billing-environment", () => ({ readBillingEnvironment }));
 vi.mock("@/infrastructure/database/supabase/clients/admin.client", () => ({
@@ -31,7 +33,10 @@ vi.mock("@/modules/billing/services/cancel-monthly-billing.service", () => ({
   cancelMonthlyBilling,
 }));
 
-import { AuthRequiredError } from "@/modules/auth/services/require-user";
+import {
+  AuthRequiredError,
+  LegalAcceptanceRequiredError,
+} from "@/modules/auth/services/require-user";
 
 import { POST } from "./route";
 
@@ -80,6 +85,16 @@ describe("POST /api/billing/cancel", () => {
     expect(readBillingEnvironment).not.toHaveBeenCalled();
     expect(createAdminClient).not.toHaveBeenCalled();
     expect(createAsaasGateway).not.toHaveBeenCalled();
+  });
+
+  it("blocks cancellation before legal acceptance", async () => {
+    requireUser.mockRejectedValue(new LegalAcceptanceRequiredError());
+
+    const { response, body } = await post();
+
+    expect(response.status).toBe(403);
+    expect(body).toEqual({ error: "legal_acceptance_required" });
+    expect(cancelMonthlyBilling).not.toHaveBeenCalled();
   });
 
   it("returns the safe access end after cancellation", async () => {

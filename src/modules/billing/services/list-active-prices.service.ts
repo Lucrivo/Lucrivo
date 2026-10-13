@@ -4,20 +4,23 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/infrastructure/database/supabase/database.types";
 
+import type { BillingCatalogCode } from "../domain/launch-offer";
 import type { ActiveBillingPrice } from "../types";
 
 const ACTIVE_BILLING_PRICE_COLUMNS =
-  "id, product_code, billing_mode, amount_cents, currency, installment_limit, access_months" as const;
+  "id, product_code, catalog_code, billing_mode, amount_cents, currency, installment_limit, access_months, bonus_months" as const;
 
 type ActiveBillingPriceRow = Pick<
   Database["public"]["Tables"]["billing_prices"]["Row"],
   | "id"
   | "product_code"
+  | "catalog_code"
   | "billing_mode"
   | "amount_cents"
   | "currency"
   | "installment_limit"
   | "access_months"
+  | "bonus_months"
 >;
 
 type ListActivePricesResult =
@@ -33,41 +36,71 @@ function normalizePrice(row: ActiveBillingPriceRow): ActiveBillingPrice | null {
     row.product_code !== "quick_diagnosis_pro" ||
     row.currency !== "BRL" ||
     row.id.trim() === "" ||
-    !isPositiveSafeInteger(row.amount_cents)
+    !isPositiveSafeInteger(row.amount_cents) ||
+    (row.catalog_code !== "launch" && row.catalog_code !== "standard")
   ) {
     return null;
   }
 
-  if (
+  const isLaunchMonthly =
+    row.catalog_code === "launch" &&
     row.billing_mode === "monthly" &&
+    row.amount_cents === 3990 &&
     row.installment_limit === null &&
-    row.access_months === 1
-  ) {
+    row.access_months === 2 &&
+    row.bonus_months === 1;
+  const isStandardMonthly =
+    row.catalog_code === "standard" &&
+    row.billing_mode === "monthly" &&
+    row.amount_cents === 4990 &&
+    row.installment_limit === null &&
+    row.access_months === 1 &&
+    row.bonus_months === 0;
+
+  if (isLaunchMonthly || isStandardMonthly) {
     return {
       id: row.id,
       productCode: row.product_code,
-      billingMode: row.billing_mode,
+      catalogCode: row.catalog_code,
+      billingMode: "monthly",
       amountCents: row.amount_cents,
       currency: row.currency,
       installmentLimit: null,
       accessMonths: row.access_months,
+      bonusMonths: row.bonus_months,
     };
   }
 
-  if (
+  const isLaunchSemiannual =
+    row.catalog_code === "launch" &&
     row.billing_mode === "semiannual" &&
+    row.amount_cents === 17940 &&
+    row.installment_limit === 6 &&
+    row.access_months === 12 &&
+    row.bonus_months === 6;
+  const isStandardSemiannual =
+    row.catalog_code === "standard" &&
+    row.billing_mode === "semiannual" &&
+    row.amount_cents === 23940 &&
     row.installment_limit === 6 &&
     row.access_months === 6 &&
+    row.bonus_months === 0;
+
+  if (
+    (isLaunchSemiannual || isStandardSemiannual) &&
+    row.installment_limit !== null &&
     row.amount_cents % row.installment_limit === 0
   ) {
     return {
       id: row.id,
       productCode: row.product_code,
-      billingMode: row.billing_mode,
+      catalogCode: row.catalog_code,
+      billingMode: "semiannual",
       amountCents: row.amount_cents,
       currency: row.currency,
       installmentLimit: row.installment_limit,
       accessMonths: row.access_months,
+      bonusMonths: row.bonus_months,
     };
   }
 
@@ -76,13 +109,15 @@ function normalizePrice(row: ActiveBillingPriceRow): ActiveBillingPrice | null {
 
 async function listActivePrices(input: {
   supabase: SupabaseClient<Database>;
+  catalogCode: BillingCatalogCode;
 }): Promise<ListActivePricesResult> {
   try {
     const { data, error } = await input.supabase
       .from("billing_prices")
       .select(ACTIVE_BILLING_PRICE_COLUMNS)
       .eq("is_active", true)
-      .eq("product_code", "quick_diagnosis_pro");
+      .eq("product_code", "quick_diagnosis_pro")
+      .eq("catalog_code", input.catalogCode);
 
     if (error || !data) return { status: "read_failed" };
 
@@ -92,6 +127,12 @@ async function listActivePrices(input: {
     }
 
     const normalizedPrices = prices as ActiveBillingPrice[];
+    if (
+      normalizedPrices.some((price) => price.catalogCode !== input.catalogCode)
+    ) {
+      return { status: "read_failed" };
+    }
+
     const monthlyCount = normalizedPrices.filter(
       (price) => price.billingMode === "monthly",
     ).length;

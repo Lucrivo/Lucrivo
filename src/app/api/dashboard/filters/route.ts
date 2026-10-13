@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 
 import {
   AuthRequiredError,
-  requireUser,
+  LegalAcceptanceRequiredError,
+  requireClientAccess,
 } from "@/modules/auth/services/require-user";
 import {
   CLIENT_DASHBOARD_FILTER_COOKIE,
@@ -25,12 +26,16 @@ function json(body: unknown, status: number) {
 
 async function authorize() {
   try {
-    await requireUser();
+    await requireClientAccess();
     return null;
   } catch (error) {
-    return error instanceof AuthRequiredError
-      ? json({ error: "unauthorized" }, 401)
-      : json({ error: "service_unavailable" }, 503);
+    if (error instanceof AuthRequiredError) {
+      return json({ error: "unauthorized" }, 401);
+    }
+    if (error instanceof LegalAcceptanceRequiredError) {
+      return json({ error: "legal_acceptance_required" }, 403);
+    }
+    return json({ error: "service_unavailable" }, 503);
   }
 }
 

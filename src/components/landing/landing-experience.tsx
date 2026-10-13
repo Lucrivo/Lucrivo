@@ -12,8 +12,12 @@ import { FinalCtaSection } from "@/components/landing/final-cta-section";
 import { GuaranteeSection } from "@/components/landing/guarantee-section";
 import { HeroSection } from "@/components/landing/hero-section";
 import { LandingFooter } from "@/components/landing/landing-footer";
+import { LaunchOfferBar } from "@/components/landing/launch-offer-bar";
 import { LandingNav } from "@/components/landing/landing-nav";
-import { resolveMonthlyPriceLabel } from "@/components/landing/landing-offer";
+import {
+  resolveLandingOfferPresentation,
+  type LaunchOfferView,
+} from "@/components/landing/landing-offer";
 import { PricingSection } from "@/components/landing/pricing-section";
 import { ProblemSection } from "@/components/landing/problem-section";
 import type { ActiveBillingPrice } from "@/modules/billing/types";
@@ -24,11 +28,15 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 export function LandingExperience({
   prices,
+  launchOffer,
 }: {
   prices: ActiveBillingPrice[];
+  launchOffer?: LaunchOfferView | null;
 }) {
   const root = useRef<HTMLElement>(null);
-  const monthlyPriceLabel = resolveMonthlyPriceLabel(prices);
+  const offer = resolveLandingOfferPresentation(prices);
+  const activeLaunchOffer =
+    offer?.catalogCode === "launch" ? (launchOffer ?? null) : null;
 
   useGSAP(
     () => {
@@ -181,17 +189,20 @@ export function LandingExperience({
   return (
     <main
       ref={root}
-      className="landing-experience page-shell w-full max-w-full overflow-x-hidden"
+      className={`landing-experience page-shell w-full max-w-full overflow-x-hidden${
+        activeLaunchOffer ? " has-launch-offer" : ""
+      }`}
     >
+      {activeLaunchOffer ? <LaunchOfferBar {...activeLaunchOffer} /> : null}
       <LandingNav />
-      <HeroSection monthlyPriceLabel={monthlyPriceLabel} />
+      <HeroSection offer={offer} />
       <ProblemSection />
       <BusinessPathsSection />
       <DiagnosisPreviewSection />
       <PricingSection prices={prices} />
-      <GuaranteeSection monthlyPriceLabel={monthlyPriceLabel} />
-      <FaqSection monthlyPriceLabel={monthlyPriceLabel} />
-      <FinalCtaSection monthlyPriceLabel={monthlyPriceLabel} />
+      <GuaranteeSection offer={offer} />
+      <FaqSection offer={offer} />
+      <FinalCtaSection offer={offer} />
       <LandingFooter />
     </main>
   );

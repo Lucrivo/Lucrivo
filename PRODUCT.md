@@ -88,6 +88,14 @@ temporário usado na validação. A exclusão explícita é lógica e o remove d
 biblioteca. Snapshots legados continuam sendo lidos com as regras da versão em
 que foram criados.
 
+O catálogo padrão cobra R$ 49,90 no mensal por um mês de acesso e R$ 239,40 no
+semestral por seis meses, com parcelamento em até 6x. A campanha de lançamento
+é uma condição temporária de 15 dias resolvida exclusivamente no servidor: o
+mensal custa R$ 39,90 e libera dois meses (um de bônus), enquanto o semestral
+custa R$ 179,40 e libera doze meses (seis de bônus), também em até 6x. Depois da
+janela, novos Checkouts voltam ao catálogo padrão; compras e Checkouts ainda
+válidos preservam o snapshot adquirido.
+
 ## Capabilities and Constraints
 
 - Cadastro, autenticação, recuperação e atualização de senha.
@@ -117,6 +125,9 @@ que foram criados.
   indisponíveis explicam o motivo e diálogos devolvem o foco ao acionador.
 - Valores monetários apresentados em real brasileiro (`BRL`) e conteúdo de
   interface em português brasileiro.
+- Catálogos de billing imutáveis, seleção de campanha e termos de Checkout
+  decididos no servidor; o navegador não controla preço, bônus, duração,
+  recorrência ou prazo promocional.
 - Faixa interna de atenção abaixo de R$ 20 a cada R$ 100 para produto e
   produção; ela não é uma meta universal nem gera preço recomendado. Serviço
   mantém suas próprias regras versionadas.
@@ -154,9 +165,10 @@ que foram criados.
 - Fluxos implementados e cobertos por testes automatizados para autenticação,
   diagnósticos, cálculos, persistência, relatórios e componentes.
 - Logos oficiais disponíveis no repositório para fundos claros e escuros.
-- Não há depoimentos, nomes de clientes, estudos de caso, benchmarks, preços de
-  planos ou provas comerciais confirmados. O conteúdo correspondente na landing
-  page é provisório e não deve ser apresentado como evidência factual.
+- Não há depoimentos, nomes de clientes, estudos de caso, benchmarks ou provas
+  comerciais confirmados. Os preços e condições de acesso dos catálogos padrão
+  e de lançamento são verdade de produto; outros conteúdos comerciais da
+  landing page não devem ser apresentados como evidência factual.
 
 ## Product Principles
 

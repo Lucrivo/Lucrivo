@@ -10,7 +10,9 @@ const { requireUser, getOwnedReport, getReportAiHistory } = vi.hoisted(() => ({
 
 vi.mock("@/modules/auth/services/require-user", () => ({
   AuthRequiredError: class AuthRequiredError extends Error {},
+  LegalAcceptanceRequiredError: class LegalAcceptanceRequiredError extends Error {},
   requireUser,
+  requireClientAccess: requireUser,
 }));
 vi.mock("@/modules/reports/services/get-report.service", () => ({
   getOwnedReport,
@@ -19,7 +21,10 @@ vi.mock("@/modules/report-ai/services/report-ai-store.service", () => ({
   getReportAiHistory,
 }));
 
-import { AuthRequiredError } from "@/modules/auth/services/require-user";
+import {
+  AuthRequiredError,
+  LegalAcceptanceRequiredError,
+} from "@/modules/auth/services/require-user";
 
 import { GET } from "./route";
 
@@ -62,6 +67,16 @@ describe("GET /api/reports/:id/ai/conversations", () => {
 
     expect(response.status).toBe(401);
     expect(body).toEqual({ error: "unauthorized" });
+    expect(getOwnedReport).not.toHaveBeenCalled();
+  });
+
+  it("blocks history before legal acceptance", async () => {
+    requireUser.mockRejectedValue(new LegalAcceptanceRequiredError());
+
+    const { response, body } = await get();
+
+    expect(response.status).toBe(403);
+    expect(body).toEqual({ error: "legal_acceptance_required" });
     expect(getOwnedReport).not.toHaveBeenCalled();
   });
 

@@ -30,6 +30,8 @@ const footerColumns = [
     links: [
       { href: "/register", label: "Criar conta" },
       { href: "/login", label: "Entrar" },
+      { href: "/terms", label: "Termos de uso" },
+      { href: "/privacy", label: "Política de privacidade" },
     ],
   },
 ] as const;

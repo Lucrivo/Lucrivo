@@ -23,7 +23,9 @@ const {
 
 vi.mock("@/modules/auth/services/require-user", () => ({
   AuthRequiredError,
+  LegalAcceptanceRequiredError: class LegalAcceptanceRequiredError extends Error {},
   requireUser,
+  requireClientAccess: requireUser,
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("../schemas/service-flow.schema", () => ({

@@ -236,21 +236,23 @@ values
   );
 
 insert into public.billing_contracts (
-  id, user_id, price_id, external_reference, billing_mode, payment_method,
+  id, user_id, price_id, external_reference, catalog_code, billing_mode, payment_method,
   charge_type, amount_cents, currency, installment_limit, access_months,
-  status, access_starts_at, access_ends_at
+  bonus_months, status, access_starts_at, access_ends_at
 ) values (
   '71000000-0000-4000-8000-000000000010',
   '71000000-0000-4000-8000-000000000001',
-  '20000000-0000-4000-8000-000000000001',
+  '20000000-0000-4000-8000-000000000003',
   'detailed-report-test-access',
+  'standard',
   'monthly',
   'pix',
   'detached',
-  3990,
+  4990,
   'BRL',
   null,
   1,
+  0,
   'active',
   '2000-01-01T00:00:00Z',
   '2100-01-01T00:00:00Z'
@@ -1354,21 +1356,23 @@ values
   );
 
 insert into public.billing_contracts (
-  id, user_id, price_id, external_reference, billing_mode, payment_method,
+  id, user_id, price_id, external_reference, catalog_code, billing_mode, payment_method,
   charge_type, amount_cents, currency, installment_limit, access_months,
-  status, access_starts_at, access_ends_at
+  bonus_months, status, access_starts_at, access_ends_at
 ) values (
   '71000000-0000-4000-8000-000000000011',
   '71000000-0000-4000-8000-000000000004',
-  '20000000-0000-4000-8000-000000000001',
+  '20000000-0000-4000-8000-000000000003',
   'detailed-paid-entitlement',
+  'standard',
   'monthly',
   'pix',
   'detached',
-  3990,
+  4990,
   'BRL',
   null,
   1,
+  0,
   'active',
   statement_timestamp() - interval '1 day',
   statement_timestamp() + interval '30 days'

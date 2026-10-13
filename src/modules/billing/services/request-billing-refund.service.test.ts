@@ -17,6 +17,7 @@ describe("requestBillingRefund", () => {
   const asaas = {
     createCheckout: vi.fn(),
     cancelCheckout: vi.fn(),
+    updateSubscriptionRenewal: vi.fn(),
     deleteSubscription,
     refundPayment,
     refundInstallment,

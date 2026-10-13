@@ -1,13 +1,17 @@
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getBillingOverview, listActivePrices, requireUser } = vi.hoisted(
-  () => ({
-    getBillingOverview: vi.fn(),
-    listActivePrices: vi.fn(),
-    requireUser: vi.fn(),
-  }),
-);
+const {
+  getBillingOverview,
+  listActivePrices,
+  readLaunchOfferEnvironment,
+  requireUser,
+} = vi.hoisted(() => ({
+  getBillingOverview: vi.fn(),
+  listActivePrices: vi.fn(),
+  readLaunchOfferEnvironment: vi.fn(),
+  requireUser: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
@@ -19,6 +23,9 @@ vi.mock("@/modules/billing/services/get-billing-overview.service", () => ({
 vi.mock("@/modules/billing/services/list-active-prices.service", () => ({
   listActivePrices,
 }));
+vi.mock("@/config/launch-offer-environment", () => ({
+  readLaunchOfferEnvironment,
+}));
 
 import BillingPage from "./page";
 
@@ -26,20 +33,24 @@ const prices = [
   {
     id: "11111111-1111-4111-8111-111111111111",
     productCode: "quick_diagnosis_pro" as const,
+    catalogCode: "launch" as const,
     billingMode: "monthly" as const,
     amountCents: 3990,
     currency: "BRL" as const,
     installmentLimit: null,
-    accessMonths: 1,
+    accessMonths: 2,
+    bonusMonths: 1,
   },
   {
     id: "22222222-2222-4222-8222-222222222222",
     productCode: "quick_diagnosis_pro" as const,
+    catalogCode: "launch" as const,
     billingMode: "semiannual" as const,
     amountCents: 17940,
     currency: "BRL" as const,
     installmentLimit: 6,
-    accessMonths: 6,
+    accessMonths: 12,
+    bonusMonths: 6,
   },
 ];
 
@@ -49,6 +60,12 @@ describe("BillingPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireUser.mockResolvedValue({ userId: "trusted-user", supabase });
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "active",
+      catalogCode: "launch",
+      startsAt: "2026-10-20T12:00:00.000Z",
+      endsAt: "2026-11-04T12:00:00.000Z",
+    });
     listActivePrices.mockResolvedValue({ status: "success", prices });
     getBillingOverview.mockResolvedValue({
       status: "success",
@@ -81,7 +98,7 @@ describe("BillingPage", () => {
     expect(
       screen.getByRole("article", { name: "Plano Semestral" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Mais vantajoso")).toBeInTheDocument();
+    expect(screen.getByText("Oferta de lançamento")).toBeInTheDocument();
     expect(
       screen.getByRole("region", { name: "Segurança e transparência" }),
     ).toBeInTheDocument();
@@ -97,7 +114,28 @@ describe("BillingPage", () => {
       supabase,
       userId: "trusted-user",
     });
-    expect(listActivePrices).toHaveBeenCalledWith({ supabase });
+    expect(listActivePrices).toHaveBeenCalledWith({
+      supabase,
+      catalogCode: "launch",
+    });
+  });
+
+  it("keeps the billing page renderable when launch configuration is invalid", async () => {
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "invalid",
+      catalogCode: null,
+      startsAt: null,
+      endsAt: null,
+    });
+
+    await renderPage();
+
+    expect(screen.getByText("Você está no plano gratuito")).toBeVisible();
+    expect(listActivePrices).not.toHaveBeenCalled();
+    expect(errorLog).toHaveBeenCalledWith(
+      JSON.stringify({ event: "launch_offer_configuration_invalid" }),
+    );
   });
 
   it("shows the active monthly card contract and its cancellation control", async () => {
@@ -237,6 +275,126 @@ describe("BillingPage", () => {
       screen.getByRole("region", { name: "Situação do reembolso" }),
     ).toHaveTextContent("Reembolso em conferência");
     expect(screen.queryByRole("article", { name: /Plano/ })).toBeNull();
+  });
+
+  it.each(["processing", "submitted"] as const)(
+    "keeps purchase actions hidden while the refund is %s",
+    async (status) => {
+      getBillingOverview.mockResolvedValue({
+        status: "success",
+        overview: {
+          tier: "free",
+          canCreateQuickDiagnosis: false,
+          canCreateDetailedDiagnosis: false,
+          freeQuickDiagnosisUsed: true,
+          courtesyExpiresAt: null,
+          contract: {
+            billingMode: "monthly",
+            paymentMethod: "credit_card",
+            status: "refund_pending",
+            accessEndsAt: "2026-09-15T12:00:00.000Z",
+            cancelAtPeriodEnd: false,
+            canRequestRefund: false,
+            refundEligibilityEndsAt: "2026-09-17T12:00:00.000Z",
+          },
+          refund: {
+            status,
+            eligibilityEndsAt: "2026-09-17T12:00:00.000Z",
+            requestedAt: "2026-09-15T10:00:00.000Z",
+            refundConfirmedAt: null,
+            lastErrorCode: null,
+          },
+        },
+      });
+
+      await renderPage();
+
+      expect(
+        screen.getByRole("region", { name: "Situação do reembolso" }),
+      ).toBeVisible();
+      expect(screen.queryByRole("button", { name: /Assinar/ })).toBeNull();
+      expect(screen.queryByText("Você está no plano gratuito")).toBeNull();
+    },
+  );
+
+  it("offers the current catalog again after a confirmed refund ends access", async () => {
+    getBillingOverview.mockResolvedValue({
+      status: "success",
+      overview: {
+        tier: "free",
+        canCreateQuickDiagnosis: false,
+        canCreateDetailedDiagnosis: false,
+        freeQuickDiagnosisUsed: true,
+        courtesyExpiresAt: null,
+        contract: {
+          billingMode: "monthly",
+          paymentMethod: "credit_card",
+          status: "refunded",
+          accessEndsAt: "2026-09-15T12:00:00.000Z",
+          cancelAtPeriodEnd: false,
+          canRequestRefund: false,
+          refundEligibilityEndsAt: "2026-09-17T12:00:00.000Z",
+        },
+        refund: {
+          status: "confirmed",
+          eligibilityEndsAt: "2026-09-17T12:00:00.000Z",
+          requestedAt: "2026-09-15T10:00:00.000Z",
+          refundConfirmedAt: "2026-09-15T12:00:00.000Z",
+          lastErrorCode: null,
+        },
+      },
+    });
+
+    await renderPage();
+
+    expect(screen.getByText("Reembolso confirmado")).toBeVisible();
+    expect(screen.getByText("Você está no plano gratuito")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Assinar mensal" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Assinar semestral" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("region", { name: "Seu plano atual" }),
+    ).toBeNull();
+  });
+
+  it("keeps an active paid plan from starting a second subscription", async () => {
+    getBillingOverview.mockResolvedValue({
+      status: "success",
+      overview: {
+        tier: "paid",
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: true,
+        freeQuickDiagnosisUsed: true,
+        courtesyExpiresAt: null,
+        contract: {
+          billingMode: "monthly",
+          paymentMethod: "credit_card",
+          status: "active",
+          accessEndsAt: "2026-10-10T12:00:00.000Z",
+          cancelAtPeriodEnd: false,
+          canRequestRefund: false,
+          refundEligibilityEndsAt: "2026-09-17T12:00:00.000Z",
+        },
+        refund: {
+          status: "confirmed",
+          eligibilityEndsAt: "2026-09-17T12:00:00.000Z",
+          requestedAt: "2026-09-15T10:00:00.000Z",
+          refundConfirmedAt: "2026-09-15T12:00:00.000Z",
+          lastErrorCode: null,
+        },
+      },
+    });
+
+    await renderPage();
+
+    expect(
+      screen.getByRole("region", { name: "Seu plano atual" }),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: /Assinar/ })).toBeNull();
+    expect(screen.queryByText("Reembolso confirmado")).toBeNull();
   });
 
   it("shows a rejected status with an eligible retry", async () => {

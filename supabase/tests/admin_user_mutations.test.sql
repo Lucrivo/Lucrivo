@@ -26,38 +26,40 @@ values
   ('96300000-0000-4000-8000-000000000004', 'authenticated', 'authenticated', 'pending@mutation.test');
 
 insert into public.billing_prices (
-  id, product_code, billing_mode, version, amount_cents, currency, access_months
+  id, product_code, catalog_code, billing_mode, version, amount_cents, currency,
+  installment_limit, access_months, bonus_months
 ) values (
   '96310000-0000-4000-8000-000000000001', 'admin-mutation-fixture',
-  'monthly', 1, 1000, 'BRL', 1
+  'standard', 'monthly', 1, 4990, 'BRL', null, 1, 0
 );
 
 insert into public.billing_contracts (
-  id, user_id, price_id, external_reference, billing_mode, payment_method,
-  charge_type, amount_cents, currency, access_months, status,
+  id, user_id, price_id, external_reference, catalog_code, billing_mode,
+  payment_method, charge_type, amount_cents, currency, access_months,
+  bonus_months, status,
   access_starts_at, access_ends_at
 ) values (
   '96320000-0000-4000-8000-000000000003',
   '96300000-0000-4000-8000-000000000002',
   '96310000-0000-4000-8000-000000000001',
-  'admin-mutation-historical', 'monthly', 'credit_card', 'recurring',
-  1000, 'BRL', 1, 'expired',
+  'admin-mutation-historical', 'standard', 'monthly', 'credit_card', 'recurring',
+  4990, 'BRL', 1, 0, 'expired',
   statement_timestamp() - interval '2 months',
   statement_timestamp() - interval '1 month'
 ), (
   '96320000-0000-4000-8000-000000000001',
   '96300000-0000-4000-8000-000000000003',
   '96310000-0000-4000-8000-000000000001',
-  'admin-mutation-active', 'monthly', 'credit_card', 'recurring',
-  1000, 'BRL', 1, 'active',
+  'admin-mutation-active', 'standard', 'monthly', 'credit_card', 'recurring',
+  4990, 'BRL', 1, 0, 'active',
   statement_timestamp() - interval '1 day',
   statement_timestamp() + interval '1 month'
 ), (
   '96320000-0000-4000-8000-000000000002',
   '96300000-0000-4000-8000-000000000004',
   '96310000-0000-4000-8000-000000000001',
-  'admin-mutation-pending', 'monthly', 'credit_card', 'recurring',
-  1000, 'BRL', 1, 'pending', null, null
+  'admin-mutation-pending', 'standard', 'monthly', 'credit_card', 'recurring',
+  4990, 'BRL', 1, 0, 'pending', null, null
 );
 
 insert into public.billing_payments (

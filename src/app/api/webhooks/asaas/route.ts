@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { readBillingEnvironment } from "@/config/billing-environment";
 import { createAdminClient } from "@/infrastructure/database/supabase/clients/admin.client";
+import { createAsaasGateway } from "@/infrastructure/payments/asaas/asaas.client";
 import { parseAsaasWebhook } from "@/infrastructure/payments/asaas/webhook.schema";
 import { processAsaasWebhook } from "@/modules/billing/services/process-asaas-webhook.service";
 
@@ -15,10 +16,10 @@ function json(body: unknown, status: number) {
 }
 
 async function POST(request: Request) {
-  let expectedToken: string;
+  let environment: ReturnType<typeof readBillingEnvironment>;
 
   try {
-    expectedToken = readBillingEnvironment().asaasWebhookToken;
+    environment = readBillingEnvironment();
   } catch {
     return json({ error: "service_unavailable" }, 503);
   }
@@ -26,7 +27,7 @@ async function POST(request: Request) {
   if (
     !hasValidWebhookToken(
       request.headers.get("asaas-access-token"),
-      expectedToken,
+      environment.asaasWebhookToken,
     )
   ) {
     return json({ error: "unauthorized" }, 401);
@@ -43,8 +44,13 @@ async function POST(request: Request) {
   if (!parsed.success) return json({ error: "invalid_request" }, 400);
 
   try {
+    const asaas = createAsaasGateway({
+      apiUrl: environment.asaasApiUrl,
+      apiKey: environment.asaasApiKey,
+    });
     const result = await processAsaasWebhook({
       admin: createAdminClient(),
+      asaas,
       event: parsed.event,
     });
 

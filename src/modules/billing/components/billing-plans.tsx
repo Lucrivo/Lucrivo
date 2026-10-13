@@ -103,12 +103,33 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
   const monthly = prices.find((price) => price.billingMode === "monthly");
   const semiannual = prices.find((price) => price.billingMode === "semiannual");
 
-  const catalogReady =
+  const sharedCatalogReady =
     monthly !== undefined &&
     semiannual !== undefined &&
+    monthly.catalogCode === semiannual.catalogCode &&
+    monthly.installmentLimit === null &&
     semiannual.installmentLimit === 6 &&
-    semiannual.accessMonths === 6 &&
     semiannual.amountCents % semiannual.installmentLimit === 0;
+  const launchCatalogReady =
+    sharedCatalogReady &&
+    monthly.catalogCode === "launch" &&
+    monthly.amountCents === 3990 &&
+    monthly.accessMonths === 2 &&
+    monthly.bonusMonths === 1 &&
+    semiannual.amountCents === 17940 &&
+    semiannual.accessMonths === 12 &&
+    semiannual.bonusMonths === 6;
+  const standardCatalogReady =
+    sharedCatalogReady &&
+    monthly.catalogCode === "standard" &&
+    monthly.amountCents === 4990 &&
+    monthly.accessMonths === 1 &&
+    monthly.bonusMonths === 0 &&
+    semiannual.amountCents === 23940 &&
+    semiannual.accessMonths === 6 &&
+    semiannual.bonusMonths === 0;
+  const catalogReady = launchCatalogReady || standardCatalogReady;
+  const isLaunch = launchCatalogReady;
 
   const Heading = context === "public" ? "h3" : "h2";
 
@@ -152,7 +173,9 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
           </Link>
 
           <p className={styles.signupHint}>
-            Crie a conta primeiro. Cartão ou Pix na hora de assinar.
+            {isLaunch
+              ? "Crie a conta primeiro. Ao iniciar o checkout, esta condição fica reservada por 1 hora."
+              : "Crie a conta primeiro. Cartão ou Pix na hora de assinar."}
           </p>
         </div>
       );
@@ -182,6 +205,11 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
           <QrCodeIcon aria-hidden="true" />
           Pagar com Pix
         </CheckoutButton>
+        {isLaunch ? (
+          <p className={styles.signupHint}>
+            Ao iniciar o checkout, esta condição fica reservada por 1 hora.
+          </p>
+        ) : null}
       </div>
     );
   }
@@ -235,7 +263,7 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
             >
               <div className={styles.popularBadge}>
                 <span aria-hidden="true" className={styles.popularDot} />
-                Mais vantajoso
+                {isLaunch ? "Oferta de lançamento" : "Mais vantajoso"}
               </div>
 
               <PlanHeader
@@ -246,38 +274,39 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
 
               <div className={styles.priceBlock}>
                 <p className={`${styles.planPrice} ${styles.fixedTermPrice}`}>
-                  <span className={styles.installmentCount}>
-                    {semiannualInstallmentLimit}x de
-                  </span>
-
                   <span className={styles.installmentValue}>
-                    {formatBRL(semiannualInstallmentAmountCents)}
+                    <span className={styles.installmentCount}>
+                      em até {semiannualInstallmentLimit}x de{" "}
+                    </span>
+                    <span className={styles.installmentAmount}>
+                      {formatBRL(semiannualInstallmentAmountCents)}
+                    </span>
                   </span>
+                  <small> ou {formatBRL(semiannual.amountCents)} à vista</small>
                 </p>
-
-                <p className={styles.planDescription}>
-                  ou {formatBRL(semiannual.amountCents)} à vista
-                </p>
-
-                {monthly.amountCents * semiannual.accessMonths >
-                semiannual.amountCents ? (
+                {isLaunch ? (
+                  <>
+                    <p className={styles.saving}>
+                      <BadgeCheckIcon aria-hidden="true" />
+                      {semiannual.bonusMonths} meses de bônus incluídos
+                    </p>
+                    <p className={styles.comparisonPrice}>
+                      Depois da oferta: {formatBRL(23940)}
+                    </p>
+                  </>
+                ) : (
                   <p className={styles.saving}>
                     <BadgeCheckIcon aria-hidden="true" />
-                    Economize{" "}
-                    {formatBRL(
-                      monthly.amountCents * semiannual.accessMonths -
-                        semiannual.amountCents,
-                    )}{" "}
-                    em seis meses
+                    Economize {formatBRL(6000)} em seis meses
                   </p>
-                ) : null}
+                )}
               </div>
 
               <ul className={styles.benefits}>
                 {paidBenefits.map((benefit) => (
                   <Benefit key={benefit}>{benefit}</Benefit>
                 ))}
-                <Benefit>6 meses de acesso</Benefit>
+                <Benefit>{semiannual.accessMonths} meses de acesso</Benefit>
               </ul>
 
               {checkoutActions(
@@ -302,14 +331,32 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
                 </p>
 
                 <p className={styles.planDescription}>
-                  Ideal para pagar mês a mês com flexibilidade.
+                  {isLaunch
+                    ? `${monthly.accessMonths} meses no primeiro pagamento`
+                    : "Ideal para pagar mês a mês com flexibilidade."}
                 </p>
+                {isLaunch ? (
+                  <>
+                    <p className={styles.saving}>
+                      <BadgeCheckIcon aria-hidden="true" />
+                      {monthly.bonusMonths} mês de bônus incluído
+                    </p>
+                    <p className={styles.comparisonPrice}>
+                      Depois da oferta: {formatBRL(4990)}/mês
+                    </p>
+                  </>
+                ) : null}
               </div>
 
               <ul className={styles.benefits}>
                 {paidBenefits.map((benefit) => (
                   <Benefit key={benefit}>{benefit}</Benefit>
                 ))}
+                {isLaunch ? (
+                  <Benefit>
+                    {monthly.accessMonths} meses de acesso inicial
+                  </Benefit>
+                ) : null}
               </ul>
 
               {checkoutActions(

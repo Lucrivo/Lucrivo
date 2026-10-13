@@ -30,6 +30,7 @@ insert into public.billing_contracts (
   user_id,
   price_id,
   external_reference,
+  catalog_code,
   billing_mode,
   payment_method,
   charge_type,
@@ -37,21 +38,24 @@ insert into public.billing_contracts (
   currency,
   installment_limit,
   access_months,
+  bonus_months,
   status,
   access_starts_at,
   access_ends_at
 ) values (
   '81000000-0000-4000-8000-000000000010',
   '81000000-0000-4000-8000-000000000001',
-  '20000000-0000-4000-8000-000000000001',
+  '20000000-0000-4000-8000-000000000003',
   'historical-report-access',
+  'standard',
   'monthly',
   'pix',
   'detached',
-  3990,
+  4990,
   'BRL',
   null,
   1,
+  0,
   'expired',
   '2020-01-01T00:00:00Z',
   '2021-01-01T00:00:00Z'
@@ -323,15 +327,15 @@ select is(
 reset role;
 
 insert into public.billing_contracts (
-  id, user_id, price_id, external_reference, billing_mode,
+  id, user_id, price_id, external_reference, catalog_code, billing_mode,
   payment_method, charge_type, amount_cents, currency, installment_limit,
-  access_months, status, access_starts_at, access_ends_at
+  access_months, bonus_months, status, access_starts_at, access_ends_at
 ) values (
   '81000000-0000-4000-8000-000000000011',
   '81000000-0000-4000-8000-000000000001',
-  '20000000-0000-4000-8000-000000000001',
-  'current-report-access', 'monthly', 'pix', 'detached', 3990, 'BRL',
-  null, 1, 'active',
+  '20000000-0000-4000-8000-000000000003',
+  'current-report-access', 'standard', 'monthly', 'pix', 'detached', 4990, 'BRL',
+  null, 1, 0, 'active',
   statement_timestamp() - interval '1 day',
   statement_timestamp() + interval '1 month'
 );

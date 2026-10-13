@@ -4,7 +4,8 @@ import { Logo } from "@/components/ui/logo";
 import {
   AccountUnavailableError,
   AuthRequiredError,
-  requireUser,
+  LegalAcceptanceRequiredError,
+  requireClientAccess,
 } from "@/modules/auth/services/require-user";
 
 export const dynamic = "force-dynamic";
@@ -15,11 +16,14 @@ export default async function OnboardingLayout({
   children: React.ReactNode;
 }) {
   try {
-    await requireUser();
+    await requireClientAccess();
   } catch (error) {
     if (error instanceof AuthRequiredError) redirect("/login");
     if (error instanceof AccountUnavailableError) {
       redirect("/account-unavailable");
+    }
+    if (error instanceof LegalAcceptanceRequiredError) {
+      redirect("/accept-terms");
     }
     throw error;
   }

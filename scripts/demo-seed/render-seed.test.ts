@@ -105,4 +105,46 @@ describe("renderDemoSeed", () => {
     expect(sql).not.toContain("'annual'");
     expect(sql).not.toContain("47880");
   });
+
+  it("renders immutable standard and launch contract snapshots", () => {
+    expect(sql).toContain("catalog_code");
+    expect(sql).toContain("bonus_months");
+    expect(sql).toContain("renewal_adjustment_status");
+    expect(sql).toContain("'standard'::text");
+    expect(sql).toContain("'launch'::text");
+    expect(sql).toContain("4990");
+    expect(sql).toContain("23940");
+
+    expect(
+      catalog.contracts.filter(
+        (contract) => contract.catalogCode === "standard",
+      ).length,
+    ).toBeGreaterThan(
+      catalog.contracts.filter((contract) => contract.catalogCode === "launch")
+        .length,
+    );
+    expect(catalog.contracts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          catalogCode: "launch",
+          billingMode: "semiannual",
+          accessMonths: 12,
+          bonusMonths: 6,
+        }),
+        expect.objectContaining({
+          catalogCode: "launch",
+          billingMode: "monthly",
+          accessMonths: 2,
+          bonusMonths: 1,
+          renewalAdjustmentStatus: "completed",
+        }),
+        expect.objectContaining({
+          catalogCode: "launch",
+          billingMode: "monthly",
+          renewalAdjustmentStatus: "pending_reconciliation",
+          renewalAdjustmentLastErrorCode: "provider_ambiguous",
+        }),
+      ]),
+    );
+  });
 });

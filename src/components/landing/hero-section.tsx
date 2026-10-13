@@ -2,7 +2,6 @@ import Image from "next/image";
 
 import {
   ArrowRightIcon,
-  ChartBarIcon,
   ChatCircleTextIcon,
   CreditCardIcon,
   TableIcon,
@@ -10,6 +9,7 @@ import {
 } from "@phosphor-icons/react";
 
 import { GuaranteeNote } from "@/components/landing/guarantee-note";
+import { type LandingOfferPresentation } from "@/components/landing/landing-offer";
 import heroImage from "@/public/lp/hero-image.png";
 
 const trustItems = [
@@ -30,18 +30,13 @@ const trustItems = [
   },
 ] as const;
 
-function HeroSection({ monthlyPriceLabel }: { monthlyPriceLabel: string }) {
+function HeroSection({ offer }: { offer: LandingOfferPresentation | null }) {
   return (
     <section id="top" className="hero-section" aria-labelledby="hero-title">
       <div className="hero-ambient" aria-hidden="true" />
 
       <div className="hero-layout">
         <div className="hero-copy">
-          <p className="hero-kicker hero-copy-reveal">
-            <ChartBarIcon aria-hidden="true" size={16} weight="fill" />
-            Diagnóstico de preço e rentabilidade
-          </p>
-
           <h1
             id="hero-title"
             className="hero-copy-reveal"
@@ -65,8 +60,13 @@ function HeroSection({ monthlyPriceLabel }: { monthlyPriceLabel: string }) {
           </p>
 
           <div className="hero-actions hero-copy-reveal">
-            <a className="button button-primary" href="/register">
-              Assinar agora por {monthlyPriceLabel}/mês
+            <a
+              className="button button-primary"
+              href={offer ? "/register" : "#planos"}
+            >
+              {offer
+                ? `Assinar agora por ${offer.monthlyPriceLabel}/mês`
+                : "Conhecer os planos"}
               <ArrowRightIcon aria-hidden="true" size={18} weight="bold" />
             </a>
 

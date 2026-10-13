@@ -5,12 +5,14 @@ vi.mock("server-only", () => ({}));
 const {
   requireUser,
   readBillingEnvironment,
+  readLaunchOfferEnvironment,
   createAdminClient,
   createAsaasGateway,
   createHostedCheckout,
 } = vi.hoisted(() => ({
   requireUser: vi.fn(),
   readBillingEnvironment: vi.fn(),
+  readLaunchOfferEnvironment: vi.fn(),
   createAdminClient: vi.fn(),
   createAsaasGateway: vi.fn(),
   createHostedCheckout: vi.fn(),
@@ -18,9 +20,14 @@ const {
 
 vi.mock("@/modules/auth/services/require-user", () => ({
   AuthRequiredError: class AuthRequiredError extends Error {},
+  LegalAcceptanceRequiredError: class LegalAcceptanceRequiredError extends Error {},
   requireUser,
+  requireClientAccess: requireUser,
 }));
 vi.mock("@/config/billing-environment", () => ({ readBillingEnvironment }));
+vi.mock("@/config/launch-offer-environment", () => ({
+  readLaunchOfferEnvironment,
+}));
 vi.mock("@/infrastructure/database/supabase/clients/admin.client", () => ({
   createAdminClient,
 }));
@@ -31,7 +38,10 @@ vi.mock("@/modules/billing/services/create-hosted-checkout.service", () => ({
   createHostedCheckout,
 }));
 
-import { AuthRequiredError } from "@/modules/auth/services/require-user";
+import {
+  AuthRequiredError,
+  LegalAcceptanceRequiredError,
+} from "@/modules/auth/services/require-user";
 
 import { POST } from "./route";
 
@@ -49,6 +59,12 @@ describe("POST /api/billing/checkout", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireUser.mockResolvedValue({ userId: "user-123", supabase: {} });
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "active",
+      catalogCode: "launch",
+      startsAt: "2026-10-20T12:00:00.000Z",
+      endsAt: "2026-11-04T12:00:00.000Z",
+    });
     readBillingEnvironment.mockReturnValue({
       appUrl: new URL("https://app.lucrivo.test"),
       asaasApiUrl: new URL("https://api-sandbox.asaas.com"),
@@ -85,20 +101,33 @@ describe("POST /api/billing/checkout", () => {
     expect(response.status).toBe(401);
     expect(json).toEqual({ error: "unauthorized" });
     expect(readBillingEnvironment).not.toHaveBeenCalled();
+    expect(readLaunchOfferEnvironment).not.toHaveBeenCalled();
     expect(createAdminClient).not.toHaveBeenCalled();
     expect(createAsaasGateway).not.toHaveBeenCalled();
+  });
+
+  it("blocks checkout before legal acceptance", async () => {
+    requireUser.mockRejectedValue(new LegalAcceptanceRequiredError());
+
+    const { response, json } = await post();
+
+    expect(response.status).toBe(403);
+    expect(json).toEqual({ error: "legal_acceptance_required" });
+    expect(createHostedCheckout).not.toHaveBeenCalled();
   });
 
   it.each([
     { priceId: "not-a-uuid", paymentMethod: "credit_card" },
     { priceId, paymentMethod: "boleto" },
     { priceId, paymentMethod: "pix", amountCents: 1 },
+    { priceId, paymentMethod: "pix", catalogCode: "standard" },
   ])("returns 400 for an invalid or excessive request", async (body) => {
     const { response, json } = await post(body);
 
     expect(response.status).toBe(400);
     expect(json).toEqual({ error: "invalid_request" });
     expect(readBillingEnvironment).not.toHaveBeenCalled();
+    expect(readLaunchOfferEnvironment).not.toHaveBeenCalled();
     expect(createAdminClient).not.toHaveBeenCalled();
   });
 
@@ -141,7 +170,29 @@ describe("POST /api/billing/checkout", () => {
       admin: { admin: true },
       asaas: { gateway: true },
       appUrl: new URL("https://app.lucrivo.test"),
+      catalogCode: "launch",
     });
+  });
+
+  it("fails closed and logs only the event name for invalid launch configuration", async () => {
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "invalid",
+      catalogCode: null,
+      startsAt: null,
+      endsAt: null,
+    });
+
+    const { response, json } = await post();
+
+    expect(response.status).toBe(503);
+    expect(json).toEqual({ error: "service_unavailable" });
+    expect(createHostedCheckout).not.toHaveBeenCalled();
+    expect(readBillingEnvironment).not.toHaveBeenCalled();
+    expect(errorLog).toHaveBeenCalledWith(
+      JSON.stringify({ event: "launch_offer_configuration_invalid" }),
+    );
+    expect(errorLog.mock.calls[0][0]).not.toContain("LAUNCH_OFFER_START_AT");
   });
 
   it("returns 200 when reusing a valid Checkout", async () => {

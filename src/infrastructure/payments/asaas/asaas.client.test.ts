@@ -152,6 +152,86 @@ describe("AsaasGateway", () => {
     });
   });
 
+  it("updates subscription renewal cadence and safely encodes its ID", async () => {
+    fetchMock.mockResolvedValue(
+      Response.json({
+        id: "sub/123",
+        cycle: "MONTHLY",
+        nextDueDate: "2026-12-20",
+        ignored: "field",
+      }),
+    );
+
+    await expect(
+      gateway.updateSubscriptionRenewal("sub/123", {
+        cycle: "MONTHLY",
+        nextDueDate: "2026-12-20",
+      }),
+    ).resolves.toEqual({
+      id: "sub/123",
+      cycle: "MONTHLY",
+      nextDueDate: "2026-12-20",
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api-sandbox.asaas.com/v3/subscriptions/sub%2F123",
+      {
+        method: "PUT",
+        headers: {
+          access_token: "asaas-api-key",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cycle: "MONTHLY",
+          nextDueDate: "2026-12-20",
+          updatePendingPayments: true,
+        }),
+      },
+    );
+  });
+
+  it.each([
+    [{ id: "other", cycle: "MONTHLY", nextDueDate: "2026-12-20" }],
+    [{ id: "sub/123", cycle: "BIMONTHLY", nextDueDate: "2026-12-20" }],
+    [{ id: "sub/123", cycle: "MONTHLY", nextDueDate: "2027-01-20" }],
+    [{ id: "sub/123", cycle: "MONTHLY", nextDueDate: "20/12/2026" }],
+  ])("rejects an inconsistent renewal response %#", async (response) => {
+    fetchMock.mockResolvedValue(Response.json(response));
+
+    await expect(
+      gateway.updateSubscriptionRenewal("sub/123", {
+        cycle: "MONTHLY",
+        nextDueDate: "2026-12-20",
+      }),
+    ).rejects.toMatchObject({ kind: "ambiguous", status: 200 });
+  });
+
+  it("rejects malformed renewal JSON as ambiguous", async () => {
+    fetchMock.mockResolvedValue(new Response("not-json"));
+
+    await expect(
+      gateway.updateSubscriptionRenewal("sub/123", {
+        cycle: "MONTHLY",
+        nextDueDate: "2026-12-20",
+      }),
+    ).rejects.toMatchObject({ kind: "ambiguous", status: 200 });
+  });
+
+  it.each([
+    [400, "rejected"],
+    [408, "ambiguous"],
+    [429, "ambiguous"],
+    [500, "ambiguous"],
+  ] as const)("classifies renewal HTTP %s as %s", async (status, kind) => {
+    fetchMock.mockResolvedValue(new Response("{}", { status }));
+
+    await expect(
+      gateway.updateSubscriptionRenewal("sub/123", {
+        cycle: "MONTHLY",
+        nextDueDate: "2026-12-20",
+      }),
+    ).rejects.toMatchObject({ kind, status });
+  });
+
   it("deletes a subscription and safely encodes its ID", async () => {
     fetchMock.mockResolvedValue(
       Response.json({ id: "sub/123", deleted: true, ignored: "field" }),

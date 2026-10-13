@@ -3,7 +3,10 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/infrastructure/database/supabase/database.types";
+import type { AsaasGateway } from "@/infrastructure/payments/asaas/asaas.client";
 import type { AsaasWebhookEnvelope } from "@/infrastructure/payments/asaas/webhook.schema";
+
+import { adjustLaunchRenewal } from "./adjust-launch-renewal.service";
 
 type ProcessAsaasWebhookResult =
   "processed" | "duplicate" | "ignored" | "unresolved" | "failed";
@@ -17,6 +20,7 @@ const reducerResults = new Set<ProcessAsaasWebhookResult>([
 
 async function processAsaasWebhook(input: {
   admin: SupabaseClient<Database>;
+  asaas: AsaasGateway;
   event: AsaasWebhookEnvelope;
 }): Promise<ProcessAsaasWebhookResult> {
   try {
@@ -30,7 +34,18 @@ async function processAsaasWebhook(input: {
       return "failed";
     }
 
-    return data as Exclude<ProcessAsaasWebhookResult, "failed">;
+    const reducerResult = data as Exclude<ProcessAsaasWebhookResult, "failed">;
+    if (reducerResult !== "processed" && reducerResult !== "duplicate") {
+      return reducerResult;
+    }
+
+    const adjustment = await adjustLaunchRenewal({
+      admin: input.admin,
+      asaas: input.asaas,
+      eventId: input.event.id,
+    });
+
+    return adjustment === "retry_later" ? "failed" : reducerResult;
   } catch {
     return "failed";
   }

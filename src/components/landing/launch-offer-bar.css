@@ -1,0 +1,123 @@
+.landing-experience .launch-offer-bar {
+  position: fixed;
+  z-index: 60;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  height: var(--launch-bar-offset);
+  box-sizing: border-box;
+  align-items: center;
+  padding: env(safe-area-inset-top, 0px) max(20px, env(safe-area-inset-right, 0px))
+    0 max(20px, env(safe-area-inset-left, 0px));
+  background: oklch(0.48 0.22 259);
+  color: oklch(0.99 0.005 255);
+  box-shadow: 0 16px 32px -22px oklch(0.32 0.16 259 / 0.85);
+}
+
+.landing-experience .launch-offer-bar-inner {
+  display: flex;
+  width: min(100%, 1200px);
+  margin: 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.landing-experience .launch-offer-bar-copy {
+  display: flex;
+  min-width: 0;
+  margin: 0;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.landing-experience .launch-offer-bar-copy strong {
+  flex: 0 0 auto;
+  font-weight: 740;
+  letter-spacing: -0.02em;
+}
+
+.landing-experience .launch-offer-bar-copy span {
+  min-width: 0;
+  color: oklch(0.96 0.02 255 / 0.92);
+}
+
+.landing-experience .launch-offer-bar .offer-countdown {
+  flex: 0 0 auto;
+}
+
+.landing-experience .launch-offer-bar .offer-countdown-digits {
+  gap: 12px;
+}
+
+.landing-experience .launch-offer-bar .offer-countdown-digits > div {
+  flex: 0 0 auto;
+  min-width: 2rem;
+}
+
+.landing-experience .launch-offer-bar .offer-countdown-digits dd {
+  color: oklch(0.99 0.005 255);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.landing-experience .launch-offer-bar .offer-countdown-digits dt {
+  color: oklch(0.95 0.02 255 / 0.82);
+  font-size: 0.58rem;
+}
+
+.landing-experience .launch-offer-bar .offer-countdown-ended {
+  color: oklch(0.99 0.005 255);
+  font-size: 0.78rem;
+}
+
+.landing-experience .launch-offer-bar-link {
+  display: inline-flex;
+  min-height: 32px;
+  flex: 0 0 auto;
+  align-items: center;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: oklch(0.99 0.005 255);
+  color: oklch(0.32 0.14 259);
+  font-size: 0.78rem;
+  font-weight: 720;
+  transition: background 180ms ease;
+}
+
+.landing-experience .launch-offer-bar-link:hover {
+  background: oklch(0.94 0.03 255);
+}
+
+.landing-experience .launch-offer-bar-link:focus-visible {
+  outline: 3px solid oklch(0.9 0.04 255);
+  outline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+  .landing-experience .launch-offer-bar-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px 16px;
+  }
+
+  .landing-experience .launch-offer-bar-copy {
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+  }
+
+  .landing-experience .launch-offer-bar .offer-countdown-digits {
+    gap: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-experience .launch-offer-bar-link {
+    transition: none;
+  }
+}

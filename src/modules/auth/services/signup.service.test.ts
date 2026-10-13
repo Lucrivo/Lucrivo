@@ -16,7 +16,10 @@ describe("signup", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     createClient.mockResolvedValue({ auth: { signUp } });
-    signUp.mockResolvedValue({ data: { session: null }, error: null });
+    signUp.mockResolvedValue({
+      data: { session: null, user: { id: "user-3", identities: [] } },
+      error: null,
+    });
   });
 
   it("forwards the CAPTCHA token in Supabase options", async () => {
@@ -30,5 +33,47 @@ describe("signup", () => {
       password: "senha-segura1",
       options: { captchaToken: "captcha-token" },
     });
+  });
+
+  it("returns the session user id when signup authenticates immediately", async () => {
+    signUp.mockResolvedValue({
+      data: {
+        session: { access_token: "token" },
+        user: { id: "user-1", identities: [{ id: "identity-1" }] },
+      },
+      error: null,
+    });
+
+    await expect(
+      signup({ email: "usuario@lucrivo.com", password: "senha-segura1" }),
+    ).resolves.toEqual({ status: "authenticated", userId: "user-1" });
+  });
+
+  it("returns the user id when confirmation still has an identity", async () => {
+    signUp.mockResolvedValue({
+      data: {
+        session: null,
+        user: { id: "user-2", identities: [{ id: "identity-2" }] },
+      },
+      error: null,
+    });
+
+    await expect(
+      signup({ email: "usuario@lucrivo.com", password: "senha-segura1" }),
+    ).resolves.toEqual({
+      status: "confirmation_required",
+      userId: "user-2",
+    });
+  });
+
+  it("returns no user id when confirmation has no identity", async () => {
+    signUp.mockResolvedValue({
+      data: { session: null, user: { id: "user-3", identities: [] } },
+      error: null,
+    });
+
+    await expect(
+      signup({ email: "usuario@lucrivo.com", password: "senha-segura1" }),
+    ).resolves.toEqual({ status: "confirmation_required", userId: null });
   });
 });

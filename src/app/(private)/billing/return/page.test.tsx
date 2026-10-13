@@ -3,13 +3,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { saveDetailedDiagnosisIntent } from "@/modules/detailed-diagnosis/services/detailed-diagnosis-intent";
 
-const { getBillingOverview, listActivePrices, requireUser } = vi.hoisted(
-  () => ({
-    getBillingOverview: vi.fn(),
-    listActivePrices: vi.fn(),
-    requireUser: vi.fn(),
-  }),
-);
+const {
+  getBillingOverview,
+  listActivePrices,
+  readLaunchOfferEnvironment,
+  requireUser,
+} = vi.hoisted(() => ({
+  getBillingOverview: vi.fn(),
+  listActivePrices: vi.fn(),
+  readLaunchOfferEnvironment: vi.fn(),
+  requireUser: vi.fn(),
+}));
 
 vi.mock("@/modules/auth/services/require-user", () => ({ requireUser }));
 vi.mock("@/modules/billing/services/get-billing-overview.service", () => ({
@@ -18,6 +22,9 @@ vi.mock("@/modules/billing/services/get-billing-overview.service", () => ({
 vi.mock("@/modules/billing/services/list-active-prices.service", () => ({
   listActivePrices,
 }));
+vi.mock("@/config/launch-offer-environment", () => ({
+  readLaunchOfferEnvironment,
+}));
 
 import BillingReturnPage from "./page";
 
@@ -25,20 +32,24 @@ const prices = [
   {
     id: "11111111-1111-4111-8111-111111111111",
     productCode: "quick_diagnosis_pro" as const,
+    catalogCode: "launch" as const,
     billingMode: "monthly" as const,
     amountCents: 3990,
     currency: "BRL" as const,
     installmentLimit: null,
-    accessMonths: 1,
+    accessMonths: 2,
+    bonusMonths: 1,
   },
   {
     id: "22222222-2222-4222-8222-222222222222",
     productCode: "quick_diagnosis_pro" as const,
+    catalogCode: "launch" as const,
     billingMode: "semiannual" as const,
     amountCents: 17940,
     currency: "BRL" as const,
     installmentLimit: 6,
-    accessMonths: 6,
+    accessMonths: 12,
+    bonusMonths: 6,
   },
 ];
 
@@ -49,6 +60,12 @@ describe("BillingReturnPage", () => {
     vi.clearAllMocks();
     window.sessionStorage.clear();
     requireUser.mockResolvedValue({ userId: "trusted-user", supabase });
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "active",
+      catalogCode: "launch",
+      startsAt: "2026-10-20T12:00:00.000Z",
+      endsAt: "2026-11-04T12:00:00.000Z",
+    });
     listActivePrices.mockResolvedValue({ status: "success", prices });
     getBillingOverview.mockResolvedValue({
       status: "success",
@@ -210,5 +227,29 @@ describe("BillingReturnPage", () => {
     expect(
       screen.getByRole("article", { name: "Plano Semestral" }),
     ).toBeInTheDocument();
+    expect(listActivePrices).toHaveBeenCalledWith({
+      supabase,
+      catalogCode: "launch",
+    });
+  });
+
+  it("keeps a canceled return renderable without paid offers for invalid configuration", async () => {
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "invalid",
+      catalogCode: null,
+      startsAt: null,
+      endsAt: null,
+    });
+
+    await renderOutcome("canceled");
+
+    expect(
+      screen.getByRole("heading", { name: "Checkout cancelado" }),
+    ).toBeVisible();
+    expect(listActivePrices).not.toHaveBeenCalled();
+    expect(errorLog).toHaveBeenCalledWith(
+      JSON.stringify({ event: "launch_offer_configuration_invalid" }),
+    );
   });
 });

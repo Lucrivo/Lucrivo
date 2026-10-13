@@ -7,6 +7,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { readLaunchOfferEnvironment } from "@/config/launch-offer-environment";
 import { requireUser } from "@/modules/auth/services/require-user";
 import { BillingPlans } from "@/modules/billing/components/billing-plans";
 import { CancelSubscriptionButton } from "@/modules/billing/components/cancel-subscription-button";
@@ -132,9 +133,22 @@ function currentPlan(overview: BillingOverview) {
 
 export default async function BillingPage() {
   const { supabase, userId } = await requireUser();
+  const launchOffer = readLaunchOfferEnvironment();
+
+  if (launchOffer.phase === "invalid") {
+    console.error(
+      JSON.stringify({ event: "launch_offer_configuration_invalid" }),
+    );
+  }
+
   const [overviewResult, pricesResult] = await Promise.all([
     getBillingOverview({ supabase, userId }),
-    listActivePrices({ supabase }),
+    launchOffer.catalogCode === null
+      ? Promise.resolve(null)
+      : listActivePrices({
+          supabase,
+          catalogCode: launchOffer.catalogCode,
+        }),
   ]);
 
   if (overviewResult.status === "read_failed") {
@@ -142,9 +156,14 @@ export default async function BillingPage() {
   }
 
   const { overview } = overviewResult;
-  const prices = pricesResult.status === "success" ? pricesResult.prices : [];
-  const hasBlockingRefund =
-    overview.refund !== null && overview.refund.status !== "rejected";
+  const prices = pricesResult?.status === "success" ? pricesResult.prices : [];
+  const refundStatus = overview.refund?.status ?? null;
+  const refundBlocksPurchase =
+    refundStatus === "processing" ||
+    refundStatus === "submitted" ||
+    refundStatus === "pending_reconciliation";
+  const canPurchaseAfterRefund =
+    refundStatus === "confirmed" && overview.tier !== "paid";
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8">
@@ -169,7 +188,7 @@ export default async function BillingPage() {
         </div>
       </header>
 
-      {hasBlockingRefund ? (
+      {refundBlocksPurchase ? (
         <RefundStatusCard status={overview.refund!.status} />
       ) : overview.refund?.status === "rejected" ? (
         <div className="grid gap-6">
@@ -178,66 +197,78 @@ export default async function BillingPage() {
         </div>
       ) : overview.tier === "paid" ? (
         currentPlan(overview)
-      ) : overview.tier === "courtesy" ? (
+      ) : (
         <div className="grid gap-8">
-          <Card
-            role="region"
-            aria-label="Acesso cortesia"
-            className="border-primary/20 bg-card overflow-hidden shadow-sm"
-          >
-            <CardHeader className="flex flex-row items-start gap-4">
-              <span className="bg-primary/10 text-primary grid size-11 shrink-0 place-items-center rounded-xl">
-                <GiftIcon aria-hidden="true" className="size-5" />
-              </span>
+          {canPurchaseAfterRefund ? (
+            <RefundStatusCard status="confirmed" />
+          ) : null}
+          {overview.tier === "courtesy" ? (
+            <div className="grid gap-8">
+              <Card
+                role="region"
+                aria-label="Acesso cortesia"
+                className="border-primary/20 bg-card overflow-hidden shadow-sm"
+              >
+                <CardHeader className="flex flex-row items-start gap-4">
+                  <span className="bg-primary/10 text-primary grid size-11 shrink-0 place-items-center rounded-xl">
+                    <GiftIcon aria-hidden="true" className="size-5" />
+                  </span>
+                  <div className="grid gap-1">
+                    <h2 className="text-xl font-semibold tracking-tight">
+                      Acesso cortesia ativo
+                    </h2>
+                    <p className="text-muted-foreground text-sm leading-6">
+                      Você pode criar diagnósticos até{" "}
+                      <strong className="text-foreground font-semibold">
+                        {formatDate(overview.courtesyExpiresAt)}
+                      </strong>
+                      . Este benefício não é uma assinatura e não gera cobrança.
+                    </p>
+                  </div>
+                </CardHeader>
+              </Card>
+              <section className="grid gap-5" aria-labelledby="available-plans">
+                <div className="grid gap-1">
+                  <h2
+                    id="available-plans"
+                    className="text-xl font-semibold tracking-tight"
+                  >
+                    Opções de assinatura
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Se quiser manter o acesso após a cortesia, escolha uma
+                    opção.
+                  </p>
+                </div>
+                <BillingPlans
+                  prices={prices}
+                  overview={overview}
+                  context="account"
+                />
+              </section>
+            </div>
+          ) : (
+            <section className="grid gap-5" aria-labelledby="available-plans">
               <div className="grid gap-1">
-                <h2 className="text-xl font-semibold tracking-tight">
-                  Acesso cortesia ativo
+                <h2
+                  id="available-plans"
+                  className="text-xl font-semibold tracking-tight"
+                >
+                  Você está no plano gratuito
                 </h2>
-                <p className="text-muted-foreground text-sm leading-6">
-                  Você pode criar diagnósticos até{" "}
-                  <strong className="text-foreground font-semibold">
-                    {formatDate(overview.courtesyExpiresAt)}
-                  </strong>
-                  . Este benefício não é uma assinatura e não gera cobrança.
+                <p className="text-muted-foreground">
+                  Escolha o período e pague no cartão ou no Pix para liberar
+                  diagnósticos ilimitados.
                 </p>
               </div>
-            </CardHeader>
-          </Card>
-          <section className="grid gap-5" aria-labelledby="available-plans">
-            <div className="grid gap-1">
-              <h2
-                id="available-plans"
-                className="text-xl font-semibold tracking-tight"
-              >
-                Opções de assinatura
-              </h2>
-              <p className="text-muted-foreground">
-                Se quiser manter o acesso após a cortesia, escolha uma opção.
-              </p>
-            </div>
-            <BillingPlans
-              prices={prices}
-              overview={overview}
-              context="account"
-            />
-          </section>
+              <BillingPlans
+                prices={prices}
+                overview={overview}
+                context="account"
+              />
+            </section>
+          )}
         </div>
-      ) : (
-        <section className="grid gap-5" aria-labelledby="available-plans">
-          <div className="grid gap-1">
-            <h2
-              id="available-plans"
-              className="text-xl font-semibold tracking-tight"
-            >
-              Você está no plano gratuito
-            </h2>
-            <p className="text-muted-foreground">
-              Escolha o período e pague no cartão ou no Pix para liberar
-              diagnósticos ilimitados.
-            </p>
-          </div>
-          <BillingPlans prices={prices} overview={overview} context="account" />
-        </section>
       )}
     </main>
   );

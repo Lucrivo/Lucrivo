@@ -9,6 +9,7 @@ import {
 } from "@/infrastructure/payments/asaas/asaas.client";
 
 import { buildCheckoutRequest } from "../domain/build-checkout-request";
+import type { BillingCatalogCode } from "../domain/launch-offer";
 import type { ActiveBillingPrice, BillingPaymentMethod } from "../types";
 import { listActivePrices } from "./list-active-prices.service";
 
@@ -37,6 +38,7 @@ type CreateHostedCheckoutInput = {
   userId: string;
   priceId: string;
   paymentMethod: BillingPaymentMethod;
+  catalogCode: BillingCatalogCode;
   admin: SupabaseClient<Database>;
   asaas: AsaasGateway;
   appUrl: URL;
@@ -209,6 +211,7 @@ async function createHostedCheckout({
   userId,
   priceId,
   paymentMethod,
+  catalogCode,
   admin,
   asaas,
   appUrl,
@@ -222,14 +225,6 @@ async function createHostedCheckout({
   if (!Number.isFinite(instant)) return { status: "pending_reconciliation" };
 
   try {
-    const catalog = await listActivePrices({ supabase: admin });
-    if (catalog.status !== "success") {
-      return { status: "pending_reconciliation" };
-    }
-
-    const price = catalog.prices.find((candidate) => candidate.id === priceId);
-    if (!price) return { status: "not_found" };
-
     const contracts = await readContracts(admin, userId);
     if (!contracts) return { status: "pending_reconciliation" };
 
@@ -256,18 +251,39 @@ async function createHostedCheckout({
         pending.payment_method === paymentMethod;
 
       if (
+        isMatchingCheckout &&
         expiresAt !== null &&
         expiresAt > instant &&
         pending.asaas_checkout_url !== null &&
         hasSafeCheckoutUrl(pending.asaas_checkout_url)
       ) {
-        if (isMatchingCheckout) {
-          return {
-            status: "reused",
-            checkoutUrl: pending.asaas_checkout_url,
-          };
-        }
+        return {
+          status: "reused",
+          checkoutUrl: pending.asaas_checkout_url,
+        };
+      }
+    }
 
+    const catalog = await listActivePrices({
+      supabase: admin,
+      catalogCode,
+    });
+    if (catalog.status !== "success") {
+      return { status: "pending_reconciliation" };
+    }
+
+    const price = catalog.prices.find((candidate) => candidate.id === priceId);
+    if (!price) return { status: "not_found" };
+
+    if (pending) {
+      const expiresAt = timestamp(pending.checkout_expires_at);
+
+      if (
+        expiresAt !== null &&
+        expiresAt > instant &&
+        pending.asaas_checkout_url !== null &&
+        hasSafeCheckoutUrl(pending.asaas_checkout_url)
+      ) {
         if (
           !(await cancelPendingCheckout(admin, asaas, userId, pending, now))
         ) {
@@ -303,6 +319,10 @@ async function createHostedCheckout({
     if (customerError) return { status: "pending_reconciliation" };
 
     const newContractId = globalThis.crypto.randomUUID();
+    const needsLaunchRenewalAdjustment =
+      price.catalogCode === "launch" &&
+      price.billingMode === "monthly" &&
+      paymentMethod === "credit_card";
     const { error: insertError } = await admin
       .from("billing_contracts")
       .insert({
@@ -310,6 +330,7 @@ async function createHostedCheckout({
         user_id: userId,
         price_id: price.id,
         external_reference: newContractId,
+        catalog_code: price.catalogCode,
         billing_mode: price.billingMode,
         payment_method: paymentMethod,
         charge_type: chargeType(price, paymentMethod),
@@ -317,6 +338,10 @@ async function createHostedCheckout({
         currency: price.currency,
         installment_limit: price.installmentLimit,
         access_months: price.accessMonths,
+        bonus_months: price.bonusMonths,
+        renewal_adjustment_status: needsLaunchRenewalAdjustment
+          ? "pending"
+          : "not_required",
         status: "pending",
       });
 

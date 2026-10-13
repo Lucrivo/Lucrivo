@@ -9,6 +9,10 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { logout } from "@/modules/auth/actions/logout.action";
+import {
+  LaunchOfferStrip,
+  type LaunchOfferStripView,
+} from "@/modules/billing/components/launch-offer-strip";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -17,6 +21,7 @@ type AppShellProps = {
   isAdminUser: boolean;
   contextTitle: string;
   contextDescription: string;
+  launchOfferStrip?: LaunchOfferStripView | null;
 };
 
 function AppShell({
@@ -26,6 +31,7 @@ function AppShell({
   isAdminUser,
   contextTitle,
   contextDescription,
+  launchOfferStrip = null,
 }: AppShellProps) {
   return (
     <SidebarProvider
@@ -37,7 +43,7 @@ function AppShell({
       }
     >
       <AppSidebar variant={sidebarVariant} isAdminUser={isAdminUser} />
-      <SidebarInset className="min-w-0">
+      <SidebarInset className="@container min-w-0">
         <header className="bg-background/80 sticky top-0 z-20 flex h-16 shrink-0 items-center gap-3 border-b px-4 backdrop-blur-xl md:px-6">
           <SidebarTrigger
             aria-label="Alternar menu lateral"
@@ -54,6 +60,7 @@ function AppShell({
           </div>
           <AccountMenu email={email} logoutAction={logout} />
         </header>
+        <LaunchOfferStrip offer={launchOfferStrip} />
         <div className="@container/page flex flex-1 flex-col p-4 sm:p-6 lg:p-8">
           {children}
         </div>

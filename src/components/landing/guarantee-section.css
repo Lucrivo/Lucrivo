@@ -1,7 +1,7 @@
 .landing-experience .guarantee-section {
   position: relative;
   overflow: hidden;
-  scroll-margin-top: 104px;
+  scroll-margin-top: var(--landing-anchor-offset, 104px);
   background: linear-gradient(
     135deg,
     oklch(0.5 0.24 264),
@@ -201,10 +201,6 @@
 }
 
 @media (max-width: 720px) {
-  .landing-experience .guarantee-section {
-    scroll-margin-top: 84px;
-  }
-
   .landing-experience .guarantee-seal {
     width: 180px;
   }

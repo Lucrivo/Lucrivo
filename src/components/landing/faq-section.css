@@ -1,5 +1,5 @@
 .landing-experience .faq-section {
-  scroll-margin-top: 104px;
+  scroll-margin-top: var(--landing-anchor-offset, 104px);
   background: var(--paper);
   color: var(--ink);
 }
@@ -310,10 +310,6 @@
 }
 
 @media (max-width: 720px) {
-  .landing-experience .faq-section {
-    scroll-margin-top: 84px;
-  }
-
   .landing-experience .faq-header h2 {
     font-size: clamp(2.5rem, 11.5vw, 3.6rem);
   }

@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import {
   AccountUnavailableError,
   AuthRequiredError,
-  requireUser,
+  LegalAcceptanceRequiredError,
+  requireClientAccess,
 } from "@/modules/auth/services/require-user";
 
 type DeleteReportResult =
@@ -25,7 +26,7 @@ async function deleteReport(input: {
   }
 
   try {
-    const { supabase } = await requireUser();
+    const { supabase } = await requireClientAccess();
     const { data, error } = await supabase.rpc(
       "soft_delete_owned_diagnosis_v1",
       {
@@ -45,7 +46,8 @@ async function deleteReport(input: {
   } catch (error) {
     if (
       error instanceof AuthRequiredError ||
-      error instanceof AccountUnavailableError
+      error instanceof AccountUnavailableError ||
+      error instanceof LegalAcceptanceRequiredError
     )
       return { status: "error" };
     return { status: "error" };

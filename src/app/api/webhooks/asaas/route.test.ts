@@ -2,16 +2,24 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-const { readBillingEnvironment, createAdminClient, processAsaasWebhook } =
-  vi.hoisted(() => ({
-    readBillingEnvironment: vi.fn(),
-    createAdminClient: vi.fn(),
-    processAsaasWebhook: vi.fn(),
-  }));
+const {
+  readBillingEnvironment,
+  createAdminClient,
+  createAsaasGateway,
+  processAsaasWebhook,
+} = vi.hoisted(() => ({
+  readBillingEnvironment: vi.fn(),
+  createAdminClient: vi.fn(),
+  createAsaasGateway: vi.fn(),
+  processAsaasWebhook: vi.fn(),
+}));
 
 vi.mock("@/config/billing-environment", () => ({ readBillingEnvironment }));
 vi.mock("@/infrastructure/database/supabase/clients/admin.client", () => ({
   createAdminClient,
+}));
+vi.mock("@/infrastructure/payments/asaas/asaas.client", () => ({
+  createAsaasGateway,
 }));
 vi.mock("@/modules/billing/services/process-asaas-webhook.service", () => ({
   processAsaasWebhook,
@@ -70,6 +78,7 @@ describe("POST /api/webhooks/asaas", () => {
       supabaseSecretKey: "supabase-secret-key",
     });
     createAdminClient.mockReturnValue({ admin: true });
+    createAsaasGateway.mockReturnValue({ gateway: true });
     processAsaasWebhook.mockResolvedValue("processed");
   });
 
@@ -96,6 +105,7 @@ describe("POST /api/webhooks/asaas", () => {
       expect(body).toEqual({ error: "unauthorized" });
       expect(json).not.toHaveBeenCalled();
       expect(createAdminClient).not.toHaveBeenCalled();
+      expect(createAsaasGateway).not.toHaveBeenCalled();
       expect(consoleError).not.toHaveBeenCalled();
       consoleError.mockRestore();
     },
@@ -109,6 +119,7 @@ describe("POST /api/webhooks/asaas", () => {
     expect(response.status).toBe(400);
     expect(body).toEqual({ error: "invalid_request" });
     expect(createAdminClient).not.toHaveBeenCalled();
+    expect(createAsaasGateway).not.toHaveBeenCalled();
   });
 
   it("returns 400 for an invalid event envelope", async () => {
@@ -119,6 +130,7 @@ describe("POST /api/webhooks/asaas", () => {
     expect(response.status).toBe(400);
     expect(body).toEqual({ error: "invalid_request" });
     expect(createAdminClient).not.toHaveBeenCalled();
+    expect(createAsaasGateway).not.toHaveBeenCalled();
   });
 
   it.each(["processed", "duplicate", "ignored"] as const)(
@@ -131,8 +143,13 @@ describe("POST /api/webhooks/asaas", () => {
       expect(response.status).toBe(200);
       expect(body).toEqual({ status: "received" });
       expect(createAdminClient).toHaveBeenCalledTimes(1);
+      expect(createAsaasGateway).toHaveBeenCalledWith({
+        apiUrl: new URL("https://api-sandbox.asaas.com"),
+        apiKey: "asaas-api-secret",
+      });
       expect(processAsaasWebhook).toHaveBeenCalledWith({
         admin: { admin: true },
+        asaas: { gateway: true },
         event: expect.objectContaining({
           id: "evt_123",
           event: "PAYMENT_CONFIRMED",

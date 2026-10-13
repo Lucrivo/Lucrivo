@@ -132,7 +132,7 @@ function AdminOnboardingFilters({
         onSubmit={submit}
         className={
           variant === "overview"
-            ? "grid min-w-0 gap-3 sm:grid-cols-[minmax(9rem,12rem)_minmax(9rem,12rem)_auto] sm:items-end"
+            ? "grid min-w-0 gap-3 sm:grid-cols-[minmax(9rem,12rem)_minmax(9rem,12rem)_minmax(0,1fr)] sm:items-end"
             : "grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(12rem,1.5fr)_minmax(10rem,1fr)_minmax(10rem,1fr)_minmax(10rem,0.8fr)_9.5rem_9.5rem_auto] xl:items-end"
         }
       >
@@ -230,7 +230,14 @@ function AdminOnboardingFilters({
             onChange={(event) => setTo(event.target.value)}
           />
         </label>
-        <Button type="submit">
+        <Button
+          type="submit"
+          className={
+            variant === "overview"
+              ? "w-full sm:w-fit sm:justify-self-end"
+              : undefined
+          }
+        >
           <SearchIcon aria-hidden="true" />
           Filtrar
         </Button>

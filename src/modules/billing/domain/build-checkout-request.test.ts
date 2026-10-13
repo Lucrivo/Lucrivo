@@ -9,26 +9,42 @@ import { buildCheckoutRequest } from "./build-checkout-request";
 
 const contractId = "10000000-0000-4000-8000-000000000001";
 const appUrl = new URL("https://app.lucrivo.test/base/path");
-const today = "2026-09-09";
+const today = "2026-10-20";
 
-const monthlyPrice: ActiveBillingPrice = {
+const launchMonthlyPrice: ActiveBillingPrice = {
   id: "20000000-0000-4000-8000-000000000001",
   productCode: "quick_diagnosis_pro",
+  catalogCode: "launch",
   billingMode: "monthly",
   amountCents: 3990,
   currency: "BRL",
   installmentLimit: null,
-  accessMonths: 1,
+  accessMonths: 2,
+  bonusMonths: 1,
 };
 
-const semiannualPrice: ActiveBillingPrice = {
+const launchSemiannualPrice: ActiveBillingPrice = {
   id: "20000000-0000-4000-8000-000000000002",
   productCode: "quick_diagnosis_pro",
+  catalogCode: "launch",
   billingMode: "semiannual",
   amountCents: 17940,
   currency: "BRL",
   installmentLimit: 6,
-  accessMonths: 6,
+  accessMonths: 12,
+  bonusMonths: 6,
+};
+
+const standardMonthlyPrice: ActiveBillingPrice = {
+  id: "20000000-0000-4000-8000-000000000003",
+  productCode: "quick_diagnosis_pro",
+  catalogCode: "standard",
+  billingMode: "monthly",
+  amountCents: 4990,
+  currency: "BRL",
+  installmentLimit: null,
+  accessMonths: 1,
+  bonusMonths: 0,
 };
 
 function build(
@@ -47,18 +63,40 @@ function build(
 }
 
 describe("buildCheckoutRequest", () => {
-  it("builds the monthly recurring credit-card payload", () => {
-    expect(build(monthlyPrice, "credit_card")).toMatchObject({
+  it("builds the promotional monthly card with an initial bimonthly cycle", () => {
+    expect(build(launchMonthlyPrice, "credit_card")).toMatchObject({
       billingTypes: ["CREDIT_CARD"],
       chargeTypes: ["RECURRENT"],
-      subscription: { cycle: "MONTHLY", nextDueDate: "2026-09-09" },
+      subscription: { cycle: "BIMONTHLY", nextDueDate: "2026-10-20" },
       externalReference: contractId,
-      items: [{ quantity: 1, value: 39.9 }],
+      items: [
+        {
+          quantity: 1,
+          value: 39.9,
+          description: "Acesso inicial ao Lucrivo por 2 meses",
+        },
+      ],
     });
   });
 
-  it("builds the semiannual installment credit-card payload", () => {
-    expect(build(semiannualPrice, "credit_card")).toMatchObject({
+  it("keeps the standard monthly card on a monthly cycle", () => {
+    expect(build(standardMonthlyPrice, "credit_card")).toMatchObject({
+      billingTypes: ["CREDIT_CARD"],
+      chargeTypes: ["RECURRENT"],
+      subscription: { cycle: "MONTHLY", nextDueDate: "2026-10-20" },
+      items: [
+        {
+          value: 49.9,
+          description: "Acesso inicial ao Lucrivo por 1 mês",
+        },
+      ],
+    });
+  });
+
+  it("builds the promotional semiannual card with only an installment maximum", () => {
+    const checkout = build(launchSemiannualPrice, "credit_card");
+
+    expect(checkout).toMatchObject({
       billingTypes: ["CREDIT_CARD"],
       chargeTypes: ["DETACHED", "INSTALLMENT"],
       installment: { maxInstallmentCount: 6 },
@@ -66,17 +104,18 @@ describe("buildCheckoutRequest", () => {
       items: [
         {
           name: "Diagnóstico Pro Semestral",
-          description: "Acesso ao Lucrivo por 6 meses",
+          description: "Acesso ao Lucrivo por 12 meses",
           quantity: 1,
           value: 179.4,
         },
       ],
     });
+    expect(JSON.stringify(checkout)).not.toContain('"installmentCount"');
   });
 
   it.each([
-    [monthlyPrice, 39.9],
-    [semiannualPrice, 179.4],
+    [launchMonthlyPrice, 39.9],
+    [launchSemiannualPrice, 179.4],
   ] as const)(
     "builds a detached Pix payload without recurring fields",
     (price, value) => {
@@ -94,10 +133,10 @@ describe("buildCheckoutRequest", () => {
   );
 
   it.each([
-    [monthlyPrice, "credit_card"],
-    [monthlyPrice, "pix"],
-    [semiannualPrice, "credit_card"],
-    [semiannualPrice, "pix"],
+    [launchMonthlyPrice, "credit_card"],
+    [launchMonthlyPrice, "pix"],
+    [launchSemiannualPrice, "credit_card"],
+    [launchSemiannualPrice, "pix"],
   ] as const)(
     "uses only controlled callbacks and a valid PNG item image",
     (price, paymentMethod) => {
@@ -128,9 +167,11 @@ describe("buildCheckoutRequest", () => {
   );
 
   it("includes a known customer and omits absent customer data", () => {
-    expect(build(monthlyPrice, "credit_card", "cus_123")).toMatchObject({
+    expect(build(launchMonthlyPrice, "credit_card", "cus_123")).toMatchObject({
       customer: "cus_123",
     });
-    expect(build(monthlyPrice, "credit_card")).not.toHaveProperty("customer");
+    expect(build(launchMonthlyPrice, "credit_card")).not.toHaveProperty(
+      "customer",
+    );
   });
 });

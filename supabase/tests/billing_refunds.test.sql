@@ -111,8 +111,9 @@ select
 from generate_series(1, 8) as value;
 
 insert into public.billing_contracts (
-  id, user_id, price_id, external_reference, billing_mode, payment_method,
-  charge_type, amount_cents, currency, installment_limit, access_months,
+  id, user_id, price_id, external_reference, catalog_code, billing_mode,
+  payment_method, charge_type, amount_cents, currency, installment_limit,
+  access_months, bonus_months, renewal_adjustment_status,
   asaas_subscription_id, asaas_installment_id, status,
   access_starts_at, access_ends_at
 )
@@ -124,6 +125,7 @@ select
     else '20000000-0000-4000-8000-000000000001'::uuid
   end,
   format('refund-contract-%s', value),
+  'launch',
   case when value in (6, 8) then 'semiannual' else 'monthly' end,
   case when value in (2, 5, 6, 8) then 'credit_card' else 'pix' end,
   case when value in (2, 5) then 'recurring'
@@ -132,7 +134,9 @@ select
   case when value in (6, 8) then 17940 else 3990 end,
   'BRL',
   case when value in (6, 8) then 6 else null end,
+  case when value in (6, 8) then 12 else 2 end,
   case when value in (6, 8) then 6 else 1 end,
+  case when value in (2, 5) then 'pending' else 'not_required' end,
   case value
     when 2 then 'sub_refund_2'
     when 5 then 'sub_refund_5'
@@ -154,13 +158,16 @@ select
   'a1000000-0000-4000-8000-000000000008'::uuid,
   '20000000-0000-4000-8000-000000000002'::uuid,
   'refund-contract-8',
+  'launch',
   'semiannual',
   'credit_card',
   'installment',
   17940,
   'BRL',
   6,
+  12,
   6,
+  'not_required',
   null,
   null,
   'active',
