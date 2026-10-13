@@ -417,30 +417,37 @@
   width: 100%;
   text-align: left;
   line-height: 1;
+  white-space: normal;
 }
 
 .fixedTermPrice small {
-  margin-top: 14px;
+  margin-top: 12px;
   color: var(--plans-muted);
-  font-size: 0.32em;
-  font-weight: 500;
-  line-height: 1.5;
+  font-size: 0.92rem;
+  font-weight: 550;
+  line-height: 1.4;
   letter-spacing: normal;
   white-space: normal;
 }
 
-.installmentCount {
-  display: block;
-  font-size: 0.3em;
-  font-weight: 600;
-  line-height: 1;
-  margin-bottom: 0.35rem;
-  letter-spacing: -0.5;
+.installmentValue {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  text-align: left;
 }
 
-.installmentValue {
-  display: block;
-  text-align: left;
+.installmentCount {
+  color: var(--plans-muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.2;
+  letter-spacing: normal;
+}
+
+.installmentAmount {
+  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 1080px) {

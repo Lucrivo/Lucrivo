@@ -1,5 +1,5 @@
 .landing-experience .how-section {
-  scroll-margin-top: 104px;
+  scroll-margin-top: var(--landing-anchor-offset, 104px);
   background: var(--ink-soft);
   color: oklch(0.955 0.012 255);
 }
@@ -101,10 +101,6 @@
 }
 
 @media (max-width: 720px) {
-  .landing-experience .how-section {
-    scroll-margin-top: 84px;
-  }
-
   .landing-experience .how-title h2 {
     font-size: clamp(2.6rem, 12vw, 4rem);
   }

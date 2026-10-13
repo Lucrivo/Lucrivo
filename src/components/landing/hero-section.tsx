@@ -9,11 +9,7 @@ import {
 } from "@phosphor-icons/react";
 
 import { GuaranteeNote } from "@/components/landing/guarantee-note";
-import {
-  type LandingOfferPresentation,
-  type LaunchOfferView,
-} from "@/components/landing/landing-offer";
-import { LaunchOfferCallout } from "@/components/landing/launch-offer-callout";
+import { type LandingOfferPresentation } from "@/components/landing/landing-offer";
 import heroImage from "@/public/lp/hero-image.png";
 
 const trustItems = [
@@ -34,13 +30,7 @@ const trustItems = [
   },
 ] as const;
 
-function HeroSection({
-  offer,
-  launchOffer,
-}: {
-  offer: LandingOfferPresentation | null;
-  launchOffer: LaunchOfferView | null;
-}) {
+function HeroSection({ offer }: { offer: LandingOfferPresentation | null }) {
   return (
     <section id="top" className="hero-section" aria-labelledby="hero-title">
       <div className="hero-ambient" aria-hidden="true" />
@@ -85,8 +75,6 @@ function HeroSection({
               Ver planos
             </a>
           </div>
-
-          {launchOffer ? <LaunchOfferCallout {...launchOffer} /> : null}
 
           <GuaranteeNote className="hero-guarantee hero-copy-reveal" />
 

@@ -274,11 +274,15 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
 
               <div className={styles.priceBlock}>
                 <p className={`${styles.planPrice} ${styles.fixedTermPrice}`}>
-                  <span>{formatBRL(semiannual.amountCents)} à vista</span>{" "}
-                  <small>
-                    ou em até {semiannualInstallmentLimit}x de{" "}
-                    {formatBRL(semiannualInstallmentAmountCents)}
-                  </small>
+                  <span className={styles.installmentValue}>
+                    <span className={styles.installmentCount}>
+                      em até {semiannualInstallmentLimit}x de{" "}
+                    </span>
+                    <span className={styles.installmentAmount}>
+                      {formatBRL(semiannualInstallmentAmountCents)}
+                    </span>
+                  </span>
+                  <small> ou {formatBRL(semiannual.amountCents)} à vista</small>
                 </p>
                 {isLaunch ? (
                   <>

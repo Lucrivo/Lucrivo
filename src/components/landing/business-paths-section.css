@@ -1,6 +1,7 @@
 .landing-experience .paths-section {
   position: relative;
   overflow: hidden;
+  scroll-margin-top: var(--landing-anchor-offset, 104px);
   background: var(--ink);
   color: oklch(0.955 0.012 255);
 }

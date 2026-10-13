@@ -133,9 +133,21 @@ describe("Home", () => {
     expect(view.getByText("Sem cartão para começar")).toBeInTheDocument();
     expect(view.getByText("Sem planilhas")).toBeInTheDocument();
     expect(view.getByText("Sem falar contabilês")).toBeInTheDocument();
-    expect(view.getByText("Oferta de lançamento")).toBeInTheDocument();
+    expect(view.queryByText("Oferta de lançamento")).not.toBeInTheDocument();
+    const offerBar = screen.getByRole("complementary", {
+      name: "Oferta de lançamento",
+    });
+    expect(offerBar).toHaveClass("launch-offer-bar");
     expect(
-      view.getByRole("region", {
+      within(offerBar).getByText(
+        "Primeiro pagamento mensal libera 2 meses de acesso.",
+      ),
+    ).toBeVisible();
+    expect(
+      within(offerBar).getByRole("link", { name: "Ver planos" }),
+    ).toHaveAttribute("href", "#planos");
+    expect(
+      within(offerBar).getByRole("region", {
         name: "Tempo restante da oferta de lançamento",
       }),
     ).toBeInTheDocument();
@@ -163,7 +175,8 @@ describe("Home", () => {
     expect(
       screen.getByRole("link", { name: "Assinar agora por R$ 49,90/mês" }),
     ).toBeVisible();
-    expect(screen.getByText("R$ 239,40 à vista")).toBeVisible();
+    expect(screen.getByText(/ou R\$ 239,40 à vista/)).toBeVisible();
+    expect(screen.getByText("R$ 39,90")).toBeVisible();
     expect(screen.queryByText("Oferta de lançamento")).not.toBeInTheDocument();
     expect(screen.queryByText(/mês de bônus/)).not.toBeInTheDocument();
     expect(screen.queryByText("R$ 39,90/mês")).not.toBeInTheDocument();

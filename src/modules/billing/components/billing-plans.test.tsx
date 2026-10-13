@@ -63,8 +63,10 @@ describe("BillingPlans", () => {
       within(monthly).getByText("2 meses no primeiro pagamento"),
     ).toBeInTheDocument();
     expect(within(monthly).getByText(/1 mês de bônus/)).toBeInTheDocument();
+    expect(within(semiannual).getByText("R$ 29,90")).toBeVisible();
+    expect(within(semiannual).getByText(/ou R\$ 179,40 à vista/)).toBeVisible();
     expect(semiannual).toHaveTextContent(
-      "R$ 179,40 à vista ou em até 6x de R$ 29,90",
+      "em até 6x de R$ 29,90 ou R$ 179,40 à vista",
     );
     expect(within(semiannual).getByText("12 meses de acesso")).toBeVisible();
     expect(within(semiannual).getByText(/6 meses de bônus/)).toBeVisible();
@@ -87,7 +89,7 @@ describe("BillingPlans", () => {
     expect(screen.getByText("R$ 49,90/mês")).toBeVisible();
     expect(
       screen.getByRole("article", { name: "Plano Semestral" }),
-    ).toHaveTextContent("R$ 239,40 à vista ou em até 6x de R$ 39,90");
+    ).toHaveTextContent("em até 6x de R$ 39,90 ou R$ 239,40 à vista");
     expect(screen.getByText("6 meses de acesso")).toBeVisible();
   });
 

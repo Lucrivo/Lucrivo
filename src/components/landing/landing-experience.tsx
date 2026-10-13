@@ -12,6 +12,7 @@ import { FinalCtaSection } from "@/components/landing/final-cta-section";
 import { GuaranteeSection } from "@/components/landing/guarantee-section";
 import { HeroSection } from "@/components/landing/hero-section";
 import { LandingFooter } from "@/components/landing/landing-footer";
+import { LaunchOfferBar } from "@/components/landing/launch-offer-bar";
 import { LandingNav } from "@/components/landing/landing-nav";
 import {
   resolveLandingOfferPresentation,
@@ -188,10 +189,13 @@ export function LandingExperience({
   return (
     <main
       ref={root}
-      className="landing-experience page-shell w-full max-w-full overflow-x-hidden"
+      className={`landing-experience page-shell w-full max-w-full overflow-x-hidden${
+        activeLaunchOffer ? " has-launch-offer" : ""
+      }`}
     >
+      {activeLaunchOffer ? <LaunchOfferBar {...activeLaunchOffer} /> : null}
       <LandingNav />
-      <HeroSection offer={offer} launchOffer={activeLaunchOffer} />
+      <HeroSection offer={offer} />
       <ProblemSection />
       <BusinessPathsSection />
       <DiagnosisPreviewSection />
