@@ -136,12 +136,12 @@ than only per product and mode.
 
 The immutable rows are:
 
-| Catalog | Mode | Amount | Installment maximum | Access | Bonus |
-| --- | --- | ---: | ---: | ---: | ---: |
-| `launch` | monthly | 3990 cents | none | 2 months | 1 month |
-| `launch` | semiannual | 17940 cents | 6 | 12 months | 6 months |
-| `standard` | monthly | 4990 cents | none | 1 month | 0 months |
-| `standard` | semiannual | 23940 cents | 6 | 6 months | 0 months |
+| Catalog    | Mode       |      Amount | Installment maximum |    Access |    Bonus |
+| ---------- | ---------- | ----------: | ------------------: | --------: | -------: |
+| `launch`   | monthly    |  3990 cents |                none |  2 months |  1 month |
+| `launch`   | semiannual | 17940 cents |                   6 | 12 months | 6 months |
+| `standard` | monthly    |  4990 cents |                none |   1 month | 0 months |
+| `standard` | semiannual | 23940 cents |                   6 |  6 months | 0 months |
 
 Checks must encode these supported shapes without treating `access_months` as
 the provider installment count. The public catalog policy may expose sellable

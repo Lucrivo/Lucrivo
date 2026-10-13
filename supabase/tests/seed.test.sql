@@ -357,6 +357,61 @@ select is(
 select is(
   (
     select count(*)::bigint
+    from public.billing_contracts as contract
+    join public.billing_prices as price on price.id = contract.price_id
+    where contract.user_id between
+      'd1000000-0000-4000-8000-000000000000'::uuid and
+      'd1000000-0000-4000-8000-000000000060'::uuid
+      and (
+        contract.catalog_code is distinct from price.catalog_code
+        or contract.billing_mode is distinct from price.billing_mode
+        or contract.amount_cents is distinct from price.amount_cents
+        or contract.installment_limit is distinct from price.installment_limit
+        or contract.access_months is distinct from price.access_months
+        or contract.bonus_months is distinct from price.bonus_months
+      )
+  ),
+  0::bigint,
+  'every seeded contract snapshot agrees with its immutable catalog price'
+);
+
+select results_eq(
+  $$
+    select catalog_code, billing_mode, access_months, bonus_months,
+      renewal_adjustment_status, renewal_adjustment_attempt_count,
+      renewal_adjusted_at is not null as was_adjusted,
+      renewal_adjustment_last_error_code
+    from public.billing_contracts
+    where user_id between
+      'd1000000-0000-4000-8000-000000000000'::uuid and
+      'd1000000-0000-4000-8000-000000000060'::uuid
+      and catalog_code = 'launch'
+    order by billing_mode, renewal_adjustment_status
+  $$,
+  $$ values
+    ('launch'::text, 'monthly'::text, 2, 1, 'completed'::text, 1, true, null::text),
+    ('launch'::text, 'monthly'::text, 2, 1, 'pending_reconciliation'::text, 1, false, 'provider_ambiguous'::text),
+    ('launch'::text, 'semiannual'::text, 12, 6, 'not_required'::text, 0, false, null::text)
+  $$,
+  'launch fixtures cover semiannual access and monthly renewal outcomes'
+);
+
+select is(
+  (
+    select count(*)::bigint
+    from public.billing_contracts
+    where user_id between
+      'd1000000-0000-4000-8000-000000000000'::uuid and
+      'd1000000-0000-4000-8000-000000000060'::uuid
+      and catalog_code = 'standard'
+  ),
+  83::bigint,
+  'standard snapshots remain the majority of demo contracts'
+);
+
+select is(
+  (
+    select count(*)::bigint
     from auth.users as app_user
     left join private.admin_user_state as state
       on state.user_id = app_user.id

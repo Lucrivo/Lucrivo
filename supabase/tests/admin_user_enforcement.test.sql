@@ -79,34 +79,40 @@ values (
 );
 
 insert into public.billing_prices (
-  id, product_code, billing_mode, version, amount_cents, currency, access_months
+  id, product_code, catalog_code, billing_mode, version, amount_cents,
+  currency, installment_limit, access_months, bonus_months
 )
 values (
   '96120000-0000-4000-8000-000000000001',
   'admin-user-enforcement-fixture',
+  'standard',
   'monthly',
   1,
-  1000,
+  4990,
   'BRL',
-  1
+  null,
+  1,
+  0
 );
 
 insert into public.billing_contracts (
-  id, user_id, price_id, external_reference, billing_mode,
+  id, user_id, price_id, external_reference, catalog_code, billing_mode,
   payment_method, charge_type, amount_cents, currency, access_months,
-  status, access_starts_at, access_ends_at
+  bonus_months, status, access_starts_at, access_ends_at
 )
 values (
   '96130000-0000-4000-8000-000000000001',
   '96100000-0000-4000-8000-000000000001',
   '96120000-0000-4000-8000-000000000001',
   'admin-user-enforcement-contract',
+  'standard',
   'monthly',
   'credit_card',
   'recurring',
-  1000,
+  4990,
   'BRL',
   1,
+  0,
   'expired',
   statement_timestamp() - interval '2 months',
   statement_timestamp() - interval '1 month'

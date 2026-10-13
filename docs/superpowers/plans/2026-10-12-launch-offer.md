@@ -45,6 +45,7 @@
 ### Task 1: Resolve the launch window from server-only configuration
 
 **Files:**
+
 - Create: `src/modules/billing/domain/launch-offer.ts`
 - Create: `src/modules/billing/domain/launch-offer.test.ts`
 - Create: `src/config/launch-offer-environment.ts`
@@ -52,6 +53,7 @@
 - Modify: `.env.example`
 
 **Interfaces:**
+
 - Produces: `BillingCatalogCode = "launch" | "standard"`.
 - Produces: `LaunchOfferResolution`, a discriminated union with `phase`, `catalogCode`, `startsAt`, and `endsAt`.
 - Produces: `resolveLaunchOffer({ rawStartAt, now }): LaunchOfferResolution`.
@@ -74,12 +76,17 @@ const cases = [
   [start, "2026-11-04T12:00:00.000Z", "expired", "standard"],
 ] as const;
 
-it.each(cases)("resolves %s at %s as %s", (rawStartAt, now, phase, catalogCode) => {
-  expect(resolveLaunchOffer({ rawStartAt, now: new Date(now) })).toMatchObject({
-    phase,
-    catalogCode,
-  });
-});
+it.each(cases)(
+  "resolves %s at %s as %s",
+  (rawStartAt, now, phase, catalogCode) => {
+    expect(
+      resolveLaunchOffer({ rawStartAt, now: new Date(now) }),
+    ).toMatchObject({
+      phase,
+      catalogCode,
+    });
+  },
+);
 ```
 
 Also assert that active resolution returns normalized `startsAt` equal to
@@ -152,9 +159,7 @@ expect(readLaunchOfferEnvironment({}, () => new Date())).toMatchObject({
 Read `.env.example` and assert it contains only the commented example:
 
 ```ts
-expect(example).toContain(
-  "# LAUNCH_OFFER_START_AT=2026-10-20T09:00:00-03:00",
-);
+expect(example).toContain("# LAUNCH_OFFER_START_AT=2026-10-20T09:00:00-03:00");
 expect(example).not.toMatch(/^LAUNCH_OFFER_START_AT=/m);
 ```
 
@@ -205,12 +210,14 @@ git commit -m "feat: resolve launch offer window"
 ### Task 2: Add immutable launch and standard catalog snapshots
 
 **Files:**
+
 - Create: migration emitted by `pnpm exec supabase migration new add_launch_offer_catalog`
 - Modify: `supabase/tests/billing_schema.test.sql`
 - Modify: `supabase/tests/billing_webhooks.test.sql`
 - Modify: `src/infrastructure/database/supabase/database.types.ts` (generated)
 
 **Interfaces:**
+
 - Consumes: `BillingCatalogCode` values `launch` and `standard` from Task 1.
 - Produces: `billing_prices.catalog_code`, `billing_prices.bonus_months`.
 - Produces: `billing_contracts.catalog_code`, `billing_contracts.bonus_months`, `renewal_adjustment_status`, `renewal_adjustment_attempt_count`, `renewal_adjusted_at`, and `renewal_adjustment_last_error_code`.
@@ -512,6 +519,7 @@ git commit -m "feat: add immutable launch offer catalog"
 ### Task 3: Select the current catalog and snapshot it at Checkout
 
 **Files:**
+
 - Modify: `src/modules/billing/types.ts`
 - Modify: `src/modules/billing/services/list-active-prices.service.ts`
 - Modify: `src/modules/billing/services/list-active-prices.service.test.ts`
@@ -525,6 +533,7 @@ git commit -m "feat: add immutable launch offer catalog"
 - Modify: corresponding page tests
 
 **Interfaces:**
+
 - Consumes: `LaunchOfferResolution` and database columns from Tasks 1–2.
 - Produces: `ActiveBillingPrice.catalogCode` and `.bonusMonths`.
 - Changes: `listActivePrices({ supabase, catalogCode })` requires an explicit catalog.
@@ -536,7 +545,7 @@ Update fixtures to include `catalog_code` and `bonus_months`. Assert
 `ACTIVE_BILLING_PRICE_COLUMNS` is exactly:
 
 ```ts
-"id, product_code, catalog_code, billing_mode, amount_cents, currency, installment_limit, access_months, bonus_months"
+"id, product_code, catalog_code, billing_mode, amount_cents, currency, installment_limit, access_months, bonus_months";
 ```
 
 Call `listActivePrices({ supabase, catalogCode: "launch" })` and assert query
@@ -666,12 +675,14 @@ git commit -m "feat: enforce current launch catalog at checkout"
 ### Task 4: Model promotional recurrence and flexible semiannual installments in Asaas
 
 **Files:**
+
 - Modify: `src/infrastructure/payments/asaas/asaas.client.ts`
 - Modify: `src/infrastructure/payments/asaas/asaas.client.test.ts`
 - Modify: `src/modules/billing/domain/build-checkout-request.ts`
 - Modify: `src/modules/billing/domain/build-checkout-request.test.ts`
 
 **Interfaces:**
+
 - Consumes: `ActiveBillingPrice.catalogCode`, `.accessMonths`, and `.bonusMonths`.
 - Produces: `AsaasGateway.updateSubscriptionRenewal(id, input)`.
 - Produces: `AsaasSubscriptionRenewalInput = { cycle: "MONTHLY"; nextDueDate: string }`.
@@ -686,7 +697,9 @@ expect(checkout).toMatchObject({
   billingTypes: ["CREDIT_CARD"],
   chargeTypes: ["RECURRENT"],
   subscription: { cycle: "BIMONTHLY", nextDueDate: "2026-10-20" },
-  items: [{ value: 39.9, description: "Acesso inicial ao Lucrivo por 2 meses" }],
+  items: [
+    { value: 39.9, description: "Acesso inicial ao Lucrivo por 2 meses" },
+  ],
 });
 ```
 
@@ -789,6 +802,7 @@ git commit -m "feat: model launch billing cadence"
 ### Task 5: Reconcile promotional monthly renewal through verified webhooks
 
 **Files:**
+
 - Create: `src/modules/billing/services/adjust-launch-renewal.service.ts`
 - Create: `src/modules/billing/services/adjust-launch-renewal.service.test.ts`
 - Modify: `src/modules/billing/services/process-asaas-webhook.service.ts`
@@ -797,6 +811,7 @@ git commit -m "feat: model launch billing cadence"
 - Modify: `src/app/api/webhooks/asaas/route.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 2 RPCs and Task 4 `AsaasGateway.updateSubscriptionRenewal`.
 - Produces: `adjustLaunchRenewal({ admin, asaas, eventId }): Promise<"not_required" | "completed" | "retry_later">`.
 - Changes: `processAsaasWebhook({ admin, asaas, event })` retries renewal adjustment after both `processed` and `duplicate` reducer outcomes.
@@ -846,7 +861,7 @@ Use a Zod discriminated union for `not_required`, `not_ready`, `completed`, and
 date. Call:
 
 ```ts
-admin.rpc("begin_billing_renewal_adjustment", { p_event_id: eventId })
+admin.rpc("begin_billing_renewal_adjustment", { p_event_id: eventId });
 ```
 
 Map both `not_required` and `completed` to local `not_required`. Accept
@@ -891,6 +906,7 @@ git commit -m "feat: reconcile launch renewal schedule"
 ### Task 6: Present the active offer and accessible countdown on the landing page
 
 **Files:**
+
 - Create: `src/modules/billing/components/offer-countdown.tsx`
 - Create: `src/modules/billing/components/offer-countdown.test.tsx`
 - Create: `src/components/landing/launch-offer-callout.tsx`
@@ -909,6 +925,7 @@ git commit -m "feat: reconcile launch renewal schedule"
 - Modify: `src/app/page.test.tsx`
 
 **Interfaces:**
+
 - Consumes: active `LaunchOfferResolution` and selected `ActiveBillingPrice[]`.
 - Produces: `LaunchOfferView = { endsAt: string }` passed to client UI only when active.
 - Produces: `OfferCountdown({ endsAt, onExpire?, compact? })`.
@@ -1024,6 +1041,7 @@ git commit -m "feat: present launch offer on landing page"
 ### Task 7: Add the authenticated pre/post-diagnosis offer strip
 
 **Files:**
+
 - Create: `src/modules/billing/components/launch-offer-strip.tsx`
 - Create: `src/modules/billing/components/launch-offer-strip.test.tsx`
 - Modify: `src/components/layout/app-shell.tsx`
@@ -1032,6 +1050,7 @@ git commit -m "feat: present launch offer on landing page"
 - Modify: `src/app/(private)/layout.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `getBillingOverview`, active launch `endsAt`, and `isAdminUser`.
 - Produces: optional `launchOfferStrip: { endsAt: string; freeQuickDiagnosisUsed: boolean } | null` AppShell prop.
 - Reuses: `OfferCountdown` from Task 6.
@@ -1086,7 +1105,7 @@ After existing auth/onboarding/admin checks:
 
 1. resolve `readLaunchOfferEnvironment()`;
 2. only for active, non-admin users call `getBillingOverview({ supabase,
-   userId })`;
+userId })`;
 3. provide strip data only when overview succeeds and `tier === "free"`;
 4. suppress it for paid/courtesy/admin and for invalid/inactive campaign state.
 
@@ -1116,6 +1135,7 @@ git commit -m "feat: guide free users through launch offer"
 ### Task 8: Update deterministic seed, runbooks, and release evidence
 
 **Files:**
+
 - Modify: `scripts/demo-seed/model.ts`
 - Modify: `scripts/demo-seed/user-scenarios.ts`
 - Modify: `scripts/demo-seed/render-seed.ts`
@@ -1128,6 +1148,7 @@ git commit -m "feat: guide free users through launch offer"
 - Modify: `.impeccable` documentation only if the Impeccable documenter reports an approved durable visual-system change; otherwise preserve it.
 
 **Interfaces:**
+
 - Consumes: final database/application interfaces from Tasks 1–7.
 - Produces: reproducible demo data containing standard and launch snapshots, operational activation/reconciliation steps, and complete verification evidence.
 

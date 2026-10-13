@@ -2,7 +2,6 @@ import Image from "next/image";
 
 import {
   ArrowRightIcon,
-  ChartBarIcon,
   ChatCircleTextIcon,
   CreditCardIcon,
   TableIcon,
@@ -48,11 +47,6 @@ function HeroSection({
 
       <div className="hero-layout">
         <div className="hero-copy">
-          <p className="hero-kicker hero-copy-reveal">
-            <ChartBarIcon aria-hidden="true" size={16} weight="fill" />
-            Diagnóstico de preço e rentabilidade
-          </p>
-
           <h1
             id="hero-title"
             className="hero-copy-reveal"

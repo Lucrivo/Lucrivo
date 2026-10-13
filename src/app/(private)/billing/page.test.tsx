@@ -98,7 +98,7 @@ describe("BillingPage", () => {
     expect(
       screen.getByRole("article", { name: "Plano Semestral" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Mais vantajoso")).toBeInTheDocument();
+    expect(screen.getByText("Oferta de lançamento")).toBeInTheDocument();
     expect(
       screen.getByRole("region", { name: "Segurança e transparência" }),
     ).toBeInTheDocument();

@@ -88,7 +88,7 @@ function OfferCountdown({
               {days}
             </dd>
             <dt
-              className="m-0 text-[0.625rem] leading-none opacity-70"
+              className="m-0 text-[0.625rem] leading-none opacity-90"
               suppressHydrationWarning
             >
               {days === 1 ? "dia" : "dias"}
@@ -101,7 +101,7 @@ function OfferCountdown({
             >
               {String(hours).padStart(2, "0")}
             </dd>
-            <dt className="m-0 text-[0.625rem] leading-none opacity-70">
+            <dt className="m-0 text-[0.625rem] leading-none opacity-90">
               horas
             </dt>
           </div>
@@ -112,7 +112,7 @@ function OfferCountdown({
             >
               {String(minutes).padStart(2, "0")}
             </dd>
-            <dt className="m-0 text-[0.625rem] leading-none opacity-70">min</dt>
+            <dt className="m-0 text-[0.625rem] leading-none opacity-90">min</dt>
           </div>
           <div className="grid min-w-0 flex-1 justify-items-center gap-0.5">
             <dd
@@ -121,7 +121,7 @@ function OfferCountdown({
             >
               {String(seconds).padStart(2, "0")}
             </dd>
-            <dt className="m-0 text-[0.625rem] leading-none opacity-70">seg</dt>
+            <dt className="m-0 text-[0.625rem] leading-none opacity-90">seg</dt>
           </div>
         </dl>
       )}

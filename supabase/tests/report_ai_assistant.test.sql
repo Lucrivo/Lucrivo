@@ -518,19 +518,25 @@ values
 insert into public.billing_prices (
   id,
   product_code,
+  catalog_code,
   billing_mode,
   version,
   amount_cents,
   currency,
-  access_months
+  installment_limit,
+  access_months,
+  bonus_months
 ) values (
   '97110000-0000-4000-8000-000000000001',
   'report-ai-test',
+  'standard',
   'monthly',
   1,
-  3990,
+  4990,
   'BRL',
-  1
+  null,
+  1,
+  0
 );
 
 insert into public.billing_contracts (
@@ -538,12 +544,14 @@ insert into public.billing_contracts (
   user_id,
   price_id,
   external_reference,
+  catalog_code,
   billing_mode,
   payment_method,
   charge_type,
   amount_cents,
   currency,
   access_months,
+  bonus_months,
   status,
   access_starts_at,
   access_ends_at
@@ -552,12 +560,14 @@ insert into public.billing_contracts (
   '97100000-0000-4000-8000-000000000001',
   '97110000-0000-4000-8000-000000000001',
   'report-ai-paid-contract',
+  'standard',
   'monthly',
   'credit_card',
   'recurring',
-  3990,
+  4990,
   'BRL',
   1,
+  0,
   'active',
   statement_timestamp() - interval '1 day',
   statement_timestamp() + interval '1 month'

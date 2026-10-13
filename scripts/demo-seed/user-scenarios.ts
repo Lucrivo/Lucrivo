@@ -15,8 +15,16 @@ import type {
 } from "./model";
 import { currentReportTemplates } from "./report-scenarios";
 
-const MONTHLY_PRICE_ID = "20000000-0000-4000-8000-000000000001";
-const SEMIANNUAL_PRICE_ID = "20000000-0000-4000-8000-000000000002";
+const priceIds = {
+  launch: {
+    monthly: "20000000-0000-4000-8000-000000000001",
+    semiannual: "20000000-0000-4000-8000-000000000002",
+  },
+  standard: {
+    monthly: "20000000-0000-4000-8000-000000000003",
+    semiannual: "20000000-0000-4000-8000-000000000004",
+  },
+} as const;
 const consentReplacementOrdinals = new Set([1, 3, 5, 7]);
 
 const segmentCatalog = [
@@ -241,25 +249,53 @@ function baseContract(input: {
   externalReference: string;
   status: SeedContractStatus;
   tuple?: (typeof validPurchaseTuples)[number];
+  catalogCode?: SeedContract["catalogCode"];
+  renewalAdjustmentStatus?: SeedContract["renewalAdjustmentStatus"];
+  renewalAdjustmentAttemptCount?: number;
+  renewalAdjustedAt?: SeedRelativeTime | null;
+  renewalAdjustmentLastErrorCode?: SeedContract["renewalAdjustmentLastErrorCode"];
   accessStartsAt?: SeedRelativeTime | null;
   accessEndsAt?: SeedRelativeTime | null;
   createdAt?: SeedRelativeTime;
 }): SeedContract {
   const tuple = input.tuple ?? validPurchaseTuples[0];
   const [billingMode, paymentMethod, chargeType] = tuple;
+  const catalogCode = input.catalogCode ?? "standard";
+  const launch = catalogCode === "launch";
+  const requiresRenewalAdjustment =
+    launch &&
+    billingMode === "monthly" &&
+    paymentMethod === "credit_card" &&
+    chargeType === "recurring";
   const cancelAtPeriodEnd = input.status === "cancel_at_period_end";
   return {
     id: seedUuid("contract", input.ownerOrdinal, input.childOrdinal),
     userId: input.userId,
-    priceId:
-      billingMode === "semiannual" ? SEMIANNUAL_PRICE_ID : MONTHLY_PRICE_ID,
+    priceId: priceIds[catalogCode][billingMode],
     externalReference: input.externalReference,
     billingMode,
     paymentMethod,
     chargeType,
-    amountCents: billingMode === "semiannual" ? 17_940 : 3_990,
+    amountCents:
+      billingMode === "semiannual"
+        ? launch
+          ? 17_940
+          : 23_940
+        : launch
+          ? 3_990
+          : 4_990,
     installmentLimit: billingMode === "semiannual" ? 6 : null,
-    accessMonths: billingMode === "semiannual" ? 6 : 1,
+    catalogCode,
+    bonusMonths: launch ? (billingMode === "semiannual" ? 6 : 1) : 0,
+    accessMonths:
+      billingMode === "semiannual" ? (launch ? 12 : 6) : launch ? 2 : 1,
+    renewalAdjustmentStatus:
+      input.renewalAdjustmentStatus ??
+      (requiresRenewalAdjustment ? "pending" : "not_required"),
+    renewalAdjustmentAttemptCount: input.renewalAdjustmentAttemptCount ?? 0,
+    renewalAdjustedAt: input.renewalAdjustedAt ?? null,
+    renewalAdjustmentLastErrorCode:
+      input.renewalAdjustmentLastErrorCode ?? null,
     status: input.status,
     accessStartsAt: input.accessStartsAt ?? null,
     accessEndsAt: input.accessEndsAt ?? null,
@@ -316,6 +352,7 @@ function buildBilling(admin: SeedUser, clients: SeedUser[]) {
     externalReference: "demo-admin-semiannual-active",
     status: "active",
     tuple: validPurchaseTuples[3],
+    catalogCode: "launch",
     accessStartsAt: relativeTime(-6),
     accessEndsAt: relativeTime(1),
     createdAt: relativeTime(-6),
@@ -366,13 +403,29 @@ function buildBilling(admin: SeedUser, clients: SeedUser[]) {
   });
 
   for (const client of clients.filter((user) => user.accessSource === "paid")) {
+    const completedLaunchRenewal = client.ordinal === 45;
+    const reconciliationLaunchRenewal = client.ordinal === 46;
+    const launchMonthly = completedLaunchRenewal || reconciliationLaunchRenewal;
     const contract = baseContract({
       ownerOrdinal: client.ordinal,
       childOrdinal: 0,
       userId: client.id,
       externalReference: `demo-client-${client.ordinal}-active`,
       status: "active",
-      tuple: validPurchaseTuples[client.ordinal % validPurchaseTuples.length],
+      tuple: launchMonthly
+        ? validPurchaseTuples[0]
+        : validPurchaseTuples[client.ordinal % validPurchaseTuples.length],
+      catalogCode: launchMonthly ? "launch" : "standard",
+      renewalAdjustmentStatus: completedLaunchRenewal
+        ? "completed"
+        : reconciliationLaunchRenewal
+          ? "pending_reconciliation"
+          : undefined,
+      renewalAdjustmentAttemptCount: launchMonthly ? 1 : undefined,
+      renewalAdjustedAt: completedLaunchRenewal ? relativeTime(0, -2) : null,
+      renewalAdjustmentLastErrorCode: reconciliationLaunchRenewal
+        ? "provider_ambiguous"
+        : null,
       accessStartsAt: relativeTime(-12),
       accessEndsAt: relativeTime(1),
       createdAt: relativeTime(-6, client.ordinal % 20),
@@ -553,11 +606,10 @@ function buildDemoCatalog(): DemoSeedCatalog {
 }
 
 export {
-  MONTHLY_PRICE_ID,
-  SEMIANNUAL_PRICE_ID,
   buildDemoCatalog,
   clientReportCount,
   contractStatuses,
   paymentStatuses,
+  priceIds,
   validPurchaseTuples,
 };

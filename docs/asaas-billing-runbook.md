@@ -27,12 +27,23 @@ registrá-los.
 
 ## Catálogo comercial vigente
 
-- Mensal: R$ 39,90, com renovação mensal no cartão ou pagamento avulso no Pix.
-- Semestral: R$ 179,40, equivalente a 6x de R$ 29,90, com seis meses de acesso
-  e sem renovação automática.
+- Padrão mensal: R$ 49,90, um mês de acesso, com renovação mensal no cartão ou
+  pagamento avulso no Pix.
+- Padrão semestral: R$ 239,40, em até 6x de R$ 39,90 no cartão ou à vista no
+  Pix, com seis meses de acesso e sem renovação automática.
+- Lançamento mensal: R$ 39,90 no primeiro pagamento, um mês de bônus e dois
+  meses de acesso inicial. No cartão, a assinatura nasce com ciclo seguro
+  `BIMONTHLY`; depois da confirmação, o Lucrivo agenda a próxima cobrança para
+  dois meses após o pagamento e converte o ciclo para `MONTHLY`. No Pix, a
+  cobrança é avulsa e não renova.
+- Lançamento semestral: R$ 179,40 à vista ou em até 6x de R$ 29,90, seis meses
+  de bônus e doze meses de acesso, sem renovação automática.
 
-O catálogo ativo deve conter exatamente uma oferta de cada modalidade. O modo
-`annual` foi removido da base de pré-produção e não deve ser recriado.
+Os catálogos `standard` e `launch` são snapshots imutáveis. A aplicação escolhe
+no servidor exatamente uma oferta de cada modalidade conforme a janela de 15
+dias de `LAUNCH_OFFER_START_AT`; o navegador não escolhe catálogo, preço, bônus,
+acesso, ciclo ou prazo. O modo `annual` foi removido da base de pré-produção e
+não deve ser recriado.
 
 ## Ambientes e variáveis
 
@@ -274,6 +285,32 @@ no campo `checkoutSession`. Esse valor deve ser conciliado com
 `billing_contracts.asaas_checkout_id`; não dependa de `externalReference`, pois
 ele pode não estar presente no payload entregue pelo Asaas.
 
+Para inspecionar o ajuste de renovação, pesquise apenas pelo ID local do
+contrato e não inclua IDs do provedor em saídas de suporte:
+
+```sql
+select
+  id,
+  catalog_code,
+  billing_mode,
+  payment_method,
+  status,
+  access_ends_at,
+  renewal_adjustment_status,
+  renewal_adjustment_attempt_count,
+  renewal_adjusted_at,
+  renewal_adjustment_last_error_code,
+  updated_at
+from public.billing_contracts
+where id = '<contract-id>'::uuid;
+```
+
+Um lançamento mensal em `pending_reconciliation` exige consulta ao estado atual
+da assinatura no Asaas antes de qualquer nova mutação. Reentregue o webhook
+verificado ou execute a reconciliação idempotente usando os identificadores já
+persistidos; nunca copie esses identificadores para tickets ou mensagens ao
+cliente.
+
 Exemplo administrativo, sempre usando os valores da linha original:
 
 ```sql
@@ -341,11 +378,18 @@ registre o ID local do contrato e todos os IDs de evento relacionados. Verifique
 no navegador e consulte `billing_contracts`, `billing_payments` e
 `asaas_webhook_events` sem selecionar payloads.
 
-### 1. Mensal no cartão — R$ 39,90
+### 1. Lançamento mensal no cartão — R$ 39,90
 
 - Criar o Checkout e concluir o pagamento com cartão de teste.
-- Confirmar contrato `monthly`, `credit_card`, `recurring` e acesso de um mês.
-- Simular/aguardar a confirmação da renovação e confirmar extensão sem lacuna.
+- Confirmar contrato `launch`, `monthly`, `credit_card`, `recurring`, um mês de
+  bônus e dois meses de acesso inicial.
+- Confirmar cobrança imediata de R$ 39,90 e assinatura criada com ciclo
+  `BIMONTHLY`; nenhum segundo débito pode ocorrer na criação.
+- Após o webhook verificado, confirmar atualização para `MONTHLY`, próxima data
+  de vencimento exatamente dois meses depois e
+  `renewal_adjustment_status = 'completed'`.
+- Reentregar os webhooks de pagamento e assinatura e confirmar que a atualização
+  não se repete nem muda a próxima data.
 - Solicitar reembolso dentro de sete dias, confirmar bloqueio imediato, estorno
   integral do pagamento e exclusão/inativação da assinatura.
 - Reentregar os webhooks e inverter a ordem entre reembolso e cancelamento da
@@ -355,31 +399,45 @@ no navegador e consulte `billing_contracts`, `billing_payments` e
 - Avançar/aguardar o fim do período e confirmar expiração e bloqueio dos
   relatórios extras.
 
-### 2. Mensal no Pix — R$ 39,90
+### 2. Lançamento mensal no Pix — R$ 39,90
 
 - Criar e pagar um Checkout Pix avulso.
-- Confirmar exatamente um mês de acesso.
+- Confirmar exatamente dois meses de acesso, incluindo um mês de bônus.
 - Confirmar ausência de assinatura e de renovação automática.
 - Solicitar reembolso dentro de sete dias e confirmar o estorno integral pelo
   pagamento, sem operação de assinatura.
 - Repetir sem saldo Pix disponível, confirmar rejeição segura e validar uma
   nova tentativa somente depois de recompor o saldo.
 
-### 3. Semestral — R$ 179,40
+### 3. Lançamento semestral — R$ 179,40
 
 - Confirmar que o Checkout semestral no cartão foi criado com os tipos de cobrança
   `DETACHED` e `INSTALLMENT`; o Asaas exige ambos para oferecer pagamento à
   vista ou parcelado.
-- Pagar no Pix à vista e confirmar exatamente seis meses.
-- Fazer uma compra no cartão em 1x e confirmar exatamente seis meses.
-- Fazer outra compra no cartão em 6x de R$ 29,90 e confirmar exatamente seis
-  meses.
-- Nos três casos, confirmar que não existe renovação automática.
+- Pagar no Pix à vista e confirmar exatamente doze meses de acesso.
+- Fazer compras no cartão em 1x, 2x, 3x, 4x, 5x e 6x; todas devem permanecer
+  selecionáveis e conceder exatamente doze meses, sem tratar 6x como obrigatório.
+- Na opção de 6x, confirmar R$ 29,90 por parcela e total de R$ 179,40.
+- Em todos os casos, confirmar que não existe renovação automática.
 - Reembolsar Pix pelo pagamento e cartão pelo parcelamento; confirmar devolução
   integral tanto em 1x quanto em 6x.
 
+### 3A. Catálogo padrão depois da campanha
+
+- Mensal no cartão e no Pix deve cobrar R$ 49,90 e conceder um mês, sem bônus.
+- Mensal no cartão deve nascer e permanecer `MONTHLY`; não deve entrar no fluxo
+  de ajuste promocional.
+- Semestral no Pix e no cartão deve cobrar R$ 239,40, permitir de 1x a 6x (6x
+  de R$ 39,90) e conceder seis meses, sem bônus ou renovação automática.
+- Repetir cancelamento mensal e reembolso integral em até sete dias para
+  confirmar que a campanha não alterou essas políticas.
+
 ### 4. Idempotência, ordem e reversões
 
+- Criar um Checkout promocional um milissegundo antes do fim; ele deve continuar
+  reutilizável somente dentro da validade persistida de uma hora.
+- Tentar criar outro Checkout promocional no instante final exato; a aplicação
+  deve rejeitá-lo e selecionar o catálogo padrão.
 - Reentregar o mesmo evento e confirmar ausência de duplicação de acesso ou
   pagamento.
 - Clicar duas vezes em “Pedir reembolso” e confirmar uma única solicitação e
@@ -402,11 +460,13 @@ no navegador e consulte `billing_contracts`, `billing_payments` e
 
 ### 6. Timeout e reconciliação
 
-- Forçar timeout após uma criação/cancelamento enviado ao provedor.
+- Forçar rejeição e timeout na atualização `BIMONTHLY` → `MONTHLY` depois de o
+  pagamento inicial ter sido confirmado.
 - Confirmar `pending_reconciliation` e ausência de concessão/revogação baseada
   somente na resposta do navegador.
-- Entregar o webhook ou executar reconciliação manual auditada e confirmar
-  convergência.
+- Consultar a assinatura antes de repetir qualquer mutação, entregar um webhook
+  duplicado e executar reconciliação manual auditada; confirmar uma única
+  convergência e a próxima cobrança dois meses após a inicial.
 
 ### 7. Jornada de relatórios
 
@@ -423,21 +483,22 @@ locais. Use uma linha adicional para cada variação. Registre somente IDs
 internos seguros; nunca inclua chave de API, token de webhook, payload bruto ou
 dados de cartão/cliente.
 
-| Caso                               | Resultado | Contrato/reembolso local | Eventos Asaas | Evidência/ticket | Executor | Data UTC |
-| ---------------------------------- | --------- | ------------------------ | ------------- | ---------------- | -------- | -------- |
-| 1. Mensal cartão + reembolso       | Pendente  | —                        | —             | —                | —        | —        |
-| 2. Mensal Pix + reembolso          | Pendente  | —                        | —             | —                | —        | —        |
-| 3. Semestral Pix + reembolso       | Pendente  | —                        | —             | —                | —        | —        |
-| 3. Semestral cartão 1x + reembolso | Pendente  | —                        | —             | —                | —        | —        |
-| 3. Semestral cartão 6x + reembolso | Pendente  | —                        | —             | —                | —        | —        |
-| 4. Limite exato de sete dias       | Pendente  | —                        | —             | —                | —        | —        |
-| 4. Clique duplicado                | Pendente  | —                        | —             | —                | —        | —        |
-| 4. Ordem reembolso/assinatura      | Pendente  | —                        | —             | —                | —        | —        |
-| 4. Reembolso parcial externo       | Pendente  | —                        | —             | —                | —        | —        |
-| 4. Pix sem saldo disponível        | Pendente  | —                        | —             | —                | —        | —        |
-| 5. Callback antecipado             | Pendente  | —                        | —             | —                | —        | —        |
-| 6. Timeout/reconciliação           | Pendente  | —                        | —             | —                | —        | —        |
-| 7. Acesso a relatórios             | Pendente  | —                        | —             | —                | —        | —        |
+| Caso                                 | Resultado | Contrato/reembolso local | Eventos Asaas | Evidência/ticket | Executor | Data UTC |
+| ------------------------------------ | --------- | ------------------------ | ------------- | ---------------- | -------- | -------- |
+| 1. Lançamento mensal cartão + ajuste | Pendente  | —                        | —             | —                | —        | —        |
+| 2. Lançamento mensal Pix + reembolso | Pendente  | —                        | —             | —                | —        | —        |
+| 3. Lançamento semestral Pix          | Pendente  | —                        | —             | —                | —        | —        |
+| 3. Lançamento semestral cartão 1–6x  | Pendente  | —                        | —             | —                | —        | —        |
+| 3A. Catálogo padrão completo         | Pendente  | —                        | —             | —                | —        | —        |
+| 4. Limite exato da campanha          | Pendente  | —                        | —             | —                | —        | —        |
+| 4. Limite exato de sete dias         | Pendente  | —                        | —             | —                | —        | —        |
+| 4. Clique duplicado                  | Pendente  | —                        | —             | —                | —        | —        |
+| 4. Ordem reembolso/assinatura        | Pendente  | —                        | —             | —                | —        | —        |
+| 4. Reembolso parcial externo         | Pendente  | —                        | —             | —                | —        | —        |
+| 4. Pix sem saldo disponível          | Pendente  | —                        | —             | —                | —        | —        |
+| 5. Callback antecipado               | Pendente  | —                        | —             | —                | —        | —        |
+| 6. Timeout/reconciliação             | Pendente  | —                        | —             | —                | —        | —        |
+| 7. Acesso a relatórios               | Pendente  | —                        | —             | —                | —        | —        |
 
 Não disponibilize os CTAs de produção nem promova o release antes de todas as
 linhas estarem aprovadas e vinculadas às evidências.

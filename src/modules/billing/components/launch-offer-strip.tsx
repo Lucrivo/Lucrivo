@@ -13,7 +13,7 @@ type LaunchOfferStripProps = {
 };
 
 const actionClassName =
-  "focus-visible:ring-primary-foreground focus-visible:ring-offset-primary inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-950 shadow-xs transition-colors hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
+  "inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-950 shadow-xs transition-colors hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[oklch(0.5_0.23_259)]";
 
 function LaunchOfferStrip({ offer }: LaunchOfferStripProps) {
   if (!offer) return null;
@@ -40,7 +40,7 @@ function LaunchOfferStrip({ offer }: LaunchOfferStripProps) {
   return (
     <aside
       aria-label="Condição especial de lançamento"
-      className="bg-primary text-primary-foreground mx-4 mt-4 grid gap-4 rounded-2xl border border-white/15 p-4 shadow-sm sm:mx-6 sm:p-5 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center lg:mx-8"
+      className="mx-4 mt-4 grid gap-4 rounded-2xl border border-white/15 bg-[oklch(0.5_0.23_259)] p-4 text-white shadow-sm sm:mx-6 sm:p-5 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center lg:mx-8"
     >
       <div className="flex min-w-0 items-start gap-3">
         <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white/12">
@@ -50,7 +50,7 @@ function LaunchOfferStrip({ offer }: LaunchOfferStripProps) {
           <p className="text-sm font-semibold tracking-tight">
             {content.title}
           </p>
-          <p className="mt-1 max-w-2xl text-xs leading-5 text-white/75 sm:text-sm">
+          <p className="mt-1 max-w-2xl text-xs leading-5 text-white/90 sm:text-sm">
             {content.description}
           </p>
         </div>

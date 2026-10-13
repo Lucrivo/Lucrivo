@@ -204,23 +204,6 @@ html:has(.landing-experience) {
   max-width: 720px;
 }
 
-.landing-experience .hero-kicker {
-  display: inline-flex;
-  min-height: 38px;
-  margin: 0 0 26px;
-  padding: 0 16px;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid oklch(0.67 0.2 255 / 0.28);
-  border-radius: 999px;
-  background: oklch(0.17 0.05 255 / 0.72);
-  color: var(--landing-info);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-
 .landing-experience .eyebrow {
   margin: 0 0 28px;
   color: var(--landing-info);
@@ -1329,14 +1312,6 @@ html:has(.landing-experience) {
     display: flex;
     flex-direction: column;
     gap: 38px;
-  }
-
-  .landing-experience .hero-kicker {
-    min-height: 34px;
-    margin-bottom: 22px;
-    padding: 0 12px;
-    font-size: 0.6rem;
-    letter-spacing: 0.1em;
   }
 
   .landing-experience .hero-copy h1 {

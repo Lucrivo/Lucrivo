@@ -273,20 +273,26 @@ values
 insert into public.billing_prices (
   id,
   product_code,
+  catalog_code,
   billing_mode,
   version,
   amount_cents,
   currency,
-  access_months
+  installment_limit,
+  access_months,
+  bonus_months
 )
 values (
   '94200000-0000-4000-8000-000000000001',
   'admin-dashboard-test-monthly',
+  'standard',
   'monthly',
   1,
-  1000,
+  4990,
   'BRL',
-  1
+  null,
+  1,
+  0
 );
 
 insert into public.billing_contracts (
@@ -294,12 +300,14 @@ insert into public.billing_contracts (
   user_id,
   price_id,
   external_reference,
+  catalog_code,
   billing_mode,
   payment_method,
   charge_type,
   amount_cents,
   currency,
   access_months,
+  bonus_months,
   status,
   access_starts_at,
   access_ends_at,
@@ -314,12 +322,14 @@ select
   fixture.user_id,
   '94200000-0000-4000-8000-000000000001',
   fixture.external_reference,
+  'standard',
   'monthly',
   'credit_card',
   'recurring',
-  1000,
+  4990,
   'BRL',
   1,
+  0,
   fixture.status,
   fixture.access_starts_at,
   fixture.access_ends_at,

@@ -60,12 +60,10 @@ describe("adjustLaunchRenewal", () => {
   );
 
   it("maps a strict not_ready claim to retry_later", async () => {
-    rpc
-      .mockReset()
-      .mockResolvedValue({
-        data: { status: "not_ready", retry: true },
-        error: null,
-      });
+    rpc.mockReset().mockResolvedValue({
+      data: { status: "not_ready", retry: true },
+      error: null,
+    });
 
     await expect(adjust()).resolves.toBe("retry_later");
     expect(updateSubscriptionRenewal).not.toHaveBeenCalled();
