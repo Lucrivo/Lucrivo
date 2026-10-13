@@ -190,7 +190,7 @@ export function LandingExperience({
     <main
       ref={root}
       className={`landing-experience page-shell w-full max-w-full overflow-x-hidden${
-        activeLaunchOffer ? " has-launch-offer" : ""
+        activeLaunchOffer ? "has-launch-offer" : ""
       }`}
     >
       {activeLaunchOffer ? <LaunchOfferBar {...activeLaunchOffer} /> : null}
