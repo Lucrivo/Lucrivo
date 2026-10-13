@@ -4,6 +4,7 @@ import { GuaranteeNote } from "@/components/landing/guarantee-note";
 import {
   GUARANTEE_DAYS,
   SUPPORT_EMAIL,
+  type LandingOfferPresentation,
 } from "@/components/landing/landing-offer";
 
 import "./faq-section.css";
@@ -25,7 +26,19 @@ function SupportEmailLink() {
   return <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>;
 }
 
-function buildFaqGroups(monthlyPriceLabel: string): FaqGroup[] {
+function buildFaqGroups(offer: LandingOfferPresentation | null): FaqGroup[] {
+  const priceQuestion = offer
+    ? `${offer.monthlyPriceLabel} não é caro?`
+    : "Como consulto os valores dos planos?";
+  const priceAnswer = offer
+    ? `Pense assim: se você vende 50 unidades por mês e descobre que pode cobrar R$ 1 a mais em cada uma, a assinatura já se pagou. E você ainda tem ${GUARANTEE_DAYS} dias para testar.`
+    : "Os valores aparecem na seção de planos assim que o catálogo está disponível.";
+  const renewalAnswer =
+    offer?.catalogCode === "launch"
+      ? `No primeiro pagamento mensal, você recebe ${offer.monthlyAccessMonths} meses de acesso. A próxima cobrança ocorre depois desses dois meses e, a partir daí, a assinatura renova mensalmente por ${offer.monthlyPriceLabel}.`
+      : offer
+        ? `A assinatura renova todo mês por ${offer.monthlyPriceLabel}. Se não quiser continuar, é só cancelar antes da próxima cobrança.`
+        : "A periodicidade e os valores são apresentados junto de cada plano antes da assinatura.";
   return [
     {
       title: "Sobre a assinatura",
@@ -38,8 +51,8 @@ function buildFaqGroups(monthlyPriceLabel: string): FaqGroup[] {
             "O grátis mostrou um produto, uma vez. Assinando, você confere todos os seus produtos, quantas vezes quiser, e refaz a conta sempre que um custo mudar.",
         },
         {
-          question: `${monthlyPriceLabel} não é caro?`,
-          answer: `Pense assim: se você vende 50 unidades por mês e descobre que pode cobrar R$ 1 a mais em cada uma, a assinatura já se pagou. E você ainda tem ${GUARANTEE_DAYS} dias para testar.`,
+          question: priceQuestion,
+          answer: priceAnswer,
         },
         {
           question: "Funciona para o meu tipo de negócio?",
@@ -85,7 +98,7 @@ function buildFaqGroups(monthlyPriceLabel: string): FaqGroup[] {
         },
         {
           question: "O que acontece depois dos 30 dias?",
-          answer: `A assinatura renova todo mês por ${monthlyPriceLabel}. Se não quiser continuar, é só cancelar antes da próxima cobrança.`,
+          answer: renewalAnswer,
         },
         {
           question: "Posso pagar com Pix?",
@@ -129,8 +142,8 @@ function buildFaqGroups(monthlyPriceLabel: string): FaqGroup[] {
   ];
 }
 
-function FaqSection({ monthlyPriceLabel }: { monthlyPriceLabel: string }) {
-  const groups = buildFaqGroups(monthlyPriceLabel);
+function FaqSection({ offer }: { offer: LandingOfferPresentation | null }) {
+  const groups = buildFaqGroups(offer);
 
   // Position of each group's first question in the flattened list, so the
   // "first N open" rule spans group boundaries.
@@ -213,8 +226,13 @@ function FaqSection({ monthlyPriceLabel }: { monthlyPriceLabel: string }) {
           </div>
 
           <div className="faq-closing-action">
-            <a className="button button-primary button-large" href="/register">
-              Quero assinar por {monthlyPriceLabel}/mês
+            <a
+              className="button button-primary button-large"
+              href={offer ? "/register" : "#planos"}
+            >
+              {offer
+                ? `Quero assinar por ${offer.monthlyPriceLabel}/mês`
+                : "Conhecer os planos"}
               <ArrowRightIcon aria-hidden="true" size={20} weight="bold" />
             </a>
             <GuaranteeNote>

@@ -1,0 +1,81 @@
+.landing-experience .launch-offer-callout {
+  display: grid;
+  width: min(100%, 590px);
+  margin-top: 16px;
+  padding: 14px 16px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  border: 1px solid oklch(0.67 0.2 255 / 0.28);
+  border-radius: 14px;
+  background: oklch(0.19 0.07 258 / 0.78);
+  box-shadow: 0 18px 42px -30px oklch(0.56 0.23 259 / 0.7);
+}
+
+.landing-experience .launch-offer-copy {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 10px;
+}
+.landing-experience .launch-offer-copy > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--landing-primary-bright);
+}
+.landing-experience .launch-offer-copy span {
+  display: grid;
+  gap: 3px;
+}
+.landing-experience .launch-offer-copy strong {
+  color: var(--paper-bright);
+  font-size: 0.84rem;
+}
+.landing-experience .launch-offer-copy small {
+  color: oklch(0.88 0.035 255 / 0.78);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.offer-countdown-digits {
+  display: flex;
+  margin: 0;
+  gap: 10px;
+}
+.offer-countdown-digits > div {
+  display: grid;
+  min-width: 32px;
+  justify-items: center;
+  gap: 2px;
+}
+.offer-countdown-digits dd,
+.offer-countdown-digits dt {
+  margin: 0;
+}
+.offer-countdown-digits dd {
+  color: var(--paper-bright, currentColor);
+  font-size: 0.92rem;
+  font-weight: 740;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.offer-countdown-digits dt {
+  color: oklch(0.84 0.035 255 / 0.68);
+  font-size: 0.58rem;
+  line-height: 1;
+}
+.offer-countdown-ended {
+  color: var(--paper-bright, currentColor);
+  font-size: 0.78rem;
+}
+
+@media (max-width: 720px) {
+  .landing-experience .launch-offer-callout {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+  .landing-experience .offer-countdown-digits {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

@@ -6,7 +6,10 @@ import {
 } from "@phosphor-icons/react";
 
 import { GuaranteeNote } from "@/components/landing/guarantee-note";
-import { GUARANTEE_DAYS } from "@/components/landing/landing-offer";
+import {
+  GUARANTEE_DAYS,
+  type LandingOfferPresentation,
+} from "@/components/landing/landing-offer";
 
 import "./final-cta-section.css";
 
@@ -16,7 +19,11 @@ const proofItems = [
   { label: "Todos os seus produtos", icon: StackIcon },
 ] as const;
 
-function FinalCtaSection({ monthlyPriceLabel }: { monthlyPriceLabel: string }) {
+function FinalCtaSection({
+  offer,
+}: {
+  offer: LandingOfferPresentation | null;
+}) {
   return (
     <section
       id="diagnostico"
@@ -34,7 +41,9 @@ function FinalCtaSection({ monthlyPriceLabel }: { monthlyPriceLabel: string }) {
       <div className="final-cta-inner">
         <p className="final-cta-kicker" data-reveal>
           <span className="final-cta-kicker-dot" aria-hidden="true" />
-          Assinatura mensal · Sem fidelidade
+          {offer
+            ? "Assinatura mensal · Sem fidelidade"
+            : "Planos para o seu momento"}
         </p>
 
         <h2 id="final-cta-title" data-reveal>
@@ -49,8 +58,13 @@ function FinalCtaSection({ monthlyPriceLabel }: { monthlyPriceLabel: string }) {
         </p>
 
         <div className="final-cta-actions" data-reveal>
-          <a className="button button-primary button-large" href="/register">
-            Garantir meu acesso por {monthlyPriceLabel}/mês
+          <a
+            className="button button-primary button-large"
+            href={offer ? "/register" : "#planos"}
+          >
+            {offer
+              ? `Garantir meu acesso por ${offer.monthlyPriceLabel}/mês`
+              : "Conhecer os planos"}
             <ArrowRightIcon aria-hidden="true" size={20} weight="bold" />
           </a>
           <GuaranteeNote className="final-cta-guarantee">

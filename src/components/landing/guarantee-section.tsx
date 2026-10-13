@@ -3,19 +3,22 @@ import { ShieldCheckIcon } from "@phosphor-icons/react";
 import {
   GUARANTEE_DAYS,
   SUPPORT_EMAIL,
+  type LandingOfferPresentation,
 } from "@/components/landing/landing-offer";
 
 import "./guarantee-section.css";
 
 function GuaranteeSection({
-  monthlyPriceLabel,
+  offer,
 }: {
-  monthlyPriceLabel: string;
+  offer: LandingOfferPresentation | null;
 }) {
   const steps = [
     {
       title: "Assine",
-      description: `Pague ${monthlyPriceLabel} com cartão ou Pix. O acesso libera na hora.`,
+      description: offer
+        ? `Pague ${offer.monthlyPriceLabel} com cartão ou Pix. O acesso libera na hora.`
+        : "Escolha a condição disponível e pague com cartão ou Pix. O acesso libera após a confirmação.",
     },
     {
       title: `Use por ${GUARANTEE_DAYS} dias`,

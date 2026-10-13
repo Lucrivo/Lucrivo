@@ -19,7 +19,7 @@ export default async function Home() {
     console.error(
       JSON.stringify({ event: "launch_offer_configuration_invalid" }),
     );
-    return <LandingExperience prices={[]} />;
+    return <LandingExperience prices={[]} launchOffer={null} />;
   }
 
   const supabase = await createClient();
@@ -31,6 +31,9 @@ export default async function Home() {
   return (
     <LandingExperience
       prices={result.status === "success" ? result.prices : []}
+      launchOffer={
+        launchOffer.phase === "active" ? { endsAt: launchOffer.endsAt } : null
+      }
     />
   );
 }

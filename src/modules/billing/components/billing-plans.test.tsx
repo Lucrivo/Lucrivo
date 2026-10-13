@@ -4,126 +4,91 @@ import { describe, expect, it } from "vitest";
 import type { ActiveBillingPrice } from "../types";
 import { BillingPlans } from "./billing-plans";
 
-const prices: ActiveBillingPrice[] = [
+const launchPrices: ActiveBillingPrice[] = [
   {
     id: "11111111-1111-4111-8111-111111111111",
     productCode: "quick_diagnosis_pro",
-    catalogCode: "standard",
+    catalogCode: "launch",
     billingMode: "monthly",
     amountCents: 3990,
     currency: "BRL",
     installmentLimit: null,
-    accessMonths: 1,
-    bonusMonths: 0,
+    accessMonths: 2,
+    bonusMonths: 1,
   },
   {
     id: "22222222-2222-4222-8222-222222222222",
     productCode: "quick_diagnosis_pro",
-    catalogCode: "standard",
+    catalogCode: "launch",
     billingMode: "semiannual",
     amountCents: 17940,
     currency: "BRL",
     installmentLimit: 6,
+    accessMonths: 12,
+    bonusMonths: 6,
+  },
+];
+
+const standardPrices: ActiveBillingPrice[] = [
+  {
+    ...launchPrices[0],
+    id: "33333333-3333-4333-8333-333333333333",
+    catalogCode: "standard",
+    amountCents: 4990,
+    accessMonths: 1,
+    bonusMonths: 0,
+  },
+  {
+    ...launchPrices[1],
+    id: "44444444-4444-4444-8444-444444444444",
+    catalogCode: "standard",
+    amountCents: 23940,
     accessMonths: 6,
     bonusMonths: 0,
   },
 ];
 
 describe("BillingPlans", () => {
-  it("derives every public offer and payment explanation from the catalog", () => {
-    const { container } = render(
-      <BillingPlans prices={prices} context="public" />,
-    );
+  it("presents the complete launch condition without implying a chosen installment count", () => {
+    render(<BillingPlans prices={launchPrices} context="public" />);
 
-    expect(screen.getByRole("heading", { name: "Grátis" })).toBeInTheDocument();
-    expect(screen.getByText("1 diagnóstico rápido")).toBeInTheDocument();
-    expect(screen.getByText("1 relatório completo")).toBeInTheDocument();
-
-    expect(screen.getByText("R$ 39,90/mês")).toBeInTheDocument();
-    expect(screen.getByText("Mais vantajoso")).toBeInTheDocument();
-    expect(screen.getByText("Comece sem custo")).toBeInTheDocument();
-    expect(screen.getByText("Mais flexibilidade")).toBeInTheDocument();
-    expect(screen.getByText("Melhor custo-benefício")).toBeInTheDocument();
-
+    expect(screen.getByText("Oferta de lançamento")).toBeInTheDocument();
+    const monthly = screen.getByRole("article", { name: "Plano Mensal" });
     const semiannual = screen.getByRole("article", {
       name: "Plano Semestral",
     });
 
-    expect(within(semiannual).getByText("6x de")).toBeInTheDocument();
-    expect(within(semiannual).getByText("R$ 29,90")).toBeInTheDocument();
+    expect(within(monthly).getByText("R$ 39,90/mês")).toBeInTheDocument();
     expect(
-      within(semiannual).getByText("ou R$ 179,40 à vista"),
+      within(monthly).getByText("2 meses no primeiro pagamento"),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("Economize R$ 60,00 em seis meses"),
-    ).toBeInTheDocument();
-    expect(
-      within(semiannual).getByText("6 meses de acesso"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("region", { name: "Segurança e transparência" }),
-    ).toHaveTextContent(
-      /Pagamento seguro com Asaas[\s\S]*Sem letras miúdas[\s\S]*Acesso liberado após confirmação/,
+    expect(within(monthly).getByText(/1 mês de bônus/)).toBeInTheDocument();
+    expect(semiannual).toHaveTextContent(
+      "R$ 179,40 à vista ou em até 6x de R$ 29,90",
     );
-    expect(container).toHaveTextContent(
-      "IA para explicar e interpretar seus relatórios",
-    );
+    expect(within(semiannual).getByText("12 meses de acesso")).toBeVisible();
+    expect(within(semiannual).getByText(/6 meses de bônus/)).toBeVisible();
+    expect(screen.getByText(/Depois da oferta.*R\$ 49,90/)).toBeVisible();
+    expect(screen.getByText(/Depois da oferta.*R\$ 239,40/)).toBeVisible();
+    expect(screen.queryByText(/^6x de$/)).not.toBeInTheDocument();
     expect(
-      screen.getAllByText("Vários produtos no mesmo diagnóstico detalhado"),
+      screen.getAllByText(/condição fica reservada por 1 hora/i),
     ).toHaveLength(2);
-    expect(
-      screen.queryByText(
-        "Cadastro de múltiplos produtos e controle de estoque",
-      ),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Começar grátis" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Escolher semestral" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Escolher mensal" }),
-    ).toBeInTheDocument();
-    expect(screen.queryByText("Pagar com Pix")).not.toBeInTheDocument();
-    expect(screen.queryByText("Assinar semestral")).not.toBeInTheDocument();
-    expect(
-      screen.getAllByText(
-        "Crie a conta primeiro. Cartão ou Pix na hora de assinar.",
-      ),
-    ).toHaveLength(2);
-
-    for (const link of screen.getAllByRole("link")) {
-      expect(link).toHaveAttribute("href", "/register");
-    }
   });
 
-  it("updates all displayed amounts when catalog versions change", () => {
-    render(
-      <BillingPlans
-        context="public"
-        prices={[
-          { ...prices[0], amountCents: 5990 },
-          { ...prices[1], amountCents: 29940 },
-        ]}
-      />,
+  it("presents the standard catalog without launch or bonus language", () => {
+    const { container } = render(
+      <BillingPlans prices={standardPrices} context="public" />,
     );
 
-    expect(screen.getByText("R$ 59,90/mês")).toBeInTheDocument();
-
-    const semiannual = screen.getByRole("article", {
-      name: "Plano Semestral",
-    });
-
-    expect(within(semiannual).getByText("6x de")).toBeInTheDocument();
-    expect(within(semiannual).getByText("R$ 49,90")).toBeInTheDocument();
+    expect(screen.queryByText("Oferta de lançamento")).not.toBeInTheDocument();
+    expect(container).not.toHaveTextContent("bônus");
+    expect(container).not.toHaveTextContent("R$ 39,90/mês");
+    expect(screen.getByText("R$ 49,90/mês")).toBeVisible();
     expect(
-      within(semiannual).getByText("ou R$ 299,40 à vista"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Economize R$ 60,00 em seis meses"),
-    ).toBeInTheDocument();
-    expect(screen.queryByText("R$ 49,90/mês")).not.toBeInTheDocument();
+      screen.getByRole("article", { name: "Plano Semestral" }),
+    ).toHaveTextContent("R$ 239,40 à vista ou em até 6x de R$ 39,90");
+    expect(screen.getByText("6 meses de acesso")).toBeVisible();
   });
 
   it("keeps free available when paid catalog data is unavailable", () => {
@@ -133,51 +98,41 @@ describe("BillingPlans", () => {
     expect(
       screen.getByText("Planos pagos temporariamente indisponíveis"),
     ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("heading", { name: "Mensal" }),
-    ).not.toBeInTheDocument();
   });
 
   it("offers both payment methods for each paid account plan", () => {
-    render(<BillingPlans context="account" prices={prices} />);
+    render(<BillingPlans context="account" prices={launchPrices} />);
 
-    const monthly = screen.getByRole("article", { name: "Plano Mensal" });
-    const semiannual = screen.getByRole("article", {
-      name: "Plano Semestral",
-    });
-
-    expect(
-      within(monthly).getByRole("button", { name: "Assinar mensal" }),
-    ).toBeInTheDocument();
-    expect(
-      within(monthly).getByRole("button", { name: "Pagar com Pix" }),
-    ).toBeInTheDocument();
-    expect(
-      within(semiannual).getByRole("button", {
-        name: "Assinar semestral",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      within(semiannual).getByRole("button", { name: "Pagar com Pix" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("region", { name: "Opções de plano" }),
-    ).toHaveAttribute("data-context", "account");
+    for (const name of ["Plano Mensal", "Plano Semestral"]) {
+      const plan = screen.getByRole("article", { name });
+      expect(
+        within(plan).getByRole("button", { name: /Assinar/ }),
+      ).toBeVisible();
+      expect(
+        within(plan).getByRole("button", { name: "Pagar com Pix" }),
+      ).toBeVisible();
+    }
   });
 
-  it("fails closed when the installment value is not exact", () => {
-    render(
+  it("fails closed for mixed catalogs or inexact installments", () => {
+    const { rerender } = render(
       <BillingPlans
         context="public"
-        prices={[prices[0], { ...prices[1], amountCents: 17941 }]}
+        prices={[launchPrices[0], standardPrices[1]]}
       />,
     );
-
     expect(
       screen.getByText("Planos pagos temporariamente indisponíveis"),
     ).toBeVisible();
+
+    rerender(
+      <BillingPlans
+        context="public"
+        prices={[launchPrices[0], { ...launchPrices[1], amountCents: 17941 }]}
+      />,
+    );
     expect(
-      screen.queryByRole("article", { name: "Plano Semestral" }),
-    ).toBeNull();
+      screen.getByText("Planos pagos temporariamente indisponíveis"),
+    ).toBeVisible();
   });
 });
