@@ -64,7 +64,7 @@ function OfferCountdown({
 
   return (
     <div
-      className="offer-countdown"
+      className="offer-countdown min-w-0"
       data-compact={compact}
       role="region"
       aria-label="Tempo restante da oferta de lançamento"
@@ -76,25 +76,52 @@ function OfferCountdown({
         <strong className="offer-countdown-ended">Oferta encerrada</strong>
       ) : (
         <dl
-          className="offer-countdown-digits"
+          className="offer-countdown-digits m-0 flex min-w-0 gap-2.5"
           data-countdown-digits
           aria-hidden="true"
         >
-          <div>
-            <dd suppressHydrationWarning>{days}</dd>
-            <dt suppressHydrationWarning>{days === 1 ? "dia" : "dias"}</dt>
+          <div className="grid min-w-0 flex-1 justify-items-center gap-0.5">
+            <dd
+              className="m-0 leading-none font-bold tabular-nums"
+              suppressHydrationWarning
+            >
+              {days}
+            </dd>
+            <dt
+              className="m-0 text-[0.625rem] leading-none opacity-70"
+              suppressHydrationWarning
+            >
+              {days === 1 ? "dia" : "dias"}
+            </dt>
           </div>
-          <div>
-            <dd suppressHydrationWarning>{String(hours).padStart(2, "0")}</dd>
-            <dt>horas</dt>
+          <div className="grid min-w-0 flex-1 justify-items-center gap-0.5">
+            <dd
+              className="m-0 leading-none font-bold tabular-nums"
+              suppressHydrationWarning
+            >
+              {String(hours).padStart(2, "0")}
+            </dd>
+            <dt className="m-0 text-[0.625rem] leading-none opacity-70">
+              horas
+            </dt>
           </div>
-          <div>
-            <dd suppressHydrationWarning>{String(minutes).padStart(2, "0")}</dd>
-            <dt>min</dt>
+          <div className="grid min-w-0 flex-1 justify-items-center gap-0.5">
+            <dd
+              className="m-0 leading-none font-bold tabular-nums"
+              suppressHydrationWarning
+            >
+              {String(minutes).padStart(2, "0")}
+            </dd>
+            <dt className="m-0 text-[0.625rem] leading-none opacity-70">min</dt>
           </div>
-          <div>
-            <dd suppressHydrationWarning>{String(seconds).padStart(2, "0")}</dd>
-            <dt>seg</dt>
+          <div className="grid min-w-0 flex-1 justify-items-center gap-0.5">
+            <dd
+              className="m-0 leading-none font-bold tabular-nums"
+              suppressHydrationWarning
+            >
+              {String(seconds).padStart(2, "0")}
+            </dd>
+            <dt className="m-0 text-[0.625rem] leading-none opacity-70">seg</dt>
           </div>
         </dl>
       )}

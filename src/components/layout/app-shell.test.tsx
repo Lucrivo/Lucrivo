@@ -29,6 +29,19 @@ vi.mock("@/components/layout/account-menu", () => ({
   ),
 }));
 
+vi.mock("@/modules/billing/components/launch-offer-strip", () => ({
+  LaunchOfferStrip: ({
+    offer,
+  }: {
+    offer: { endsAt: string; freeQuickDiagnosisUsed: boolean } | null;
+  }) =>
+    offer ? (
+      <aside data-testid="launch-offer-strip">
+        launch:{offer.endsAt}:{String(offer.freeQuickDiagnosisUsed)}
+      </aside>
+    ) : null,
+}));
+
 vi.mock("@/components/ui/sidebar", () => ({
   SidebarInset: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
@@ -56,6 +69,10 @@ describe("AppShell", () => {
         isAdminUser
         contextTitle="Administração"
         contextDescription="Acompanhe o funcionamento do Lucrivo."
+        launchOfferStrip={{
+          endsAt: "2026-11-04T12:00:00.000Z",
+          freeQuickDiagnosisUsed: true,
+        }}
       >
         <div>protected-content</div>
       </AppShell>,
@@ -71,5 +88,8 @@ describe("AppShell", () => {
       screen.getByRole("button", { name: "Alternar menu lateral" }),
     ).toBeVisible();
     expect(screen.getByText("protected-content")).toBeVisible();
+    expect(screen.getByTestId("launch-offer-strip")).toHaveTextContent(
+      "launch:2026-11-04T12:00:00.000Z:true",
+    );
   });
 });
