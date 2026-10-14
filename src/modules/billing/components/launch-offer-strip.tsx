@@ -40,7 +40,7 @@ function LaunchOfferStrip({ offer }: LaunchOfferStripProps) {
   return (
     <aside
       aria-label="Condição especial de lançamento"
-      className="mx-4 mt-4 grid gap-4 rounded-2xl border border-white/15 bg-[oklch(0.5_0.23_259)] p-4 text-white shadow-sm sm:mx-6 sm:p-5 @min-[40rem]:grid-cols-[minmax(14rem,1fr)_auto] @min-[40rem]:items-center lg:mx-8"
+      className="mx-4 mt-4 grid gap-4 rounded-2xl border border-white/15 bg-[oklch(0.5_0.23_259)] p-4 text-white shadow-sm sm:mx-6 sm:p-5 lg:mx-8 @min-[40rem]:grid-cols-[minmax(14rem,1fr)_auto] @min-[40rem]:items-center"
     >
       <div className="flex min-w-0 items-start gap-3">
         <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white/12">

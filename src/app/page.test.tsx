@@ -127,9 +127,12 @@ describe("Home", () => {
     expect(view.getByText("7 dias de garantia.")).toBeInTheDocument();
     expect(
       view.getByRole("img", {
-        name: "Painel ilustrativo do Lucrivo com indicadores financeiros.",
+        name: "Exemplo de relatório do Lucrivo com resultado e orientações financeiras.",
       }),
     ).toBeInTheDocument();
+    expect(
+      view.getByText("Exemplo ilustrativo com dados fictícios."),
+    ).toBeVisible();
     expect(view.getByText("Sem cartão para começar")).toBeInTheDocument();
     expect(view.getByText("Sem planilhas")).toBeInTheDocument();
     expect(view.getByText("Sem falar contabilês")).toBeInTheDocument();
@@ -137,6 +140,7 @@ describe("Home", () => {
     const offerBar = screen.getByRole("complementary", {
       name: "Oferta de lançamento",
     });
+    expect(screen.getByRole("main")).toHaveClass("has-launch-offer");
     expect(offerBar).toHaveClass("launch-offer-bar");
     expect(
       within(offerBar).getByText(
