@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -85,7 +84,7 @@ describe("DashboardPage", () => {
     expect(hasExplicitClientDashboardFilters).toHaveBeenCalledWith(
       searchParams,
     );
-    expect(page.type).toBe(Suspense);
+    expect(page.type).toBe(ClientDashboardRouteContent);
     expect(requireUser).toHaveBeenCalledOnce();
     expect(getClientDashboard).toHaveBeenCalledWith({
       supabase,
