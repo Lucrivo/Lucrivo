@@ -417,6 +417,18 @@ html:has(.landing-experience) {
   animation: hero-dashboard-float 7s ease-in-out infinite;
 }
 
+.landing-experience .hero-visual-caption {
+  position: absolute;
+  right: 18%;
+  bottom: -0.25rem;
+  z-index: 3;
+  margin: 0;
+  color: oklch(0.88 0.035 255 / 0.64);
+  font-size: 0.7rem;
+  line-height: 1.4;
+  text-shadow: 0 1px 12px oklch(0.03 0.02 258 / 0.8);
+}
+
 @keyframes hero-dashboard-float {
   0%,
   100% {
