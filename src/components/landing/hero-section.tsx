@@ -10,7 +10,7 @@ import {
 
 import { GuaranteeNote } from "@/components/landing/guarantee-note";
 import { type LandingOfferPresentation } from "@/components/landing/landing-offer";
-import heroImage from "@/public/lp/hero-image.png";
+import heroImage from "@/public/lp/hero-image-v2.png";
 
 const trustItems = [
   {
@@ -101,14 +101,17 @@ function HeroSection({ offer }: { offer: LandingOfferPresentation | null }) {
           <div className="hero-dashboard-motion">
             <Image
               src={heroImage}
-              alt="Painel ilustrativo do Lucrivo com indicadores financeiros."
+              alt="Exemplo de relatório do Lucrivo com resultado e orientações financeiras."
               width={1448}
               height={1086}
               priority
-              sizes="(max-width: 720px) 100vw, (max-width: 1100px) 86vw, 58vw"
+              sizes="(max-width: 720px) 100vw, (max-width: 911px) 90vw, (max-width: 1160px) 820px, 52vw"
               className="hero-dashboard-image"
             />
           </div>
+          <figcaption className="hero-visual-caption">
+            Exemplo ilustrativo com dados fictícios.
+          </figcaption>
         </figure>
       </div>
     </section>

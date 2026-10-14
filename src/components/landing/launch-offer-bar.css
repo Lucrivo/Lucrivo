@@ -8,8 +8,9 @@
   height: var(--launch-bar-offset);
   box-sizing: border-box;
   align-items: center;
-  padding: env(safe-area-inset-top, 0px) max(20px, env(safe-area-inset-right, 0px))
-    0 max(20px, env(safe-area-inset-left, 0px));
+  padding: env(safe-area-inset-top, 0px)
+    max(20px, env(safe-area-inset-right, 0px)) 0
+    max(20px, env(safe-area-inset-left, 0px));
   background: oklch(0.48 0.22 259);
   color: oklch(0.99 0.005 255);
   box-shadow: 0 16px 32px -22px oklch(0.32 0.16 259 / 0.85);
