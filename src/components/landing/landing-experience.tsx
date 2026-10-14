@@ -20,6 +20,7 @@ import {
 } from "@/components/landing/landing-offer";
 import { PricingSection } from "@/components/landing/pricing-section";
 import { ProblemSection } from "@/components/landing/problem-section";
+import { cn } from "@/lib/utils";
 import type { ActiveBillingPrice } from "@/modules/billing/types";
 
 import "./landing-experience.css";
@@ -189,9 +190,10 @@ export function LandingExperience({
   return (
     <main
       ref={root}
-      className={`landing-experience page-shell w-full max-w-full overflow-x-hidden${
-        activeLaunchOffer ? "has-launch-offer" : ""
-      }`}
+      className={cn(
+        "landing-experience page-shell w-full max-w-full overflow-x-hidden",
+        activeLaunchOffer && "has-launch-offer",
+      )}
     >
       {activeLaunchOffer ? <LaunchOfferBar {...activeLaunchOffer} /> : null}
       <LandingNav />

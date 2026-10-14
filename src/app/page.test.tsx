@@ -140,6 +140,7 @@ describe("Home", () => {
     const offerBar = screen.getByRole("complementary", {
       name: "Oferta de lançamento",
     });
+    expect(screen.getByRole("main")).toHaveClass("has-launch-offer");
     expect(offerBar).toHaveClass("launch-offer-bar");
     expect(
       within(offerBar).getByText(
