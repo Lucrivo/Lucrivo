@@ -105,7 +105,7 @@ function HeroSection({ offer }: { offer: LandingOfferPresentation | null }) {
               width={1448}
               height={1086}
               priority
-              sizes="(max-width: 720px) 100vw, (max-width: 1100px) 86vw, 58vw"
+              sizes="(max-width: 720px) 100vw, (max-width: 911px) 90vw, (max-width: 1160px) 820px, 52vw"
               className="hero-dashboard-image"
             />
           </div>
