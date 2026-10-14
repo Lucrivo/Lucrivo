@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { cookies } from "next/headers";
 
 import {
@@ -7,7 +6,6 @@ import {
   resolveClientDashboardFilters,
 } from "@/modules/client-dashboard/client-dashboard-filter-cookie";
 import { type DashboardSearchParams } from "@/modules/client-dashboard/client-dashboard.filters";
-import { ClientDashboardLoading } from "@/modules/client-dashboard/components/client-dashboard-loading";
 import { ClientDashboardRouteContent } from "@/modules/client-dashboard/components/client-dashboard-route-content";
 
 export default async function DashboardPage({
@@ -23,11 +21,9 @@ export default async function DashboardPage({
   const persistFilters = hasExplicitClientDashboardFilters(params);
 
   return (
-    <Suspense fallback={<ClientDashboardLoading />}>
-      <ClientDashboardRouteContent
-        filters={filters}
-        persistFilters={persistFilters}
-      />
-    </Suspense>
+    <ClientDashboardRouteContent
+      filters={filters}
+      persistFilters={persistFilters}
+    />
   );
 }
