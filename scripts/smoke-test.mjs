@@ -79,13 +79,16 @@ function expectStatus(response, pathname, expectedStatuses) {
   console.log("[smoke] ok GET " + pathname + " -> " + response.status);
 }
 
-function expectRedirect(response, pathname, expectedPath) {
+function expectRedirect(response, pathname, expectedPath, expectedOrigin) {
   expectStatus(response, pathname, [307, 308]);
   const location = response.headers.get("location");
   if (!location)
     throw new Error("GET " + pathname + " omitted redirect location");
 
   const destination = new URL(location, response.url);
+  if (destination.origin !== expectedOrigin) {
+    throw new Error("GET " + pathname + " redirected to an unexpected origin");
+  }
   if (destination.pathname + destination.search !== expectedPath) {
     throw new Error("GET " + pathname + " redirected to an unexpected path");
   }
@@ -111,10 +114,10 @@ async function runSmokeTest() {
   expectStatus(login, "/login", [200]);
 
   const dashboard = await request(baseUrl, "/dashboard", timeoutMs);
-  expectRedirect(dashboard, "/dashboard", "/login");
+  expectRedirect(dashboard, "/dashboard", "/login", baseUrl.origin);
 
   const admin = await request(baseUrl, "/admin", timeoutMs);
-  expectRedirect(admin, "/admin", "/login");
+  expectRedirect(admin, "/admin", "/login", baseUrl.origin);
 
   const updatePassword = await request(baseUrl, "/update-password", timeoutMs);
   expectStatus(updatePassword, "/update-password", [200]);
@@ -124,7 +127,12 @@ async function runSmokeTest() {
     if (signupExpectation === "enabled") {
       expectStatus(register, "/register", [200]);
     } else {
-      expectRedirect(register, "/register", "/login?status=signup_disabled");
+      expectRedirect(
+        register,
+        "/register",
+        "/login?status=signup_disabled",
+        baseUrl.origin,
+      );
     }
   }
 

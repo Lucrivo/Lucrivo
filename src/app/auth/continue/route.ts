@@ -1,8 +1,9 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
+import { applicationUrl } from "@/config/application-url";
 import { resolveAuthenticatedHome } from "@/modules/auth/services/resolve-authenticated-home";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   const destination = await resolveAuthenticatedHome();
-  return NextResponse.redirect(new URL(destination, request.url));
+  return NextResponse.redirect(applicationUrl(destination));
 }

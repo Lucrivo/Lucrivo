@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { applicationUrl } from "@/config/application-url";
+
 const guestOnlyPaths = new Set(["/login", "/register", "/forgot-password"]);
 
 export async function updateSession(request: NextRequest) {
@@ -41,11 +43,9 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
 
   if (data?.claims?.sub && guestOnlyPaths.has(request.nextUrl.pathname)) {
-    const destination = request.nextUrl.clone();
-    destination.pathname = "/auth/continue";
-    destination.search = "";
-
-    const redirectResponse = NextResponse.redirect(destination);
+    const redirectResponse = NextResponse.redirect(
+      applicationUrl("/auth/continue"),
+    );
 
     response.cookies.getAll().forEach((cookie) => {
       redirectResponse.cookies.set(cookie);

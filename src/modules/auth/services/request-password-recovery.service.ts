@@ -1,19 +1,14 @@
 import "server-only";
 
+import { applicationUrl } from "@/config/application-url";
 import { createClient } from "@/infrastructure/database/supabase/clients/server.client";
 
 type RequestPasswordRecoveryServiceResult =
   { status: "accepted" } | { status: "error"; error: "request_failed" };
 
 function recoveryRedirectUrl() {
-  const appUrl = process.env.APP_URL;
-  if (!appUrl) return null;
-
   try {
-    const redirectUrl = new URL("/auth/confirm", appUrl);
-    if (!["http:", "https:"].includes(redirectUrl.protocol)) return null;
-
-    return redirectUrl.toString();
+    return applicationUrl("/auth/confirm").toString();
   } catch {
     return null;
   }

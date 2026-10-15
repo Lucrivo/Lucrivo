@@ -66,16 +66,79 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           DEPLOY_SHA: ${{ github.sha }}
+          PRODUCTION_APP_URL: ${{ secrets.PRODUCTION_APP_URL }}
         run: |
+          if [ -z "$PRODUCTION_APP_URL" ]; then
+            echo "PRODUCTION_APP_URL is required." >&2
+            exit 1
+          fi
+
+          app_url_b64="$(printf '%s' "$PRODUCTION_APP_URL" | base64 -w 0)"
           install -d -m 700 ~/.ssh
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/vps_key
           chmod 600 ~/.ssh/vps_key
           ssh -i ~/.ssh/vps_key -o StrictHostKeyChecking=accept-new \
-            "$VPS_USER@$VPS_HOST" "DEPLOY_SHA='$DEPLOY_SHA' bash -s" << 'REMOTE'
+            "$VPS_USER@$VPS_HOST" \
+            "DEPLOY_SHA='$DEPLOY_SHA' APP_URL_B64='$app_url_b64' bash -s" << 'REMOTE'
           set -euo pipefail
           case "$DEPLOY_SHA" in
             *[!0-9a-fA-F]*|"") echo "Invalid revision." >&2; exit 1 ;;
           esac
+
+          production_app_url="$(printf '%s' "$APP_URL_B64" | base64 --decode)"
+          if ! canonical_app_url="$(APP_URL_VALUE="$production_app_url" node -e '
+            const raw = process.env.APP_URL_VALUE;
+            let url;
+            try {
+              url = new URL(raw);
+            } catch {
+              process.exit(1);
+            }
+            if (
+              url.protocol !== "https:" ||
+              url.username !== "" ||
+              url.password !== "" ||
+              url.pathname !== "/" ||
+              url.search !== "" ||
+              url.hash !== ""
+            ) {
+              process.exit(1);
+            }
+            process.stdout.write(url.origin);
+          ')"; then
+            echo "PRODUCTION_APP_URL must be an HTTPS origin." >&2
+            exit 1
+          fi
+
+          if [ "$canonical_app_url" != "${production_app_url%/}" ]; then
+            echo "PRODUCTION_APP_URL must be a canonical HTTPS origin." >&2
+            exit 1
+          fi
+
+          environment_file=/home/lucrivo/.config/lucrivo.env
+          if [ ! -f "$environment_file" ]; then
+            echo "Production environment file was not found." >&2
+            exit 1
+          fi
+
+          environment_tmp="$(mktemp /home/lucrivo/.config/lucrivo.env.XXXXXX)"
+          trap 'rm -f "$environment_tmp"' EXIT
+          awk -v app_url="$canonical_app_url" '
+            /^APP_URL=/ {
+              if (!updated) print "APP_URL=" app_url
+              updated = 1
+              next
+            }
+            { print }
+            END {
+              if (!updated) print "APP_URL=" app_url
+            }
+          ' "$environment_file" > "$environment_tmp"
+          chown --reference="$environment_file" "$environment_tmp"
+          chmod --reference="$environment_file" "$environment_tmp"
+          mv "$environment_tmp" "$environment_file"
+          trap - EXIT
+
           install -d /etc/systemd/system/lucrivo.service.d
           printf '[Service]\nEnvironment=VERCEL_GIT_COMMIT_SHA=%s\n' "$DEPLOY_SHA" \
             > /etc/systemd/system/lucrivo.service.d/revision.conf
@@ -100,6 +163,7 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm build
           DEPLOY
+          chown lucrivo:lucrivo "$deploy_script"
           chmod 700 "$deploy_script"
           set +e
           sudo -u lucrivo env DEPLOY_SHA="$DEPLOY_SHA" bash "$deploy_script"

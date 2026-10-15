@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { createClient, verifyOtp } = vi.hoisted(() => ({
   createClient: vi.fn(),
@@ -15,9 +15,12 @@ import { GET } from "./route";
 describe("GET /auth/confirm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv("APP_URL", "https://lucrivo.example");
     createClient.mockResolvedValue({ auth: { verifyOtp } });
     verifyOtp.mockResolvedValue({ error: null });
   });
+
+  afterEach(() => vi.unstubAllEnvs());
 
   it("confirma o e-mail e encaminha a sessão ao resolvedor", async () => {
     const request = new NextRequest(
@@ -32,7 +35,7 @@ describe("GET /auth/confirm", () => {
       type: "email",
     });
     expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/auth/continue",
+      "https://lucrivo.example/auth/continue",
     );
   });
 
@@ -43,7 +46,7 @@ describe("GET /auth/confirm", () => {
 
     expect(createClient).not.toHaveBeenCalled();
     expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/login?error=confirmation_failed",
+      "https://lucrivo.example/login?error=confirmation_failed",
     );
   });
 
@@ -60,7 +63,7 @@ describe("GET /auth/confirm", () => {
       type: "recovery",
     });
     expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/update-password",
+      "https://lucrivo.example/update-password",
     );
   });
 
@@ -76,7 +79,7 @@ describe("GET /auth/confirm", () => {
       type: "invite",
     });
     expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/update-password?flow=invite",
+      "https://lucrivo.example/update-password?flow=invite",
     );
   });
 
@@ -89,7 +92,7 @@ describe("GET /auth/confirm", () => {
 
     expect(createClient).not.toHaveBeenCalled();
     expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/login?error=invalid_or_expired_invite",
+      "https://lucrivo.example/login?error=invalid_or_expired_invite",
     );
   });
 
@@ -102,7 +105,7 @@ describe("GET /auth/confirm", () => {
 
     expect(createClient).not.toHaveBeenCalled();
     expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/forgot-password?error=invalid_or_expired_link",
+      "https://lucrivo.example/forgot-password?error=invalid_or_expired_link",
     );
   });
 
@@ -115,7 +118,7 @@ describe("GET /auth/confirm", () => {
 
     expect(createClient).not.toHaveBeenCalled();
     expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/login?error=confirmation_failed",
+      "https://lucrivo.example/login?error=confirmation_failed",
     );
   });
 
@@ -129,7 +132,7 @@ describe("GET /auth/confirm", () => {
     const location = response.headers.get("location");
 
     expect(location).toBe(
-      "http://localhost:3000/login?error=confirmation_failed",
+      "https://lucrivo.example/login?error=confirmation_failed",
     );
     expect(location).not.toContain("invalid-token");
   });
@@ -143,7 +146,7 @@ describe("GET /auth/confirm", () => {
     const response = await GET(request);
 
     expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/login?error=confirmation_failed",
+      "https://lucrivo.example/login?error=confirmation_failed",
     );
   });
 
@@ -157,7 +160,7 @@ describe("GET /auth/confirm", () => {
     const location = response.headers.get("location");
 
     expect(location).toBe(
-      "http://localhost:3000/forgot-password?error=invalid_or_expired_link",
+      "https://lucrivo.example/forgot-password?error=invalid_or_expired_link",
     );
     expect(location).not.toContain("expired-token");
   });
@@ -171,7 +174,7 @@ describe("GET /auth/confirm", () => {
     const response = await GET(request);
 
     expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/forgot-password?error=invalid_or_expired_link",
+      "https://lucrivo.example/forgot-password?error=invalid_or_expired_link",
     );
   });
 
@@ -185,7 +188,7 @@ describe("GET /auth/confirm", () => {
     const location = response.headers.get("location");
 
     expect(location).toBe(
-      "http://localhost:3000/login?error=invalid_or_expired_invite",
+      "https://lucrivo.example/login?error=invalid_or_expired_invite",
     );
     expect(location).not.toContain("expired-invite");
   });
