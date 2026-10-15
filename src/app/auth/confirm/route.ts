@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { applicationUrl } from "@/config/application-url";
 import { createClient } from "@/infrastructure/database/supabase/clients/server.client";
 
 const otpFlows = {
@@ -30,13 +31,10 @@ function isSupportedOtpType(type: string | null): type is SupportedOtpType {
 }
 
 function safeRedirect(
-  request: NextRequest,
   pathname: string,
   query: Readonly<Record<string, string>> = {},
 ) {
-  const redirectTo = request.nextUrl.clone();
-  redirectTo.pathname = pathname;
-  redirectTo.search = "";
+  const redirectTo = applicationUrl(pathname);
   Object.entries(query).forEach(([key, value]) => {
     redirectTo.searchParams.set(key, value);
   });
@@ -50,14 +48,14 @@ export async function GET(request: NextRequest) {
 
   if (!isSupportedOtpType(type)) {
     const fallback = otpFlows.email;
-    return safeRedirect(request, fallback.failurePath, {
+    return safeRedirect(fallback.failurePath, {
       error: fallback.failureCode,
     });
   }
 
   const flow = otpFlows[type];
   const failureRedirect = () =>
-    safeRedirect(request, flow.failurePath, { error: flow.failureCode });
+    safeRedirect(flow.failurePath, { error: flow.failureCode });
 
   if (!tokenHash) return failureRedirect();
 
@@ -73,5 +71,5 @@ export async function GET(request: NextRequest) {
     return failureRedirect();
   }
 
-  return safeRedirect(request, flow.successPath, flow.successQuery);
+  return safeRedirect(flow.successPath, flow.successQuery);
 }

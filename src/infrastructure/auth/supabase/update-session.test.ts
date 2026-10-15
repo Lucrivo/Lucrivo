@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 const { createServerClient, getClaims } = vi.hoisted(() => ({
@@ -25,9 +25,12 @@ type ServerClientOptions = {
 describe("updateSession", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv("APP_URL", "https://lucrivo.example");
     createServerClient.mockReturnValue({ auth: { getClaims } });
     getClaims.mockResolvedValue({ data: { claims: null }, error: null });
   });
+
+  afterEach(() => vi.unstubAllEnvs());
 
   it("bypasses Supabase for the application health check", async () => {
     const response = await updateSession(
@@ -53,7 +56,7 @@ describe("updateSession", () => {
 
       expect(response.status).toBe(307);
       expect(response.headers.get("location")).toBe(
-        "http://localhost:3000/auth/continue",
+        "https://lucrivo.example/auth/continue",
       );
     },
   );
