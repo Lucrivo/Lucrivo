@@ -3,6 +3,7 @@ type SeedUuidKind =
   | "identity"
   | "contract"
   | "payment"
+  | "bonusGrant"
   | "submission"
   | "item"
   | "ingredient";
@@ -139,6 +140,15 @@ type SeedPayment = {
   chargebackAt: SeedRelativeTime | null;
 };
 
+type SeedBonusGrant = {
+  id: string;
+  userId: string;
+  contractId: string;
+  grantedAt: SeedRelativeTime;
+  revokedAt: SeedRelativeTime | null;
+  revocationReason: "full_refund" | "chargeback" | null;
+};
+
 type SeedAdminUserState = {
   userId: string;
   blockedAt: SeedRelativeTime | null;
@@ -182,6 +192,7 @@ type DemoSeedCatalog = {
   reports: SeedAssignedReport[];
   contracts: SeedContract[];
   payments: SeedPayment[];
+  bonusGrants: SeedBonusGrant[];
   states: SeedAdminUserState[];
   events: SeedAdminUserEvent[];
 };
@@ -193,6 +204,7 @@ export type {
   SeedAdminUserEvent,
   SeedAdminUserState,
   SeedAssignedReport,
+  SeedBonusGrant,
   SeedContract,
   SeedContractStatus,
   SeedCreatedBucket,
