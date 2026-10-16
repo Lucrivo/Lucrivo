@@ -356,6 +356,44 @@ export type Database = {
           },
         ];
       };
+      bonus_access_grants: {
+        Row: {
+          contract_id: string;
+          created_at: string;
+          granted_at: string;
+          id: string;
+          revocation_reason: string | null;
+          revoked_at: string | null;
+          user_id: string;
+        };
+        Insert: {
+          contract_id: string;
+          created_at?: string;
+          granted_at: string;
+          id?: string;
+          revocation_reason?: string | null;
+          revoked_at?: string | null;
+          user_id: string;
+        };
+        Update: {
+          contract_id?: string;
+          created_at?: string;
+          granted_at?: string;
+          id?: string;
+          revocation_reason?: string | null;
+          revoked_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "bonus_access_grants_contract_id_fkey";
+            columns: ["contract_id"];
+            isOneToOne: true;
+            referencedRelation: "billing_contracts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       business_segments: {
         Row: {
           created_at: string;

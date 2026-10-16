@@ -349,6 +349,20 @@ select results_eq(
   ) $$,
   'documented local event datetime is normalized to UTC'
 );
+select results_eq(
+  $$
+    select contract_id, user_id, revoked_at, revocation_reason
+    from public.bonus_access_grants
+    where contract_id = '92000000-0000-4000-8000-000000000001'
+  $$,
+  $$ values (
+    '92000000-0000-4000-8000-000000000001'::uuid,
+    '91000000-0000-4000-8000-000000000001'::uuid,
+    null::timestamptz,
+    null::text
+  ) $$,
+  'paid Checkout grants permanent bonus access'
+);
 
 select is(
   public.apply_asaas_webhook_event(
@@ -419,6 +433,15 @@ select results_eq(
     '2026-09-09T13:02:00Z'::timestamptz
   ) $$,
   'payment money is converted through exact numeric cents'
+);
+select is(
+  (
+    select count(*)
+    from public.bonus_access_grants
+    where contract_id = '92000000-0000-4000-8000-000000000001'
+  ),
+  1::bigint,
+  'duplicate activation keeps one bonus grant per contract'
 );
 
 select is(
@@ -564,6 +587,20 @@ select results_eq(
     '2026-11-10T12:00:00Z'::timestamptz
   ) $$,
   'monthly Pix is never silently renewed'
+);
+select results_eq(
+  $$
+    select contract_id, user_id, revoked_at, revocation_reason
+    from public.bonus_access_grants
+    where contract_id = '92000000-0000-4000-8000-000000000002'
+  $$,
+  $$ values (
+    '92000000-0000-4000-8000-000000000002'::uuid,
+    '91000000-0000-4000-8000-000000000002'::uuid,
+    null::timestamptz,
+    null::text
+  ) $$,
+  'first confirmed payment grants the permanent bonus idempotently'
 );
 
 select is(
@@ -744,6 +781,15 @@ select results_eq(
   ) $$,
   'partial refund leaves access unchanged and flags review'
 );
+select results_eq(
+  $$
+    select revoked_at, revocation_reason
+    from public.bonus_access_grants
+    where contract_id = '92000000-0000-4000-8000-000000000003'
+  $$,
+  $$ values (null::timestamptz, null::text) $$,
+  'partial refund preserves permanent bonus access'
+);
 
 select is(
   public.apply_asaas_webhook_event(
@@ -771,6 +817,15 @@ select ok(
   ),
   'full refund revokes access immediately'
 );
+select results_eq(
+  $$
+    select revoked_at, revocation_reason
+    from public.bonus_access_grants
+    where contract_id = '92000000-0000-4000-8000-000000000004'
+  $$,
+  $$ values ('2026-09-09T12:00:00Z'::timestamptz, 'full_refund'::text) $$,
+  'full refund revokes only its matching permanent bonus grant'
+);
 
 select is(
   public.apply_asaas_webhook_event(
@@ -797,6 +852,15 @@ select ok(
     where id = '92000000-0000-4000-8000-000000000003'
   ),
   'chargeback revokes access immediately'
+);
+select results_eq(
+  $$
+    select revoked_at, revocation_reason
+    from public.bonus_access_grants
+    where contract_id = '92000000-0000-4000-8000-000000000003'
+  $$,
+  $$ values ('2026-09-09T13:00:00Z'::timestamptz, 'chargeback'::text) $$,
+  'chargeback revokes its matching permanent bonus grant'
 );
 
 select is(
@@ -934,6 +998,15 @@ select results_eq(
     '2026-12-09T00:00:00Z'::timestamptz
   ) $$,
   'subscription deletion keeps the already-paid interval intact'
+);
+select results_eq(
+  $$
+    select revoked_at, revocation_reason
+    from public.bonus_access_grants
+    where contract_id = '92000000-0000-4000-8000-000000000001'
+  $$,
+  $$ values (null::timestamptz, null::text) $$,
+  'normal cancellation preserves permanent bonus access'
 );
 
 insert into public.billing_customers (user_id, asaas_customer_id)
