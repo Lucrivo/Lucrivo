@@ -70,5 +70,3 @@ export default async function BonusPage({ searchParams }: BonusPageProps) {
     </main>
   );
 }
-
-export { normalizeNotice, type BonusPageProps };
