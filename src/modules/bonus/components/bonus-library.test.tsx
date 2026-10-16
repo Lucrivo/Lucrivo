@@ -35,11 +35,10 @@ const availableMaterials: BonusMaterialView[] = [
   },
 ];
 
-const freeMaterials: BonusMaterialView[] = availableMaterials.map(
-  (material) =>
-    material.slug === "ebook"
-      ? material
-      : { ...material, access: "locked" as const },
+const freeMaterials: BonusMaterialView[] = availableMaterials.map((material) =>
+  material.slug === "ebook"
+    ? material
+    : { ...material, access: "locked" as const },
 );
 
 describe("BonusLibrary", () => {
@@ -145,18 +144,21 @@ describe("BonusLibrary", () => {
     ["locked", "Assine para liberar o guia e a planilha."],
     ["preparing", "O material ainda está sendo preparado."],
     ["unavailable", "Não foi possível acessar o material agora."],
-  ] as const)("renders the %s route notice as a status alert", (notice, copy) => {
-    render(
-      <BonusLibrary
-        materials={freeMaterials}
-        unlockedCount={1}
-        hasPermanentAccess={false}
-        notice={notice}
-      />,
-    );
+  ] as const)(
+    "renders the %s route notice as a status alert",
+    (notice, copy) => {
+      render(
+        <BonusLibrary
+          materials={freeMaterials}
+          unlockedCount={1}
+          hasPermanentAccess={false}
+          notice={notice}
+        />,
+      );
 
-    expect(screen.getByRole("alert")).toHaveTextContent(copy);
-  });
+      expect(screen.getByRole("alert")).toHaveTextContent(copy);
+    },
+  );
 
   it("uses icon and text labels for every material state", () => {
     render(

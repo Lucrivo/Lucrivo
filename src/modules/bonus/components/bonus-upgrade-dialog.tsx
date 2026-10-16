@@ -19,10 +19,7 @@ type BonusUpgradeDialogProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-function BonusUpgradeDialog({
-  open,
-  onOpenChange,
-}: BonusUpgradeDialogProps) {
+function BonusUpgradeDialog({ open, onOpenChange }: BonusUpgradeDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="gap-5 sm:max-w-md">

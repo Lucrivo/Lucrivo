@@ -64,9 +64,7 @@ describe("GET /api/bonus/:slug", () => {
   });
 
   it("requires current legal acceptance", async () => {
-    requireClientAccess.mockRejectedValue(
-      new LegalAcceptanceRequiredError(),
-    );
+    requireClientAccess.mockRejectedValue(new LegalAcceptanceRequiredError());
     const { response, body } = await get();
     expect(response.status).toBe(403);
     expect(body).toEqual({ error: "legal_acceptance_required" });

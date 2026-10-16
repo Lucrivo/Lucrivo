@@ -126,8 +126,10 @@ function MaterialAction({
   }
 
   const opensNewTab = material.delivery === "new_tab";
-  const label = material.slug === "cash-flow" ? "Baixar planilha" : "Ler e baixar";
-  const ActionIcon = material.slug === "cash-flow" ? DownloadIcon : ArrowUpRightIcon;
+  const label =
+    material.slug === "cash-flow" ? "Baixar planilha" : "Ler e baixar";
+  const ActionIcon =
+    material.slug === "cash-flow" ? DownloadIcon : ArrowUpRightIcon;
 
   return (
     <a
@@ -175,12 +177,15 @@ function BonusLibrary({
             Sua biblioteca prática
           </h2>
           <p className="text-muted-foreground max-w-2xl leading-7">
-            Materiais diretos ao ponto para organizar as finanças e acompanhar
-            o caixa com mais clareza.
+            Materiais diretos ao ponto para organizar as finanças e acompanhar o
+            caixa com mais clareza.
           </p>
         </div>
         <div className="bg-muted/60 ring-border flex w-fit items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium ring-1">
-          <CheckCircle2Icon aria-hidden="true" className="text-success size-4" />
+          <CheckCircle2Icon
+            aria-hidden="true"
+            className="text-success size-4"
+          />
           <span>{unlockedCount} de 3 materiais liberados</span>
         </div>
       </div>
@@ -192,7 +197,7 @@ function BonusLibrary({
             <article
               key={material.slug}
               className={cn(
-                "bg-card animate-fade-up border-border/75 hover:border-primary/30 group flex min-h-[23rem] flex-col rounded-xl border p-5 shadow-sm transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-md motion-reduce:animate-none motion-reduce:transform-none motion-reduce:opacity-100",
+                "bg-card animate-fade-up border-border/75 hover:border-primary/30 group flex min-h-[23rem] flex-col rounded-xl border p-5 shadow-sm transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none motion-reduce:animate-none motion-reduce:opacity-100",
                 delays[index],
               )}
             >
@@ -228,7 +233,10 @@ function BonusLibrary({
 
       {hasPermanentAccess ? (
         <p className="text-muted-foreground flex items-center gap-2 text-sm">
-          <CheckCircle2Icon aria-hidden="true" className="text-success size-4" />
+          <CheckCircle2Icon
+            aria-hidden="true"
+            className="text-success size-4"
+          />
           O guia e a planilha continuam seus mesmo após o fim do plano.
         </p>
       ) : null}

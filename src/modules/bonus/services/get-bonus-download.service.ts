@@ -68,8 +68,4 @@ async function getBonusDownload({
   }
 }
 
-export {
-  getBonusDownload,
-  type BonusDownloadInput,
-  type BonusDownloadResult,
-};
+export { getBonusDownload, type BonusDownloadInput, type BonusDownloadResult };

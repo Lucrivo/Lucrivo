@@ -23,9 +23,7 @@ type BonusAccessResult =
   | { status: "read_failed" };
 
 type BonusObjectResult =
-  | { status: "ready" }
-  | { status: "missing" }
-  | { status: "unavailable" };
+  { status: "ready" } | { status: "missing" } | { status: "unavailable" };
 
 type BonusLibraryResult =
   | {
