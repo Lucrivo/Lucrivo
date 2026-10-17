@@ -617,7 +617,7 @@ git commit -m "feat: select offer catalog across server pages"
 - Produces: client 47 as a completed-adjustment monthly card contract and client 48 as a confirmed semiannual Pix contract.
 - Produces: generated SQL only through `pnpm seed:generate`.
 
-- [ ] **Step 1: Add failing model and scenario assertions**
+- [x] **Step 1: Add failing model and scenario assertions**
 
 Extend the model union to:
 
@@ -629,17 +629,17 @@ Add `priceIds.launchPriceMonthly = "20000000-0000-4000-8000-000000000005"` and `
 
 Assert both scenarios snapshot catalog, amount, access, bonus, payment method, and renewal state exactly. Update the expected standard-contract count from 83 to 81 and add an expected `launch_price` count of 2.
 
-- [ ] **Step 2: Run seed unit tests and confirm failure**
+- [x] **Step 2: Run seed unit tests and confirm failure**
 
 Run: `pnpm vitest run scripts/demo-seed/user-scenarios.test.ts scripts/demo-seed/render-seed.test.ts`
 
 Expected: FAIL because the model and fixture IDs do not include the new catalog.
 
-- [ ] **Step 3: Implement the deterministic fixtures and renderer expectations**
+- [x] **Step 3: Implement the deterministic fixtures and renderer expectations**
 
 Update the two clients without changing the total number of demo users. Ensure rendered contracts use the two new price IDs and preserve provider-ID uniqueness. Keep the monthly completed-adjustment fixture consistent with a provider subscription already updated to R$ 49.90; keep Pix detached.
 
-- [ ] **Step 4: Regenerate the SQL and prove it is reproducible**
+- [x] **Step 4: Regenerate the SQL and prove it is reproducible**
 
 Run: `pnpm seed:generate`
 
@@ -653,7 +653,7 @@ Run: `pnpm vitest run scripts/demo-seed/user-scenarios.test.ts scripts/demo-seed
 
 Expected: PASS.
 
-- [ ] **Step 5: Update product and runbook language**
+- [x] **Step 5: Update product and runbook language**
 
 Document these exact rules in all three documentation files:
 
@@ -667,7 +667,7 @@ Document these exact rules in all three documentation files:
 
 Keep `.env.example` limited to the single `LAUNCH_OFFER_START_AT` instant; do not introduce separate end-date settings.
 
-- [ ] **Step 6: Reset and verify the generated seed against PostgreSQL**
+- [x] **Step 6: Reset and verify the generated seed against PostgreSQL**
 
 Run: `pnpm supabase:reset`
 
@@ -677,7 +677,7 @@ Run: `supabase test db supabase/tests/seed.test.sql`
 
 Expected: PASS for total counts, 81 standard contracts, two `launch_price` contracts, and the two new exact scenarios.
 
-- [ ] **Step 7: Commit fixtures and documentation**
+- [x] **Step 7: Commit fixtures and documentation**
 
 ```bash
 git add scripts/demo-seed/model.ts scripts/demo-seed/user-scenarios.ts scripts/demo-seed/user-scenarios.test.ts scripts/demo-seed/render-seed.test.ts supabase/tests/seed.test.sql supabase/seed.sql .env.example PRODUCT.md docs/asaas-billing-runbook.md

@@ -90,11 +90,18 @@ que foram criados.
 
 O catálogo padrão cobra R$ 49,90 no mensal por um mês de acesso e R$ 239,40 no
 semestral por seis meses, com parcelamento em até 6x. A campanha de lançamento
-é uma condição temporária de 15 dias resolvida exclusivamente no servidor: o
-mensal custa R$ 39,90 e libera dois meses (um de bônus), enquanto o semestral
-custa R$ 179,40 e libera doze meses (seis de bônus), também em até 6x. Depois da
-janela, novos Checkouts voltam ao catálogo padrão; compras e Checkouts ainda
-válidos preservam o snapshot adquirido.
+é resolvida exclusivamente no servidor a partir de um único instante inicial.
+Nos primeiros 15 dias corridos, o mensal custa R$ 39,90 no primeiro pagamento e
+libera dois meses (um de bônus), enquanto o semestral custa R$ 179,40 e libera
+doze meses (seis de bônus), também em até 6x. Do 15º dia até o instante anterior
+ao 30º dia, os mesmos valores iniciais continuam disponíveis, mas o mensal
+libera um mês e o semestral libera seis meses, sem bônus de acesso. Nos dois
+períodos promocionais, R$ 39,90 é somente o primeiro pagamento mensal; as
+renovações seguintes custam R$ 49,90. A primeira renovação ocorre depois de
+dois meses para compras dos primeiros 15 dias e depois de um mês para compras
+entre os dias 15 e 30. No 30º dia exato, novos Checkouts voltam ao catálogo
+padrão. Um Checkout válido preserva por 60 minutos o snapshot adquirido, mesmo
+quando uma dessas fronteiras é atravessada.
 
 A biblioteca privada **Bônus** reúne o E-book Lucrivo, o Método de vendas para
 o varejo e uma planilha de fluxo de caixa.

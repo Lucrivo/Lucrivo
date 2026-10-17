@@ -21,6 +21,8 @@ const priceIds = {
     monthly: "20000000-0000-4000-8000-000000000001",
     semiannual: "20000000-0000-4000-8000-000000000002",
   },
+  launchPriceMonthly: "20000000-0000-4000-8000-000000000005",
+  launchPriceSemiannual: "20000000-0000-4000-8000-000000000006",
   standard: {
     monthly: "20000000-0000-4000-8000-000000000003",
     semiannual: "20000000-0000-4000-8000-000000000004",
@@ -263,6 +265,7 @@ function baseContract(input: {
   status: SeedContractStatus;
   tuple?: (typeof validPurchaseTuples)[number];
   catalogCode?: SeedContract["catalogCode"];
+  asaasSubscriptionId?: string | null;
   renewalAdjustmentStatus?: SeedContract["renewalAdjustmentStatus"];
   renewalAdjustmentAttemptCount?: number;
   renewalAdjustedAt?: SeedRelativeTime | null;
@@ -275,8 +278,9 @@ function baseContract(input: {
   const [billingMode, paymentMethod, chargeType] = tuple;
   const catalogCode = input.catalogCode ?? "standard";
   const launch = catalogCode === "launch";
+  const promotional = launch || catalogCode === "launch_price";
   const requiresRenewalAdjustment =
-    launch &&
+    promotional &&
     billingMode === "monthly" &&
     paymentMethod === "credit_card" &&
     chargeType === "recurring";
@@ -284,17 +288,23 @@ function baseContract(input: {
   return {
     id: seedUuid("contract", input.ownerOrdinal, input.childOrdinal),
     userId: input.userId,
-    priceId: priceIds[catalogCode][billingMode],
+    priceId:
+      catalogCode === "launch_price"
+        ? billingMode === "monthly"
+          ? priceIds.launchPriceMonthly
+          : priceIds.launchPriceSemiannual
+        : priceIds[catalogCode][billingMode],
     externalReference: input.externalReference,
+    asaasSubscriptionId: input.asaasSubscriptionId ?? null,
     billingMode,
     paymentMethod,
     chargeType,
     amountCents:
       billingMode === "semiannual"
-        ? launch
+        ? promotional
           ? 17_940
           : 23_940
-        : launch
+        : promotional
           ? 3_990
           : 4_990,
     installmentLimit: billingMode === "semiannual" ? 6 : null,
@@ -419,23 +429,40 @@ function buildBilling(admin: SeedUser, clients: SeedUser[]) {
     const completedLaunchRenewal = client.ordinal === 45;
     const reconciliationLaunchRenewal = client.ordinal === 46;
     const launchMonthly = completedLaunchRenewal || reconciliationLaunchRenewal;
+    const completedLaunchPriceRenewal = client.ordinal === 47;
+    const launchPriceSemiannual = client.ordinal === 48;
+    const launchPrice = completedLaunchPriceRenewal || launchPriceSemiannual;
+    const promotionalMonthly = launchMonthly || completedLaunchPriceRenewal;
     const contract = baseContract({
       ownerOrdinal: client.ordinal,
       childOrdinal: 0,
       userId: client.id,
       externalReference: `demo-client-${client.ordinal}-active`,
       status: "active",
-      tuple: launchMonthly
+      tuple: promotionalMonthly
         ? validPurchaseTuples[0]
-        : validPurchaseTuples[client.ordinal % validPurchaseTuples.length],
-      catalogCode: launchMonthly ? "launch" : "standard",
-      renewalAdjustmentStatus: completedLaunchRenewal
-        ? "completed"
-        : reconciliationLaunchRenewal
-          ? "pending_reconciliation"
-          : undefined,
-      renewalAdjustmentAttemptCount: launchMonthly ? 1 : undefined,
-      renewalAdjustedAt: completedLaunchRenewal ? relativeTime(0, -2) : null,
+        : launchPriceSemiannual
+          ? validPurchaseTuples[3]
+          : validPurchaseTuples[client.ordinal % validPurchaseTuples.length],
+      catalogCode: launchMonthly
+        ? "launch"
+        : launchPrice
+          ? "launch_price"
+          : "standard",
+      asaasSubscriptionId: completedLaunchPriceRenewal
+        ? "sub_demo_launch_price_047"
+        : null,
+      renewalAdjustmentStatus:
+        completedLaunchRenewal || completedLaunchPriceRenewal
+          ? "completed"
+          : reconciliationLaunchRenewal
+            ? "pending_reconciliation"
+            : undefined,
+      renewalAdjustmentAttemptCount: promotionalMonthly ? 1 : undefined,
+      renewalAdjustedAt:
+        completedLaunchRenewal || completedLaunchPriceRenewal
+          ? relativeTime(0, -2)
+          : null,
       renewalAdjustmentLastErrorCode: reconciliationLaunchRenewal
         ? "provider_ambiguous"
         : null,
@@ -449,7 +476,12 @@ function buildBilling(admin: SeedUser, clients: SeedUser[]) {
         ownerOrdinal: client.ordinal,
         childOrdinal: 0,
         contract,
-        status: client.ordinal % 2 === 0 ? "received" : "confirmed",
+        status:
+          client.ordinal === 47 || client.ordinal === 48
+            ? "confirmed"
+            : client.ordinal % 2 === 0
+              ? "received"
+              : "confirmed",
         dueAt: relativeTime(0, (client.ordinal % 20) + 1),
       }),
     );
