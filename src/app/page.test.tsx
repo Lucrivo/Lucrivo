@@ -1,4 +1,10 @@
-import { render, screen, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { createClient, listActivePrices, readLaunchOfferEnvironment, refresh } =
@@ -100,12 +106,41 @@ describe("Home", () => {
     listActivePrices.mockResolvedValue({ status: "success", prices });
   });
 
-  async function renderHome() {
+  async function renderHome(keepOfferOpen = false) {
     render(await Home());
+    const closeButton = screen.queryByRole("button", {
+      name: "Talvez mais tarde",
+    });
+    if (closeButton && !keepOfferOpen) {
+      fireEvent.click(closeButton);
+      await waitFor(() =>
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+      );
+    }
   }
 
   it("presents the profitability diagnosis and its next actions", async () => {
-    await renderHome();
+    await renderHome(true);
+
+    const offerDialog = screen.getByRole("dialog", {
+      name: "Mais tempo para transformar diagnóstico em decisão.",
+    });
+    expect(
+      within(offerDialog).getByText(
+        "Mais tempo para transformar diagnóstico em decisão.",
+      ),
+    ).toBeVisible();
+    expect(
+      within(offerDialog).getByRole("link", {
+        name: "Quero aproveitar a oferta",
+      }),
+    ).toHaveAttribute("href", "/billing");
+    fireEvent.click(
+      within(offerDialog).getByRole("button", { name: "Talvez mais tarde" }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
 
     const hero = document.querySelector("#top");
     expect(hero).not.toBeNull();
@@ -182,6 +217,7 @@ describe("Home", () => {
     expect(screen.getByText(/ou R\$ 239,40 à vista/)).toBeVisible();
     expect(screen.getByText("R$ 39,90")).toBeVisible();
     expect(screen.queryByText("Oferta de lançamento")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.queryByText(/mês de bônus/)).not.toBeInTheDocument();
     expect(screen.queryByText("R$ 39,90/mês")).not.toBeInTheDocument();
   });

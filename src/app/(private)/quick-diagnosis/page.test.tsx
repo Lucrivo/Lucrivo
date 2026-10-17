@@ -9,6 +9,7 @@ const {
   DiagnosisLimitCard,
   getBillingOverview,
   QuickDiagnosisWizard,
+  readLaunchOfferEnvironment,
   requireUser,
 } = vi.hoisted(() => ({
   createDetailedDiagnosis: vi.fn(),
@@ -18,6 +19,7 @@ const {
   DiagnosisLimitCard: vi.fn(() => <div>Limite do diagnóstico</div>),
   getBillingOverview: vi.fn(),
   QuickDiagnosisWizard: vi.fn(() => <div>Wizard do diagnóstico</div>),
+  readLaunchOfferEnvironment: vi.fn(),
   requireUser: vi.fn(),
 }));
 
@@ -48,6 +50,9 @@ vi.mock("@/modules/billing/services/get-billing-overview.service", () => ({
 vi.mock("@/modules/billing/components/diagnosis-limit-card", () => ({
   DiagnosisLimitCard,
 }));
+vi.mock("@/config/launch-offer-environment", () => ({
+  readLaunchOfferEnvironment,
+}));
 
 import QuickDiagnosisPage from "./page";
 
@@ -57,6 +62,12 @@ describe("QuickDiagnosisPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireUser.mockResolvedValue({ userId: "trusted-user", supabase });
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "active",
+      catalogCode: "launch",
+      startsAt: "2026-10-20T12:00:00.000Z",
+      endsAt: "2026-11-04T12:00:00.000Z",
+    });
     getBillingOverview.mockResolvedValue({
       status: "success",
       overview: {
@@ -94,6 +105,7 @@ describe("QuickDiagnosisPage", () => {
       {
         userId: "trusted-user",
         canCreateDetailedDiagnosis: false,
+        launchOfferOnCompletion: true,
         createProductDiagnosis,
         createProductionDiagnosis,
         createServiceDiagnosis,
@@ -106,6 +118,22 @@ describe("QuickDiagnosisPage", () => {
       supabase,
       userId: "trusted-user",
     });
+  });
+
+  it("does not mark completion for a launch modal outside the active campaign", async () => {
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "ended",
+      catalogCode: "standard",
+      startsAt: "2026-09-01T12:00:00.000Z",
+      endsAt: "2026-09-16T12:00:00.000Z",
+    });
+
+    await renderPage();
+
+    expect(QuickDiagnosisWizard).toHaveBeenCalledWith(
+      expect.objectContaining({ launchOfferOnCompletion: false }),
+      undefined,
+    );
   });
 
   it("renders the limit card instead of mounting the wizard", async () => {
@@ -155,6 +183,7 @@ describe("QuickDiagnosisPage", () => {
         userId: "trusted-user",
         canCreateDetailedDiagnosis: true,
         initialDetailedCategory: "product",
+        launchOfferOnCompletion: false,
       }),
       undefined,
     );

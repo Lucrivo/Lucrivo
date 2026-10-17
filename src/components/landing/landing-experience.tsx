@@ -13,6 +13,7 @@ import { GuaranteeSection } from "@/components/landing/guarantee-section";
 import { HeroSection } from "@/components/landing/hero-section";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { LaunchOfferBar } from "@/components/landing/launch-offer-bar";
+import { LaunchOfferDialog } from "@/modules/billing/components/launch-offer-dialog";
 import { LandingNav } from "@/components/landing/landing-nav";
 import {
   resolveLandingOfferPresentation,
@@ -196,6 +197,18 @@ export function LandingExperience({
       )}
     >
       {activeLaunchOffer ? <LaunchOfferBar {...activeLaunchOffer} /> : null}
+      {activeLaunchOffer && offer ? (
+        <LaunchOfferDialog
+          context="landing"
+          offer={{
+            ...activeLaunchOffer,
+            monthlyPriceLabel: offer.monthlyPriceLabel,
+            semiannualInstallmentLabel: offer.semiannualInstallmentLabel,
+            monthlyAccessMonths: offer.monthlyAccessMonths,
+            semiannualAccessMonths: offer.semiannualAccessMonths,
+          }}
+        />
+      ) : null}
       <LandingNav />
       <HeroSection offer={offer} />
       <ProblemSection />

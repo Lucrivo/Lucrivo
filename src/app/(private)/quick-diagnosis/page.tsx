@@ -1,5 +1,6 @@
 import { DiagnosisLimitCard } from "@/modules/billing/components/diagnosis-limit-card";
 import { getBillingOverview } from "@/modules/billing/services/get-billing-overview.service";
+import { readLaunchOfferEnvironment } from "@/config/launch-offer-environment";
 import { requireUser } from "@/modules/auth/services/require-user";
 import { createDetailedDiagnosis } from "@/modules/detailed-diagnosis/actions/create-detailed-diagnosis.action";
 import type { DetailedDiagnosisCategory } from "@/modules/detailed-diagnosis/types";
@@ -45,6 +46,11 @@ export default async function QuickDiagnosisPage({
         firstParam(params.category),
       )
     : undefined;
+  const launchOffer = readLaunchOfferEnvironment();
+  const launchOfferOnCompletion =
+    launchOffer.phase === "active" &&
+    result.overview.tier === "free" &&
+    !result.overview.freeQuickDiagnosisUsed;
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col">
@@ -55,6 +61,7 @@ export default async function QuickDiagnosisPage({
           canCreateDetailedDiagnosis={
             result.overview.canCreateDetailedDiagnosis
           }
+          launchOfferOnCompletion={launchOfferOnCompletion}
           {...(initialDetailedCategory ? { initialDetailedCategory } : {})}
           createServiceDiagnosis={createServiceDiagnosis}
           createProductDiagnosis={createProductDiagnosis}
