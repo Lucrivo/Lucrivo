@@ -16,7 +16,7 @@ describe("readLaunchOfferEnvironment", () => {
         { LAUNCH_OFFER_START_AT: start },
         () => new Date("2026-10-20T12:00:00.000Z"),
       ),
-    ).toMatchObject({ phase: "active", catalogCode: "launch" });
+    ).toMatchObject({ phase: "bonus_active", catalogCode: "launch" });
   });
 
   it("uses the standard catalog when the launch is not configured", () => {

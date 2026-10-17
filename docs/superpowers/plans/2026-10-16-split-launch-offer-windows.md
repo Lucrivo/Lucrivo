@@ -55,7 +55,7 @@
 - Produces: `BillingCatalogCode = "launch" | "launch_price" | "standard"`; `LaunchOfferResolution` with phases `disabled | scheduled | bonus_active | price_active | expired | invalid`; `isPromotionalCatalog(code)` and `isLaunchOfferActive(resolution)` type guards.
 - Produces for scheduled/active/expired resolutions: normalized `startsAt`, `bonusEndsAt`, and `promotionEndsAt`; active resolutions also expose phase-specific `endsAt`.
 
-- [ ] **Step 1: Replace the one-window tests with boundary-first failing cases**
+- [x] **Step 1: Replace the one-window tests with boundary-first failing cases**
 
 Use a fixed `start = "2026-10-20T12:00:00.000Z"`, so the exact boundaries are `2026-11-04T12:00:00.000Z` and `2026-11-19T12:00:00.000Z`. Assert all of these cases:
 
@@ -93,13 +93,13 @@ expect(
 
 Also retain missing, scheduled, malformed, missing-offset, offset-normalization, and invalid-clock cases. Assert `isPromotionalCatalog` is true only for `launch` and `launch_price`, and `isLaunchOfferActive` is true only for the two active phases.
 
-- [ ] **Step 2: Run the focused tests and confirm the old union fails**
+- [x] **Step 2: Run the focused tests and confirm the old union fails**
 
 Run: `pnpm vitest run src/modules/billing/domain/launch-offer.test.ts src/config/launch-offer-environment.test.ts`
 
 Expected: FAIL because `launch_price`, the new phase names, and the second boundary are not implemented.
 
-- [ ] **Step 3: Implement the two-window discriminated union**
+- [x] **Step 3: Implement the two-window discriminated union**
 
 Use these constants and return shapes:
 
@@ -130,13 +130,13 @@ function isLaunchOfferActive(
 
 Compute `bonusEndMs = startMs + LAUNCH_BONUS_DURATION_MS` and `promotionEndMs = startMs + LAUNCH_PRICE_DURATION_MS`. Keep invalid results free of timestamps; keep disabled results with null timestamps; include all three normalized timestamps for scheduled and expired outcomes.
 
-- [ ] **Step 4: Re-run the focused tests**
+- [x] **Step 4: Re-run the focused tests**
 
 Run: `pnpm vitest run src/modules/billing/domain/launch-offer.test.ts src/config/launch-offer-environment.test.ts`
 
 Expected: PASS with exact start-inclusive/end-exclusive behavior.
 
-- [ ] **Step 5: Commit the resolver**
+- [x] **Step 5: Commit the resolver**
 
 ```bash
 git add src/modules/billing/domain/launch-offer.ts src/modules/billing/domain/launch-offer.test.ts src/config/launch-offer-environment.test.ts
