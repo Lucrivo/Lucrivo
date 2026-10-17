@@ -56,6 +56,11 @@ describe("BonusPage", () => {
     expect(
       screen.getByRole("heading", { name: "Bônus", level: 1 }),
     ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Ao assinar, o guia e a planilha ficam disponíveis para sempre, mesmo após o fim do plano.",
+      ),
+    ).toBeVisible();
     expect(screen.getByText("1 materiais")).toBeVisible();
     expect(getBonusLibrary).toHaveBeenCalledWith({
       supabase,
@@ -67,7 +72,7 @@ describe("BonusPage", () => {
     );
   });
 
-  it("renders the entitled view unchanged", async () => {
+  it("confirms permanent ownership for an entitled client", async () => {
     getBonusLibrary.mockResolvedValue({
       status: "success",
       overview: {
@@ -79,6 +84,12 @@ describe("BonusPage", () => {
 
     await renderPage();
     expect(screen.getByText("3 materiais")).toBeVisible();
+    expect(
+      screen.getByText(
+        "O guia e a planilha são seus para sempre, mesmo após o fim do plano.",
+      ),
+    ).toBeVisible();
+    expect(screen.queryByText(/^Ao assinar,/)).not.toBeInTheDocument();
   });
 
   it.each(["locked", "preparing", "unavailable"])(

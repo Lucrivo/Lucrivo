@@ -148,12 +148,7 @@ function MaterialAction({
   );
 }
 
-function BonusLibrary({
-  materials,
-  unlockedCount,
-  hasPermanentAccess,
-  notice,
-}: BonusLibraryProps) {
+function BonusLibrary({ materials, unlockedCount, notice }: BonusLibraryProps) {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   return (
@@ -230,16 +225,6 @@ function BonusLibrary({
           );
         })}
       </div>
-
-      {hasPermanentAccess ? (
-        <p className="text-muted-foreground flex items-center gap-2 text-sm">
-          <CheckCircle2Icon
-            aria-hidden="true"
-            className="text-success size-4"
-          />
-          O guia e a planilha continuam seus mesmo após o fim do plano.
-        </p>
-      ) : null}
 
       <BonusUpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </section>

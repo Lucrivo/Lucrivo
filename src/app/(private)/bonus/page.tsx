@@ -59,8 +59,9 @@ export default async function BonusPage({ searchParams }: BonusPageProps) {
               className="text-success mt-0.5 size-4 shrink-0"
             />
             <p>
-              Ao assinar, o guia e a planilha ficam disponíveis para sempre,
-              mesmo após o fim normal do plano.
+              {result.overview.hasPermanentAccess
+                ? "O guia e a planilha são seus para sempre, mesmo após o fim do plano."
+                : "Ao assinar, o guia e a planilha ficam disponíveis para sempre, mesmo após o fim do plano."}
             </p>
           </div>
         </div>

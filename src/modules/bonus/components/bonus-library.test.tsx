@@ -9,7 +9,7 @@ const availableMaterials: BonusMaterialView[] = [
   {
     slug: "ebook",
     typeLabel: "E-book",
-    title: "E-book de gestão financeira",
+    title: "E-book Lucrivo",
     description: "Descrição do e-book.",
     delivery: "new_tab",
     access: "available",
@@ -18,7 +18,7 @@ const availableMaterials: BonusMaterialView[] = [
   {
     slug: "guide",
     typeLabel: "Guia",
-    title: "Guia prático para organizar o negócio",
+    title: "Método de vendas para o varejo",
     description: "Descrição do guia.",
     delivery: "new_tab",
     access: "available",
@@ -27,7 +27,7 @@ const availableMaterials: BonusMaterialView[] = [
   {
     slug: "cash-flow",
     typeLabel: "Planilha",
-    title: "Planilha de controle de fluxo de caixa",
+    title: "Planilha de fluxo de caixa",
     description: "Descrição da planilha.",
     delivery: "download",
     access: "available",
@@ -84,7 +84,7 @@ describe("BonusLibrary", () => {
     expect(screen.getAllByText("Seu para sempre")).toHaveLength(2);
     const spreadsheet = screen
       .getByRole("heading", {
-        name: "Planilha de controle de fluxo de caixa",
+        name: "Planilha de fluxo de caixa",
       })
       .closest("article");
     expect(spreadsheet).not.toBeNull();
@@ -93,6 +93,9 @@ describe("BonusLibrary", () => {
     });
     expect(download).toHaveAttribute("href", "/api/bonus/cash-flow");
     expect(download).not.toHaveAttribute("target");
+    expect(
+      screen.queryByText(/continuam seus mesmo após o fim do plano/i),
+    ).not.toBeInTheDocument();
   });
 
   it("opens the upgrade dialog from a locked action", async () => {

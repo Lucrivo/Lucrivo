@@ -31,6 +31,29 @@ describe("bonus catalog", () => {
     });
   });
 
+  it("uses the approved material names and descriptions", () => {
+    expect(BONUS_MATERIALS).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          slug: "ebook",
+          title: "E-book Lucrivo",
+          description:
+            "O preço descomplicado. Aprenda a entender seus custos, proteger sua margem e descobrir quanto realmente precisa cobrar.",
+        }),
+        expect.objectContaining({
+          slug: "guide",
+          title: "Método de vendas para o varejo",
+          description:
+            "Da primeira conversa ao relacionamento que traz o cliente de volta.",
+        }),
+        expect.objectContaining({
+          slug: "cash-flow",
+          title: "Planilha de fluxo de caixa",
+        }),
+      ]),
+    );
+  });
+
   it("rejects every value outside the explicit allow-list", () => {
     expect(getBonusMaterial("../../secret")).toBeNull();
     expect(getBonusMaterial("Guide")).toBeNull();

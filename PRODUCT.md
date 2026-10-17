@@ -96,8 +96,8 @@ custa R$ 179,40 e libera doze meses (seis de bônus), também em até 6x. Depois
 janela, novos Checkouts voltam ao catálogo padrão; compras e Checkouts ainda
 válidos preservam o snapshot adquirido.
 
-A biblioteca privada **Bônus** reúne um e-book de gestão financeira, um guia
-prático para organizar o negócio e uma planilha de controle de fluxo de caixa.
+A biblioteca privada **Bônus** reúne o E-book Lucrivo, o Método de vendas para
+o varejo e uma planilha de fluxo de caixa.
 Todo usuário autenticado recebe o e-book. O guia e a planilha são liberados
 quando uma compra é confirmada e permanecem disponíveis mesmo após cancelamento
 ou expiração da assinatura. Acesso de cortesia, isoladamente, não concede esses
