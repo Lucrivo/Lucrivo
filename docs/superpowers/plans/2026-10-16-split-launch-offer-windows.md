@@ -156,16 +156,16 @@ git commit -m "feat: split launch campaign windows"
 **Interfaces:**
 
 - Consumes: the existing `billing_prices`, `billing_contracts`, `billing_webhook_events`, `begin_billing_renewal_adjustment`, and `record_billing_renewal_adjustment_result` contracts.
-- Produces: active price UUIDs `00000000-0000-4000-8000-000000000005` (monthly) and `00000000-0000-4000-8000-000000000006` (semiannual), catalog version `3`.
+- Produces: active price UUIDs `20000000-0000-4000-8000-000000000005` (monthly) and `20000000-0000-4000-8000-000000000006` (semiannual), catalog version `3`, continuing the existing billing-price UUID namespace.
 - Produces from `begin_billing_renewal_adjustment`: ready JSON with `contractId`, `subscriptionId`, `nextDueDate`, and `renewalAmountCents: 4990`.
 
-- [ ] **Step 1: Create the migration through the CLI before writing SQL**
+- [x] **Step 1: Create the migration through the CLI before writing SQL**
 
 Run: `supabase migration new split_launch_offer_windows`
 
 Expected: one new `supabase/migrations/<timestamp>_split_launch_offer_windows.sql` path. Record that exact emitted path in this task's remaining commands; do not rename or invent the timestamp.
 
-- [ ] **Step 2: Add failing pgTAP assertions for all six immutable shapes**
+- [x] **Step 2: Add failing pgTAP assertions for all six immutable shapes**
 
 In `billing_schema.test.sql`, assert the two new active rows exactly:
 
@@ -174,7 +174,7 @@ select results_eq(
   $$select catalog_code, billing_mode, amount_cents, installment_limit,
            access_months, bonus_months, version
     from public.billing_prices
-    where id = '00000000-0000-4000-8000-000000000005'::uuid$$,
+    where id = '20000000-0000-4000-8000-000000000005'::uuid$$,
   $$values ('launch_price', 'monthly', 3990, null::integer, 1, 0, 3)$$,
   'launch_price monthly has the approved immutable shape'
 );
@@ -183,7 +183,7 @@ select results_eq(
   $$select catalog_code, billing_mode, amount_cents, installment_limit,
            access_months, bonus_months, version
     from public.billing_prices
-    where id = '00000000-0000-4000-8000-000000000006'::uuid$$,
+    where id = '20000000-0000-4000-8000-000000000006'::uuid$$,
   $$values ('launch_price', 'semiannual', 17940, 6, 6, 0, 3)$$,
   'launch_price semiannual has the approved immutable shape'
 );
@@ -191,7 +191,7 @@ select results_eq(
 
 Add rejection assertions for mismatched amount/access/bonus combinations and contract snapshot assertions for both payment methods. In `billing_webhooks.test.sql`, add monthly claims for `launch` and `launch_price`, proving due dates are first confirmed due date plus two and one months respectively and both return `renewalAmountCents = 4990`. In `bonus_library.test.sql`, prove a confirmed `launch_price` purchase still receives the permanent library grant while `bonus_months = 0` grants no extra access time.
 
-- [ ] **Step 3: Reset the local database and confirm the new tests fail**
+- [x] **Step 3: Reset the local database and confirm the new tests fail**
 
 Run: `pnpm supabase:reset`
 
@@ -201,7 +201,7 @@ Run: `supabase test db supabase/tests/billing_schema.test.sql supabase/tests/bil
 
 Expected: FAIL because the new catalog rows and generalized claim do not exist.
 
-- [ ] **Step 4: Author the additive migration**
+- [x] **Step 4: Author the additive migration**
 
 In the CLI-created migration:
 
@@ -224,7 +224,7 @@ return jsonb_build_object(
 
 Retain row locking, stale-processing recovery, `not_required`, `not_ready`, and `completed` branches exactly; change only catalog eligibility, date derivation, and the new amount field.
 
-- [ ] **Step 5: Reset and run the focused database tests**
+- [x] **Step 5: Reset and run the focused database tests**
 
 Run: `pnpm supabase:reset`
 
@@ -234,7 +234,7 @@ Run: `supabase test db supabase/tests/billing_schema.test.sql supabase/tests/bil
 
 Expected: PASS for immutable rows, snapshots, access intervals, claim dates, amount, idempotency, and permanent library access.
 
-- [ ] **Step 6: Regenerate database types and verify the diff**
+- [x] **Step 6: Regenerate database types and verify the diff**
 
 Run: `pnpm supabase:types`
 
@@ -244,7 +244,7 @@ Run: `git diff --check`
 
 Expected: no whitespace errors.
 
-- [ ] **Step 7: Commit the database contract**
+- [x] **Step 7: Commit the database contract**
 
 ```bash
 git add supabase/migrations supabase/tests/billing_schema.test.sql supabase/tests/billing_webhooks.test.sql supabase/tests/bonus_library.test.sql src/infrastructure/database/supabase/database.types.ts
@@ -625,7 +625,7 @@ Extend the model union to:
 catalogCode: "launch" | "launch_price" | "standard";
 ```
 
-Add `priceIds.launchPriceMonthly = "00000000-0000-4000-8000-000000000005"` and `priceIds.launchPriceSemiannual = "00000000-0000-4000-8000-000000000006"`. Change client 47 to a confirmed monthly credit-card `launch_price` contract with one month of access, zero bonus months, an Asaas subscription ID, and `renewalAdjustmentStatus: "completed"`. Change client 48 to a confirmed semiannual Pix `launch_price` contract with six months of access, zero bonus months, and no subscription.
+Add `priceIds.launchPriceMonthly = "20000000-0000-4000-8000-000000000005"` and `priceIds.launchPriceSemiannual = "20000000-0000-4000-8000-000000000006"`. Change client 47 to a confirmed monthly credit-card `launch_price` contract with one month of access, zero bonus months, an Asaas subscription ID, and `renewalAdjustmentStatus: "completed"`. Change client 48 to a confirmed semiannual Pix `launch_price` contract with six months of access, zero bonus months, and no subscription.
 
 Assert both scenarios snapshot catalog, amount, access, bonus, payment method, and renewal state exactly. Update the expected standard-contract count from 83 to 81 and add an expected `launch_price` count of 2.
 
