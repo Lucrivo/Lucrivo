@@ -4,8 +4,12 @@ import { FileWarningIcon, PlusIcon } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { resolveLandingOfferPresentation } from "@/components/landing/landing-offer";
+import { readLaunchOfferEnvironment } from "@/config/launch-offer-environment";
 import { requireUser } from "@/modules/auth/services/require-user";
+import { LaunchOfferDialog } from "@/modules/billing/components/launch-offer-dialog";
 import { getBillingOverview } from "@/modules/billing/services/get-billing-overview.service";
+import { listActivePrices } from "@/modules/billing/services/list-active-prices.service";
 import { ReportAiAssistant } from "@/modules/report-ai/components/report-ai-assistant";
 import { getReportAiHistory } from "@/modules/report-ai/services/report-ai-store.service";
 import { DetailedReportDetail } from "@/modules/reports/components/detailed-report-detail";
@@ -59,10 +63,12 @@ function UnavailableReport() {
 
 export default async function ReportPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ launchOffer?: string | string[] }>;
 }) {
-  const { id } = await params;
+  const [{ id }, query] = await Promise.all([params, searchParams]);
   if (parseDiagnosisId(id) === null) notFound();
 
   const { userId, supabase } = await requireUser();
@@ -76,7 +82,19 @@ export default async function ReportPage({
   if (result.status === "read_failed") throw new Error("report_read_failed");
   if (result.status === "unavailable") return <UnavailableReport />;
 
-  const [billing, historyResult] = await Promise.all([
+  const requestedLaunchOffer =
+    (Array.isArray(query.launchOffer)
+      ? query.launchOffer[0]
+      : query.launchOffer) === "1";
+  const launchOffer = requestedLaunchOffer
+    ? readLaunchOfferEnvironment()
+    : null;
+  const launchPricesPromise =
+    launchOffer?.phase === "active"
+      ? listActivePrices({ supabase, catalogCode: "launch" })
+      : Promise.resolve(null);
+
+  const [billing, historyResult, launchPricesResult] = await Promise.all([
     getBillingOverview({ supabase, userId }),
     getReportAiHistory({
       supabase,
@@ -84,12 +102,36 @@ export default async function ReportPage({
       diagnosisId: result.report.id,
       currentVersion: result.report.version,
     }),
+    launchPricesPromise,
   ]);
   const canAsk =
     billing.status === "success" && billing.overview.tier === "paid";
   const canEdit = canAsk;
   const history =
     historyResult.status === "success" ? historyResult.history : null;
+  const launchPresentation =
+    launchPricesResult?.status === "success"
+      ? resolveLandingOfferPresentation(launchPricesResult.prices)
+      : null;
+  const launchDialog =
+    launchOffer?.phase === "active" &&
+    launchPresentation?.catalogCode === "launch" &&
+    billing.status === "success" &&
+    billing.overview.tier === "free" &&
+    billing.overview.freeQuickDiagnosisUsed ? (
+      <LaunchOfferDialog
+        context="diagnosis"
+        dismissHref={`/reports/${id}`}
+        offer={{
+          endsAt: launchOffer.endsAt,
+          monthlyPriceLabel: launchPresentation.monthlyPriceLabel,
+          semiannualInstallmentLabel:
+            launchPresentation.semiannualInstallmentLabel,
+          monthlyAccessMonths: launchPresentation.monthlyAccessMonths,
+          semiannualAccessMonths: launchPresentation.semiannualAccessMonths,
+        }}
+      />
+    ) : null;
   const assistant =
     history && (canAsk || history.versions.length > 0) ? (
       <ReportAiAssistant
@@ -120,6 +162,7 @@ export default async function ReportPage({
           management={management}
         />
         {assistant}
+        {launchDialog}
       </>
     );
 
@@ -128,6 +171,7 @@ export default async function ReportPage({
     <>
       <ReportDetail viewModel={viewModel} management={management} />
       {assistant}
+      {launchDialog}
     </>
   );
 }

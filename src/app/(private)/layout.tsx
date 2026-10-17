@@ -1,14 +1,12 @@
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/layout/app-shell";
-import { readLaunchOfferEnvironment } from "@/config/launch-offer-environment";
 import {
   AccountUnavailableError,
   AuthRequiredError,
   LegalAcceptanceRequiredError,
   requireClientAccess,
 } from "@/modules/auth/services/require-user";
-import type { LaunchOfferStripView } from "@/modules/billing/components/launch-offer-strip";
 import { getBillingOverview } from "@/modules/billing/services/get-billing-overview.service";
 
 export default async function PrivateLayout({
@@ -52,20 +50,17 @@ export default async function PrivateLayout({
     if (!hasCompletedOnboarding) redirect("/onboarding");
   }
 
-  let launchOfferStrip: LaunchOfferStripView | null = null;
-  const launchOffer = readLaunchOfferEnvironment();
+  let showFreeDiagnosisBanner = false;
 
-  if (!isAdmin && launchOffer.phase === "active") {
+  if (!isAdmin) {
     try {
       const billing = await getBillingOverview({ supabase, userId });
-      if (billing.status === "success" && billing.overview.tier === "free") {
-        launchOfferStrip = {
-          endsAt: launchOffer.endsAt,
-          freeQuickDiagnosisUsed: billing.overview.freeQuickDiagnosisUsed,
-        };
-      }
+      showFreeDiagnosisBanner =
+        billing.status === "success" &&
+        billing.overview.tier === "free" &&
+        !billing.overview.freeQuickDiagnosisUsed;
     } catch {
-      launchOfferStrip = null;
+      showFreeDiagnosisBanner = false;
     }
   }
 
@@ -76,7 +71,7 @@ export default async function PrivateLayout({
       isAdminUser={isAdmin}
       contextTitle="Área financeira"
       contextDescription="Acompanhe e organize suas decisões em um só lugar."
-      launchOfferStrip={launchOfferStrip}
+      showFreeDiagnosisBanner={showFreeDiagnosisBanner}
     >
       {children}
     </AppShell>

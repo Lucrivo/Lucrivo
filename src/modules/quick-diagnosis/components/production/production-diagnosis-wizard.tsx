@@ -37,6 +37,7 @@ type ProductionDiagnosisWizardProps = {
   createSubmissionId: () => string;
   onBackToType: () => void;
   onStartDetailed: () => void;
+  launchOfferOnCompletion?: boolean;
 };
 
 const stepTitles: Record<ProductionWizardStep, string> = {
@@ -107,6 +108,7 @@ function ProductionDiagnosisWizard({
   createSubmissionId,
   onBackToType,
   onStartDetailed,
+  launchOfferOnCompletion = false,
 }: ProductionDiagnosisWizardProps) {
   const router = useRouter();
   const submittingRef = useRef(false);
@@ -231,7 +233,9 @@ function ProductionDiagnosisWizard({
       const result = await createDiagnosis(state.values);
 
       if (result.status === "success") {
-        router.replace(`/reports/${result.diagnosisId}`);
+        router.replace(
+          `/reports/${result.diagnosisId}${launchOfferOnCompletion ? "?launchOffer=1" : ""}`,
+        );
         keepSubmissionLocked = true;
         return;
       }

@@ -234,6 +234,26 @@
     transition-duration: 200ms;
     transition-timing-function: var(--ease-out-app);
   }
+  .launch-offer-scrollbar {
+    scrollbar-color: oklch(0.82 0.06 255 / 0.3) transparent;
+    scrollbar-width: thin;
+  }
+  .launch-offer-scrollbar::-webkit-scrollbar {
+    width: 0.25rem;
+  }
+  .launch-offer-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .launch-offer-scrollbar::-webkit-scrollbar-thumb {
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: oklch(0.82 0.06 255 / 0.3);
+    background-clip: padding-box;
+  }
+  .launch-offer-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.86 0.07 255 / 0.55);
+    background-clip: padding-box;
+  }
 }
 
 @keyframes fade-in {
