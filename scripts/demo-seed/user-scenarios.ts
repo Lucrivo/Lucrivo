@@ -4,6 +4,7 @@ import type {
   SeedAdminUserEvent,
   SeedAdminUserState,
   SeedAssignedReport,
+  SeedBonusGrant,
   SeedContract,
   SeedContractStatus,
   SeedCreatedBucket,
@@ -60,6 +61,18 @@ const paymentStatuses = [
   "partially_refunded",
   "chargeback_requested",
   "chargeback_dispute",
+] as const satisfies readonly SeedPaymentStatus[];
+
+const statusFixturePayments = [
+  "pending",
+  "confirmed",
+  "received",
+  "partially_refunded",
+  "overdue",
+  "confirmed",
+  "refunded",
+  "chargeback_requested",
+  "capture_refused",
 ] as const satisfies readonly SeedPaymentStatus[];
 
 const validPurchaseTuples = [
@@ -396,7 +409,7 @@ function buildBilling(admin: SeedUser, clients: SeedUser[]) {
         ownerOrdinal: client.ordinal,
         childOrdinal: 0,
         contract,
-        status: paymentStatuses[index]!,
+        status: statusFixturePayments[index]!,
         dueAt: relativeTime(-1, index + 1),
       }),
     );
@@ -462,7 +475,7 @@ function buildBilling(admin: SeedUser, clients: SeedUser[]) {
         ownerOrdinal: client.ordinal,
         childOrdinal: 0,
         contract,
-        status: "received",
+        status: client.ordinal === 85 ? "pending" : "received",
         dueAt: relativeTime(-6, client.ordinal % 20),
       }),
     );
@@ -509,6 +522,56 @@ function buildBilling(admin: SeedUser, clients: SeedUser[]) {
   }
 
   return { contracts, payments };
+}
+
+function buildBonusGrants(
+  contracts: SeedContract[],
+  payments: SeedPayment[],
+): SeedBonusGrant[] {
+  const contractById = new Map(
+    contracts.map((contract) => [contract.id, contract]),
+  );
+  const grants: SeedBonusGrant[] = [];
+
+  for (const payment of payments) {
+    if (["pending", "overdue", "capture_refused"].includes(payment.status)) {
+      continue;
+    }
+
+    const contract = contractById.get(payment.contractId);
+    if (!contract) {
+      throw new Error(`Missing demo contract for payment ${payment.id}.`);
+    }
+
+    const fullRefund = payment.status === "refunded";
+    const chargeback =
+      payment.status === "chargeback_requested" ||
+      payment.status === "chargeback_dispute";
+    const revokedAt = fullRefund
+      ? payment.refundedAt
+      : chargeback
+        ? payment.chargebackAt
+        : null;
+
+    if ((fullRefund || chargeback) && revokedAt === null) {
+      throw new Error(`Missing revocation time for payment ${payment.id}.`);
+    }
+
+    grants.push({
+      id: seedUuid("bonusGrant", grants.length),
+      userId: contract.userId,
+      contractId: contract.id,
+      grantedAt: payment.confirmedAt ?? payment.receivedAt ?? payment.dueAt,
+      revokedAt,
+      revocationReason: fullRefund
+        ? "full_refund"
+        : chargeback
+          ? "chargeback"
+          : null,
+    });
+  }
+
+  return grants;
 }
 
 function buildStatesAndEvents(
@@ -592,6 +655,7 @@ function buildDemoCatalog(): DemoSeedCatalog {
   const profiles = buildProfiles(clients);
   const reports = buildReports(admin, clients);
   const { contracts, payments } = buildBilling(admin, clients);
+  const bonusGrants = buildBonusGrants(contracts, payments);
   const { states, events } = buildStatesAndEvents(admin, clients);
   return {
     admin,
@@ -600,6 +664,7 @@ function buildDemoCatalog(): DemoSeedCatalog {
     reports,
     contracts,
     payments,
+    bonusGrants,
     states,
     events,
   };

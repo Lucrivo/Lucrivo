@@ -5,6 +5,7 @@ const PREFIX_BY_KIND: Record<SeedUuidKind, string> = {
   identity: "d1100000",
   contract: "d1200000",
   payment: "d1300000",
+  bonusGrant: "d1700000",
   submission: "d1400000",
   item: "d1500000",
   ingredient: "d1600000",

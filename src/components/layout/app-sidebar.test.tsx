@@ -188,6 +188,21 @@ describe("AppSidebar", () => {
     ).not.toHaveAttribute("data-active", "true");
   });
 
+  it("links to bonuses and marks only that item active", () => {
+    usePathname.mockReturnValue("/bonus");
+
+    render(<AppSidebar />);
+
+    const bonus = screen.getByRole("link", { name: "Bônus" });
+    expect(bonus).toHaveAttribute("href", "/bonus");
+    expect(bonus).toHaveAttribute("data-tooltip", "Bônus");
+    expect(bonus).toHaveAttribute("data-active", "true");
+    expect(screen.getByRole("link", { name: "Plano" })).not.toHaveAttribute(
+      "data-active",
+      "true",
+    );
+  });
+
   it("renders the closed administrative navigation", () => {
     usePathname.mockReturnValue("/admin");
 

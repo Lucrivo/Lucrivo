@@ -491,16 +491,125 @@ select results_eq(
   $$,
   $$ values
     ('capture_refused'::text, 3::bigint),
-    ('chargeback_dispute'::text, 2::bigint),
+    ('chargeback_dispute'::text, 1::bigint),
     ('chargeback_requested'::text, 2::bigint),
-    ('confirmed'::text, 27::bigint),
+    ('confirmed'::text, 28::bigint),
     ('overdue'::text, 3::bigint),
     ('partially_refunded'::text, 3::bigint),
-    ('pending'::text, 3::bigint),
-    ('received'::text, 40::bigint),
+    ('pending'::text, 4::bigint),
+    ('received'::text, 39::bigint),
     ('refunded'::text, 3::bigint)
   $$,
   'payments cover every supported operational status'
+);
+
+select is(
+  (
+    select count(*)::bigint
+    from public.billing_payments as payment
+    join public.billing_contracts as contract
+      on contract.id = payment.contract_id
+    join public.bonus_access_grants as bonus_grant
+      on bonus_grant.contract_id = contract.id
+    where contract.user_id between
+      'd1000000-0000-4000-8000-000000000000'::uuid and
+      'd1000000-0000-4000-8000-000000000060'::uuid
+      and (
+        payment.status in ('pending', 'overdue', 'capture_refused')
+        or contract.status = 'failed'
+      )
+  ),
+  0::bigint,
+  'pending failed and unpaid demo purchases create no bonus grant'
+);
+
+select is(
+  (
+    select count(*)::bigint
+    from public.billing_payments as payment
+    join public.billing_contracts as contract
+      on contract.id = payment.contract_id
+    left join public.bonus_access_grants as bonus_grant
+      on bonus_grant.contract_id = contract.id
+    where contract.user_id between
+      'd1000000-0000-4000-8000-000000000000'::uuid and
+      'd1000000-0000-4000-8000-000000000060'::uuid
+      and payment.status in ('confirmed', 'received', 'partially_refunded')
+      and (
+        bonus_grant.id is null
+        or bonus_grant.revoked_at is not null
+        or bonus_grant.revocation_reason is not null
+      )
+  ),
+  0::bigint,
+  'confirmed received and partially refunded purchases keep live bonus grants'
+);
+
+select is(
+  (
+    select count(*)::bigint
+    from public.billing_payments as payment
+    join public.billing_contracts as contract
+      on contract.id = payment.contract_id
+    left join public.bonus_access_grants as bonus_grant
+      on bonus_grant.contract_id = contract.id
+    where contract.user_id between
+      'd1000000-0000-4000-8000-000000000000'::uuid and
+      'd1000000-0000-4000-8000-000000000060'::uuid
+      and payment.status = 'refunded'
+      and (
+        bonus_grant.revoked_at is null
+        or bonus_grant.revocation_reason is distinct from 'full_refund'
+      )
+  ),
+  0::bigint,
+  'fully refunded purchases have grants revoked as full_refund'
+);
+
+select is(
+  (
+    select count(*)::bigint
+    from public.billing_payments as payment
+    join public.billing_contracts as contract
+      on contract.id = payment.contract_id
+    left join public.bonus_access_grants as bonus_grant
+      on bonus_grant.contract_id = contract.id
+    where contract.user_id between
+      'd1000000-0000-4000-8000-000000000000'::uuid and
+      'd1000000-0000-4000-8000-000000000060'::uuid
+      and payment.status in ('chargeback_requested', 'chargeback_dispute')
+      and (
+        bonus_grant.revoked_at is null
+        or bonus_grant.revocation_reason is distinct from 'chargeback'
+      )
+  ),
+  0::bigint,
+  'chargeback purchases have grants revoked as chargeback'
+);
+
+select ok(
+  not exists (
+    select 1
+    from public.bonus_access_grants
+    where user_id = 'd1000000-0000-4000-8000-000000000055'::uuid
+  ),
+  'the active courtesy-only client has no paid bonus grant'
+);
+
+select ok(
+  exists (
+    select 1
+    from public.bonus_access_grants
+    where user_id = 'd1000000-0000-4000-8000-000000000060'::uuid
+      and revoked_at is null
+  )
+  and exists (
+    select 1
+    from public.bonus_access_grants
+    where user_id = 'd1000000-0000-4000-8000-000000000060'::uuid
+      and revoked_at is not null
+  ),
+  'one revoked contract does not remove another live bonus grant'
 );
 
 select results_eq(

@@ -9,18 +9,22 @@ describe("seedUuid", () => {
     expect(seedUuid("submission", 1, 35)).not.toBe(
       seedUuid("submission", 1, 34),
     );
+    expect(seedUuid("bonusGrant", 1)).toBe(
+      "d1700000-0000-4000-8000-000000000001",
+    );
   });
 
   it("keeps kinds and owner/child pairs unique", () => {
     const values = new Set([
       seedUuid("user", 1),
       seedUuid("identity", 1),
+      seedUuid("bonusGrant", 1),
       seedUuid("submission", 1, 0),
       seedUuid("submission", 1, 1),
       seedUuid("submission", 2, 0),
     ]);
 
-    expect(values.size).toBe(5);
+    expect(values.size).toBe(6);
   });
 
   it.each([

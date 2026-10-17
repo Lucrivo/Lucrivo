@@ -6,6 +6,7 @@ import {
   ClipboardCheckIcon,
   CreditCardIcon,
   FileChartColumnIcon,
+  GiftIcon,
   LayoutDashboardIcon,
   LandmarkIcon,
   ListChecksIcon,
@@ -61,6 +62,11 @@ const financialNavigationItems: NavigationItem[] = [
     label: "Relatórios",
     href: "/reports",
     icon: FileChartColumnIcon,
+  },
+  {
+    label: "Bônus",
+    href: "/bonus",
+    icon: GiftIcon,
   },
   {
     label: "Plano",

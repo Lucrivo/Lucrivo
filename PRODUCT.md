@@ -96,6 +96,15 @@ custa R$ 179,40 e libera doze meses (seis de bônus), também em até 6x. Depois
 janela, novos Checkouts voltam ao catálogo padrão; compras e Checkouts ainda
 válidos preservam o snapshot adquirido.
 
+A biblioteca privada **Bônus** reúne o E-book Lucrivo, o Método de vendas para
+o varejo e uma planilha de fluxo de caixa.
+Todo usuário autenticado recebe o e-book. O guia e a planilha são liberados
+quando uma compra é confirmada e permanecem disponíveis mesmo após cancelamento
+ou expiração da assinatura. Acesso de cortesia, isoladamente, não concede esses
+dois materiais. Reembolso parcial também não revoga a concessão; reembolso
+integral ou chargeback revoga somente a concessão ligada ao contrato afetado,
+de modo que outra compra válida do mesmo usuário preserva o acesso.
+
 ## Capabilities and Constraints
 
 - Cadastro, autenticação, recuperação e atualização de senha.
@@ -128,6 +137,8 @@ válidos preservam o snapshot adquirido.
 - Catálogos de billing imutáveis, seleção de campanha e termos de Checkout
   decididos no servidor; o navegador não controla preço, bônus, duração,
   recorrência ou prazo promocional.
+- Biblioteca Bônus autenticada com e-book gratuito e guia e planilha protegidos
+  por uma concessão permanente originada de compra confirmada.
 - Faixa interna de atenção abaixo de R$ 20 a cada R$ 100 para produto e
   produção; ela não é uma meta universal nem gera preço recomendado. Serviço
   mantém suas próprias regras versionadas.

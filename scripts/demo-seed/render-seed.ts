@@ -653,6 +653,45 @@ function renderPayments(catalog: DemoSeedCatalog): string {
   });
 }
 
+function renderBonusGrants(catalog: DemoSeedCatalog): string {
+  return renderBatchInsert({
+    table: "public.bonus_access_grants",
+    columns: [
+      "id",
+      "user_id",
+      "contract_id",
+      "granted_at",
+      "revoked_at",
+      "revocation_reason",
+      "created_at",
+    ],
+    rows: catalog.bonusGrants.map((grant) => [
+      grant.id,
+      grant.userId,
+      grant.contractId,
+      relativeTimeSql(grant.grantedAt),
+      grant.revokedAt === null ? null : relativeTimeSql(grant.revokedAt),
+      grant.revocationReason,
+      relativeTimeSql(grant.grantedAt),
+    ]),
+    casts: [
+      "uuid",
+      "uuid",
+      "uuid",
+      "timestamptz",
+      "timestamptz",
+      "text",
+      "timestamptz",
+    ],
+    suffix: `on conflict (contract_id) do update set
+  user_id = excluded.user_id,
+  granted_at = excluded.granted_at,
+  revoked_at = excluded.revoked_at,
+  revocation_reason = excluded.revocation_reason,
+  created_at = excluded.created_at`,
+  });
+}
+
 function renderStates(catalog: DemoSeedCatalog): string {
   return renderBatchInsert({
     table: "private.admin_user_state",
@@ -844,6 +883,7 @@ on conflict (singleton) do update set
     timestamps,
     renderFinalContractState(catalog.contracts),
     renderPayments(catalog),
+    renderBonusGrants(catalog),
     renderStates(catalog),
     renderEvents(catalog),
     invariantsSql(seedUsers, catalog.admin.id),

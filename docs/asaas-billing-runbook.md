@@ -25,6 +25,56 @@ registrá-los.
 - Eventos de reembolso ou chargeback iniciados fora do Lucrivo também continuam
   sendo processados para manter o acesso local coerente.
 
+## Concessão permanente da biblioteca Bônus
+
+`bonus_access_grants` registra uma concessão por contrato pago. Dentro da mesma
+transação de `apply_asaas_webhook_event`, uma confirmação de Checkout ou
+pagamento cria a concessão de forma idempotente. Reembolso integral marca a
+linha com `full_refund`; solicitação ou disputa de chargeback marca
+`chargeback`. Reembolso parcial mantém a concessão ativa.
+
+Cancelamento, inativação da assinatura e expiração do período não revogam esse
+benefício: a compra já confirmou o direito permanente ao guia e à planilha. Uma
+revogação afeta apenas o contrato correspondente. Se o cliente tiver outra
+concessão sem `revoked_at`, o acesso protegido permanece disponível. Cortesia
+administrativa não cria concessão.
+
+Durante uma reconciliação, compare contrato, pagamentos e concessão sem copiar
+payloads ou identificadores do provedor para tickets:
+
+```sql
+select
+  contract.id as contract_id,
+  contract.user_id,
+  contract.status as contract_status,
+  payment.status as payment_status,
+  payment.confirmed_at,
+  payment.received_at,
+  payment.refunded_at,
+  payment.chargeback_at,
+  bonus_grant.granted_at,
+  bonus_grant.revoked_at,
+  bonus_grant.revocation_reason
+from public.billing_contracts as contract
+left join public.billing_payments as payment
+  on payment.contract_id = contract.id
+left join public.bonus_access_grants as bonus_grant
+  on bonus_grant.contract_id = contract.id
+where contract.id = '<contract-id>'::uuid
+order by payment.due_date, payment.created_at;
+```
+
+Depois do replay do evento original, confirme que pagamento confirmado,
+recebido ou parcialmente reembolsado tem concessão viva; reembolso integral tem
+`full_refund`; e chargeback tem `chargeback`. Não corrija cancelamento ou
+expiração revogando a linha manualmente.
+
+O teste focado da política é:
+
+```bash
+pnpm exec supabase test db supabase/tests/bonus_library.test.sql supabase/tests/billing_webhooks.test.sql --local
+```
+
 ## Catálogo comercial vigente
 
 - Padrão mensal: R$ 49,90, um mês de acesso, com renovação mensal no cartão ou
