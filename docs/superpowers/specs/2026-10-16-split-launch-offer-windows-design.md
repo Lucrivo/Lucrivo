@@ -1,7 +1,8 @@
 # Split Launch Offer Windows Design
 
 **Date:** 2026-10-16  
-**Status:** Awaiting user review  
+**Status:** Approved
+
 **Supersedes:** The single 15-day campaign window, two-catalog model, and
 promotional-renewal price behavior in
 `2026-10-12-launch-offer-design.md`. The earlier design's security, refund,
