@@ -90,7 +90,10 @@ describe("launch offer guards", () => {
   it("recognizes only the two active phases", () => {
     expect(
       isLaunchOfferActive(
-        resolveLaunchOffer({ rawStartAt: start, now: new Date(normalizedStart) }),
+        resolveLaunchOffer({
+          rawStartAt: start,
+          now: new Date(normalizedStart),
+        }),
       ),
     ).toBe(true);
     expect(
@@ -100,7 +103,10 @@ describe("launch offer guards", () => {
     ).toBe(true);
     expect(
       isLaunchOfferActive(
-        resolveLaunchOffer({ rawStartAt: start, now: new Date(promotionEndsAt) }),
+        resolveLaunchOffer({
+          rawStartAt: start,
+          now: new Date(promotionEndsAt),
+        }),
       ),
     ).toBe(false);
   });

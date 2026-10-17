@@ -195,10 +195,38 @@ describe("AsaasGateway", () => {
 
   it.each([
     [{ id: "other", cycle: "MONTHLY", nextDueDate: "2026-12-20", value: 49.9 }],
-    [{ id: "sub/123", cycle: "BIMONTHLY", nextDueDate: "2026-12-20", value: 49.9 }],
-    [{ id: "sub/123", cycle: "MONTHLY", nextDueDate: "2027-01-20", value: 49.9 }],
-    [{ id: "sub/123", cycle: "MONTHLY", nextDueDate: "20/12/2026", value: 49.9 }],
-    [{ id: "sub/123", cycle: "MONTHLY", nextDueDate: "2026-12-20", value: 39.9 }],
+    [
+      {
+        id: "sub/123",
+        cycle: "BIMONTHLY",
+        nextDueDate: "2026-12-20",
+        value: 49.9,
+      },
+    ],
+    [
+      {
+        id: "sub/123",
+        cycle: "MONTHLY",
+        nextDueDate: "2027-01-20",
+        value: 49.9,
+      },
+    ],
+    [
+      {
+        id: "sub/123",
+        cycle: "MONTHLY",
+        nextDueDate: "20/12/2026",
+        value: 49.9,
+      },
+    ],
+    [
+      {
+        id: "sub/123",
+        cycle: "MONTHLY",
+        nextDueDate: "2026-12-20",
+        value: 39.9,
+      },
+    ],
     [{ id: "sub/123", cycle: "MONTHLY", nextDueDate: "2026-12-20" }],
   ])("rejects an inconsistent renewal response %#", async (response) => {
     fetchMock.mockResolvedValue(Response.json(response));

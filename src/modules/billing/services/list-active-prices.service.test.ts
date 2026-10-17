@@ -106,11 +106,7 @@ describe("listActivePrices", () => {
 
   it.each([
     ["launch", launchMonthlyPrice, launchSemiannualPrice],
-    [
-      "launch_price",
-      launchPriceMonthlyPrice,
-      launchPriceSemiannualPrice,
-    ],
+    ["launch_price", launchPriceMonthlyPrice, launchPriceSemiannualPrice],
     ["standard", standardMonthlyPrice, standardSemiannualPrice],
   ] as const)(
     "normalizes the approved %s catalog and sorts monthly first",

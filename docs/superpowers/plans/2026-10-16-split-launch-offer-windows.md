@@ -695,7 +695,7 @@ git commit -m "docs: describe split launch offer windows"
 - Consumes: the complete three-catalog implementation.
 - Produces: a clean local verification record and a deployment handoff; it does not mutate remote Supabase or live Asaas state.
 
-- [ ] **Step 1: Scan for stale phase logic and misleading price copy**
+- [x] **Step 1: Scan for stale phase logic and misleading price copy**
 
 Run:
 
@@ -705,7 +705,7 @@ rg -n 'phase === "active"|phase: "active"|phase: "ended"|catalogCode: "launch"|R
 
 Expected: remaining `catalogCode: "launch"` occurrences are intentional launch fixtures/branches; every R$ 39.90 occurrence either says first payment or clearly describes a detached/semiannual payment; there are no obsolete `active`/`ended` phases or copy implying indefinite R$ 39.90 monthly renewal. Review every match rather than blanket-replacing fixtures.
 
-- [ ] **Step 2: Run the complete local database gate**
+- [x] **Step 2: Run the complete local database gate**
 
 Run: `pnpm supabase:reset`
 
@@ -727,7 +727,7 @@ Run: `pnpm supabase:types && git diff --exit-code src/infrastructure/database/su
 
 Expected: generated types are current.
 
-- [ ] **Step 3: Run deterministic seed checks**
+- [x] **Step 3: Run deterministic seed checks**
 
 Run: `pnpm seed:check`
 
@@ -737,7 +737,7 @@ Run: `pnpm seed:verify-local`
 
 Expected: PASS against the reset local database.
 
-- [ ] **Step 4: Run the complete application gate**
+- [x] **Step 4: Run the complete application gate**
 
 Run: `pnpm check`
 
@@ -747,7 +747,7 @@ Run: `pnpm build`
 
 Expected: production Next.js build succeeds.
 
-- [ ] **Step 5: Verify the final diff and commit any test-only corrections**
+- [x] **Step 5: Verify the final diff and commit any test-only corrections**
 
 Run: `git status --short && git diff --check`
 
@@ -757,6 +757,6 @@ Expected: no uncommitted generated drift or whitespace errors. If a verification
 git commit -m "test: complete launch offer release gate"
 ```
 
-- [ ] **Step 6: Record external rollout prerequisites without executing them**
+- [x] **Step 6: Record external rollout prerequisites without executing them**
 
 Handoff must state that operations still need to confirm production tokenization with Asaas and exercise both `launch` and `launch_price` monthly adjustments in the Asaas sandbox. It must also state that no remote migration was pushed and no live subscription was changed during this plan.

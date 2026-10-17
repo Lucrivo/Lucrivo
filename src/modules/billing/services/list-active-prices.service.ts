@@ -37,9 +37,9 @@ function normalizePrice(row: ActiveBillingPriceRow): ActiveBillingPrice | null {
     row.currency !== "BRL" ||
     row.id.trim() === "" ||
     !isPositiveSafeInteger(row.amount_cents) ||
-    row.catalog_code !== "launch" &&
-    row.catalog_code !== "launch_price" &&
-    row.catalog_code !== "standard"
+    (row.catalog_code !== "launch" &&
+      row.catalog_code !== "launch_price" &&
+      row.catalog_code !== "standard")
   ) {
     return null;
   }
@@ -103,9 +103,7 @@ function normalizePrice(row: ActiveBillingPriceRow): ActiveBillingPrice | null {
     row.bonus_months === 0;
 
   if (
-    (isLaunchSemiannual ||
-      isLaunchPriceSemiannual ||
-      isStandardSemiannual) &&
+    (isLaunchSemiannual || isLaunchPriceSemiannual || isStandardSemiannual) &&
     row.installment_limit !== null &&
     row.amount_cents % row.installment_limit === 0
   ) {

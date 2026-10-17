@@ -34,11 +34,11 @@ calendar-month arithmetic.
 
 The intervals are start-inclusive and end-exclusive:
 
-| Interval | Catalog | Monthly | Semiannual |
-| --- | --- | --- | --- |
-| `[start, start + 15 days)` | `launch` | R$ 39.90, 2 months of initial access, 1 bonus month | R$ 179.40, 12 months of access, 6 bonus months |
-| `[start + 15 days, start + 30 days)` | `launch_price` | R$ 39.90, 1 month of access, no bonus | R$ 179.40, 6 months of access, no bonus |
-| Before `start` or at/after `start + 30 days` | `standard` | R$ 49.90, 1 month of access | R$ 239.40, 6 months of access |
+| Interval                                     | Catalog        | Monthly                                             | Semiannual                                     |
+| -------------------------------------------- | -------------- | --------------------------------------------------- | ---------------------------------------------- |
+| `[start, start + 15 days)`                   | `launch`       | R$ 39.90, 2 months of initial access, 1 bonus month | R$ 179.40, 12 months of access, 6 bonus months |
+| `[start + 15 days, start + 30 days)`         | `launch_price` | R$ 39.90, 1 month of access, no bonus               | R$ 179.40, 6 months of access, no bonus        |
+| Before `start` or at/after `start + 30 days` | `standard`     | R$ 49.90, 1 month of access                         | R$ 239.40, 6 months of access                  |
 
 At exactly `start + 15 days`, bonus eligibility has ended and
 `launch_price` applies. At exactly `start + 30 days`, all launch-price
@@ -99,14 +99,14 @@ combination of amount, access, and bonus.
 
 The approved catalog shapes are:
 
-| Catalog | Mode | Amount | Installment maximum | Access | Bonus |
-| --- | --- | ---: | ---: | ---: | ---: |
-| `launch` | monthly | 3990 cents | none | 2 months | 1 month |
-| `launch` | semiannual | 17940 cents | 6 | 12 months | 6 months |
-| `launch_price` | monthly | 3990 cents | none | 1 month | 0 months |
-| `launch_price` | semiannual | 17940 cents | 6 | 6 months | 0 months |
-| `standard` | monthly | 4990 cents | none | 1 month | 0 months |
-| `standard` | semiannual | 23940 cents | 6 | 6 months | 0 months |
+| Catalog        | Mode       |      Amount | Installment maximum |    Access |    Bonus |
+| -------------- | ---------- | ----------: | ------------------: | --------: | -------: |
+| `launch`       | monthly    |  3990 cents |                none |  2 months |  1 month |
+| `launch`       | semiannual | 17940 cents |                   6 | 12 months | 6 months |
+| `launch_price` | monthly    |  3990 cents |                none |   1 month | 0 months |
+| `launch_price` | semiannual | 17940 cents |                   6 |  6 months | 0 months |
+| `standard`     | monthly    |  4990 cents |                none |   1 month | 0 months |
+| `standard`     | semiannual | 23940 cents |                   6 |  6 months | 0 months |
 
 An imperative Supabase migration must:
 

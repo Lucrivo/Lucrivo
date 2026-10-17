@@ -340,8 +340,7 @@ describe("createHostedCheckout", () => {
       }),
     ).resolves.toEqual({
       status: "reused",
-      checkoutUrl:
-        "https://sandbox.asaas.com/checkoutSession/show/price-only",
+      checkoutUrl: "https://sandbox.asaas.com/checkoutSession/show/price-only",
     });
     expect(priceSelect).not.toHaveBeenCalled();
   });

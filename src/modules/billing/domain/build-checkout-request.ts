@@ -91,13 +91,13 @@ function buildCheckoutRequest({
 
   const hasValidSemiannualTerms =
     price.installmentLimit === 6 &&
-      ((price.catalogCode === "launch" &&
-        price.accessMonths === 12 &&
-        price.bonusMonths === 6) ||
-        (price.catalogCode === "launch_price" &&
-          price.accessMonths === 6 &&
-          price.bonusMonths === 0) ||
-        (price.catalogCode === "standard" &&
+    ((price.catalogCode === "launch" &&
+      price.accessMonths === 12 &&
+      price.bonusMonths === 6) ||
+      (price.catalogCode === "launch_price" &&
+        price.accessMonths === 6 &&
+        price.bonusMonths === 0) ||
+      (price.catalogCode === "standard" &&
         price.accessMonths === 6 &&
         price.bonusMonths === 0));
 
