@@ -531,7 +531,7 @@ git commit -m "feat: present launch phases accurately"
 - Produces: page props whose catalog prices and `LaunchOfferView` come from the same server resolution.
 - Preserves: paid-user/admin offer suppression, free-user eligibility checks, and sanitized unavailable states.
 
-- [ ] **Step 1: Add failing server-page tests for both active phases**
+- [x] **Step 1: Add failing server-page tests for both active phases**
 
 For landing, billing, billing return, quick diagnosis, and report completion, mock these resolutions separately:
 
@@ -557,17 +557,17 @@ const priceActive = {
 
 Assert landing, billing, billing return, and report completion query exactly the resolved catalog; consumers with campaign UI receive matching phase/deadline props. Assert quick diagnosis enables its completion-offer flag for either active phase, without querying prices there. Assert scheduled/expired uses `standard`; invalid does not expose paid offers. Retain tests that suppress offers for paid and admin users.
 
-- [ ] **Step 2: Add a report regression proving there is no hardcoded launch catalog**
+- [x] **Step 2: Add a report regression proving there is no hardcoded launch catalog**
 
 In `src/app/(private)/reports/[id]/page.test.tsx`, resolve `price_active`, return `launch_price` fixtures, and assert `listActivePrices` receives `{ catalogCode: "launch_price" }`. Assert completion still renders the offer; an incomplete or unauthorized report retains current behavior.
 
-- [ ] **Step 3: Run page tests and confirm failure**
+- [x] **Step 3: Run page tests and confirm failure**
 
 Run: `pnpm vitest run src/app/page.test.tsx 'src/app/(private)/billing/page.test.tsx' 'src/app/(private)/billing/return/page.test.tsx' 'src/app/(private)/quick-diagnosis/page.test.tsx' 'src/app/(private)/reports/[id]/page.test.tsx'`
 
 Expected: FAIL where code checks `phase === "active"`, uses stale `ended` mocks, or requests `launch` directly.
 
-- [ ] **Step 4: Replace phase literals and hardcoded catalogs**
+- [x] **Step 4: Replace phase literals and hardcoded catalogs**
 
 Resolve once per request path, then use:
 
@@ -584,13 +584,13 @@ const launchOfferView = isLaunchOfferActive(launchOffer)
 
 For `invalid`, keep the free plan/page available but suppress paid price projections. Do not calculate boundaries in components or choose `launch_price` from browser time.
 
-- [ ] **Step 5: Re-run the page suite**
+- [x] **Step 5: Re-run the page suite**
 
 Run: `pnpm vitest run src/app/page.test.tsx 'src/app/(private)/billing/page.test.tsx' 'src/app/(private)/billing/return/page.test.tsx' 'src/app/(private)/quick-diagnosis/page.test.tsx' 'src/app/(private)/reports/[id]/page.test.tsx'`
 
 Expected: PASS for `bonus_active`, `price_active`, standard, invalid, paid-user, admin, and report-state paths.
 
-- [ ] **Step 6: Commit server integration**
+- [x] **Step 6: Commit server integration**
 
 ```bash
 git add src/app/page.tsx src/app/page.test.tsx 'src/app/(private)/billing/page.test.tsx' 'src/app/(private)/billing/return/page.test.tsx' 'src/app/(private)/quick-diagnosis/page.tsx' 'src/app/(private)/quick-diagnosis/page.test.tsx' 'src/app/(private)/reports/[id]/page.tsx' 'src/app/(private)/reports/[id]/page.test.tsx'

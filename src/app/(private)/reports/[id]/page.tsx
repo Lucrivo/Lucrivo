@@ -8,6 +8,7 @@ import { resolveLandingOfferPresentation } from "@/components/landing/landing-of
 import { readLaunchOfferEnvironment } from "@/config/launch-offer-environment";
 import { requireUser } from "@/modules/auth/services/require-user";
 import { LaunchOfferDialog } from "@/modules/billing/components/launch-offer-dialog";
+import { isLaunchOfferActive } from "@/modules/billing/domain/launch-offer";
 import { getBillingOverview } from "@/modules/billing/services/get-billing-overview.service";
 import { listActivePrices } from "@/modules/billing/services/list-active-prices.service";
 import { ReportAiAssistant } from "@/modules/report-ai/components/report-ai-assistant";
@@ -90,8 +91,8 @@ export default async function ReportPage({
     ? readLaunchOfferEnvironment()
     : null;
   const launchPricesPromise =
-    launchOffer?.phase === "active"
-      ? listActivePrices({ supabase, catalogCode: "launch" })
+    launchOffer && isLaunchOfferActive(launchOffer)
+      ? listActivePrices({ supabase, catalogCode: launchOffer.catalogCode })
       : Promise.resolve(null);
 
   const [billing, historyResult, launchPricesResult] = await Promise.all([
@@ -114,8 +115,12 @@ export default async function ReportPage({
       ? resolveLandingOfferPresentation(launchPricesResult.prices)
       : null;
   const launchDialog =
-    launchOffer?.phase === "active" &&
-    launchPresentation?.catalogCode === "launch" &&
+    launchOffer &&
+    isLaunchOfferActive(launchOffer) &&
+    ((launchOffer.phase === "bonus_active" &&
+      launchPresentation?.catalogCode === "launch") ||
+      (launchOffer.phase === "price_active" &&
+        launchPresentation?.catalogCode === "launch_price")) &&
     billing.status === "success" &&
     billing.overview.tier === "free" &&
     billing.overview.freeQuickDiagnosisUsed ? (
@@ -123,12 +128,17 @@ export default async function ReportPage({
         context="diagnosis"
         dismissHref={`/reports/${id}`}
         offer={{
+          phase: launchOffer.phase,
           endsAt: launchOffer.endsAt,
           monthlyPriceLabel: launchPresentation.monthlyPriceLabel,
+          monthlyRenewalPriceLabel:
+            launchPresentation.monthlyRenewalPriceLabel!,
           semiannualInstallmentLabel:
             launchPresentation.semiannualInstallmentLabel,
           monthlyAccessMonths: launchPresentation.monthlyAccessMonths,
+          monthlyBonusMonths: launchPresentation.monthlyBonusMonths,
           semiannualAccessMonths: launchPresentation.semiannualAccessMonths,
+          semiannualBonusMonths: launchPresentation.semiannualBonusMonths,
         }}
       />
     ) : null;

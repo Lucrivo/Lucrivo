@@ -63,9 +63,11 @@ describe("QuickDiagnosisPage", () => {
     vi.clearAllMocks();
     requireUser.mockResolvedValue({ userId: "trusted-user", supabase });
     readLaunchOfferEnvironment.mockReturnValue({
-      phase: "active",
+      phase: "bonus_active",
       catalogCode: "launch",
       startsAt: "2026-10-20T12:00:00.000Z",
+      bonusEndsAt: "2026-11-04T12:00:00.000Z",
+      promotionEndsAt: "2026-11-19T12:00:00.000Z",
       endsAt: "2026-11-04T12:00:00.000Z",
     });
     getBillingOverview.mockResolvedValue({
@@ -78,6 +80,24 @@ describe("QuickDiagnosisPage", () => {
         contract: null,
       },
     });
+  });
+
+  it("also enables the completion offer during the price-only window", async () => {
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "price_active",
+      catalogCode: "launch_price",
+      startsAt: "2026-10-20T12:00:00.000Z",
+      bonusEndsAt: "2026-11-04T12:00:00.000Z",
+      promotionEndsAt: "2026-11-19T12:00:00.000Z",
+      endsAt: "2026-11-19T12:00:00.000Z",
+    });
+
+    await renderPage();
+
+    expect(QuickDiagnosisWizard).toHaveBeenCalledWith(
+      expect.objectContaining({ launchOfferOnCompletion: true }),
+      undefined,
+    );
   });
 
   async function renderPage(
@@ -122,10 +142,11 @@ describe("QuickDiagnosisPage", () => {
 
   it("does not mark completion for a launch modal outside the active campaign", async () => {
     readLaunchOfferEnvironment.mockReturnValue({
-      phase: "ended",
+      phase: "expired",
       catalogCode: "standard",
       startsAt: "2026-09-01T12:00:00.000Z",
-      endsAt: "2026-09-16T12:00:00.000Z",
+      bonusEndsAt: "2026-09-16T12:00:00.000Z",
+      promotionEndsAt: "2026-10-01T12:00:00.000Z",
     });
 
     await renderPage();

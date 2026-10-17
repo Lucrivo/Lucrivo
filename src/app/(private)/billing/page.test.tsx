@@ -54,6 +54,13 @@ const prices = [
   },
 ];
 
+const launchPricePrices = prices.map((price) => ({
+  ...price,
+  catalogCode: "launch_price" as const,
+  accessMonths: price.billingMode === "monthly" ? 1 : 6,
+  bonusMonths: 0,
+}));
+
 describe("BillingPage", () => {
   const supabase = { from: vi.fn() };
 
@@ -61,9 +68,11 @@ describe("BillingPage", () => {
     vi.clearAllMocks();
     requireUser.mockResolvedValue({ userId: "trusted-user", supabase });
     readLaunchOfferEnvironment.mockReturnValue({
-      phase: "active",
+      phase: "bonus_active",
       catalogCode: "launch",
       startsAt: "2026-10-20T12:00:00.000Z",
+      bonusEndsAt: "2026-11-04T12:00:00.000Z",
+      promotionEndsAt: "2026-11-19T12:00:00.000Z",
       endsAt: "2026-11-04T12:00:00.000Z",
     });
     listActivePrices.mockResolvedValue({ status: "success", prices });
@@ -79,6 +88,30 @@ describe("BillingPage", () => {
         refund: null,
       },
     });
+  });
+
+  it("loads launch_price offers during the second campaign window", async () => {
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "price_active",
+      catalogCode: "launch_price",
+      startsAt: "2026-10-20T12:00:00.000Z",
+      bonusEndsAt: "2026-11-04T12:00:00.000Z",
+      promotionEndsAt: "2026-11-19T12:00:00.000Z",
+      endsAt: "2026-11-19T12:00:00.000Z",
+    });
+    listActivePrices.mockResolvedValue({
+      status: "success",
+      prices: launchPricePrices,
+    });
+
+    await renderPage();
+
+    expect(listActivePrices).toHaveBeenCalledWith({
+      supabase,
+      catalogCode: "launch_price",
+    });
+    expect(screen.getByText("1 mês de acesso inicial")).toBeVisible();
+    expect(document.body).not.toHaveTextContent(/m[eê]s(?:es)? de b[oô]nus/i);
   });
 
   async function renderPage() {
@@ -126,7 +159,8 @@ describe("BillingPage", () => {
       phase: "invalid",
       catalogCode: null,
       startsAt: null,
-      endsAt: null,
+      bonusEndsAt: null,
+      promotionEndsAt: null,
     });
 
     await renderPage();
