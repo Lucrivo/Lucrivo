@@ -36,6 +36,7 @@ describe("QuickDiagnosisWizard category orchestration", () => {
     createProductionDiagnosis?: CreateProductionDiagnosisAction;
     createServiceDiagnosis?: CreateServiceDiagnosisAction;
     createDetailedDiagnosis?: CreateDetailedDiagnosisAction;
+    launchOfferOnCompletion?: boolean;
   }) {
     const createProductDiagnosis =
       options?.createProductDiagnosis ?? vi.fn<CreateProductDiagnosisAction>();
@@ -59,6 +60,7 @@ describe("QuickDiagnosisWizard category orchestration", () => {
       <QuickDiagnosisWizard
         userId="trusted-user"
         canCreateDetailedDiagnosis={options?.canCreateDetailedDiagnosis ?? true}
+        launchOfferOnCompletion={options?.launchOfferOnCompletion ?? false}
         initialDetailedCategory={options?.initialDetailedCategory}
         createProductDiagnosis={createProductDiagnosis}
         createProductionDiagnosis={createProductionDiagnosis}
@@ -735,6 +737,7 @@ describe("QuickDiagnosisWizard category orchestration", () => {
       .mockResolvedValue({ status: "success", diagnosisId: 84 });
     const { createProductDiagnosis, createProductionDiagnosis } = renderWizard({
       createServiceDiagnosis,
+      launchOfferOnCompletion: true,
     });
 
     await user.click(screen.getByRole("radio", { name: "Serviço" }));
@@ -745,7 +748,9 @@ describe("QuickDiagnosisWizard category orchestration", () => {
       screen.getByRole("button", { name: "Confirmar diagnóstico" }),
     );
 
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/reports/84"));
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith("/reports/84?launchOffer=1"),
+    );
     expect(createServiceDiagnosis).toHaveBeenCalledWith(
       expect.objectContaining({
         submissionId: submissionIds[0],

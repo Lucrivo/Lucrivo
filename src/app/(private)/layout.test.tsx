@@ -1,21 +1,16 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const {
-  requireClientAccess,
-  redirect,
-  rpc,
-  readLaunchOfferEnvironment,
-  getBillingOverview,
-} = vi.hoisted(() => ({
-  requireClientAccess: vi.fn(),
-  rpc: vi.fn(),
-  readLaunchOfferEnvironment: vi.fn(),
-  getBillingOverview: vi.fn(),
-  redirect: vi.fn((destination: string) => {
-    throw new Error(`redirect:${destination}`);
+const { requireClientAccess, redirect, rpc, getBillingOverview } = vi.hoisted(
+  () => ({
+    requireClientAccess: vi.fn(),
+    rpc: vi.fn(),
+    getBillingOverview: vi.fn(),
+    redirect: vi.fn((destination: string) => {
+      throw new Error(`redirect:${destination}`);
+    }),
   }),
-}));
+);
 
 vi.mock("server-only", () => ({}));
 vi.mock("next/navigation", () => ({ redirect }));
@@ -23,27 +18,20 @@ vi.mock("@/components/layout/app-shell", () => ({
   AppShell: ({
     children,
     isAdminUser,
-    launchOfferStrip,
+    showFreeDiagnosisBanner,
   }: {
     children: React.ReactNode;
     isAdminUser: boolean;
-    launchOfferStrip: {
-      endsAt: string;
-      freeQuickDiagnosisUsed: boolean;
-    } | null;
+    showFreeDiagnosisBanner: boolean;
   }) => (
     <div
       data-testid="private-shell"
       data-admin-user={isAdminUser}
-      data-offer-ends-at={launchOfferStrip?.endsAt}
-      data-free-diagnosis-used={launchOfferStrip?.freeQuickDiagnosisUsed}
+      data-free-diagnosis-banner={showFreeDiagnosisBanner}
     >
       {children}
     </div>
   ),
-}));
-vi.mock("@/config/launch-offer-environment", () => ({
-  readLaunchOfferEnvironment,
 }));
 vi.mock("@/modules/billing/services/get-billing-overview.service", () => ({
   getBillingOverview,
@@ -67,12 +55,6 @@ import PrivateLayout from "./layout";
 describe("PrivateLayout", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    readLaunchOfferEnvironment.mockReturnValue({
-      phase: "expired",
-      catalogCode: "standard",
-      startsAt: "2026-10-20T12:00:00.000Z",
-      endsAt: "2026-11-04T12:00:00.000Z",
-    });
     getBillingOverview.mockResolvedValue({ status: "read_failed" });
     rpc.mockImplementation(async (name: string) => ({
       data: name === "current_user_has_completed_onboarding",
@@ -105,12 +87,6 @@ describe("PrivateLayout", () => {
   });
 
   it("identifies an admin user for the financial sidebar", async () => {
-    readLaunchOfferEnvironment.mockReturnValue({
-      phase: "active",
-      catalogCode: "launch",
-      startsAt: "2026-10-20T12:00:00.000Z",
-      endsAt: "2026-11-04T12:00:00.000Z",
-    });
     requireClientAccess.mockResolvedValue({
       userId: "user-123",
       isAdmin: true,
@@ -134,20 +110,18 @@ describe("PrivateLayout", () => {
       "current_user_has_completed_onboarding",
     );
     expect(getBillingOverview).not.toHaveBeenCalled();
-    expect(screen.getByTestId("private-shell")).not.toHaveAttribute(
-      "data-offer-ends-at",
+    expect(screen.getByTestId("private-shell")).toHaveAttribute(
+      "data-free-diagnosis-banner",
+      "false",
     );
   });
 
-  it.each([false, true])(
-    "passes the active offer state for a free user with diagnosis-used=%s",
-    async (freeQuickDiagnosisUsed) => {
-      readLaunchOfferEnvironment.mockReturnValue({
-        phase: "active",
-        catalogCode: "launch",
-        startsAt: "2026-10-20T12:00:00.000Z",
-        endsAt: "2026-11-04T12:00:00.000Z",
-      });
+  it.each([
+    [false, true],
+    [true, false],
+  ])(
+    "sets the evergreen diagnosis banner from diagnosis-used=%s",
+    async (freeQuickDiagnosisUsed, expectedBanner) => {
       getBillingOverview.mockResolvedValue({
         status: "success",
         overview: {
@@ -159,12 +133,8 @@ describe("PrivateLayout", () => {
       render(await PrivateLayout({ children: <p>Área privada</p> }));
 
       expect(screen.getByTestId("private-shell")).toHaveAttribute(
-        "data-offer-ends-at",
-        "2026-11-04T12:00:00.000Z",
-      );
-      expect(screen.getByTestId("private-shell")).toHaveAttribute(
-        "data-free-diagnosis-used",
-        String(freeQuickDiagnosisUsed),
+        "data-free-diagnosis-banner",
+        String(expectedBanner),
       );
     },
   );
@@ -172,12 +142,6 @@ describe("PrivateLayout", () => {
   it.each(["paid", "courtesy"])(
     "suppresses the strip for a %s user",
     async (tier) => {
-      readLaunchOfferEnvironment.mockReturnValue({
-        phase: "active",
-        catalogCode: "launch",
-        startsAt: "2026-10-20T12:00:00.000Z",
-        endsAt: "2026-11-04T12:00:00.000Z",
-      });
       getBillingOverview.mockResolvedValue({
         status: "success",
         overview: { tier, freeQuickDiagnosisUsed: true },
@@ -185,42 +149,23 @@ describe("PrivateLayout", () => {
 
       render(await PrivateLayout({ children: <p>Área privada</p> }));
 
-      expect(screen.getByTestId("private-shell")).not.toHaveAttribute(
-        "data-offer-ends-at",
+      expect(screen.getByTestId("private-shell")).toHaveAttribute(
+        "data-free-diagnosis-banner",
+        "false",
       );
     },
   );
 
-  it("keeps protected content available when campaign or billing reads are unusable", async () => {
-    readLaunchOfferEnvironment.mockReturnValue({
-      phase: "invalid",
-      catalogCode: null,
-      startsAt: null,
-      endsAt: null,
-    });
-
-    const { rerender } = render(
-      await PrivateLayout({ children: <p>Campanha inválida</p> }),
-    );
-    expect(screen.getByTestId("private-shell")).toHaveTextContent(
-      "Campanha inválida",
-    );
-    expect(getBillingOverview).not.toHaveBeenCalled();
-
-    readLaunchOfferEnvironment.mockReturnValue({
-      phase: "active",
-      catalogCode: "launch",
-      startsAt: "2026-10-20T12:00:00.000Z",
-      endsAt: "2026-11-04T12:00:00.000Z",
-    });
+  it("keeps protected content available when the billing read is unusable", async () => {
     getBillingOverview.mockResolvedValue({ status: "read_failed" });
-    rerender(await PrivateLayout({ children: <p>Leitura indisponível</p> }));
+    render(await PrivateLayout({ children: <p>Leitura indisponível</p> }));
 
     expect(screen.getByTestId("private-shell")).toHaveTextContent(
       "Leitura indisponível",
     );
-    expect(screen.getByTestId("private-shell")).not.toHaveAttribute(
-      "data-offer-ends-at",
+    expect(screen.getByTestId("private-shell")).toHaveAttribute(
+      "data-free-diagnosis-banner",
+      "false",
     );
   });
 

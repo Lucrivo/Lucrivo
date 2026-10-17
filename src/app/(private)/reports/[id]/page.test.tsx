@@ -17,16 +17,24 @@ const {
   getBillingOverview,
   getOwnedReport,
   getReportAiHistory,
+  LaunchOfferDialog,
+  listActivePrices,
   ReportAiAssistant,
+  readLaunchOfferEnvironment,
   notFound,
   requireUser,
 } = vi.hoisted(() => ({
   getBillingOverview: vi.fn(),
   getOwnedReport: vi.fn(),
   getReportAiHistory: vi.fn(),
+  LaunchOfferDialog: vi.fn(({ dismissHref }: { dismissHref?: string }) => (
+    <div data-testid="launch-offer-dialog">oferta:{dismissHref}</div>
+  )),
+  listActivePrices: vi.fn(),
   ReportAiAssistant: vi.fn(({ canAsk }: { canAsk: boolean }) => (
     <div>Assistente IA: {canAsk ? "ativo" : "somente leitura"}</div>
   )),
+  readLaunchOfferEnvironment: vi.fn(),
   notFound: vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
   }),
@@ -37,6 +45,15 @@ vi.mock("next/navigation", () => ({ notFound }));
 vi.mock("@/modules/auth/services/require-user", () => ({ requireUser }));
 vi.mock("@/modules/billing/services/get-billing-overview.service", () => ({
   getBillingOverview,
+}));
+vi.mock("@/modules/billing/services/list-active-prices.service", () => ({
+  listActivePrices,
+}));
+vi.mock("@/config/launch-offer-environment", () => ({
+  readLaunchOfferEnvironment,
+}));
+vi.mock("@/modules/billing/components/launch-offer-dialog", () => ({
+  LaunchOfferDialog,
 }));
 vi.mock("@/modules/report-ai/services/report-ai-store.service", () => ({
   getReportAiHistory,
@@ -165,10 +182,51 @@ describe("ReportPage", () => {
         turns: [],
       },
     });
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "active",
+      catalogCode: "launch",
+      startsAt: "2026-10-20T12:00:00.000Z",
+      endsAt: "2026-11-04T12:00:00.000Z",
+    });
+    listActivePrices.mockResolvedValue({
+      status: "success",
+      prices: [
+        {
+          id: "11111111-1111-4111-8111-111111111111",
+          productCode: "quick_diagnosis_pro",
+          catalogCode: "launch",
+          billingMode: "monthly",
+          amountCents: 3990,
+          currency: "BRL",
+          installmentLimit: null,
+          accessMonths: 2,
+          bonusMonths: 1,
+        },
+        {
+          id: "22222222-2222-4222-8222-222222222222",
+          productCode: "quick_diagnosis_pro",
+          catalogCode: "launch",
+          billingMode: "semiannual",
+          amountCents: 17940,
+          currency: "BRL",
+          installmentLimit: 6,
+          accessMonths: 12,
+          bonusMonths: 6,
+        },
+      ],
+    });
   });
 
-  async function renderPage(id = "42") {
-    render(await ReportPage({ params: Promise.resolve({ id }) }));
+  async function renderPage(
+    id = "42",
+    searchParams: { launchOffer?: string | string[] } = {},
+  ) {
+    render(
+      await ReportPage({
+        params: Promise.resolve({ id }),
+        searchParams: Promise.resolve(searchParams),
+      }),
+    );
   }
 
   it("renders an owned current Service snapshot with plain labels", async () => {
@@ -192,6 +250,58 @@ describe("ReportPage", () => {
       }),
       undefined,
     );
+  });
+
+  it("opens the active launch offer after the first free diagnosis", async () => {
+    getBillingOverview.mockResolvedValue({
+      status: "success",
+      overview: {
+        tier: "free",
+        canCreateQuickDiagnosis: false,
+        canCreateDetailedDiagnosis: false,
+        freeQuickDiagnosisUsed: true,
+      },
+    });
+
+    await renderPage("42", { launchOffer: "1" });
+
+    expect(screen.getByTestId("launch-offer-dialog")).toHaveTextContent(
+      "oferta:/reports/42",
+    );
+    expect(LaunchOfferDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: "diagnosis",
+        dismissHref: "/reports/42",
+        offer: expect.objectContaining({
+          endsAt: "2026-11-04T12:00:00.000Z",
+          monthlyPriceLabel: "R$ 39,90",
+        }),
+      }),
+      undefined,
+    );
+  });
+
+  it("does not open a completion offer without an active verified campaign", async () => {
+    getBillingOverview.mockResolvedValue({
+      status: "success",
+      overview: {
+        tier: "free",
+        canCreateQuickDiagnosis: false,
+        canCreateDetailedDiagnosis: false,
+        freeQuickDiagnosisUsed: true,
+      },
+    });
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "ended",
+      catalogCode: "standard",
+      startsAt: "2026-09-01T12:00:00.000Z",
+      endsAt: "2026-09-16T12:00:00.000Z",
+    });
+
+    await renderPage("42", { launchOffer: "1" });
+
+    expect(screen.queryByTestId("launch-offer-dialog")).not.toBeInTheDocument();
+    expect(listActivePrices).not.toHaveBeenCalled();
   });
 
   it("renders an owned current Product snapshot with plain labels", async () => {
@@ -317,7 +427,10 @@ describe("ReportPage", () => {
 
   it.each(["abc", "0"])("calls notFound for malformed id %s", async (id) => {
     await expect(
-      ReportPage({ params: Promise.resolve({ id }) }),
+      ReportPage({
+        params: Promise.resolve({ id }),
+        searchParams: Promise.resolve({}),
+      }),
     ).rejects.toThrow("NEXT_NOT_FOUND");
     expect(notFound).toHaveBeenCalledOnce();
     expect(getOwnedReport).not.toHaveBeenCalled();
@@ -328,7 +441,10 @@ describe("ReportPage", () => {
     getOwnedReport.mockResolvedValue({ status: "not_found" });
 
     await expect(
-      ReportPage({ params: Promise.resolve({ id: "42" }) }),
+      ReportPage({
+        params: Promise.resolve({ id: "42" }),
+        searchParams: Promise.resolve({}),
+      }),
     ).rejects.toThrow("NEXT_NOT_FOUND");
     expect(notFound).toHaveBeenCalledOnce();
     expect(getReportAiHistory).not.toHaveBeenCalled();
@@ -358,7 +474,10 @@ describe("ReportPage", () => {
     getOwnedReport.mockResolvedValue({ status: "read_failed" });
 
     await expect(
-      ReportPage({ params: Promise.resolve({ id: "42" }) }),
+      ReportPage({
+        params: Promise.resolve({ id: "42" }),
+        searchParams: Promise.resolve({}),
+      }),
     ).rejects.toThrow("report_read_failed");
     expect(getReportAiHistory).not.toHaveBeenCalled();
   });

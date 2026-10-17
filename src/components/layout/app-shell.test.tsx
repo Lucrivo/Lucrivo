@@ -29,17 +29,10 @@ vi.mock("@/components/layout/account-menu", () => ({
   ),
 }));
 
-vi.mock("@/modules/billing/components/launch-offer-strip", () => ({
-  LaunchOfferStrip: ({
-    offer,
-  }: {
-    offer: { endsAt: string; freeQuickDiagnosisUsed: boolean } | null;
-  }) =>
-    offer ? (
-      <aside data-testid="launch-offer-strip">
-        launch:{offer.endsAt}:{String(offer.freeQuickDiagnosisUsed)}
-      </aside>
-    ) : null,
+vi.mock("@/modules/billing/components/free-diagnosis-banner", () => ({
+  FreeDiagnosisBanner: () => (
+    <aside data-testid="free-diagnosis-banner">diagnóstico grátis</aside>
+  ),
 }));
 
 vi.mock("@/components/ui/sidebar", () => ({
@@ -69,10 +62,7 @@ describe("AppShell", () => {
         isAdminUser
         contextTitle="Administração"
         contextDescription="Acompanhe o funcionamento do Lucrivo."
-        launchOfferStrip={{
-          endsAt: "2026-11-04T12:00:00.000Z",
-          freeQuickDiagnosisUsed: true,
-        }}
+        showFreeDiagnosisBanner
       >
         <div>protected-content</div>
       </AppShell>,
@@ -88,8 +78,24 @@ describe("AppShell", () => {
       screen.getByRole("button", { name: "Alternar menu lateral" }),
     ).toBeVisible();
     expect(screen.getByText("protected-content")).toBeVisible();
-    expect(screen.getByTestId("launch-offer-strip")).toHaveTextContent(
-      "launch:2026-11-04T12:00:00.000Z:true",
+    expect(screen.getByTestId("free-diagnosis-banner")).toBeVisible();
+  });
+
+  it("omits the diagnosis banner when it is not relevant", () => {
+    render(
+      <AppShell
+        email="cliente@example.com"
+        sidebarVariant="financial"
+        isAdminUser={false}
+        contextTitle="Área financeira"
+        contextDescription="Acompanhe suas decisões."
+      >
+        <div>conteúdo</div>
+      </AppShell>,
     );
+
+    expect(
+      screen.queryByTestId("free-diagnosis-banner"),
+    ).not.toBeInTheDocument();
   });
 });
