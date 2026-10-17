@@ -298,6 +298,44 @@ describe("demo user and operations catalog", () => {
     );
   });
 
+  it("derives permanent bonus grants from paid payment history", () => {
+    const contractById = new Map(
+      catalog.contracts.map((contract) => [contract.id, contract]),
+    );
+    const grantsByContractId = new Map(
+      catalog.bonusGrants.map((grant) => [grant.contractId, grant]),
+    );
+
+    for (const payment of catalog.payments) {
+      const grant = grantsByContractId.get(payment.contractId);
+
+      if (["pending", "overdue", "capture_refused"].includes(payment.status)) {
+        expect(grant).toBeUndefined();
+        continue;
+      }
+
+      expect(grant?.userId).toBe(contractById.get(payment.contractId)?.userId);
+      if (payment.status === "refunded") {
+        expect(grant?.revocationReason).toBe("full_refund");
+      } else if (
+        payment.status === "chargeback_requested" ||
+        payment.status === "chargeback_dispute"
+      ) {
+        expect(grant?.revocationReason).toBe("chargeback");
+      } else {
+        expect(grant?.revokedAt).toBeNull();
+        expect(grant?.revocationReason).toBeNull();
+      }
+    }
+
+    const courtesyOnly = catalog.clients.find(
+      (client) => client.ordinal === 85,
+    )!;
+    expect(
+      catalog.bonusGrants.some((grant) => grant.userId === courtesyOnly.id),
+    ).toBe(false);
+  });
+
   it("gives the power user 24 contracts, payments, and append-only events", () => {
     const powerUser = catalog.clients[95]!;
     const powerContracts = catalog.contracts.filter(
@@ -348,6 +386,7 @@ describe("demo user and operations catalog", () => {
       ...catalog.clients.flatMap((user) => [user.id, user.identityId]),
       ...catalog.contracts.map((contract) => contract.id),
       ...catalog.payments.map((payment) => payment.id),
+      ...catalog.bonusGrants.map((grant) => grant.id),
     ];
     expect(new Set(ids).size).toBe(ids.length);
   });

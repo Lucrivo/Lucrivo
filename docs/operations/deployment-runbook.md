@@ -124,6 +124,29 @@ Remova `LAUNCH_OFFER_START_AT` apenas para desativação emergencial e registre 
 incidente. A remoção seleciona o catálogo padrão imediatamente, mas não altera
 contratos ou Checkouts já persistidos.
 
+## Publicação da biblioteca Bônus
+
+Os binários não fazem parte do Git nem exigem novo deploy quando mantêm as
+chaves canônicas. Na primeira publicação em staging e depois em produção:
+
+1. Confirme que a migration criou o bucket privado `bonus-materials`.
+2. Envie os arquivos pelo Dashboard do Supabase ou pela Storage API exatamente
+   para `ebook/ebook.pdf`, `guide/guide.pdf` e
+   `spreadsheet/cash-flow.xlsx`. Nunca insira linhas manualmente em
+   `storage.objects`.
+3. Valide `application/pdf` nos dois PDFs,
+   `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` na
+   planilha e o limite de 25 MiB por objeto.
+4. Em staging, teste contas gratuita, somente cortesia, paga ativa, paga
+   expirada, reembolsada integralmente e com chargeback. A conta paga expirada
+   mantém guia e planilha; reembolso integral e chargeback bloqueiam esses dois
+   itens quando não há outra concessão viva.
+5. Se os materiais forem enviados depois da aplicação, mantenha essas mesmas
+   chaves e confirme que se tornam disponíveis sem novo deploy.
+
+Enquanto um objeto ainda não tiver sido enviado, a página deve continuar
+saudável e apresentar **Material em preparação** ao usuário autorizado.
+
 ## Falhas e rollback
 
 - Falha no `dry-run`: não force o push. Corrija a migration ou o histórico antes

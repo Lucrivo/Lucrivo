@@ -84,11 +84,24 @@ describe("renderDemoSeed", () => {
     expect(sql).toContain("insert into auth.identities");
     expect(sql).toContain("insert into public.billing_contracts");
     expect(sql).toContain("insert into public.billing_payments");
+    expect(sql).toContain("insert into public.bonus_access_grants");
     expect(
       sql.match(
         /select public\.create_(?:service|product|production|detailed)_diagnosis_report(?:_v\d+)?\(/g,
       ),
     ).toHaveLength(288);
+  });
+
+  it("renders permanent bonus grants from paid history", () => {
+    const grantInsert = sql.indexOf("insert into public.bonus_access_grants");
+    const paymentInsert = sql.indexOf("insert into public.billing_payments");
+
+    expect(grantInsert).toBeGreaterThan(paymentInsert);
+    expect(sql).toContain("on conflict (contract_id) do update set");
+    expect(sql).toContain("revoked_at = excluded.revoked_at");
+    expect(sql).toContain("revocation_reason = excluded.revocation_reason");
+    expect(sql).toContain("'full_refund'::text");
+    expect(sql).toContain("'chargeback'::text");
   });
 
   it("creates reports before final states and enforces final invariants", () => {
