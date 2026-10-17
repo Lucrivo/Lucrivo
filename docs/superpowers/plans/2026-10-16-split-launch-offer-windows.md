@@ -366,7 +366,7 @@ git commit -m "feat: support launch price checkout catalog"
 - Produces: `AsaasSubscriptionRenewalInput = { cycle: "MONTHLY"; nextDueDate: string; value: number }`.
 - Produces: gateway result `{ id; cycle: "MONTHLY"; nextDueDate; value }`, accepted only when every field equals the request.
 
-- [ ] **Step 1: Add failing gateway request/response tests**
+- [x] **Step 1: Add failing gateway request/response tests**
 
 Assert the exact provider call:
 
@@ -387,7 +387,7 @@ expect(fetchMock).toHaveBeenCalledWith(
 
 Cover malformed/missing `value`, a returned value other than `49.9`, mismatched ID/cycle/date, non-2xx rejection, timeout/network ambiguity, and a valid matching response. Every successful HTTP response that cannot prove the intended mutation must throw `AsaasGatewayError("ambiguous")`.
 
-- [ ] **Step 2: Add failing renewal-service claim tests**
+- [x] **Step 2: Add failing renewal-service claim tests**
 
 Update ready-claim fixtures to include `renewalAmountCents: 4990`. Assert the service calls:
 
@@ -401,13 +401,13 @@ expect(asaas.updateSubscriptionRenewal).toHaveBeenCalledWith(subscriptionId, {
 
 Assert a claim with 3990, a missing amount, or extra malformed fields returns `retry_later` without a provider call. Retain completed, not-ready, rejected, ambiguous, persistence-failure, and repeated-adjustment cases.
 
-- [ ] **Step 3: Run the focused tests and confirm failure**
+- [x] **Step 3: Run the focused tests and confirm failure**
 
 Run: `pnpm vitest run src/infrastructure/payments/asaas/asaas.client.test.ts src/modules/billing/services/adjust-launch-renewal.service.test.ts`
 
 Expected: FAIL because renewal value is neither required nor sent.
 
-- [ ] **Step 4: Implement strict amount propagation and verification**
+- [x] **Step 4: Implement strict amount propagation and verification**
 
 Extend the Zod response schema with `value: z.number().finite().positive()`. Send the provider body with `updatePendingPayments: true`, then compare response ID, cycle, date, and value to the request before returning. Extend the ready claim schema with:
 
@@ -417,13 +417,13 @@ renewalAmountCents: z.literal(4990),
 
 Pass `value: claim.renewalAmountCents / 100` into `updateSubscriptionRenewal`. Preserve the existing sanitized `provider_rejected` versus `provider_ambiguous` result recording and never log the provider body, API key, or customer payment data.
 
-- [ ] **Step 5: Re-run gateway and service tests**
+- [x] **Step 5: Re-run gateway and service tests**
 
 Run: `pnpm vitest run src/infrastructure/payments/asaas/asaas.client.test.ts src/modules/billing/services/adjust-launch-renewal.service.test.ts src/modules/billing/services/process-asaas-webhook.service.test.ts`
 
 Expected: PASS, including webhook retries and idempotent completed/reconciliation states.
 
-- [ ] **Step 6: Commit the renewal amount update**
+- [x] **Step 6: Commit the renewal amount update**
 
 ```bash
 git add src/infrastructure/payments/asaas/asaas.client.ts src/infrastructure/payments/asaas/asaas.client.test.ts src/modules/billing/services/adjust-launch-renewal.service.ts src/modules/billing/services/adjust-launch-renewal.service.test.ts
