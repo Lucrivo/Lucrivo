@@ -271,7 +271,7 @@ git commit -m "feat: add launch price billing catalog"
 - Produces: `buildCheckoutRequest(input): AsaasCheckoutRequest` mapping `launch` monthly to `BIMONTHLY` and both `launch_price` and `standard` monthly to `MONTHLY`.
 - Preserves: a valid same-price pending Checkout remains reusable until its stored `checkout_expires_at`, regardless of the newly resolved phase.
 
-- [ ] **Step 1: Add failing catalog and payload tests**
+- [x] **Step 1: Add failing catalog and payload tests**
 
 Add fixtures for both `launch_price` rows and assert:
 
@@ -296,13 +296,13 @@ Also assert the semiannual row stays detached/installment with a six-installment
 
 For the service and route, assert a day-15 resolution passes `catalogCode: "launch_price"`; a submitted `launch` or `standard` UUID then returns `not_found`; invalid campaign resolution returns the existing sanitized 503 response without calling Asaas.
 
-- [ ] **Step 2: Run the focused tests and confirm failure**
+- [x] **Step 2: Run the focused tests and confirm failure**
 
 Run: `pnpm vitest run src/modules/billing/services/list-active-prices.service.test.ts src/modules/billing/domain/build-checkout-request.test.ts src/modules/billing/services/create-hosted-checkout.service.test.ts src/app/api/billing/checkout/route.test.ts`
 
 Expected: FAIL because the third catalog is rejected or typed out.
 
-- [ ] **Step 3: Extend exact catalog validation and Checkout mapping**
+- [x] **Step 3: Extend exact catalog validation and Checkout mapping**
 
 Define the new valid predicates alongside the existing shapes:
 
@@ -334,17 +334,17 @@ const validSemiannualTerms =
 
 Keep `subscription.cycle` equal to `BIMONTHLY` only for `launch`; use `MONTHLY` for `launch_price` and `standard`. Update the active-price service's catalog whitelist and exact expected shape table without weakening duplicate/missing-row failures.
 
-- [ ] **Step 4: Preserve the one-hour reservation boundary behavior explicitly**
+- [x] **Step 4: Preserve the one-hour reservation boundary behavior explicitly**
 
 Add service tests with an existing unexpired pending contract created under `launch` while the current input catalog is `launch_price`, and another created under `launch_price` while the input catalog is `standard`. When `priceId` and payment method match the pending snapshot, expect `{ status: "reused", checkoutUrl }` before loading the current catalog. When the caller requests a different price during that reservation, retain the existing conflict/cancellation behavior; never reinterpret the stored contract's commercial fields.
 
-- [ ] **Step 5: Re-run the focused tests**
+- [x] **Step 5: Re-run the focused tests**
 
 Run: `pnpm vitest run src/modules/billing/services/list-active-prices.service.test.ts src/modules/billing/domain/build-checkout-request.test.ts src/modules/billing/services/create-hosted-checkout.service.test.ts src/app/api/billing/checkout/route.test.ts`
 
 Expected: PASS for all three catalogs, all payment/mode combinations, phase rejection, invalid configuration, and reservation reuse.
 
-- [ ] **Step 6: Commit Checkout eligibility**
+- [x] **Step 6: Commit Checkout eligibility**
 
 ```bash
 git add src/modules/billing/services/list-active-prices.service.ts src/modules/billing/services/list-active-prices.service.test.ts src/modules/billing/domain/build-checkout-request.ts src/modules/billing/domain/build-checkout-request.test.ts src/modules/billing/services/create-hosted-checkout.service.ts src/modules/billing/services/create-hosted-checkout.service.test.ts src/app/api/billing/checkout/route.ts src/app/api/billing/checkout/route.test.ts

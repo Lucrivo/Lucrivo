@@ -20,6 +20,8 @@ const monthlyPriceId = "20000000-0000-4000-8000-000000000001";
 const semiannualPriceId = "20000000-0000-4000-8000-000000000002";
 const standardMonthlyPriceId = "20000000-0000-4000-8000-000000000003";
 const standardSemiannualPriceId = "20000000-0000-4000-8000-000000000004";
+const launchPriceMonthlyPriceId = "20000000-0000-4000-8000-000000000005";
+const launchPriceSemiannualPriceId = "20000000-0000-4000-8000-000000000006";
 
 const monthlyPrice = {
   id: monthlyPriceId,
@@ -63,6 +65,30 @@ const standardSemiannualPrice = {
   catalog_code: "standard",
   billing_mode: "semiannual",
   amount_cents: 23940,
+  currency: "BRL",
+  installment_limit: 6,
+  access_months: 6,
+  bonus_months: 0,
+};
+
+const launchPriceMonthlyPrice = {
+  id: launchPriceMonthlyPriceId,
+  product_code: "quick_diagnosis_pro",
+  catalog_code: "launch_price",
+  billing_mode: "monthly",
+  amount_cents: 3990,
+  currency: "BRL",
+  installment_limit: null,
+  access_months: 1,
+  bonus_months: 0,
+};
+
+const launchPriceSemiannualPrice = {
+  id: launchPriceSemiannualPriceId,
+  product_code: "quick_diagnosis_pro",
+  catalog_code: "launch_price",
+  billing_mode: "semiannual",
+  amount_cents: 17940,
   currency: "BRL",
   installment_limit: 6,
   access_months: 6,
@@ -168,7 +194,7 @@ describe("createHostedCheckout", () => {
     overrides: Partial<{
       priceId: string;
       paymentMethod: "credit_card" | "pix";
-      catalogCode: "launch" | "standard";
+      catalogCode: "launch" | "launch_price" | "standard";
     }> = {},
   ) {
     return createHostedCheckout({
@@ -285,6 +311,38 @@ describe("createHostedCheckout", () => {
     expect(contractInsert).not.toHaveBeenCalled();
     expect(createCheckout).not.toHaveBeenCalled();
     expect(cancelCheckout).not.toHaveBeenCalled();
+    expect(priceSelect).not.toHaveBeenCalled();
+  });
+
+  it("reuses a launch_price Checkout after the selected catalog becomes standard", async () => {
+    contractsByUser.mockResolvedValue({
+      data: [
+        {
+          id: "pending-price-only-contract",
+          asaas_checkout_id: "checkout_price_only",
+          price_id: launchPriceMonthlyPriceId,
+          payment_method: "credit_card",
+          status: "pending",
+          access_starts_at: null,
+          access_ends_at: null,
+          asaas_checkout_url:
+            "https://sandbox.asaas.com/checkoutSession/show/price-only",
+          checkout_expires_at: "2026-09-09T12:30:00.000Z",
+        },
+      ],
+      error: null,
+    });
+
+    await expect(
+      create({
+        priceId: launchPriceMonthlyPriceId,
+        catalogCode: "standard",
+      }),
+    ).resolves.toEqual({
+      status: "reused",
+      checkoutUrl:
+        "https://sandbox.asaas.com/checkoutSession/show/price-only",
+    });
     expect(priceSelect).not.toHaveBeenCalled();
   });
 
@@ -548,6 +606,31 @@ describe("createHostedCheckout", () => {
         catalog_code: "standard",
         billing_mode: "monthly",
         renewal_adjustment_status: "not_required",
+      }),
+    );
+  });
+
+  it("schedules renewal adjustment for a launch_price monthly card", async () => {
+    priceCatalog.mockResolvedValue({
+      data: [launchPriceSemiannualPrice, launchPriceMonthlyPrice],
+      error: null,
+    });
+
+    await expect(
+      create({
+        priceId: launchPriceMonthlyPriceId,
+        paymentMethod: "credit_card",
+        catalogCode: "launch_price",
+      }),
+    ).resolves.toMatchObject({ status: "created" });
+
+    expect(contractInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        catalog_code: "launch_price",
+        billing_mode: "monthly",
+        access_months: 1,
+        bonus_months: 0,
+        renewal_adjustment_status: "pending",
       }),
     );
   });

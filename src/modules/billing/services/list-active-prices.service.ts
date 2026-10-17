@@ -37,7 +37,9 @@ function normalizePrice(row: ActiveBillingPriceRow): ActiveBillingPrice | null {
     row.currency !== "BRL" ||
     row.id.trim() === "" ||
     !isPositiveSafeInteger(row.amount_cents) ||
-    (row.catalog_code !== "launch" && row.catalog_code !== "standard")
+    row.catalog_code !== "launch" &&
+    row.catalog_code !== "launch_price" &&
+    row.catalog_code !== "standard"
   ) {
     return null;
   }
@@ -56,8 +58,15 @@ function normalizePrice(row: ActiveBillingPriceRow): ActiveBillingPrice | null {
     row.installment_limit === null &&
     row.access_months === 1 &&
     row.bonus_months === 0;
+  const isLaunchPriceMonthly =
+    row.catalog_code === "launch_price" &&
+    row.billing_mode === "monthly" &&
+    row.amount_cents === 3990 &&
+    row.installment_limit === null &&
+    row.access_months === 1 &&
+    row.bonus_months === 0;
 
-  if (isLaunchMonthly || isStandardMonthly) {
+  if (isLaunchMonthly || isLaunchPriceMonthly || isStandardMonthly) {
     return {
       id: row.id,
       productCode: row.product_code,
@@ -85,9 +94,18 @@ function normalizePrice(row: ActiveBillingPriceRow): ActiveBillingPrice | null {
     row.installment_limit === 6 &&
     row.access_months === 6 &&
     row.bonus_months === 0;
+  const isLaunchPriceSemiannual =
+    row.catalog_code === "launch_price" &&
+    row.billing_mode === "semiannual" &&
+    row.amount_cents === 17940 &&
+    row.installment_limit === 6 &&
+    row.access_months === 6 &&
+    row.bonus_months === 0;
 
   if (
-    (isLaunchSemiannual || isStandardSemiannual) &&
+    (isLaunchSemiannual ||
+      isLaunchPriceSemiannual ||
+      isStandardSemiannual) &&
     row.installment_limit !== null &&
     row.amount_cents % row.installment_limit === 0
   ) {

@@ -67,6 +67,9 @@ function buildCheckoutRequest({
       ((price.catalogCode === "launch" &&
         price.accessMonths === 2 &&
         price.bonusMonths === 1) ||
+        (price.catalogCode === "launch_price" &&
+          price.accessMonths === 1 &&
+          price.bonusMonths === 0) ||
         (price.catalogCode === "standard" &&
           price.accessMonths === 1 &&
           price.bonusMonths === 0));
@@ -88,10 +91,13 @@ function buildCheckoutRequest({
 
   const hasValidSemiannualTerms =
     price.installmentLimit === 6 &&
-    ((price.catalogCode === "launch" &&
-      price.accessMonths === 12 &&
-      price.bonusMonths === 6) ||
-      (price.catalogCode === "standard" &&
+      ((price.catalogCode === "launch" &&
+        price.accessMonths === 12 &&
+        price.bonusMonths === 6) ||
+        (price.catalogCode === "launch_price" &&
+          price.accessMonths === 6 &&
+          price.bonusMonths === 0) ||
+        (price.catalogCode === "standard" &&
         price.accessMonths === 6 &&
         price.bonusMonths === 0));
 
