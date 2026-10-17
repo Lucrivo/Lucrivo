@@ -20,7 +20,7 @@ describe("OfferCountdown", () => {
 
   it("hydrates safely when the server and browser observe different seconds", async () => {
     const markup = renderToString(
-      <OfferCountdown endsAt="2026-10-20T12:00:02.000Z" />,
+      <OfferCountdown purpose="bonus" endsAt="2026-10-20T12:00:02.000Z" />,
     );
     const host = document.createElement("div");
     host.innerHTML = markup;
@@ -32,7 +32,7 @@ describe("OfferCountdown", () => {
 
     const root = hydrateRoot(
       host,
-      <OfferCountdown endsAt="2026-10-20T12:00:02.000Z" />,
+      <OfferCountdown purpose="bonus" endsAt="2026-10-20T12:00:02.000Z" />,
     );
     await act(async () => {});
 
@@ -47,11 +47,11 @@ describe("OfferCountdown", () => {
 
   it("shows stable deadline context and hides ticking digits from assistive technology", () => {
     const { container } = render(
-      <OfferCountdown endsAt="2026-10-21T14:03:04.000Z" />,
+      <OfferCountdown purpose="bonus" endsAt="2026-10-21T14:03:04.000Z" />,
     );
 
     const region = screen.getByRole("region", {
-      name: "Tempo restante da oferta de lançamento",
+      name: "Tempo restante para ganhar o bônus",
     });
     const digits = container.querySelector("[data-countdown-digits]");
     expect(digits).not.toBeNull();
@@ -64,21 +64,25 @@ describe("OfferCountdown", () => {
     expect(within(digits as HTMLElement).getByText("04")).toBeVisible();
     expect(within(digits as HTMLElement).getByText("seg")).toBeVisible();
     expect(
-      screen.getByText(/Oferta válida até 21 de outubro de 2026/),
+      screen.getByText(/Bônus disponível até 21 de outubro de 2026/),
     ).toHaveClass("sr-only");
     expect(container.querySelector("[data-countdown-digits]")).toHaveAttribute(
       "aria-hidden",
       "true",
     );
     expect(region.querySelector('[aria-live="polite"]')).toHaveTextContent(
-      /Oferta válida até/,
+      /Bônus disponível até/,
     );
   });
 
   it("runs the expiry transition exactly once", () => {
     const onExpire = vi.fn();
     const { rerender } = render(
-      <OfferCountdown endsAt="2026-10-20T12:00:02.000Z" onExpire={onExpire} />,
+      <OfferCountdown
+        purpose="bonus"
+        endsAt="2026-10-20T12:00:02.000Z"
+        onExpire={onExpire}
+      />,
     );
 
     act(() => vi.advanceTimersByTime(3_000));
@@ -89,7 +93,11 @@ describe("OfferCountdown", () => {
 
     act(() => vi.advanceTimersByTime(5_000));
     rerender(
-      <OfferCountdown endsAt="2026-10-20T12:00:02.000Z" onExpire={onExpire} />,
+      <OfferCountdown
+        purpose="bonus"
+        endsAt="2026-10-20T12:00:02.000Z"
+        onExpire={onExpire}
+      />,
     );
     expect(onExpire).toHaveBeenCalledOnce();
     expect(refresh).not.toHaveBeenCalled();
@@ -98,7 +106,7 @@ describe("OfferCountdown", () => {
   it.each(["not-a-date", "2026-10-20T11:59:59.000Z"])(
     "renders an ended state for %s",
     (endsAt) => {
-      render(<OfferCountdown endsAt={endsAt} />);
+      render(<OfferCountdown purpose="launch_price" endsAt={endsAt} />);
       expect(
         screen.getByText("Oferta encerrada", { selector: "strong" }),
       ).toBeInTheDocument();
@@ -106,8 +114,31 @@ describe("OfferCountdown", () => {
   );
 
   it("uses router refresh as the default expiry action", () => {
-    render(<OfferCountdown endsAt="2026-10-20T12:00:01.000Z" />);
+    render(
+      <OfferCountdown
+        purpose="launch_price"
+        endsAt="2026-10-20T12:00:01.000Z"
+      />,
+    );
     act(() => vi.advanceTimersByTime(2_000));
     expect(refresh).toHaveBeenCalledOnce();
+  });
+
+  it("labels the price-only deadline semantically", () => {
+    render(
+      <OfferCountdown
+        purpose="launch_price"
+        endsAt="2026-10-21T14:03:04.000Z"
+      />,
+    );
+
+    expect(
+      screen.getByRole("region", {
+        name: "Tempo restante para aproveitar o preço de lançamento",
+      }),
+    ).toBeVisible();
+    expect(screen.getByText(/Preço de lançamento disponível até/)).toHaveClass(
+      "sr-only",
+    );
   });
 });

@@ -455,11 +455,11 @@ git commit -m "feat: set standard price on promotional renewals"
 - Produces: `LandingOfferPresentation` with `catalogCode`, phase-aware access/bonus text, `monthlyPriceQualifier: string | null`, and `monthlyRenewalPriceLabel: string | null`; both fields are non-null for promotional catalogs and null for `standard`.
 - Produces: `OfferCountdownProps` with `purpose: "bonus" | "launch_price"`, `endsAt`, optional `compact`, and optional `onExpire`.
 
-- [ ] **Step 1: Add failing projection tests for both promotional catalogs**
+- [x] **Step 1: Add failing projection tests for both promotional catalogs**
 
 Create exact monthly/semiannual pairs and assert `resolveLandingOfferPresentation` returns `null` for missing, duplicate, or mixed-catalog data. For `launch`, assert 2/12 months and 1/6 bonus months; for `launch_price`, assert 1/6 months, no bonus claim, monthly first-payment price R$ 39.90, and later R$ 49.90 monthly renewal copy.
 
-- [ ] **Step 2: Add failing component and accessibility tests**
+- [x] **Step 2: Add failing component and accessibility tests**
 
 For `bonus_active`, assert visible copy communicates:
 
@@ -473,13 +473,13 @@ Tempo restante para ganhar o bônus
 
 For `price_active`, assert the same initial/renewal prices, one/six months of access, no text matching `/bônus de acesso|mês bônus|meses bônus/i`, and countdown label `Tempo restante para aproveitar o preço de lançamento`. For both phases, retain `em até 6x` and the 60-minute reservation explanation. Assert expiry calls `onExpire` once and accessible text is not announced every second.
 
-- [ ] **Step 3: Run the focused component tests and confirm failure**
+- [x] **Step 3: Run the focused component tests and confirm failure**
 
 Run: `pnpm vitest run src/components/landing/landing-offer.test.ts src/modules/billing/components/billing-plans.test.tsx src/modules/billing/components/launch-offer-dialog.test.tsx src/modules/billing/components/offer-countdown.test.tsx`
 
 Expected: FAIL because the existing presentation assumes one active launch phase and recurring R$ 39.90.
 
-- [ ] **Step 4: Implement the phase-aware projection**
+- [x] **Step 4: Implement the phase-aware projection**
 
 Keep commercial values derived from price rows. Add only semantic projection fields needed by consumers:
 
@@ -495,17 +495,17 @@ const monthlyPriceQualifier = "no primeiro pagamento";
 
 Make `OfferCountdown` choose stable visual and accessible labels from `purpose`; callers map `bonus_active` to `bonus` and `price_active` to `launch_price`. On zero, invoke the existing refresh callback so the server resolves the next phase.
 
-- [ ] **Step 5: Update every promotional copy consumer**
+- [x] **Step 5: Update every promotional copy consumer**
 
 Pass one `LandingOfferPresentation` through landing sections and billing components. Treat both `launch` and `launch_price` as promotional only when the supplied `LaunchOfferView.phase` matches the catalog (`bonus_active`/`launch`, `price_active`/`launch_price`); otherwise hide campaign urgency. Remove wording that implies R$ 39.90 renews indefinitely. During `price_active`, render no bonus-access claim in the hero, bar, dialog, plans, FAQ, guarantee, or final CTA. Preserve the distinction that the private Bônus library is granted after confirmed purchase.
 
-- [ ] **Step 6: Re-run focused UI tests**
+- [x] **Step 6: Re-run focused UI tests**
 
 Run: `pnpm vitest run src/components/landing/landing-offer.test.ts src/modules/billing/components/billing-plans.test.tsx src/modules/billing/components/launch-offer-dialog.test.tsx src/modules/billing/components/offer-countdown.test.tsx`
 
 Expected: PASS for both phases, exact copy, countdown semantics, expiry refresh, and standard-catalog absence of promotional content.
 
-- [ ] **Step 7: Commit the phase-specific interface**
+- [x] **Step 7: Commit the phase-specific interface**
 
 ```bash
 git add src/components/landing src/modules/billing/components/billing-plans.tsx src/modules/billing/components/billing-plans.test.tsx src/modules/billing/components/launch-offer-dialog.tsx src/modules/billing/components/launch-offer-dialog.test.tsx src/modules/billing/components/offer-countdown.tsx src/modules/billing/components/offer-countdown.test.tsx

@@ -63,7 +63,9 @@ function FinalCtaSection({
             href={offer ? "/register" : "#planos"}
           >
             {offer
-              ? `Garantir meu acesso por ${offer.monthlyPriceLabel}/mês`
+              ? offer.monthlyPriceQualifier
+                ? `Garantir acesso por ${offer.monthlyPriceLabel} no primeiro pagamento`
+                : `Garantir meu acesso por ${offer.monthlyPriceLabel}/mês`
               : "Conhecer os planos"}
             <ArrowRightIcon aria-hidden="true" size={20} weight="bold" />
           </a>

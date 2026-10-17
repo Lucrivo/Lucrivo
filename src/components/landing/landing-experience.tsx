@@ -38,7 +38,14 @@ export function LandingExperience({
   const root = useRef<HTMLElement>(null);
   const offer = resolveLandingOfferPresentation(prices);
   const activeLaunchOffer =
-    offer?.catalogCode === "launch" ? (launchOffer ?? null) : null;
+    launchOffer &&
+    offer?.monthlyRenewalPriceLabel !== null &&
+    ((launchOffer.phase === "bonus_active" &&
+      offer?.catalogCode === "launch") ||
+      (launchOffer.phase === "price_active" &&
+        offer?.catalogCode === "launch_price"))
+      ? launchOffer
+      : null;
 
   useGSAP(
     () => {
@@ -203,9 +210,12 @@ export function LandingExperience({
           offer={{
             ...activeLaunchOffer,
             monthlyPriceLabel: offer.monthlyPriceLabel,
+            monthlyRenewalPriceLabel: offer.monthlyRenewalPriceLabel!,
             semiannualInstallmentLabel: offer.semiannualInstallmentLabel,
             monthlyAccessMonths: offer.monthlyAccessMonths,
+            monthlyBonusMonths: offer.monthlyBonusMonths,
             semiannualAccessMonths: offer.semiannualAccessMonths,
+            semiannualBonusMonths: offer.semiannualBonusMonths,
           }}
         />
       ) : null}
