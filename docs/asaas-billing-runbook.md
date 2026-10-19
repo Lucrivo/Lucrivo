@@ -194,12 +194,17 @@ Após salvar a configuração, envie um evento de teste e confirme:
 
 1. resposta HTTP `200` com corpo sanitizado;
 2. uma linha em `asaas_webhook_events`, sem objeto de cartão;
-3. `processing_status` igual a `processed` ou `ignored`;
+3. `processing_status` igual a `processed`, `ignored` ou, quando o evento não
+   puder ser associado com segurança a um contrato, `failed` com
+   `last_error = 'contract_unresolved'`;
 4. nenhuma credencial, dado pessoal ou payload integral nos logs da aplicação.
 
 Respostas `401` indicam token incorreto. Respostas `400` indicam envelope
 inválido. Respostas `503` pedem nova tentativa porque a aplicação não confirmou
-o processamento seguro.
+nem mesmo a persistência segura do evento. Um evento já persistido como
+`contract_unresolved` recebe `200` para permanecer disponível para conciliação
+sem bloquear a fila sequencial do Asaas; ele não concede acesso até que exista
+uma associação inequívoca com um contrato local.
 
 Ao selecionar outra oferta enquanto existe um Checkout válido pendente, a
 aplicação chama `POST /v3/checkouts/{id}/cancel` antes de criar a substituição.
