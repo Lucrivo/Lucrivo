@@ -52,6 +52,7 @@ function HeroVideoDialog({ videoUrl }: { videoUrl?: string | null }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
+        type="button"
         className="button button-secondary"
         aria-label="Assistir à apresentação"
       >
@@ -60,7 +61,7 @@ function HeroVideoDialog({ videoUrl }: { videoUrl?: string | null }) {
       </DialogTrigger>
 
       <DialogContent className="hero-video-dialog" showCloseButton={false}>
-        <DialogClose className="hero-video-dialog-close">
+        <DialogClose type="button" className="hero-video-dialog-close">
           <XIcon aria-hidden="true" size={20} weight="bold" />
           <span className="sr-only">Fechar vídeo</span>
         </DialogClose>
