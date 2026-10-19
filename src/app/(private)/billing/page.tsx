@@ -167,7 +167,7 @@ export default async function BillingPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8">
-      <header className="grid items-end gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(240px,0.36fr)] lg:gap-12">
+      <header className="grid items-end gap-6 @5xl/page:grid-cols-[minmax(0,1fr)_minmax(240px,0.36fr)] @5xl/page:gap-12">
         <div className="grid max-w-3xl gap-3">
           <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
             Plano e cobrança
