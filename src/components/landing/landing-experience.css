@@ -304,6 +304,135 @@ html:has(.landing-experience) {
   background: oklch(0.955 0.012 255 / 0.09);
 }
 
+.hero-video-dialog {
+  width: min(calc(100% - 32px), 960px);
+  max-width: 960px;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+  border-color: oklch(0.72 0.15 235 / 0.22);
+  background: oklch(0.145 0.03 258);
+  color: oklch(0.978 0.008 255);
+  box-shadow: 0 28px 90px oklch(0.03 0.02 258 / 0.64);
+}
+
+.hero-video-dialog-header {
+  padding: 24px 64px 22px 26px;
+  gap: 8px;
+  text-align: left;
+}
+
+.hero-video-dialog-header [data-slot="dialog-title"] {
+  font-size: clamp(1.25rem, 2vw, 1.6rem);
+  font-weight: 680;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.hero-video-dialog-header [data-slot="dialog-description"] {
+  max-width: 66ch;
+  color: oklch(0.88 0.035 255 / 0.78);
+  font-size: 0.94rem;
+  line-height: 1.55;
+}
+
+.hero-video-dialog-close {
+  position: absolute;
+  z-index: 2;
+  top: 18px;
+  right: 18px;
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid oklch(0.955 0.012 255 / 0.18);
+  border-radius: 12px;
+  background: oklch(0.955 0.012 255 / 0.05);
+  color: oklch(0.955 0.012 255);
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease;
+}
+
+.hero-video-dialog-close:hover {
+  border-color: oklch(0.955 0.012 255 / 0.36);
+  background: oklch(0.955 0.012 255 / 0.11);
+}
+
+.hero-video-dialog-close:focus-visible {
+  outline: 3px solid oklch(0.72 0.2 244 / 0.52);
+  outline-offset: 3px;
+}
+
+.hero-video-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: oklch(0.085 0.025 258);
+}
+
+.hero-video-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.hero-video-empty {
+  display: grid;
+  min-height: min(52vw, 420px);
+  padding: 48px 24px;
+  place-items: center;
+  align-content: center;
+  gap: 18px;
+  border-top: 1px solid oklch(0.72 0.15 235 / 0.16);
+  background:
+    radial-gradient(
+      circle at 50% 48%,
+      oklch(0.59 0.2 250 / 0.17),
+      transparent 38%
+    ),
+    oklch(0.115 0.03 258);
+  text-align: center;
+}
+
+.hero-video-empty-icon {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  place-items: center;
+  border: 1px solid oklch(0.72 0.2 244 / 0.3);
+  border-radius: 50%;
+  background: oklch(0.56 0.23 259 / 0.16);
+  color: oklch(0.72 0.2 244);
+}
+
+.hero-video-empty p {
+  max-width: 48ch;
+  margin: 0;
+  color: oklch(0.9 0.028 255 / 0.82);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  .hero-video-dialog-header {
+    padding: 20px 58px 18px 20px;
+  }
+
+  .hero-video-dialog-close {
+    top: 12px;
+    right: 12px;
+  }
+
+  .hero-video-empty {
+    min-height: 300px;
+  }
+}
+
 .landing-experience .button-dark {
   background: var(--ink);
   color: oklch(0.955 0.012 255);

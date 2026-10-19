@@ -176,9 +176,17 @@ describe("Home", () => {
         name: "Assinar por R$ 39,90 no primeiro pagamento",
       }),
     ).toHaveAttribute("href", "/register");
-    expect(view.getByRole("link", { name: "Ver planos" })).toHaveAttribute(
-      "href",
-      "#planos",
+    fireEvent.click(
+      view.getByRole("button", { name: "Assistir à apresentação" }),
+    );
+    const videoDialog = screen.getByRole("dialog", {
+      name: "Conheça o Lucrivo",
+    });
+    expect(
+      within(videoDialog).getByText(/A apresentação será publicada em breve/),
+    ).toBeVisible();
+    fireEvent.click(
+      within(videoDialog).getByRole("button", { name: "Fechar vídeo" }),
     );
     expect(view.getByText("7 dias de garantia.")).toBeInTheDocument();
     expect(

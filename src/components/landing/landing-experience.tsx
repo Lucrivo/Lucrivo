@@ -31,9 +31,11 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
 export function LandingExperience({
   prices,
   launchOffer,
+  videoUrl,
 }: {
   prices: ActiveBillingPrice[];
   launchOffer?: LaunchOfferView | null;
+  videoUrl?: string | null;
 }) {
   const root = useRef<HTMLElement>(null);
   const offer = resolveLandingOfferPresentation(prices);
@@ -220,7 +222,7 @@ export function LandingExperience({
         />
       ) : null}
       <LandingNav />
-      <HeroSection offer={offer} />
+      <HeroSection offer={offer} videoUrl={videoUrl} />
       <ProblemSection />
       <BusinessPathsSection />
       <DiagnosisPreviewSection />

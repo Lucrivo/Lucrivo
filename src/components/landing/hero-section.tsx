@@ -5,10 +5,10 @@ import {
   ChatCircleTextIcon,
   CreditCardIcon,
   TableIcon,
-  TagIcon,
 } from "@phosphor-icons/react";
 
 import { GuaranteeNote } from "@/components/landing/guarantee-note";
+import { HeroVideoDialog } from "@/components/landing/hero-video-dialog";
 import { type LandingOfferPresentation } from "@/components/landing/landing-offer";
 import heroImage from "@/public/lp/hero-image-v2.png";
 
@@ -30,7 +30,13 @@ const trustItems = [
   },
 ] as const;
 
-function HeroSection({ offer }: { offer: LandingOfferPresentation | null }) {
+function HeroSection({
+  offer,
+  videoUrl,
+}: {
+  offer: LandingOfferPresentation | null;
+  videoUrl?: string | null;
+}) {
   const primaryAction = offer
     ? offer.monthlyPriceQualifier
       ? `Assinar por ${offer.monthlyPriceLabel} no primeiro pagamento`
@@ -74,10 +80,7 @@ function HeroSection({ offer }: { offer: LandingOfferPresentation | null }) {
               <ArrowRightIcon aria-hidden="true" size={18} weight="bold" />
             </a>
 
-            <a className="button button-secondary" href="#planos">
-              <TagIcon aria-hidden="true" size={19} weight="bold" />
-              Ver planos
-            </a>
+            <HeroVideoDialog videoUrl={videoUrl} />
           </div>
 
           <GuaranteeNote className="hero-guarantee hero-copy-reveal" />
