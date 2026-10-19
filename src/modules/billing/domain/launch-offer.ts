@@ -1,23 +1,40 @@
-type BillingCatalogCode = "launch" | "standard";
+type BillingCatalogCode = "launch" | "launch_price" | "standard";
+type ActiveLaunchOfferPhase = "bonus_active" | "price_active";
+
+type ConfiguredLaunchOfferTimestamps = {
+  startsAt: string;
+  bonusEndsAt: string;
+  promotionEndsAt: string;
+};
 
 type LaunchOfferResolution =
   | {
-      phase: "disabled" | "scheduled" | "expired";
+      phase: "disabled";
       catalogCode: "standard";
-      startsAt: string | null;
-      endsAt: string | null;
+      startsAt: null;
+      bonusEndsAt: null;
+      promotionEndsAt: null;
     }
-  | {
-      phase: "active";
+  | ({
+      phase: "scheduled" | "expired";
+      catalogCode: "standard";
+    } & ConfiguredLaunchOfferTimestamps)
+  | ({
+      phase: "bonus_active";
       catalogCode: "launch";
-      startsAt: string;
       endsAt: string;
-    }
+    } & ConfiguredLaunchOfferTimestamps)
+  | ({
+      phase: "price_active";
+      catalogCode: "launch_price";
+      endsAt: string;
+    } & ConfiguredLaunchOfferTimestamps)
   | {
       phase: "invalid";
       catalogCode: null;
       startsAt: null;
-      endsAt: null;
+      bonusEndsAt: null;
+      promotionEndsAt: null;
     };
 
 type ResolveLaunchOfferInput = {
@@ -25,15 +42,34 @@ type ResolveLaunchOfferInput = {
   now: Date;
 };
 
-const LAUNCH_OFFER_DURATION_MS = 15 * 24 * 60 * 60 * 1000;
+const LAUNCH_BONUS_DURATION_MS = 15 * 24 * 60 * 60 * 1000;
+const LAUNCH_PRICE_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 const explicitOffsetPattern = /(Z|[+-]\d{2}:\d{2})$/;
 
 const invalidResolution = {
   phase: "invalid",
   catalogCode: null,
   startsAt: null,
-  endsAt: null,
+  bonusEndsAt: null,
+  promotionEndsAt: null,
 } as const;
+
+function isPromotionalCatalog(
+  code: BillingCatalogCode,
+): code is "launch" | "launch_price" {
+  return code === "launch" || code === "launch_price";
+}
+
+function isLaunchOfferActive(
+  resolution: LaunchOfferResolution,
+): resolution is Extract<
+  LaunchOfferResolution,
+  { phase: ActiveLaunchOfferPhase }
+> {
+  return (
+    resolution.phase === "bonus_active" || resolution.phase === "price_active"
+  );
+}
 
 function resolveLaunchOffer({
   rawStartAt,
@@ -44,7 +80,8 @@ function resolveLaunchOffer({
       phase: "disabled",
       catalogCode: "standard",
       startsAt: null,
-      endsAt: null,
+      bonusEndsAt: null,
+      promotionEndsAt: null,
     };
   }
 
@@ -59,38 +96,58 @@ function resolveLaunchOffer({
   }
 
   const startMs = Date.parse(rawStartAt);
-
   if (!Number.isFinite(startMs)) return invalidResolution;
 
-  const endMs = startMs + LAUNCH_OFFER_DURATION_MS;
-  const startsAt = new Date(startMs).toISOString();
-  const endsAt = new Date(endMs).toISOString();
+  const bonusEndMs = startMs + LAUNCH_BONUS_DURATION_MS;
+  const promotionEndMs = startMs + LAUNCH_PRICE_DURATION_MS;
+  const timestamps = {
+    startsAt: new Date(startMs).toISOString(),
+    bonusEndsAt: new Date(bonusEndMs).toISOString(),
+    promotionEndsAt: new Date(promotionEndMs).toISOString(),
+  };
 
   if (nowMs < startMs) {
     return {
       phase: "scheduled",
       catalogCode: "standard",
-      startsAt,
-      endsAt,
+      ...timestamps,
     };
   }
 
-  if (nowMs >= endMs) {
+  if (nowMs < bonusEndMs) {
     return {
-      phase: "expired",
-      catalogCode: "standard",
-      startsAt,
-      endsAt,
+      phase: "bonus_active",
+      catalogCode: "launch",
+      ...timestamps,
+      endsAt: timestamps.bonusEndsAt,
+    };
+  }
+
+  if (nowMs < promotionEndMs) {
+    return {
+      phase: "price_active",
+      catalogCode: "launch_price",
+      ...timestamps,
+      endsAt: timestamps.promotionEndsAt,
     };
   }
 
   return {
-    phase: "active",
-    catalogCode: "launch",
-    startsAt,
-    endsAt,
+    phase: "expired",
+    catalogCode: "standard",
+    ...timestamps,
   };
 }
 
-export { LAUNCH_OFFER_DURATION_MS, resolveLaunchOffer };
-export type { BillingCatalogCode, LaunchOfferResolution };
+export {
+  LAUNCH_BONUS_DURATION_MS,
+  LAUNCH_PRICE_DURATION_MS,
+  isLaunchOfferActive,
+  isPromotionalCatalog,
+  resolveLaunchOffer,
+};
+export type {
+  ActiveLaunchOfferPhase,
+  BillingCatalogCode,
+  LaunchOfferResolution,
+};

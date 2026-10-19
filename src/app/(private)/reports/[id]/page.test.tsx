@@ -183,9 +183,11 @@ describe("ReportPage", () => {
       },
     });
     readLaunchOfferEnvironment.mockReturnValue({
-      phase: "active",
+      phase: "bonus_active",
       catalogCode: "launch",
       startsAt: "2026-10-20T12:00:00.000Z",
+      bonusEndsAt: "2026-11-04T12:00:00.000Z",
+      promotionEndsAt: "2026-11-19T12:00:00.000Z",
       endsAt: "2026-11-04T12:00:00.000Z",
     });
     listActivePrices.mockResolvedValue({
@@ -273,8 +275,83 @@ describe("ReportPage", () => {
         context: "diagnosis",
         dismissHref: "/reports/42",
         offer: expect.objectContaining({
+          phase: "bonus_active",
           endsAt: "2026-11-04T12:00:00.000Z",
           monthlyPriceLabel: "R$ 39,90",
+          monthlyRenewalPriceLabel: "Depois, R$ 49,90/mês",
+          monthlyBonusMonths: 1,
+          semiannualBonusMonths: 6,
+        }),
+      }),
+      undefined,
+    );
+    expect(listActivePrices).toHaveBeenCalledWith({
+      supabase,
+      catalogCode: "launch",
+    });
+  });
+
+  it("uses the resolved launch_price catalog for a second-window completion offer", async () => {
+    getBillingOverview.mockResolvedValue({
+      status: "success",
+      overview: {
+        tier: "free",
+        canCreateQuickDiagnosis: false,
+        canCreateDetailedDiagnosis: false,
+        freeQuickDiagnosisUsed: true,
+      },
+    });
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "price_active",
+      catalogCode: "launch_price",
+      startsAt: "2026-10-20T12:00:00.000Z",
+      bonusEndsAt: "2026-11-04T12:00:00.000Z",
+      promotionEndsAt: "2026-11-19T12:00:00.000Z",
+      endsAt: "2026-11-19T12:00:00.000Z",
+    });
+    listActivePrices.mockResolvedValue({
+      status: "success",
+      prices: [
+        {
+          id: "55555555-5555-4555-8555-555555555555",
+          productCode: "quick_diagnosis_pro",
+          catalogCode: "launch_price",
+          billingMode: "monthly",
+          amountCents: 3990,
+          currency: "BRL",
+          installmentLimit: null,
+          accessMonths: 1,
+          bonusMonths: 0,
+        },
+        {
+          id: "66666666-6666-4666-8666-666666666666",
+          productCode: "quick_diagnosis_pro",
+          catalogCode: "launch_price",
+          billingMode: "semiannual",
+          amountCents: 17940,
+          currency: "BRL",
+          installmentLimit: 6,
+          accessMonths: 6,
+          bonusMonths: 0,
+        },
+      ],
+    });
+
+    await renderPage("42", { launchOffer: "1" });
+
+    expect(listActivePrices).toHaveBeenCalledWith({
+      supabase,
+      catalogCode: "launch_price",
+    });
+    expect(LaunchOfferDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        offer: expect.objectContaining({
+          phase: "price_active",
+          endsAt: "2026-11-19T12:00:00.000Z",
+          monthlyAccessMonths: 1,
+          monthlyBonusMonths: 0,
+          semiannualAccessMonths: 6,
+          semiannualBonusMonths: 0,
         }),
       }),
       undefined,
@@ -292,10 +369,11 @@ describe("ReportPage", () => {
       },
     });
     readLaunchOfferEnvironment.mockReturnValue({
-      phase: "ended",
+      phase: "expired",
       catalogCode: "standard",
       startsAt: "2026-09-01T12:00:00.000Z",
-      endsAt: "2026-09-16T12:00:00.000Z",
+      bonusEndsAt: "2026-09-16T12:00:00.000Z",
+      promotionEndsAt: "2026-10-01T12:00:00.000Z",
     });
 
     await renderPage("42", { launchOffer: "1" });

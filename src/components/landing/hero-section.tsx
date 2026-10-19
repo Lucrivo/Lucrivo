@@ -31,6 +31,12 @@ const trustItems = [
 ] as const;
 
 function HeroSection({ offer }: { offer: LandingOfferPresentation | null }) {
+  const primaryAction = offer
+    ? offer.monthlyPriceQualifier
+      ? `Assinar por ${offer.monthlyPriceLabel} no primeiro pagamento`
+      : `Assinar agora por ${offer.monthlyPriceLabel}/mês`
+    : "Conhecer os planos";
+
   return (
     <section id="top" className="hero-section" aria-labelledby="hero-title">
       <div className="hero-ambient" aria-hidden="true" />
@@ -64,9 +70,7 @@ function HeroSection({ offer }: { offer: LandingOfferPresentation | null }) {
               className="button button-primary"
               href={offer ? "/register" : "#planos"}
             >
-              {offer
-                ? `Assinar agora por ${offer.monthlyPriceLabel}/mês`
-                : "Conhecer os planos"}
+              {primaryAction}
               <ArrowRightIcon aria-hidden="true" size={18} weight="bold" />
             </a>
 

@@ -102,12 +102,13 @@ type SeedContract = {
   userId: string;
   priceId: string;
   externalReference: string;
+  asaasSubscriptionId: string | null;
   billingMode: "monthly" | "semiannual";
   paymentMethod: "credit_card" | "pix";
   chargeType: "recurring" | "installment" | "detached";
   amountCents: number;
   installmentLimit: number | null;
-  catalogCode: "launch" | "standard";
+  catalogCode: "launch" | "launch_price" | "standard";
   bonusMonths: 0 | 1 | 6;
   accessMonths: 1 | 2 | 6 | 12;
   renewalAdjustmentStatus:

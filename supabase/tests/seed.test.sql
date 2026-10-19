@@ -405,8 +405,53 @@ select is(
       'd1000000-0000-4000-8000-000000000060'::uuid
       and catalog_code = 'standard'
   ),
-  83::bigint,
+  81::bigint,
   'standard snapshots remain the majority of demo contracts'
+);
+
+select is(
+  (
+    select count(*)::bigint
+    from public.billing_contracts
+    where user_id between
+      'd1000000-0000-4000-8000-000000000000'::uuid and
+      'd1000000-0000-4000-8000-000000000060'::uuid
+      and catalog_code = 'launch_price'
+  ),
+  2::bigint,
+  'seed includes both launch_price purchase modes'
+);
+
+select results_eq(
+  $$
+    select user_id, price_id, billing_mode, payment_method, charge_type,
+      amount_cents, access_months, bonus_months, asaas_subscription_id,
+      renewal_adjustment_status, payment.status
+    from public.billing_contracts as contract
+    join public.billing_payments as payment on payment.contract_id = contract.id
+    where contract.user_id in (
+      'd1000000-0000-4000-8000-00000000002f'::uuid,
+      'd1000000-0000-4000-8000-000000000030'::uuid
+    )
+    order by contract.user_id
+  $$,
+  $$ values
+    (
+      'd1000000-0000-4000-8000-00000000002f'::uuid,
+      '20000000-0000-4000-8000-000000000005'::uuid,
+      'monthly'::text, 'credit_card'::text, 'recurring'::text,
+      3990::bigint, 1, 0, 'sub_demo_launch_price_047'::text,
+      'completed'::text, 'confirmed'::text
+    ),
+    (
+      'd1000000-0000-4000-8000-000000000030'::uuid,
+      '20000000-0000-4000-8000-000000000006'::uuid,
+      'semiannual'::text, 'pix'::text, 'detached'::text,
+      17940::bigint, 6, 0, null::text,
+      'not_required'::text, 'confirmed'::text
+    )
+  $$,
+  'launch_price client fixtures preserve exact contract and payment snapshots'
 );
 
 select is(
@@ -493,11 +538,11 @@ select results_eq(
     ('capture_refused'::text, 3::bigint),
     ('chargeback_dispute'::text, 1::bigint),
     ('chargeback_requested'::text, 2::bigint),
-    ('confirmed'::text, 28::bigint),
+    ('confirmed'::text, 29::bigint),
     ('overdue'::text, 3::bigint),
     ('partially_refunded'::text, 3::bigint),
     ('pending'::text, 4::bigint),
-    ('received'::text, 39::bigint),
+    ('received'::text, 38::bigint),
     ('refunded'::text, 3::bigint)
   $$,
   'payments cover every supported operational status'

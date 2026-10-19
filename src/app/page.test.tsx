@@ -91,6 +91,23 @@ const standardPrices = [
   },
 ];
 
+const launchPricePrices = [
+  {
+    ...prices[0],
+    id: "55555555-5555-4555-8555-555555555555",
+    catalogCode: "launch_price" as const,
+    accessMonths: 1,
+    bonusMonths: 0,
+  },
+  {
+    ...prices[1],
+    id: "66666666-6666-4666-8666-666666666666",
+    catalogCode: "launch_price" as const,
+    accessMonths: 6,
+    bonusMonths: 0,
+  },
+];
+
 describe("Home", () => {
   const supabase = { from: vi.fn() };
 
@@ -98,9 +115,11 @@ describe("Home", () => {
     vi.clearAllMocks();
     createClient.mockResolvedValue(supabase);
     readLaunchOfferEnvironment.mockReturnValue({
-      phase: "active",
+      phase: "bonus_active",
       catalogCode: "launch",
       startsAt: "2026-10-20T12:00:00.000Z",
+      bonusEndsAt: "2026-11-04T12:00:00.000Z",
+      promotionEndsAt: "2026-11-19T12:00:00.000Z",
       endsAt: "2026-11-04T12:00:00.000Z",
     });
     listActivePrices.mockResolvedValue({ status: "success", prices });
@@ -153,7 +172,9 @@ describe("Home", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      view.getByRole("link", { name: "Assinar agora por R$ 39,90/mês" }),
+      view.getByRole("link", {
+        name: "Assinar por R$ 39,90 no primeiro pagamento",
+      }),
     ).toHaveAttribute("href", "/register");
     expect(view.getByRole("link", { name: "Ver planos" })).toHaveAttribute(
       "href",
@@ -179,7 +200,7 @@ describe("Home", () => {
     expect(offerBar).toHaveClass("launch-offer-bar");
     expect(
       within(offerBar).getByText(
-        "Primeiro pagamento mensal libera 2 meses de acesso.",
+        "Primeiro pagamento mensal libera 2 meses, incluindo 1 mês bônus.",
       ),
     ).toBeVisible();
     expect(
@@ -187,7 +208,7 @@ describe("Home", () => {
     ).toHaveAttribute("href", "#planos");
     expect(
       within(offerBar).getByRole("region", {
-        name: "Tempo restante da oferta de lançamento",
+        name: "Tempo restante para ganhar o bônus",
       }),
     ).toBeInTheDocument();
     expect(listActivePrices).toHaveBeenCalledWith({
@@ -199,10 +220,11 @@ describe("Home", () => {
 
   it("renders the later standard catalog without promotional copy", async () => {
     readLaunchOfferEnvironment.mockReturnValue({
-      phase: "ended",
+      phase: "expired",
       catalogCode: "standard",
       startsAt: "2026-09-01T12:00:00.000Z",
-      endsAt: "2026-09-16T12:00:00.000Z",
+      bonusEndsAt: "2026-09-16T12:00:00.000Z",
+      promotionEndsAt: "2026-10-01T12:00:00.000Z",
     });
     listActivePrices.mockResolvedValue({
       status: "success",
@@ -222,13 +244,43 @@ describe("Home", () => {
     expect(screen.queryByText("R$ 39,90/mês")).not.toBeInTheDocument();
   });
 
+  it("uses launch_price during the second campaign window without bonus copy", async () => {
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "price_active",
+      catalogCode: "launch_price",
+      startsAt: "2026-10-20T12:00:00.000Z",
+      bonusEndsAt: "2026-11-04T12:00:00.000Z",
+      promotionEndsAt: "2026-11-19T12:00:00.000Z",
+      endsAt: "2026-11-19T12:00:00.000Z",
+    });
+    listActivePrices.mockResolvedValue({
+      status: "success",
+      prices: launchPricePrices,
+    });
+
+    await renderHome(true);
+
+    expect(listActivePrices).toHaveBeenCalledWith({
+      supabase,
+      catalogCode: "launch_price",
+    });
+    expect(
+      screen.getAllByRole("region", {
+        name: "Tempo restante para aproveitar o preço de lançamento",
+      }),
+    ).toHaveLength(2);
+    expect(document.body).not.toHaveTextContent(/m[eê]s(?:es)? b[oô]nus/i);
+    expect(screen.getAllByText("Depois, R$ 49,90/mês")).toHaveLength(2);
+  });
+
   it("suppresses paid offers and logs safely for invalid launch configuration", async () => {
     const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
     readLaunchOfferEnvironment.mockReturnValue({
       phase: "invalid",
       catalogCode: null,
       startsAt: null,
-      endsAt: null,
+      bonusEndsAt: null,
+      promotionEndsAt: null,
     });
 
     await renderHome();
@@ -462,7 +514,10 @@ describe("Home", () => {
     ).toBeInTheDocument();
 
     const steps = [
-      ["Assine", "Pague R$ 39,90 com cartão ou Pix. O acesso libera na hora."],
+      [
+        "Assine",
+        "Pague R$ 39,90 no primeiro pagamento com cartão ou Pix. No cartão, a próxima cobrança é de R$ 49,90.",
+      ],
       [
         "Use por 7 dias",
         "Coloque seus produtos e veja o resultado de cada um.",
@@ -542,12 +597,14 @@ describe("Home", () => {
 
     expect(
       view.getByText(
-        "No primeiro pagamento mensal, você recebe 2 meses de acesso. A próxima cobrança ocorre depois desses dois meses e, a partir daí, a assinatura renova mensalmente por R$ 39,90.",
+        "No primeiro pagamento mensal, você recebe 2 meses de acesso. A próxima cobrança ocorre depois desse período por R$ 49,90 e, a partir daí, a assinatura renova mensalmente pelo mesmo valor.",
       ),
     ).toBeInTheDocument();
     expect(view.getByText(/Não achou sua dúvida\?/)).toBeInTheDocument();
     expect(
-      view.getByRole("link", { name: "Quero assinar por R$ 39,90/mês" }),
+      view.getByRole("link", {
+        name: "Quero assinar por R$ 39,90 no primeiro pagamento",
+      }),
     ).toHaveAttribute("href", "/register");
     expect(view.getByText("Garantia de 7 dias.")).toBeInTheDocument();
   });
@@ -702,7 +759,7 @@ describe("Home", () => {
     expect(finalStep).not.toBeNull();
     expect(
       within(finalStep as HTMLElement).getByRole("link", {
-        name: "Garantir meu acesso por R$ 39,90/mês",
+        name: "Garantir acesso por R$ 39,90 no primeiro pagamento",
       }),
     ).toHaveAttribute("href", "/register");
   });

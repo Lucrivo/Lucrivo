@@ -47,6 +47,30 @@ const standardMonthlyPrice: ActiveBillingPrice = {
   bonusMonths: 0,
 };
 
+const launchPriceMonthlyPrice: ActiveBillingPrice = {
+  id: "20000000-0000-4000-8000-000000000005",
+  productCode: "quick_diagnosis_pro",
+  catalogCode: "launch_price",
+  billingMode: "monthly",
+  amountCents: 3990,
+  currency: "BRL",
+  installmentLimit: null,
+  accessMonths: 1,
+  bonusMonths: 0,
+};
+
+const launchPriceSemiannualPrice: ActiveBillingPrice = {
+  id: "20000000-0000-4000-8000-000000000006",
+  productCode: "quick_diagnosis_pro",
+  catalogCode: "launch_price",
+  billingMode: "semiannual",
+  amountCents: 17940,
+  currency: "BRL",
+  installmentLimit: 6,
+  accessMonths: 6,
+  bonusMonths: 0,
+};
+
 function build(
   price: ActiveBillingPrice,
   paymentMethod: BillingPaymentMethod,
@@ -93,6 +117,20 @@ describe("buildCheckoutRequest", () => {
     });
   });
 
+  it("builds the price-only monthly card with a monthly cycle", () => {
+    expect(build(launchPriceMonthlyPrice, "credit_card")).toMatchObject({
+      billingTypes: ["CREDIT_CARD"],
+      chargeTypes: ["RECURRENT"],
+      subscription: { cycle: "MONTHLY", nextDueDate: "2026-10-20" },
+      items: [
+        {
+          value: 39.9,
+          description: "Acesso inicial ao Lucrivo por 1 mês",
+        },
+      ],
+    });
+  });
+
   it("builds the promotional semiannual card with only an installment maximum", () => {
     const checkout = build(launchSemiannualPrice, "credit_card");
 
@@ -116,6 +154,8 @@ describe("buildCheckoutRequest", () => {
   it.each([
     [launchMonthlyPrice, 39.9],
     [launchSemiannualPrice, 179.4],
+    [launchPriceMonthlyPrice, 39.9],
+    [launchPriceSemiannualPrice, 179.4],
   ] as const)(
     "builds a detached Pix payload without recurring fields",
     (price, value) => {
@@ -172,6 +212,17 @@ describe("buildCheckoutRequest", () => {
     });
     expect(build(launchMonthlyPrice, "credit_card")).not.toHaveProperty(
       "customer",
+    );
+  });
+
+  it.each([
+    [{ ...launchPriceMonthlyPrice, accessMonths: 2 }, "monthly"],
+    [{ ...launchPriceMonthlyPrice, bonusMonths: 1 }, "monthly"],
+    [{ ...launchPriceSemiannualPrice, accessMonths: 12 }, "semiannual"],
+    [{ ...launchPriceSemiannualPrice, installmentLimit: null }, "semiannual"],
+  ] as const)("rejects an invalid launch_price %s shape", (price, mode) => {
+    expect(() => build(price, "credit_card")).toThrow(
+      `Invalid ${mode} billing price`,
     );
   });
 });

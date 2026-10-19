@@ -81,19 +81,28 @@ pnpm exec supabase test db supabase/tests/bonus_library.test.sql supabase/tests/
   pagamento avulso no Pix.
 - Padrão semestral: R$ 239,40, em até 6x de R$ 39,90 no cartão ou à vista no
   Pix, com seis meses de acesso e sem renovação automática.
-- Lançamento mensal: R$ 39,90 no primeiro pagamento, um mês de bônus e dois
-  meses de acesso inicial. No cartão, a assinatura nasce com ciclo seguro
-  `BIMONTHLY`; depois da confirmação, o Lucrivo agenda a próxima cobrança para
-  dois meses após o pagamento e converte o ciclo para `MONTHLY`. No Pix, a
-  cobrança é avulsa e não renova.
-- Lançamento semestral: R$ 179,40 à vista ou em até 6x de R$ 29,90, seis meses
-  de bônus e doze meses de acesso, sem renovação automática.
+- Dias 0–15, catálogo `launch`: o mensal custa R$ 39,90 no primeiro pagamento,
+  inclui um mês de bônus e libera dois meses. No cartão, a assinatura nasce com
+  ciclo seguro `BIMONTHLY`; depois da confirmação, o Lucrivo agenda a primeira
+  renovação para dois meses após o pagamento, muda o ciclo para `MONTHLY` e
+  define o valor seguinte como R$ 49,90. No Pix, a cobrança é avulsa e não
+  renova. O semestral custa R$ 179,40 à vista ou em até 6x de R$ 29,90, inclui
+  seis meses de bônus e libera doze meses, sem renovação automática.
+- Dias 15–30, catálogo `launch_price`: o mensal custa R$ 39,90 somente no
+  primeiro pagamento, libera um mês sem bônus e, no cartão, a primeira
+  renovação ocorre um mês depois por R$ 49,90. O semestral continua em R$ 179,40
+  à vista ou em até 6x de R$ 29,90, libera seis meses e não inclui bônus nem
+  renovação automática.
+- No dia 30 exato e depois dele, novos Checkouts usam o catálogo padrão.
 
-Os catálogos `standard` e `launch` são snapshots imutáveis. A aplicação escolhe
-no servidor exatamente uma oferta de cada modalidade conforme a janela de 15
-dias de `LAUNCH_OFFER_START_AT`; o navegador não escolhe catálogo, preço, bônus,
-acesso, ciclo ou prazo. O modo `annual` foi removido da base de pré-produção e
-não deve ser recriado.
+Os catálogos `standard`, `launch` e `launch_price` são snapshots imutáveis. A
+aplicação escolhe no servidor exatamente uma oferta de cada modalidade a partir
+do único instante `LAUNCH_OFFER_START_AT`; os limites são intervalos corridos e
+exatos, inclusivos no início e exclusivos no fim. O navegador não escolhe
+catálogo, preço, bônus, acesso, ciclo ou prazo. Um Checkout criado com sucesso
+reserva seu snapshot por 60 minutos e pode ser reutilizado nesse período mesmo
+se a campanha atravessar o dia 15 ou o dia 30. O modo `annual` foi removido da
+base de pré-produção e não deve ser recriado.
 
 ## Ambientes e variáveis
 
@@ -185,18 +194,24 @@ Após salvar a configuração, envie um evento de teste e confirme:
 
 1. resposta HTTP `200` com corpo sanitizado;
 2. uma linha em `asaas_webhook_events`, sem objeto de cartão;
-3. `processing_status` igual a `processed` ou `ignored`;
+3. `processing_status` igual a `processed`, `ignored` ou, quando o evento não
+   puder ser associado com segurança a um contrato, `failed` com
+   `last_error = 'contract_unresolved'`;
 4. nenhuma credencial, dado pessoal ou payload integral nos logs da aplicação.
 
 Respostas `401` indicam token incorreto. Respostas `400` indicam envelope
 inválido. Respostas `503` pedem nova tentativa porque a aplicação não confirmou
-o processamento seguro.
+nem mesmo a persistência segura do evento. Um evento já persistido como
+`contract_unresolved` recebe `200` para permanecer disponível para conciliação
+sem bloquear a fila sequencial do Asaas; ele não concede acesso até que exista
+uma associação inequívoca com um contrato local.
 
 Ao selecionar outra oferta enquanto existe um Checkout válido pendente, a
 aplicação chama `POST /v3/checkouts/{id}/cancel` antes de criar a substituição.
-Ela reutiliza a sessão quando a oferta é a mesma. Nunca libere apenas o registro
-local: uma falha ou resposta ambígua do cancelamento deve impedir o novo
-Checkout até a conciliação, evitando duas sessões simultaneamente pagáveis.
+Ela reutiliza a sessão e seus termos por até 60 minutos quando a oferta é a
+mesma. Nunca libere apenas o registro local: uma falha ou resposta ambígua do
+cancelamento deve impedir o novo Checkout até a conciliação, evitando duas
+sessões simultaneamente pagáveis.
 
 ## Reembolso automático
 
@@ -459,6 +474,20 @@ no navegador e consulte `billing_contracts`, `billing_payments` e
 - Repetir sem saldo Pix disponível, confirmar rejeição segura e validar uma
   nova tentativa somente depois de recompor o saldo.
 
+### 2A. Preço de lançamento sem bônus (`launch_price`)
+
+- Posicionar o relógio de homologação entre os dias 15 e 30 e confirmar que o
+  Checkout mensal cobra R$ 39,90 no primeiro pagamento, concede exatamente um
+  mês e não apresenta nem persiste bônus de acesso.
+- No cartão, confirmar assinatura criada em `MONTHLY` e, após o webhook
+  verificado, próxima cobrança exatamente um mês depois por R$ 49,90 com
+  `renewal_adjustment_status = 'completed'`.
+- Reentregar os eventos e confirmar que data, ciclo e valor não são ajustados
+  novamente.
+- No Pix, confirmar cobrança avulsa, um mês de acesso e nenhuma assinatura.
+- No semestral, confirmar R$ 179,40, até 6x de R$ 29,90, seis meses de acesso,
+  zero bônus e nenhuma renovação automática.
+
 ### 3. Lançamento semestral — R$ 179,40
 
 - Confirmar que o Checkout semestral no cartão foi criado com os tipos de cobrança
@@ -484,10 +513,12 @@ no navegador e consulte `billing_contracts`, `billing_payments` e
 
 ### 4. Idempotência, ordem e reversões
 
-- Criar um Checkout promocional um milissegundo antes do fim; ele deve continuar
-  reutilizável somente dentro da validade persistida de uma hora.
-- Tentar criar outro Checkout promocional no instante final exato; a aplicação
-  deve rejeitá-lo e selecionar o catálogo padrão.
+- Criar um Checkout `launch` um milissegundo antes do dia 15; ele deve continuar
+  reutilizável somente dentro da validade persistida de 60 minutos, enquanto um
+  novo Checkout no limite exato deve selecionar `launch_price`.
+- Criar um Checkout `launch_price` um milissegundo antes do dia 30; ele também
+  preserva o snapshot por 60 minutos, enquanto um novo Checkout no limite exato
+  deve selecionar o catálogo padrão.
 - Reentregar o mesmo evento e confirmar ausência de duplicação de acesso ou
   pagamento.
 - Clicar duas vezes em “Pedir reembolso” e confirmar uma única solicitação e
@@ -537,6 +568,8 @@ dados de cartão/cliente.
 | ------------------------------------ | --------- | ------------------------ | ------------- | ---------------- | -------- | -------- |
 | 1. Lançamento mensal cartão + ajuste | Pendente  | —                        | —             | —                | —        | —        |
 | 2. Lançamento mensal Pix + reembolso | Pendente  | —                        | —             | —                | —        | —        |
+| 2A. `launch_price` mensal + ajuste   | Pendente  | —                        | —             | —                | —        | —        |
+| 2A. `launch_price` Pix e semestral   | Pendente  | —                        | —             | —                | —        | —        |
 | 3. Lançamento semestral Pix          | Pendente  | —                        | —             | —                | —        | —        |
 | 3. Lançamento semestral cartão 1–6x  | Pendente  | —                        | —             | —                | —        | —        |
 | 3A. Catálogo padrão completo         | Pendente  | —                        | —             | —                | —        | —        |
@@ -557,11 +590,18 @@ linhas estarem aprovadas e vinculadas às evidências.
 
 - Gate automatizado integralmente verde.
 - Matriz sandbox integralmente aprovada e registrada.
+- Tokenização de assinaturas no cartão confirmada com o Asaas em produção antes
+  do deploy da aplicação; o Lucrivo não deve receber nem persistir o token.
+- Migration aditiva aplicada primeiro e confirmada; aplicação compatível com os
+  três catálogos publicada somente depois.
+- Após o deploy, casos mensais `launch` e `launch_price` repetidos no sandbox,
+  incluindo ajuste de data, ciclo e valor para R$ 49,90.
 - Variáveis de produção configuradas no ambiente correto.
 - `ASAAS_API_URL` de produção confirmado.
 - Webhook de produção com HTTPS, token exclusivo, entrega sequencial e lista
   exata de eventos.
 - Health check sanitizado.
-- Alertas e responsáveis por reconciliação definidos.
+- Alertas, painel e responsáveis pelo monitoramento de reconciliação definidos e
+  acompanhados após o rollout.
 - Procedimentos de rotação, fila pausada, retenção e incidente acessíveis à
   equipe de operação.

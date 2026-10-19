@@ -55,6 +55,7 @@ type AsaasCheckout = {
 type AsaasSubscriptionRenewalInput = {
   cycle: "MONTHLY";
   nextDueDate: string;
+  value: number;
 };
 
 interface AsaasGateway {
@@ -63,7 +64,12 @@ interface AsaasGateway {
   updateSubscriptionRenewal(
     id: string,
     input: AsaasSubscriptionRenewalInput,
-  ): Promise<{ id: string; cycle: "MONTHLY"; nextDueDate: string }>;
+  ): Promise<{
+    id: string;
+    cycle: "MONTHLY";
+    nextDueDate: string;
+    value: number;
+  }>;
   deleteSubscription(id: string): Promise<{ id: string; deleted: true }>;
   refundPayment(id: string): Promise<{ id: string }>;
   refundInstallment(id: string): Promise<{ id: string }>;
@@ -116,6 +122,7 @@ const subscriptionRenewalResponseSchema = z.looseObject({
   id: z.string().min(1),
   cycle: z.literal("MONTHLY"),
   nextDueDate: z.iso.date(),
+  value: z.number().finite().positive(),
 });
 
 const deleteResponseSchema = z.looseObject({
@@ -273,6 +280,7 @@ function createAsaasGateway(input: {
           body: JSON.stringify({
             cycle: renewal.cycle,
             nextDueDate: renewal.nextDueDate,
+            value: renewal.value,
             updatePendingPayments: true,
           }),
         },
@@ -281,7 +289,8 @@ function createAsaasGateway(input: {
 
       if (
         subscription.id !== id ||
-        subscription.nextDueDate !== renewal.nextDueDate
+        subscription.nextDueDate !== renewal.nextDueDate ||
+        subscription.value !== renewal.value
       ) {
         throw new AsaasGatewayError("ambiguous", 200);
       }
@@ -290,6 +299,7 @@ function createAsaasGateway(input: {
         id: subscription.id,
         cycle: subscription.cycle,
         nextDueDate: subscription.nextDueDate,
+        value: subscription.value,
       };
     },
 

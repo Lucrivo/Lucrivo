@@ -128,8 +128,19 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
     semiannual.amountCents === 23940 &&
     semiannual.accessMonths === 6 &&
     semiannual.bonusMonths === 0;
-  const catalogReady = launchCatalogReady || standardCatalogReady;
-  const isLaunch = launchCatalogReady;
+  const launchPriceCatalogReady =
+    sharedCatalogReady &&
+    monthly.catalogCode === "launch_price" &&
+    monthly.amountCents === 3990 &&
+    monthly.accessMonths === 1 &&
+    monthly.bonusMonths === 0 &&
+    semiannual.amountCents === 17940 &&
+    semiannual.accessMonths === 6 &&
+    semiannual.bonusMonths === 0;
+  const catalogReady =
+    launchCatalogReady || launchPriceCatalogReady || standardCatalogReady;
+  const isPromotional = launchCatalogReady || launchPriceCatalogReady;
+  const includesBonusAccess = launchCatalogReady;
 
   const Heading = context === "public" ? "h3" : "h2";
 
@@ -173,7 +184,7 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
           </Link>
 
           <p className={styles.signupHint}>
-            {isLaunch
+            {isPromotional
               ? "Crie a conta primeiro. Ao iniciar o checkout, esta condição fica reservada por 1 hora."
               : "Crie a conta primeiro. Cartão ou Pix na hora de assinar."}
           </p>
@@ -205,7 +216,7 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
           <QrCodeIcon aria-hidden="true" />
           Pagar com Pix
         </CheckoutButton>
-        {isLaunch ? (
+        {isPromotional ? (
           <p className={styles.signupHint}>
             Ao iniciar o checkout, esta condição fica reservada por 1 hora.
           </p>
@@ -263,7 +274,7 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
             >
               <div className={styles.popularBadge}>
                 <span aria-hidden="true" className={styles.popularDot} />
-                {isLaunch ? "Oferta de lançamento" : "Mais vantajoso"}
+                {isPromotional ? "Oferta de lançamento" : "Mais vantajoso"}
               </div>
 
               <PlanHeader
@@ -284,12 +295,14 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
                   </span>
                   <small> ou {formatBRL(semiannual.amountCents)} à vista</small>
                 </p>
-                {isLaunch ? (
+                {isPromotional ? (
                   <>
-                    <p className={styles.saving}>
-                      <BadgeCheckIcon aria-hidden="true" />
-                      {semiannual.bonusMonths} meses de bônus incluídos
-                    </p>
+                    {includesBonusAccess ? (
+                      <p className={styles.saving}>
+                        <BadgeCheckIcon aria-hidden="true" />
+                        {semiannual.bonusMonths} meses de bônus incluídos
+                      </p>
+                    ) : null}
                     <p className={styles.comparisonPrice}>
                       Depois da oferta: {formatBRL(23940)}
                     </p>
@@ -327,22 +340,29 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
 
               <div className={styles.priceBlock}>
                 <p className={styles.planPrice}>
-                  {formatBRL(monthly.amountCents)}/mês
+                  <span>{formatBRL(monthly.amountCents)}</span>
+                  {isPromotional ? (
+                    <small>no primeiro pagamento</small>
+                  ) : (
+                    "/mês"
+                  )}
                 </p>
 
                 <p className={styles.planDescription}>
-                  {isLaunch
-                    ? `${monthly.accessMonths} meses no primeiro pagamento`
+                  {isPromotional
+                    ? `${monthly.accessMonths} ${monthly.accessMonths === 1 ? "mês" : "meses"} no primeiro pagamento`
                     : "Ideal para pagar mês a mês com flexibilidade."}
                 </p>
-                {isLaunch ? (
+                {isPromotional ? (
                   <>
-                    <p className={styles.saving}>
-                      <BadgeCheckIcon aria-hidden="true" />
-                      {monthly.bonusMonths} mês de bônus incluído
-                    </p>
+                    {includesBonusAccess ? (
+                      <p className={styles.saving}>
+                        <BadgeCheckIcon aria-hidden="true" />
+                        {monthly.bonusMonths} mês de bônus incluído
+                      </p>
+                    ) : null}
                     <p className={styles.comparisonPrice}>
-                      Depois da oferta: {formatBRL(4990)}/mês
+                      Depois, {formatBRL(4990)}/mês
                     </p>
                   </>
                 ) : null}
@@ -352,9 +372,11 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
                 {paidBenefits.map((benefit) => (
                   <Benefit key={benefit}>{benefit}</Benefit>
                 ))}
-                {isLaunch ? (
+                {isPromotional ? (
                   <Benefit>
-                    {monthly.accessMonths} meses de acesso inicial
+                    {monthly.accessMonths}{" "}
+                    {monthly.accessMonths === 1 ? "mês" : "meses"} de acesso
+                    inicial
                   </Benefit>
                 ) : null}
               </ul>

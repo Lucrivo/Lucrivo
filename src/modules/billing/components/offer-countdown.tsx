@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type OfferCountdownProps = {
+  purpose: "bonus" | "launch_price";
   endsAt: string;
   onExpire?: () => void;
   compact?: boolean;
@@ -20,6 +21,7 @@ function remainingFor(target: number): number {
 }
 
 function OfferCountdown({
+  purpose,
   endsAt,
   onExpire,
   compact = false,
@@ -59,15 +61,23 @@ function OfferCountdown({
   const minutes = Math.floor((totalSeconds % 3_600) / 60);
   const seconds = totalSeconds % 60;
   const deadline = Number.isFinite(target)
-    ? `Oferta válida até ${deadlineFormatter.format(new Date(target))}.`
+    ? `${
+        purpose === "bonus"
+          ? "Bônus disponível"
+          : "Preço de lançamento disponível"
+      } até ${deadlineFormatter.format(new Date(target))}.`
     : "Oferta encerrada";
+  const accessibleLabel =
+    purpose === "bonus"
+      ? "Tempo restante para ganhar o bônus"
+      : "Tempo restante para aproveitar o preço de lançamento";
 
   return (
     <div
       className="offer-countdown min-w-0"
       data-compact={compact}
       role="region"
-      aria-label="Tempo restante da oferta de lançamento"
+      aria-label={accessibleLabel}
     >
       <span className="sr-only" aria-live="polite">
         {ended ? "Oferta encerrada" : deadline}

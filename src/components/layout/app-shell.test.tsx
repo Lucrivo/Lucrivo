@@ -29,10 +29,20 @@ vi.mock("@/components/layout/account-menu", () => ({
   ),
 }));
 
-vi.mock("@/modules/billing/components/free-diagnosis-banner", () => ({
-  FreeDiagnosisBanner: () => (
-    <aside data-testid="free-diagnosis-banner">diagnóstico grátis</aside>
-  ),
+vi.mock("@/modules/billing/components/billing-banner", () => ({
+  BillingBanner: ({
+    view,
+  }: {
+    view:
+      | { kind: "free_diagnosis" }
+      | { kind: "launch_offer"; phase: string; endsAt: string }
+      | null;
+  }) =>
+    view ? (
+      <aside data-testid="billing-banner" data-kind={view.kind}>
+        {view.kind === "launch_offer" ? view.phase : "diagnóstico grátis"}
+      </aside>
+    ) : null,
 }));
 
 vi.mock("@/components/ui/sidebar", () => ({
@@ -62,7 +72,7 @@ describe("AppShell", () => {
         isAdminUser
         contextTitle="Administração"
         contextDescription="Acompanhe o funcionamento do Lucrivo."
-        showFreeDiagnosisBanner
+        billingBanner={{ kind: "free_diagnosis" }}
       >
         <div>protected-content</div>
       </AppShell>,
@@ -78,7 +88,10 @@ describe("AppShell", () => {
       screen.getByRole("button", { name: "Alternar menu lateral" }),
     ).toBeVisible();
     expect(screen.getByText("protected-content")).toBeVisible();
-    expect(screen.getByTestId("free-diagnosis-banner")).toBeVisible();
+    expect(screen.getByTestId("billing-banner")).toHaveAttribute(
+      "data-kind",
+      "free_diagnosis",
+    );
   });
 
   it("omits the diagnosis banner when it is not relevant", () => {
@@ -94,8 +107,6 @@ describe("AppShell", () => {
       </AppShell>,
     );
 
-    expect(
-      screen.queryByTestId("free-diagnosis-banner"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("billing-banner")).not.toBeInTheDocument();
   });
 });

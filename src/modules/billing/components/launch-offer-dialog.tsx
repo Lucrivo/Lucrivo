@@ -27,11 +27,15 @@ import logo from "@/public/brand/lucrivo-logo-dark.svg";
 import { OfferCountdown } from "./offer-countdown";
 
 type LaunchOfferDialogView = {
+  phase: "bonus_active" | "price_active";
   endsAt: string;
   monthlyPriceLabel: string;
+  monthlyRenewalPriceLabel: string;
   semiannualInstallmentLabel: string;
   monthlyAccessMonths: number;
+  monthlyBonusMonths: number;
   semiannualAccessMonths: number;
+  semiannualBonusMonths: number;
 };
 
 type LaunchOfferDialogProps = {
@@ -63,6 +67,8 @@ function LaunchOfferDialog({
   const router = useRouter();
   const [open, setOpen] = useState(true);
   const copy = contextCopy[context];
+  const countdownPurpose =
+    offer.phase === "bonus_active" ? "bonus" : "launch_price";
 
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen);
@@ -131,25 +137,43 @@ function LaunchOfferDialog({
                   <strong className="text-5xl leading-none font-black tracking-[-0.04em] tabular-nums sm:text-6xl">
                     {offer.monthlyPriceLabel}
                   </strong>
-                  <span className="pb-1 text-base font-bold">por mês</span>
+                  <span className="pb-1 text-base font-bold">
+                    no primeiro pagamento
+                  </span>
                 </p>
               </div>
-              <p className="max-w-56 text-sm leading-5 font-semibold text-pretty text-[oklch(0.34_0.07_259)]">
-                O primeiro pagamento libera {offer.monthlyAccessMonths} meses de
-                acesso.
-              </p>
+              <div className="max-w-64 text-sm leading-5 font-semibold text-pretty text-[oklch(0.34_0.07_259)]">
+                <p>
+                  O primeiro pagamento libera {offer.monthlyAccessMonths}{" "}
+                  {offer.monthlyAccessMonths === 1 ? "mês" : "meses"} de acesso.
+                </p>
+                {offer.monthlyBonusMonths > 0 ? (
+                  <p className="mt-1">
+                    Inclui {offer.monthlyBonusMonths} mês de bônus.
+                  </p>
+                ) : null}
+                <p className="mt-1">{offer.monthlyRenewalPriceLabel}</p>
+              </div>
             </div>
           </section>
 
           <div className="relative mt-4 grid gap-4 rounded-2xl bg-[oklch(0.48_0.22_259)] p-4 sm:grid-cols-[1fr_auto] sm:items-center sm:px-5">
             <div>
-              <p className="font-bold">Assine durante a campanha</p>
+              <p className="font-bold">
+                {offer.phase === "bonus_active"
+                  ? "Garanta o bônus durante a campanha"
+                  : "Garanta o preço de lançamento"}
+              </p>
               <p className="mt-1 text-sm leading-5 text-blue-100">
                 Condição promocional disponível até o fim da contagem.
               </p>
             </div>
             <div className="min-w-0 rounded-xl bg-black/15 px-4 py-3 [&_[data-countdown-digits]]:gap-4 [&_dd]:text-xl [&_dt]:text-white/80">
-              <OfferCountdown endsAt={offer.endsAt} compact />
+              <OfferCountdown
+                purpose={countdownPurpose}
+                endsAt={offer.endsAt}
+                compact
+              />
             </div>
           </div>
 
@@ -181,6 +205,11 @@ function LaunchOfferDialog({
               <p className="mt-0.5 text-xs font-semibold">
                 {offer.semiannualAccessMonths} meses de acesso
               </p>
+              {offer.semiannualBonusMonths > 0 ? (
+                <p className="mt-0.5 text-xs font-semibold">
+                  Inclui {offer.semiannualBonusMonths} meses de bônus
+                </p>
+              ) : null}
             </div>
           </div>
         </div>

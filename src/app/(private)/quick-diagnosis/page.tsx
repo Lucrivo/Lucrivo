@@ -2,6 +2,7 @@ import { DiagnosisLimitCard } from "@/modules/billing/components/diagnosis-limit
 import { getBillingOverview } from "@/modules/billing/services/get-billing-overview.service";
 import { readLaunchOfferEnvironment } from "@/config/launch-offer-environment";
 import { requireUser } from "@/modules/auth/services/require-user";
+import { isLaunchOfferActive } from "@/modules/billing/domain/launch-offer";
 import { createDetailedDiagnosis } from "@/modules/detailed-diagnosis/actions/create-detailed-diagnosis.action";
 import type { DetailedDiagnosisCategory } from "@/modules/detailed-diagnosis/types";
 import { createProductDiagnosis } from "@/modules/quick-diagnosis/actions/create-product-diagnosis.action";
@@ -48,7 +49,7 @@ export default async function QuickDiagnosisPage({
     : undefined;
   const launchOffer = readLaunchOfferEnvironment();
   const launchOfferOnCompletion =
-    launchOffer.phase === "active" &&
+    isLaunchOfferActive(launchOffer) &&
     result.overview.tier === "free" &&
     !result.overview.freeQuickDiagnosisUsed;
 

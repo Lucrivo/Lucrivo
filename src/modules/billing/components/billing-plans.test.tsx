@@ -48,6 +48,23 @@ const standardPrices: ActiveBillingPrice[] = [
   },
 ];
 
+const launchPricePrices: ActiveBillingPrice[] = [
+  {
+    ...launchPrices[0],
+    id: "55555555-5555-4555-8555-555555555555",
+    catalogCode: "launch_price",
+    accessMonths: 1,
+    bonusMonths: 0,
+  },
+  {
+    ...launchPrices[1],
+    id: "66666666-6666-4666-8666-666666666666",
+    catalogCode: "launch_price",
+    accessMonths: 6,
+    bonusMonths: 0,
+  },
+];
+
 describe("BillingPlans", () => {
   it("presents the complete launch condition without implying a chosen installment count", () => {
     render(<BillingPlans prices={launchPrices} context="public" />);
@@ -58,7 +75,8 @@ describe("BillingPlans", () => {
       name: "Plano Semestral",
     });
 
-    expect(within(monthly).getByText("R$ 39,90/mês")).toBeInTheDocument();
+    expect(within(monthly).getByText("R$ 39,90")).toBeInTheDocument();
+    expect(within(monthly).getByText("no primeiro pagamento")).toBeVisible();
     expect(
       within(monthly).getByText("2 meses no primeiro pagamento"),
     ).toBeInTheDocument();
@@ -70,9 +88,29 @@ describe("BillingPlans", () => {
     );
     expect(within(semiannual).getByText("12 meses de acesso")).toBeVisible();
     expect(within(semiannual).getByText(/6 meses de bônus/)).toBeVisible();
-    expect(screen.getByText(/Depois da oferta.*R\$ 49,90/)).toBeVisible();
+    expect(screen.getByText("Depois, R$ 49,90/mês")).toBeVisible();
     expect(screen.getByText(/Depois da oferta.*R\$ 239,40/)).toBeVisible();
     expect(screen.queryByText(/^6x de$/)).not.toBeInTheDocument();
+    expect(
+      screen.getAllByText(/condição fica reservada por 1 hora/i),
+    ).toHaveLength(2);
+  });
+
+  it("presents launch_price without bonus claims", () => {
+    const { container } = render(
+      <BillingPlans prices={launchPricePrices} context="public" />,
+    );
+
+    const monthly = screen.getByRole("article", { name: "Plano Mensal" });
+    const semiannual = screen.getByRole("article", {
+      name: "Plano Semestral",
+    });
+    expect(within(monthly).getByText("R$ 39,90")).toBeVisible();
+    expect(within(monthly).getByText("no primeiro pagamento")).toBeVisible();
+    expect(within(monthly).getByText("Depois, R$ 49,90/mês")).toBeVisible();
+    expect(within(monthly).getByText("1 mês de acesso inicial")).toBeVisible();
+    expect(within(semiannual).getByText("6 meses de acesso")).toBeVisible();
+    expect(container).not.toHaveTextContent(/m[eê]s(?:es)? de bônus/i);
     expect(
       screen.getAllByText(/condição fica reservada por 1 hora/i),
     ).toHaveLength(2);
@@ -86,7 +124,9 @@ describe("BillingPlans", () => {
     expect(screen.queryByText("Oferta de lançamento")).not.toBeInTheDocument();
     expect(container).not.toHaveTextContent("bônus");
     expect(container).not.toHaveTextContent("R$ 39,90/mês");
-    expect(screen.getByText("R$ 49,90/mês")).toBeVisible();
+    expect(
+      screen.getByRole("article", { name: "Plano Mensal" }),
+    ).toHaveTextContent("R$ 49,90/mês");
     expect(
       screen.getByRole("article", { name: "Plano Semestral" }),
     ).toHaveTextContent("em até 6x de R$ 39,90 ou R$ 239,40 à vista");
