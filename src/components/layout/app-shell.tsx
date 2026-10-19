@@ -9,7 +9,10 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { logout } from "@/modules/auth/actions/logout.action";
-import { FreeDiagnosisBanner } from "@/modules/billing/components/free-diagnosis-banner";
+import {
+  BillingBanner,
+  type BillingBannerView,
+} from "@/modules/billing/components/billing-banner";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -18,7 +21,7 @@ type AppShellProps = {
   isAdminUser: boolean;
   contextTitle: string;
   contextDescription: string;
-  showFreeDiagnosisBanner?: boolean;
+  billingBanner?: BillingBannerView | null;
 };
 
 function AppShell({
@@ -28,7 +31,7 @@ function AppShell({
   isAdminUser,
   contextTitle,
   contextDescription,
-  showFreeDiagnosisBanner = false,
+  billingBanner = null,
 }: AppShellProps) {
   return (
     <SidebarProvider
@@ -57,7 +60,7 @@ function AppShell({
           </div>
           <AccountMenu email={email} logoutAction={logout} />
         </header>
-        {showFreeDiagnosisBanner ? <FreeDiagnosisBanner /> : null}
+        <BillingBanner view={billingBanner} />
         <div className="@container/page flex flex-1 flex-col p-4 sm:p-6 lg:p-8">
           {children}
         </div>

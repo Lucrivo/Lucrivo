@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { LandingExperience } from "@/components/landing/landing-experience";
 import { readLaunchOfferEnvironment } from "@/config/launch-offer-environment";
 import { createClient } from "@/infrastructure/database/supabase/clients/server.client";
+import { isLaunchOfferActive } from "@/modules/billing/domain/launch-offer";
 import { listActivePrices } from "@/modules/billing/services/list-active-prices.service";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +33,9 @@ export default async function Home() {
     <LandingExperience
       prices={result.status === "success" ? result.prices : []}
       launchOffer={
-        launchOffer.phase === "active" ? { endsAt: launchOffer.endsAt } : null
+        isLaunchOfferActive(launchOffer)
+          ? { phase: launchOffer.phase, endsAt: launchOffer.endsAt }
+          : null
       }
     />
   );

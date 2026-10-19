@@ -33,12 +33,11 @@ function buildFaqGroups(offer: LandingOfferPresentation | null): FaqGroup[] {
   const priceAnswer = offer
     ? `Pense assim: se você vende 50 unidades por mês e descobre que pode cobrar R$ 1 a mais em cada uma, a assinatura já se pagou. E você ainda tem ${GUARANTEE_DAYS} dias para testar.`
     : "Os valores aparecem na seção de planos assim que o catálogo está disponível.";
-  const renewalAnswer =
-    offer?.catalogCode === "launch"
-      ? `No primeiro pagamento mensal, você recebe ${offer.monthlyAccessMonths} meses de acesso. A próxima cobrança ocorre depois desses dois meses e, a partir daí, a assinatura renova mensalmente por ${offer.monthlyPriceLabel}.`
-      : offer
-        ? `A assinatura renova todo mês por ${offer.monthlyPriceLabel}. Se não quiser continuar, é só cancelar antes da próxima cobrança.`
-        : "A periodicidade e os valores são apresentados junto de cada plano antes da assinatura.";
+  const renewalAnswer = offer?.monthlyRenewalPriceLabel
+    ? `No primeiro pagamento mensal, você recebe ${offer.monthlyAccessMonths} ${offer.monthlyAccessMonths === 1 ? "mês" : "meses"} de acesso. A próxima cobrança ocorre depois desse período por R$ 49,90 e, a partir daí, a assinatura renova mensalmente pelo mesmo valor.`
+    : offer
+      ? `A assinatura renova todo mês por ${offer.monthlyPriceLabel}. Se não quiser continuar, é só cancelar antes da próxima cobrança.`
+      : "A periodicidade e os valores são apresentados junto de cada plano antes da assinatura.";
   return [
     {
       title: "Sobre a assinatura",
@@ -231,7 +230,9 @@ function FaqSection({ offer }: { offer: LandingOfferPresentation | null }) {
               href={offer ? "/register" : "#planos"}
             >
               {offer
-                ? `Quero assinar por ${offer.monthlyPriceLabel}/mês`
+                ? offer.monthlyPriceQualifier
+                  ? `Quero assinar por ${offer.monthlyPriceLabel} no primeiro pagamento`
+                  : `Quero assinar por ${offer.monthlyPriceLabel}/mês`
                 : "Conhecer os planos"}
               <ArrowRightIcon aria-hidden="true" size={20} weight="bold" />
             </a>

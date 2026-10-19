@@ -1,5 +1,7 @@
 "use server";
 
+import { refresh } from "next/cache";
+
 import {
   AuthRequiredError,
   LegalAcceptanceRequiredError,
@@ -35,7 +37,13 @@ async function createProductionDiagnosis(
     const calculation = calculateProductionReport(command);
     const snapshot = buildProductionReportSnapshot(command, calculation);
 
-    return await createProductionReport({ supabase, command, snapshot });
+    const result = await createProductionReport({
+      supabase,
+      command,
+      snapshot,
+    });
+    if (result.status === "success") refresh();
+    return result;
   } catch (error) {
     if (
       error instanceof AuthRequiredError ||

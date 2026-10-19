@@ -133,7 +133,7 @@ describe("POST /api/webhooks/asaas", () => {
     expect(createAsaasGateway).not.toHaveBeenCalled();
   });
 
-  it.each(["processed", "duplicate", "ignored"] as const)(
+  it.each(["processed", "duplicate", "ignored", "unresolved"] as const)(
     "acknowledges %s events with 200",
     async (status) => {
       processAsaasWebhook.mockResolvedValue(status);
@@ -158,17 +158,14 @@ describe("POST /api/webhooks/asaas", () => {
     },
   );
 
-  it.each(["unresolved", "failed"] as const)(
-    "returns 503 for %s so Asaas retries",
-    async (status) => {
-      processAsaasWebhook.mockResolvedValue(status);
+  it("returns 503 for a processing failure so Asaas retries", async () => {
+    processAsaasWebhook.mockResolvedValue("failed");
 
-      const { response, body } = await post();
+    const { response, body } = await post();
 
-      expect(response.status).toBe(503);
-      expect(body).toEqual({ error: "retry_later" });
-    },
-  );
+    expect(response.status).toBe(503);
+    expect(body).toEqual({ error: "retry_later" });
+  });
 
   it("sanitizes configuration and processing failures", async () => {
     readBillingEnvironment.mockImplementationOnce(() => {

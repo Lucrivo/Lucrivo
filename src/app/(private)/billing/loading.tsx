@@ -4,7 +4,7 @@ function BillingPlanSkeleton() {
   return (
     <article
       data-skeleton-kind="billing-plan"
-      className="bg-card flex min-h-[36rem] min-w-0 flex-col rounded-2xl border p-7 max-[1080px]:min-h-0 sm:p-8"
+      className="bg-card flex min-w-0 flex-col rounded-2xl border p-7 sm:p-8 @min-[67.5625rem]/page:min-h-[36rem]"
     >
       <div className="grid gap-2">
         <Skeleton className="h-5 w-28" />
@@ -43,7 +43,7 @@ export default function BillingLoading() {
       </p>
 
       <div aria-hidden="true" className="grid gap-8">
-        <header className="grid items-end gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(240px,0.36fr)] lg:gap-12">
+        <header className="grid items-end gap-6 @5xl/page:grid-cols-[minmax(0,1fr)_minmax(240px,0.36fr)] @5xl/page:gap-12">
           <div className="grid max-w-3xl gap-3">
             <Skeleton className="h-10 w-72 max-w-full" />
             <Skeleton className="h-5 w-full" />
@@ -60,7 +60,7 @@ export default function BillingLoading() {
             <Skeleton className="h-7 w-72 max-w-full" />
             <Skeleton className="h-5 w-full max-w-2xl" />
           </div>
-          <div className="mx-auto grid w-full grid-cols-1 gap-[18px] min-[1081px]:grid-cols-3">
+          <div className="mx-auto grid w-full grid-cols-1 gap-[18px] @min-[67.5625rem]/page:grid-cols-3">
             {Array.from({ length: 3 }, (_, index) => (
               <BillingPlanSkeleton key={index} />
             ))}

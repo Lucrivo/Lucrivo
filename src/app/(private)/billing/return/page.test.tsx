@@ -53,6 +53,13 @@ const prices = [
   },
 ];
 
+const launchPricePrices = prices.map((price) => ({
+  ...price,
+  catalogCode: "launch_price" as const,
+  accessMonths: price.billingMode === "monthly" ? 1 : 6,
+  bonusMonths: 0,
+}));
+
 describe("BillingReturnPage", () => {
   const supabase = { from: vi.fn() };
 
@@ -61,9 +68,11 @@ describe("BillingReturnPage", () => {
     window.sessionStorage.clear();
     requireUser.mockResolvedValue({ userId: "trusted-user", supabase });
     readLaunchOfferEnvironment.mockReturnValue({
-      phase: "active",
+      phase: "bonus_active",
       catalogCode: "launch",
       startsAt: "2026-10-20T12:00:00.000Z",
+      bonusEndsAt: "2026-11-04T12:00:00.000Z",
+      promotionEndsAt: "2026-11-19T12:00:00.000Z",
       endsAt: "2026-11-04T12:00:00.000Z",
     });
     listActivePrices.mockResolvedValue({ status: "success", prices });
@@ -77,6 +86,29 @@ describe("BillingReturnPage", () => {
         contract: null,
       },
     });
+  });
+
+  it("reloads launch_price offers after a canceled second-window checkout", async () => {
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "price_active",
+      catalogCode: "launch_price",
+      startsAt: "2026-10-20T12:00:00.000Z",
+      bonusEndsAt: "2026-11-04T12:00:00.000Z",
+      promotionEndsAt: "2026-11-19T12:00:00.000Z",
+      endsAt: "2026-11-19T12:00:00.000Z",
+    });
+    listActivePrices.mockResolvedValue({
+      status: "success",
+      prices: launchPricePrices,
+    });
+
+    await renderOutcome("canceled");
+
+    expect(listActivePrices).toHaveBeenCalledWith({
+      supabase,
+      catalogCode: "launch_price",
+    });
+    expect(screen.getByText("1 mês de acesso inicial")).toBeVisible();
   });
 
   async function renderOutcome(outcome: string) {
@@ -239,7 +271,8 @@ describe("BillingReturnPage", () => {
       phase: "invalid",
       catalogCode: null,
       startsAt: null,
-      endsAt: null,
+      bonusEndsAt: null,
+      promotionEndsAt: null,
     });
 
     await renderOutcome("canceled");

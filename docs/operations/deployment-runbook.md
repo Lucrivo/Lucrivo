@@ -93,14 +93,18 @@ mesmo tempo.
 
 `LAUNCH_OFFER_START_AT` é uma variável server-only. Ela aceita somente um
 instante ISO 8601 com offset explícito (`Z` ou `±HH:MM`) e nunca usa o prefixo
-`NEXT_PUBLIC_`. A janela começa no instante configurado, inclui esse início e
-termina exatamente 15 dias depois, sem incluir o instante final.
+`NEXT_PUBLIC_`. A campanha começa no instante configurado: até o dia 15, usa
+preço de lançamento com bônus; do dia 15 ao dia 30, mantém o preço de lançamento
+sem bônus; no dia 30 exato, volta ao catálogo padrão. Todos os intervalos
+incluem o início e excluem o fim.
 
 Siga esta ordem em staging e, depois de homologada, em produção:
 
-1. Faça o primeiro deploy com `LAUNCH_OFFER_START_AT` ausente. Confirme que a
-   aplicação oferece apenas o catálogo padrão — mensal de R$ 49,90 e semestral
-   de R$ 239,40 — e rejeita os IDs do catálogo de lançamento no Checkout.
+1. Confirme com o Asaas que a tokenização de assinatura no cartão está ativa em
+   produção. Aplique primeiro a migration aditiva dos três catálogos e confirme
+   sua conclusão; só então publique a aplicação, inicialmente com
+   `LAUNCH_OFFER_START_AT` ausente. Confirme catálogo padrão — mensal de R$ 49,90
+   e semestral de R$ 239,40 — e rejeição dos IDs promocionais no Checkout.
 2. Escolha o instante de início no fuso de São Paulo e converta a decisão para
    uma string com offset explícito, por exemplo
    `2026-10-20T09:00:00-03:00`. Registre a decisão de negócio e o responsável,
@@ -109,13 +113,20 @@ Siga esta ordem em staging e, depois de homologada, em produção:
    instante. Antes do início, confirme estado `scheduled`, catálogo padrão e
    ausência de contador.
 4. No instante exato do início, confirme catálogo `launch`, contador com prazo
-   absoluto e preços R$ 39,90/R$ 179,40. Um milissegundo antes ainda deve ser
-   padrão.
-5. No instante final exato, confirme retorno ao catálogo padrão e rejeição de
-   novos Checkouts promocionais. Um milissegundo antes ainda deve aceitar a
-   criação promocional e preservar somente a validade de uma hora daquele
-   Checkout já criado.
-6. Em uma validação isolada, use um valor vazio, sem offset ou inválido e
+   absoluto, R$ 39,90 somente no primeiro pagamento mensal, renovação por
+   R$ 49,90 depois de dois meses e bônus de acesso. Um milissegundo antes ainda
+   deve ser padrão.
+5. No dia 15 exato, confirme catálogo `launch_price`, ausência de bônus,
+   R$ 39,90 somente no primeiro pagamento mensal e primeira renovação um mês
+   depois por R$ 49,90. Um Checkout `launch` ainda válido preserva seu snapshot
+   somente pelos 60 minutos persistidos.
+6. No dia 30 exato, confirme retorno ao catálogo padrão e rejeição de novos
+   Checkouts promocionais. Um Checkout `launch_price` criado um milissegundo
+   antes preserva seu snapshot somente pelos 60 minutos persistidos.
+7. Repita no sandbox os ajustes mensais de `launch` e `launch_price`, verificando
+   data, ciclo e valor de R$ 49,90, e monitore a fila de reconciliação após o
+   deploy.
+8. Em uma validação isolada, use um valor vazio, sem offset ou inválido e
    confirme que ofertas pagas e Checkout ficam indisponíveis, sem preço de
    fallback.
 

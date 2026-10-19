@@ -21,6 +21,7 @@ const renewalClaimSchema = z.discriminatedUnion("status", [
     contractId: z.uuid(),
     subscriptionId: z.string().trim().min(1),
     nextDueDate: z.iso.date(),
+    renewalAmountCents: z.literal(4990),
   }),
 ]);
 
@@ -79,6 +80,7 @@ async function adjustLaunchRenewal({
       await asaas.updateSubscriptionRenewal(claim.subscriptionId, {
         cycle: "MONTHLY",
         nextDueDate: claim.nextDueDate,
+        value: claim.renewalAmountCents / 100,
       });
     } catch (providerError) {
       const errorCode =

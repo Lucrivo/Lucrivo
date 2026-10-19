@@ -43,6 +43,30 @@ const standardMonthlyPrice = {
   bonus_months: 0,
 };
 
+const launchPriceMonthlyPrice = {
+  id: "20000000-0000-4000-8000-000000000005",
+  product_code: "quick_diagnosis_pro",
+  catalog_code: "launch_price",
+  billing_mode: "monthly",
+  amount_cents: 3990,
+  currency: "BRL",
+  installment_limit: null,
+  access_months: 1,
+  bonus_months: 0,
+};
+
+const launchPriceSemiannualPrice = {
+  id: "20000000-0000-4000-8000-000000000006",
+  product_code: "quick_diagnosis_pro",
+  catalog_code: "launch_price",
+  billing_mode: "semiannual",
+  amount_cents: 17940,
+  currency: "BRL",
+  installment_limit: 6,
+  access_months: 6,
+  bonus_months: 0,
+};
+
 const standardSemiannualPrice = {
   id: "20000000-0000-4000-8000-000000000004",
   product_code: "quick_diagnosis_pro",
@@ -82,6 +106,7 @@ describe("listActivePrices", () => {
 
   it.each([
     ["launch", launchMonthlyPrice, launchSemiannualPrice],
+    ["launch_price", launchPriceMonthlyPrice, launchPriceSemiannualPrice],
     ["standard", standardMonthlyPrice, standardSemiannualPrice],
   ] as const)(
     "normalizes the approved %s catalog and sorts monthly first",
@@ -153,6 +178,9 @@ describe("listActivePrices", () => {
     { ...launchMonthlyPrice, access_months: 1 },
     { ...launchMonthlyPrice, bonus_months: 0 },
     { ...launchMonthlyPrice, catalog_code: "standard" },
+    { ...launchPriceMonthlyPrice, access_months: 2 },
+    { ...launchPriceMonthlyPrice, bonus_months: 1 },
+    { ...launchPriceSemiannualPrice, amount_cents: 23940 },
   ])("rejects an invalid active catalog row", async (invalidPrice) => {
     catalogOnly.mockResolvedValue({
       data: [invalidPrice, launchSemiannualPrice],

@@ -298,6 +298,68 @@ describe("demo user and operations catalog", () => {
     );
   });
 
+  it("snapshots both launch_price demo purchase modes exactly", () => {
+    const client47 = catalog.clients.find((client) => client.ordinal === 47)!;
+    const client48 = catalog.clients.find((client) => client.ordinal === 48)!;
+    const client47Contract = catalog.contracts.find(
+      (contract) => contract.userId === client47.id,
+    );
+    const client48Contract = catalog.contracts.find(
+      (contract) => contract.userId === client48.id,
+    );
+
+    expect(client47Contract).toMatchObject({
+      priceId: "20000000-0000-4000-8000-000000000005",
+      catalogCode: "launch_price",
+      billingMode: "monthly",
+      paymentMethod: "credit_card",
+      chargeType: "recurring",
+      amountCents: 3990,
+      accessMonths: 1,
+      bonusMonths: 0,
+      asaasSubscriptionId: "sub_demo_launch_price_047",
+      renewalAdjustmentStatus: "completed",
+    });
+    expect(client48Contract).toMatchObject({
+      priceId: "20000000-0000-4000-8000-000000000006",
+      catalogCode: "launch_price",
+      billingMode: "semiannual",
+      paymentMethod: "pix",
+      chargeType: "detached",
+      amountCents: 17940,
+      accessMonths: 6,
+      bonusMonths: 0,
+      asaasSubscriptionId: null,
+      renewalAdjustmentStatus: "not_required",
+    });
+
+    const contractsById = new Map(
+      catalog.contracts.map((contract) => [contract.id, contract]),
+    );
+    for (const ordinal of [47, 48]) {
+      const client = catalog.clients.find(
+        (candidate) => candidate.ordinal === ordinal,
+      )!;
+      const payments = catalog.payments.filter(
+        (payment) =>
+          contractsById.get(payment.contractId)?.userId === client.id,
+      );
+      expect(payments).toHaveLength(1);
+      expect(payments[0]?.status).toBe("confirmed");
+    }
+
+    expect(
+      catalog.contracts.filter(
+        (contract) => contract.catalogCode === "standard",
+      ),
+    ).toHaveLength(81);
+    expect(
+      catalog.contracts.filter(
+        (contract) => contract.catalogCode === "launch_price",
+      ),
+    ).toHaveLength(2);
+  });
+
   it("derives permanent bonus grants from paid payment history", () => {
     const contractById = new Map(
       catalog.contracts.map((contract) => [contract.id, contract]),

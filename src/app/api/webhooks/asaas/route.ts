@@ -56,7 +56,8 @@ async function POST(request: Request) {
 
     return result === "processed" ||
       result === "duplicate" ||
-      result === "ignored"
+      result === "ignored" ||
+      result === "unresolved"
       ? json({ status: "received" }, 200)
       : json({ error: "retry_later" }, 503);
   } catch {

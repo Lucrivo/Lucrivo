@@ -12,6 +12,7 @@ const readyClaim = {
   contractId,
   subscriptionId: "sub_123",
   nextDueDate: "2026-12-20",
+  renewalAmountCents: 4990,
 };
 
 describe("adjustLaunchRenewal", () => {
@@ -34,6 +35,7 @@ describe("adjustLaunchRenewal", () => {
       id: "sub_123",
       cycle: "MONTHLY",
       nextDueDate: "2026-12-20",
+      value: 49.9,
     });
     rpc
       .mockResolvedValueOnce({ data: readyClaim, error: null })
@@ -75,6 +77,8 @@ describe("adjustLaunchRenewal", () => {
     { ...readyClaim, contractId: "not-a-uuid" },
     { ...readyClaim, subscriptionId: "" },
     { ...readyClaim, nextDueDate: "20/12/2026" },
+    { ...readyClaim, renewalAmountCents: 3990 },
+    { ...readyClaim, unexpected: true },
   ])("fails closed for a malformed claim %#", async (data) => {
     rpc.mockReset().mockResolvedValue({ data, error: null });
 
@@ -91,6 +95,7 @@ describe("adjustLaunchRenewal", () => {
     expect(updateSubscriptionRenewal).toHaveBeenCalledWith("sub_123", {
       cycle: "MONTHLY",
       nextDueDate: "2026-12-20",
+      value: 49.9,
     });
     expect(rpc).toHaveBeenLastCalledWith(
       "record_billing_renewal_adjustment_result",

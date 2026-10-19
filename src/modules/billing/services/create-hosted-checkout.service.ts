@@ -9,7 +9,10 @@ import {
 } from "@/infrastructure/payments/asaas/asaas.client";
 
 import { buildCheckoutRequest } from "../domain/build-checkout-request";
-import type { BillingCatalogCode } from "../domain/launch-offer";
+import {
+  isPromotionalCatalog,
+  type BillingCatalogCode,
+} from "../domain/launch-offer";
 import type { ActiveBillingPrice, BillingPaymentMethod } from "../types";
 import { listActivePrices } from "./list-active-prices.service";
 
@@ -320,7 +323,7 @@ async function createHostedCheckout({
 
     const newContractId = globalThis.crypto.randomUUID();
     const needsLaunchRenewalAdjustment =
-      price.catalogCode === "launch" &&
+      isPromotionalCatalog(price.catalogCode) &&
       price.billingMode === "monthly" &&
       paymentMethod === "credit_card";
     const { error: insertError } = await admin

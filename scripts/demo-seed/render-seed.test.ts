@@ -119,12 +119,16 @@ describe("renderDemoSeed", () => {
     expect(sql).not.toContain("47880");
   });
 
-  it("renders immutable standard and launch contract snapshots", () => {
+  it("renders immutable standard and promotional contract snapshots", () => {
     expect(sql).toContain("catalog_code");
     expect(sql).toContain("bonus_months");
     expect(sql).toContain("renewal_adjustment_status");
     expect(sql).toContain("'standard'::text");
     expect(sql).toContain("'launch'::text");
+    expect(sql).toContain("'launch_price'::text");
+    expect(sql).toContain("20000000-0000-4000-8000-000000000005");
+    expect(sql).toContain("20000000-0000-4000-8000-000000000006");
+    expect(sql).toContain("sub_demo_launch_price_047");
     expect(sql).toContain("4990");
     expect(sql).toContain("23940");
 
@@ -138,6 +142,23 @@ describe("renderDemoSeed", () => {
     );
     expect(catalog.contracts).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({
+          catalogCode: "launch_price",
+          billingMode: "monthly",
+          accessMonths: 1,
+          bonusMonths: 0,
+          asaasSubscriptionId: "sub_demo_launch_price_047",
+          renewalAdjustmentStatus: "completed",
+        }),
+        expect.objectContaining({
+          catalogCode: "launch_price",
+          billingMode: "semiannual",
+          paymentMethod: "pix",
+          accessMonths: 6,
+          bonusMonths: 0,
+          asaasSubscriptionId: null,
+          renewalAdjustmentStatus: "not_required",
+        }),
         expect.objectContaining({
           catalogCode: "launch",
           billingMode: "semiannual",

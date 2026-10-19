@@ -13,6 +13,7 @@
   width: min(100%, 1240px);
   margin-inline: auto;
   color: var(--plans-ink);
+  container-type: inline-size;
 }
 
 .grid {
@@ -455,7 +456,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-@media (max-width: 1080px) {
+@container (max-width: 1080px) {
   .grid {
     grid-template-columns: 1fr;
     width: min(100%, 680px);
@@ -493,7 +494,7 @@
   }
 }
 
-@media (max-width: 560px) {
+@container (max-width: 560px) {
   .grid {
     gap: 16px;
   }

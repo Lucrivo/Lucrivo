@@ -173,6 +173,16 @@ insert into public.billing_contracts (
     1, 'not_required', 'active',
     statement_timestamp() - interval '1 day',
     statement_timestamp() + interval '1 month'
+  ),
+  (
+    '94000000-0000-4000-8000-000000000004',
+    '93000000-0000-4000-8000-000000000001',
+    '20000000-0000-4000-8000-000000000005',
+    'bonus-owner-price-only',
+    'launch_price', 'monthly', 'pix', 'detached', 3990, 'BRL', null, 1,
+    0, 'not_required', 'active',
+    statement_timestamp() - interval '1 day',
+    statement_timestamp() + interval '1 month'
   );
 
 insert into public.bonus_access_grants (
@@ -197,6 +207,12 @@ insert into public.bonus_access_grants (
     '95000000-0000-4000-8000-000000000003',
     '93000000-0000-4000-8000-000000000002',
     '94000000-0000-4000-8000-000000000003',
+    statement_timestamp() - interval '1 day'
+  ),
+  (
+    '95000000-0000-4000-8000-000000000004',
+    '93000000-0000-4000-8000-000000000001',
+    '94000000-0000-4000-8000-000000000004',
     statement_timestamp() - interval '1 day'
   );
 
@@ -263,9 +279,10 @@ select results_eq(
   $$,
   $$ values
     ('94000000-0000-4000-8000-000000000001'::uuid, false),
-    ('94000000-0000-4000-8000-000000000002'::uuid, true)
+    ('94000000-0000-4000-8000-000000000002'::uuid, true),
+    ('94000000-0000-4000-8000-000000000004'::uuid, true)
   $$,
-  'an owner sees only their grants and remains entitled with one live row'
+  'an owner sees launch and launch_price library grants independent of bonus months'
 );
 select throws_ok(
   $$

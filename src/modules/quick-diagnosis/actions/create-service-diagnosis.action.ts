@@ -1,5 +1,7 @@
 "use server";
 
+import { refresh } from "next/cache";
+
 import {
   AuthRequiredError,
   LegalAcceptanceRequiredError,
@@ -33,11 +35,13 @@ async function createServiceDiagnosis(
     const calculation = calculateServiceReport(command);
     const snapshot = buildServiceReportSnapshot(command, calculation);
 
-    return await createServiceReport({
+    const result = await createServiceReport({
       supabase,
       command,
       snapshot,
     });
+    if (result.status === "success") refresh();
+    return result;
   } catch (error) {
     if (
       error instanceof AuthRequiredError ||

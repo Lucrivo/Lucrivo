@@ -158,6 +158,7 @@ describe("AsaasGateway", () => {
         id: "sub/123",
         cycle: "MONTHLY",
         nextDueDate: "2026-12-20",
+        value: 49.9,
         ignored: "field",
       }),
     );
@@ -166,11 +167,13 @@ describe("AsaasGateway", () => {
       gateway.updateSubscriptionRenewal("sub/123", {
         cycle: "MONTHLY",
         nextDueDate: "2026-12-20",
+        value: 49.9,
       }),
     ).resolves.toEqual({
       id: "sub/123",
       cycle: "MONTHLY",
       nextDueDate: "2026-12-20",
+      value: 49.9,
     });
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api-sandbox.asaas.com/v3/subscriptions/sub%2F123",
@@ -183,6 +186,7 @@ describe("AsaasGateway", () => {
         body: JSON.stringify({
           cycle: "MONTHLY",
           nextDueDate: "2026-12-20",
+          value: 49.9,
           updatePendingPayments: true,
         }),
       },
@@ -190,10 +194,40 @@ describe("AsaasGateway", () => {
   });
 
   it.each([
-    [{ id: "other", cycle: "MONTHLY", nextDueDate: "2026-12-20" }],
-    [{ id: "sub/123", cycle: "BIMONTHLY", nextDueDate: "2026-12-20" }],
-    [{ id: "sub/123", cycle: "MONTHLY", nextDueDate: "2027-01-20" }],
-    [{ id: "sub/123", cycle: "MONTHLY", nextDueDate: "20/12/2026" }],
+    [{ id: "other", cycle: "MONTHLY", nextDueDate: "2026-12-20", value: 49.9 }],
+    [
+      {
+        id: "sub/123",
+        cycle: "BIMONTHLY",
+        nextDueDate: "2026-12-20",
+        value: 49.9,
+      },
+    ],
+    [
+      {
+        id: "sub/123",
+        cycle: "MONTHLY",
+        nextDueDate: "2027-01-20",
+        value: 49.9,
+      },
+    ],
+    [
+      {
+        id: "sub/123",
+        cycle: "MONTHLY",
+        nextDueDate: "20/12/2026",
+        value: 49.9,
+      },
+    ],
+    [
+      {
+        id: "sub/123",
+        cycle: "MONTHLY",
+        nextDueDate: "2026-12-20",
+        value: 39.9,
+      },
+    ],
+    [{ id: "sub/123", cycle: "MONTHLY", nextDueDate: "2026-12-20" }],
   ])("rejects an inconsistent renewal response %#", async (response) => {
     fetchMock.mockResolvedValue(Response.json(response));
 
@@ -201,6 +235,7 @@ describe("AsaasGateway", () => {
       gateway.updateSubscriptionRenewal("sub/123", {
         cycle: "MONTHLY",
         nextDueDate: "2026-12-20",
+        value: 49.9,
       }),
     ).rejects.toMatchObject({ kind: "ambiguous", status: 200 });
   });
@@ -212,6 +247,7 @@ describe("AsaasGateway", () => {
       gateway.updateSubscriptionRenewal("sub/123", {
         cycle: "MONTHLY",
         nextDueDate: "2026-12-20",
+        value: 49.9,
       }),
     ).rejects.toMatchObject({ kind: "ambiguous", status: 200 });
   });
@@ -228,6 +264,7 @@ describe("AsaasGateway", () => {
       gateway.updateSubscriptionRenewal("sub/123", {
         cycle: "MONTHLY",
         nextDueDate: "2026-12-20",
+        value: 49.9,
       }),
     ).rejects.toMatchObject({ kind, status });
   });

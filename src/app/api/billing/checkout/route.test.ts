@@ -60,9 +60,11 @@ describe("POST /api/billing/checkout", () => {
     vi.clearAllMocks();
     requireUser.mockResolvedValue({ userId: "user-123", supabase: {} });
     readLaunchOfferEnvironment.mockReturnValue({
-      phase: "active",
+      phase: "bonus_active",
       catalogCode: "launch",
       startsAt: "2026-10-20T12:00:00.000Z",
+      bonusEndsAt: "2026-11-04T12:00:00.000Z",
+      promotionEndsAt: "2026-11-19T12:00:00.000Z",
       endsAt: "2026-11-04T12:00:00.000Z",
     });
     readBillingEnvironment.mockReturnValue({
@@ -174,13 +176,31 @@ describe("POST /api/billing/checkout", () => {
     });
   });
 
+  it("uses launch_price throughout the second campaign window", async () => {
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "price_active",
+      catalogCode: "launch_price",
+      startsAt: "2026-10-20T12:00:00.000Z",
+      bonusEndsAt: "2026-11-04T12:00:00.000Z",
+      promotionEndsAt: "2026-11-19T12:00:00.000Z",
+      endsAt: "2026-11-19T12:00:00.000Z",
+    });
+
+    await post({ priceId, paymentMethod: "credit_card" });
+
+    expect(createHostedCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({ catalogCode: "launch_price" }),
+    );
+  });
+
   it("fails closed and logs only the event name for invalid launch configuration", async () => {
     const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
     readLaunchOfferEnvironment.mockReturnValue({
       phase: "invalid",
       catalogCode: null,
       startsAt: null,
-      endsAt: null,
+      bonusEndsAt: null,
+      promotionEndsAt: null,
     });
 
     const { response, json } = await post();

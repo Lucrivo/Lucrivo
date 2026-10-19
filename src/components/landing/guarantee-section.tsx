@@ -17,7 +17,9 @@ function GuaranteeSection({
     {
       title: "Assine",
       description: offer
-        ? `Pague ${offer.monthlyPriceLabel} com cartão ou Pix. O acesso libera na hora.`
+        ? offer.monthlyPriceQualifier
+          ? `Pague ${offer.monthlyPriceLabel} no primeiro pagamento com cartão ou Pix. No cartão, a próxima cobrança é de R$ 49,90.`
+          : `Pague ${offer.monthlyPriceLabel} por mês com cartão ou Pix. O acesso libera na hora.`
         : "Escolha a condição disponível e pague com cartão ou Pix. O acesso libera após a confirmação.",
     },
     {
