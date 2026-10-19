@@ -7,6 +7,7 @@ const {
   buildProductReportSnapshot,
   calculateProductReport,
   createProductReport,
+  refresh,
   requireUser,
   safeParse,
 } = vi.hoisted(() => ({
@@ -19,9 +20,12 @@ const {
   buildProductReportSnapshot: vi.fn(),
   calculateProductReport: vi.fn(),
   createProductReport: vi.fn(),
+  refresh: vi.fn(),
   requireUser: vi.fn(),
   safeParse: vi.fn(),
 }));
+
+vi.mock("next/cache", () => ({ refresh }));
 
 vi.mock("@/modules/auth/services/require-user", () => ({
   AuthRequiredError,
@@ -183,6 +187,7 @@ describe("createProductDiagnosis", () => {
       command,
       snapshot,
     });
+    expect(refresh).toHaveBeenCalledOnce();
 
     const order = [
       safeParse,
@@ -204,6 +209,7 @@ describe("createProductDiagnosis", () => {
 
     expect(result).toEqual({ status: "error", error: "create_failed" });
     expectNoTechnicalDetails(result);
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it("preserves the safe limit_reached result", async () => {
@@ -216,6 +222,7 @@ describe("createProductDiagnosis", () => {
 
     expect(result).toEqual({ status: "error", error: "limit_reached" });
     expectNoTechnicalDetails(result);
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it.each(["authentication", "calculation", "snapshot", "persistence"])(

@@ -9,6 +9,7 @@ const {
   calculateServiceReport,
   composeServiceDiagnosisCommand,
   createServiceReport,
+  refresh,
   requireUser,
   safeParse,
 } = vi.hoisted(() => ({
@@ -17,9 +18,12 @@ const {
   calculateServiceReport: vi.fn(),
   composeServiceDiagnosisCommand: vi.fn(),
   createServiceReport: vi.fn(),
+  refresh: vi.fn(),
   requireUser: vi.fn(),
   safeParse: vi.fn(),
 }));
+
+vi.mock("next/cache", () => ({ refresh }));
 
 vi.mock("@/modules/auth/services/require-user", () => ({
   AuthRequiredError,
@@ -158,6 +162,7 @@ describe("createServiceDiagnosis", () => {
       command,
       snapshot,
     });
+    expect(refresh).toHaveBeenCalledOnce();
 
     const order = [
       safeParse,
@@ -180,6 +185,7 @@ describe("createServiceDiagnosis", () => {
       status: "error",
       error: "limit_reached",
     });
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it.each([

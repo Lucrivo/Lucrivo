@@ -1,12 +1,15 @@
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { readLaunchOfferEnvironment } from "@/config/launch-offer-environment";
 import {
   AccountUnavailableError,
   AuthRequiredError,
   LegalAcceptanceRequiredError,
   requireClientAccess,
 } from "@/modules/auth/services/require-user";
+import type { BillingBannerView } from "@/modules/billing/components/billing-banner";
+import { isLaunchOfferActive } from "@/modules/billing/domain/launch-offer";
 import { getBillingOverview } from "@/modules/billing/services/get-billing-overview.service";
 
 export default async function PrivateLayout({
@@ -50,17 +53,27 @@ export default async function PrivateLayout({
     if (!hasCompletedOnboarding) redirect("/onboarding");
   }
 
-  let showFreeDiagnosisBanner = false;
+  let billingBanner: BillingBannerView | null = null;
 
   if (!isAdmin) {
     try {
       const billing = await getBillingOverview({ supabase, userId });
-      showFreeDiagnosisBanner =
-        billing.status === "success" &&
-        billing.overview.tier === "free" &&
-        !billing.overview.freeQuickDiagnosisUsed;
+      if (billing.status === "success" && billing.overview.tier === "free") {
+        if (!billing.overview.freeQuickDiagnosisUsed) {
+          billingBanner = { kind: "free_diagnosis" };
+        } else {
+          const launchOffer = readLaunchOfferEnvironment();
+          if (isLaunchOfferActive(launchOffer)) {
+            billingBanner = {
+              kind: "launch_offer",
+              phase: launchOffer.phase,
+              endsAt: launchOffer.endsAt,
+            };
+          }
+        }
+      }
     } catch {
-      showFreeDiagnosisBanner = false;
+      billingBanner = null;
     }
   }
 
@@ -71,7 +84,7 @@ export default async function PrivateLayout({
       isAdminUser={isAdmin}
       contextTitle="Área financeira"
       contextDescription="Acompanhe e organize suas decisões em um só lugar."
-      showFreeDiagnosisBanner={showFreeDiagnosisBanner}
+      billingBanner={billingBanner}
     >
       {children}
     </AppShell>
