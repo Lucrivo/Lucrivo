@@ -100,4 +100,4 @@ function HeroVideoDialog({ videoUrl }: { videoUrl?: string | null }) {
   );
 }
 
-export { HeroVideoDialog, getYouTubeVideoId };
+export { HeroVideoDialog };
