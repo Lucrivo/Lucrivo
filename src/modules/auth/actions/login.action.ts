@@ -1,7 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
-
 import { createClient } from "@/infrastructure/database/supabase/clients/server.client";
 import {
   isAuthFeatureEnabled,
@@ -9,15 +7,18 @@ import {
 } from "@/config/auth-environment";
 import { loginSchema } from "@/schemas/auth/login.schema";
 
-type LoginActionState = {
-  status: "error";
-  error:
-    | "invalid_fields"
-    | "captcha_required"
-    | "invalid_credentials"
-    | "rate_limit"
-    | "login_failed";
-} | null;
+type LoginActionState =
+  | { status: "success"; destination: "/auth/continue" }
+  | {
+      status: "error";
+      error:
+        | "invalid_fields"
+        | "captcha_required"
+        | "invalid_credentials"
+        | "rate_limit"
+        | "login_failed";
+    }
+  | null;
 
 async function login(
   _previousState: LoginActionState,
@@ -47,11 +48,11 @@ async function login(
         return { status: "error", error: "rate_limit" };
       return { status: "error", error: "invalid_credentials" };
     }
+
+    return { status: "success", destination: "/auth/continue" };
   } catch {
     return { status: "error", error: "login_failed" };
   }
-
-  redirect("/auth/continue");
 }
 
 export { login, type LoginActionState };

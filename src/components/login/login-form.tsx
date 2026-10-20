@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import type { LoginActionState } from "@/modules/auth/actions/login.action";
 import { getTurnstileSiteKey } from "@/config/auth-environment";
@@ -15,6 +15,8 @@ import {
 } from "@/components/shared/auth/auth-form";
 import { TurnstileField } from "@/components/shared/auth/turnstile-field";
 import { usePersistedAuthEmail } from "@/components/shared/auth/use-persisted-auth-email";
+
+import { completeLoginNavigation } from "./complete-login-navigation";
 
 const errorMessages = {
   invalid_fields: "Preencha o e-mail e a senha corretamente.",
@@ -45,6 +47,12 @@ function LoginForm({ action, signupEnabled, notice }: LoginFormProps) {
   const [email, setEmail] = usePersistedAuthEmail();
   const [password, setPassword] = useState("");
   const hasError = state?.status === "error";
+
+  useEffect(() => {
+    if (state?.status === "success") {
+      completeLoginNavigation(state.destination);
+    }
+  }, [state]);
 
   return (
     <AuthFormShell title="Bem-vindo de volta" subtitle="Entre na sua conta">
