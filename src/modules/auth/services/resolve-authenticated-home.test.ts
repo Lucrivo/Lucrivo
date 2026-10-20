@@ -30,6 +30,30 @@ describe("resolveAuthenticatedHome", () => {
     }));
   });
 
+  it.each([
+    ["recovery", "/update-password"],
+    ["invite", "/update-password?flow=invite"],
+  ] as const)(
+    "keeps a %s session on the password page",
+    async (method, destination) => {
+      getClaims.mockResolvedValue({
+        data: {
+          claims: {
+            sub: "user-123",
+            amr: [
+              { method, timestamp: 1 },
+              { method: "totp", timestamp: 2 },
+            ],
+          },
+        },
+        error: null,
+      });
+
+      await expect(resolveAuthenticatedHome()).resolves.toBe(destination);
+      expect(rpc).not.toHaveBeenCalled();
+    },
+  );
+
   it("checks eligibility then resolves an administrator without onboarding", async () => {
     rpc.mockImplementation(async (name: string) => ({
       data:

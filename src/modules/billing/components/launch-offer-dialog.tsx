@@ -9,6 +9,7 @@ import {
   BookOpenIcon,
   CheckIcon,
   GiftIcon,
+  ShieldCheckIcon,
   Table2Icon,
 } from "lucide-react";
 
@@ -215,6 +216,18 @@ function LaunchOfferDialog({
         </div>
 
         <div className="sticky bottom-0 z-10 grid gap-2 bg-[oklch(0.24_0.11_259)] px-5 pt-3 pb-5 sm:px-8 sm:pb-7">
+          <p className="flex items-center justify-center gap-2 text-center text-sm leading-5 text-blue-100">
+            <ShieldCheckIcon
+              aria-hidden="true"
+              className="size-4 shrink-0 text-[oklch(0.84_0.12_151)]"
+            />
+            <span>
+              <strong className="font-bold text-white">
+                7 dias de garantia.
+              </strong>{" "}
+              Não gostou? Devolvemos todo o valor.
+            </span>
+          </p>
           <Link
             href="/billing"
             className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-base font-bold text-[oklch(0.3_0.16_259)] shadow-sm transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[oklch(0.24_0.11_259)] focus-visible:outline-none active:translate-y-0 motion-reduce:transition-none"

@@ -4,7 +4,31 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { UpdatePasswordActionState } from "@/modules/auth/actions/update-password.action";
 
+const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh }),
+}));
+
 import { UpdatePasswordForm } from "./update-password-form";
+
+function renderForm(
+  action: (
+    previousState: UpdatePasswordActionState,
+    formData: FormData,
+  ) => Promise<UpdatePasswordActionState>,
+  flow?: "recovery" | "invite",
+) {
+  const abandonAction = vi.fn();
+  render(
+    <UpdatePasswordForm
+      action={action}
+      abandonAction={abandonAction}
+      flow={flow}
+    />,
+  );
+  return { abandonAction };
+}
 
 async function fillPasswordFields(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("Nova senha"), "nova-senha1");
@@ -15,7 +39,7 @@ describe("UpdatePasswordForm", () => {
   it("exposes the password policy and new-password autocomplete", () => {
     const action = vi.fn(async (): Promise<UpdatePasswordActionState> => null);
 
-    render(<UpdatePasswordForm action={action} />);
+    renderForm(action);
 
     const password = screen.getByLabelText("Nova senha");
     const confirmation = screen.getByLabelText("Confirmação da senha");
@@ -34,7 +58,7 @@ describe("UpdatePasswordForm", () => {
     const user = userEvent.setup();
     const action = vi.fn(async (): Promise<UpdatePasswordActionState> => null);
 
-    render(<UpdatePasswordForm action={action} />);
+    renderForm(action);
 
     const password = screen.getByLabelText("Nova senha");
     const confirmation = screen.getByLabelText("Confirmação da senha");
@@ -63,6 +87,10 @@ describe("UpdatePasswordForm", () => {
     ],
     ["password_mismatch", "As senhas não coincidem"],
     ["update_failed", "Não foi possível atualizar sua senha"],
+    [
+      "mfa_required",
+      "Confirme o código do autenticador antes de salvar a nova senha",
+    ],
   ] as const)("shows safe feedback for %s", async (error, message) => {
     const user = userEvent.setup();
     const action = vi.fn(async (): Promise<UpdatePasswordActionState> => ({
@@ -70,7 +98,7 @@ describe("UpdatePasswordForm", () => {
       error,
     }));
 
-    render(<UpdatePasswordForm action={action} />);
+    renderForm(action);
     await fillPasswordFields(user);
     await user.click(screen.getByRole("button", { name: "Salvar nova senha" }));
 
@@ -82,28 +110,53 @@ describe("UpdatePasswordForm", () => {
     );
   });
 
-  it("links to requesting another recovery email", () => {
+  it("signs out before requesting another recovery email", () => {
     const action = vi.fn(async (): Promise<UpdatePasswordActionState> => null);
 
-    render(<UpdatePasswordForm action={action} />);
+    const { abandonAction } = renderForm(action);
 
     expect(
-      screen.getByRole("link", { name: "Solicitar outro link" }),
-    ).toHaveAttribute("href", "/forgot-password");
+      screen.queryByRole("link", { name: "Solicitar outro link" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Sair e solicitar outro link" }),
+    ).toBeVisible();
+    expect(abandonAction).not.toHaveBeenCalled();
+  });
+
+  it("refreshes after the authenticator becomes required", async () => {
+    const user = userEvent.setup();
+    const action = vi.fn(async (): Promise<UpdatePasswordActionState> => ({
+      status: "error",
+      error: "mfa_required",
+    }));
+
+    renderForm(action);
+    await fillPasswordFields(user);
+    await user.click(screen.getByRole("button", { name: "Salvar nova senha" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Confirme o código do autenticador",
+    );
+    expect(refresh).toHaveBeenCalled();
   });
 
   it("uses invitation copy and submits the closed flow value", () => {
     const action = vi.fn(async (): Promise<UpdatePasswordActionState> => null);
 
-    render(<UpdatePasswordForm action={action} flow="invite" />);
+    renderForm(action, "invite");
 
     expect(
       screen.getByRole("heading", { name: "Crie sua senha" }),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Criar senha" })).toBeVisible();
-    expect(screen.getByDisplayValue("invite")).toHaveAttribute("name", "flow");
+    const flowFields = screen.getAllByDisplayValue("invite");
+    expect(flowFields).toHaveLength(2);
+    for (const field of flowFields) {
+      expect(field).toHaveAttribute("name", "flow");
+    }
     expect(
-      screen.getByRole("link", { name: "Voltar ao login" }),
-    ).toHaveAttribute("href", "/login");
+      screen.getByRole("button", { name: "Sair e voltar ao login" }),
+    ).toBeVisible();
   });
 });

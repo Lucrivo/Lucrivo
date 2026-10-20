@@ -4,7 +4,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createClient } from "@/infrastructure/database/supabase/clients/server.client";
 import type { Database } from "@/infrastructure/database/supabase/database.types";
-import { AuthRequiredError } from "@/modules/auth/services/require-user";
+import { passwordSetupFlow } from "@/modules/auth/services/password-setup-session";
+import {
+  AuthRequiredError,
+  PasswordSetupRequiredError,
+} from "@/modules/auth/services/require-user";
 
 class AdminRequiredError extends Error {
   constructor() {
@@ -42,6 +46,9 @@ async function requireAdminIdentity(): Promise<AdminIdentity> {
   ) {
     throw new AuthRequiredError();
   }
+
+  const setupFlow = passwordSetupFlow(claims);
+  if (setupFlow) throw new PasswordSetupRequiredError(setupFlow);
 
   const { data: isAdmin, error: adminError } = await supabase.rpc(
     "current_user_is_admin",

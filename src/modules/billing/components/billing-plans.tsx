@@ -6,6 +6,7 @@ import {
   LockKeyholeIcon,
   QrCodeIcon,
   ReceiptTextIcon,
+  ShieldCheckIcon,
 } from "lucide-react";
 
 import type { ActiveBillingPrice, BillingOverview } from "../types";
@@ -93,6 +94,15 @@ function TrustRail() {
         <span>
           <strong>Acesso liberado após confirmação</strong>
           <small>Comece a usar em instantes</small>
+        </span>
+      </div>
+
+      <div>
+        <ShieldCheckIcon aria-hidden="true" />
+
+        <span>
+          <strong>Garantia de 7 dias</strong>
+          <small>Devolvemos todo o valor</small>
         </span>
       </div>
     </div>
@@ -342,7 +352,9 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
                 <p className={styles.planPrice}>
                   <span>{formatBRL(monthly.amountCents)}</span>
                   {isPromotional ? (
-                    <small>no primeiro pagamento</small>
+                    <small className={styles.firstPaymentLabel}>
+                      no primeiro pagamento
+                    </small>
                   ) : (
                     "/mês"
                   )}

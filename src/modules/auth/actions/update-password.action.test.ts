@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { redirect, updatePassword } = vi.hoisted(() => ({
+const { createClient, redirect, signOut, updatePassword } = vi.hoisted(() => ({
+  createClient: vi.fn(),
   redirect: vi.fn(),
+  signOut: vi.fn(),
   updatePassword: vi.fn(),
 }));
 
@@ -9,8 +11,14 @@ vi.mock("next/navigation", () => ({ redirect }));
 vi.mock("@/modules/auth/services/update-password.service", () => ({
   updatePassword,
 }));
+vi.mock("@/infrastructure/database/supabase/clients/server.client", () => ({
+  createClient,
+}));
 
-import { submitPasswordUpdate } from "./update-password.action";
+import {
+  abandonPasswordSetup,
+  submitPasswordUpdate,
+} from "./update-password.action";
 
 function passwordFormData(
   password: string,
@@ -28,6 +36,8 @@ describe("submitPasswordUpdate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     updatePassword.mockResolvedValue({ status: "updated" });
+    createClient.mockResolvedValue({ auth: { signOut } });
+    signOut.mockResolvedValue({ error: null });
   });
 
   it("rejects a policy-invalid password without calling the service", async () => {
@@ -65,6 +75,18 @@ describe("submitPasswordUpdate", () => {
     expect(redirect).toHaveBeenCalledWith(
       "/forgot-password?error=invalid_or_expired_link",
     );
+  });
+
+  it("keeps the page in place when the authenticator is still required", async () => {
+    updatePassword.mockResolvedValue({ status: "mfa_required" });
+
+    const result = await submitPasswordUpdate(
+      null,
+      passwordFormData("nova-senha1"),
+    );
+
+    expect(redirect).not.toHaveBeenCalled();
+    expect(result).toEqual({ status: "error", error: "mfa_required" });
   });
 
   it("returns a form error when the password update fails", async () => {
@@ -135,6 +157,31 @@ describe("submitPasswordUpdate", () => {
 
     expect(redirect).toHaveBeenCalledWith(
       "/login?status=invite_accepted&warning=sessions_not_revoked",
+    );
+  });
+
+  it.each([
+    ["recovery", "/forgot-password"],
+    ["invite", "/login"],
+  ] as const)(
+    "signs out locally before leaving a %s attempt",
+    async (flow, destination) => {
+      await abandonPasswordSetup(
+        passwordFormData("nova-senha1", "nova-senha1", flow),
+      );
+
+      expect(signOut).toHaveBeenCalledWith({ scope: "local" });
+      expect(redirect).toHaveBeenCalledWith(destination);
+    },
+  );
+
+  it("stays on the password page when leaving the attempt fails", async () => {
+    signOut.mockResolvedValue({ error: new Error("sign out failed") });
+
+    await abandonPasswordSetup(passwordFormData("nova-senha1"));
+
+    expect(redirect).toHaveBeenCalledWith(
+      "/update-password?error=sign_out_failed",
     );
   });
 

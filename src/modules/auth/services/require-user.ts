@@ -5,11 +5,25 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/infrastructure/database/supabase/database.types";
 import { createClient } from "@/infrastructure/database/supabase/clients/server.client";
 import { LEGAL_COPY_VERSION } from "@/modules/legal/legal-copy";
+import {
+  passwordSetupFlow,
+  type PasswordSetupFlow,
+} from "@/modules/auth/services/password-setup-session";
 
 class AuthRequiredError extends Error {
   constructor() {
     super("Authentication required");
     this.name = "AuthRequiredError";
+  }
+}
+
+class PasswordSetupRequiredError extends AuthRequiredError {
+  readonly flow: PasswordSetupFlow;
+
+  constructor(flow: PasswordSetupFlow) {
+    super();
+    this.name = "PasswordSetupRequiredError";
+    this.flow = flow;
   }
 }
 
@@ -38,6 +52,9 @@ async function requireUser(): Promise<{
   if (error || typeof subject !== "string" || subject.length === 0) {
     throw new AuthRequiredError();
   }
+
+  const setupFlow = passwordSetupFlow(data?.claims);
+  if (setupFlow) throw new PasswordSetupRequiredError(setupFlow);
 
   try {
     const { data: eligible, error: eligibilityError } = await supabase.rpc(
@@ -90,6 +107,7 @@ export {
   AccountUnavailableError,
   AuthRequiredError,
   LegalAcceptanceRequiredError,
+  PasswordSetupRequiredError,
   requireClientAccess,
   requireUser,
 };

@@ -14,6 +14,7 @@ vi.mock("@/infrastructure/database/supabase/clients/server.client", () => ({
 import {
   AccountUnavailableError,
   AuthRequiredError,
+  PasswordSetupRequiredError,
   requireUser,
 } from "./require-user";
 
@@ -55,6 +56,23 @@ describe("requireUser", () => {
       name: "AuthRequiredError",
       message: "Authentication required",
     });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("rejects a password setup session before account checks", async () => {
+    getClaims.mockResolvedValue({
+      data: {
+        claims: {
+          sub: "user-123",
+          amr: [{ method: "recovery", timestamp: 1 }],
+        },
+      },
+      error: null,
+    });
+
+    const rejection = expect(requireUser()).rejects;
+    await rejection.toBeInstanceOf(PasswordSetupRequiredError);
+    await rejection.toBeInstanceOf(AuthRequiredError);
     expect(rpc).not.toHaveBeenCalled();
   });
 

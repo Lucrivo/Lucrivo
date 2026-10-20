@@ -6,6 +6,7 @@ type UpdatePasswordServiceResult =
   | { status: "updated" }
   | { status: "invalid_session" }
   | { status: "weak_password" }
+  | { status: "mfa_required" }
   | { status: "update_failed" }
   | { status: "updated_revocation_failed" };
 
@@ -46,6 +47,9 @@ async function updatePassword(
     const { error: updateError } = await supabase.auth.updateUser({ password });
     if (updateError?.code === "weak_password") {
       return { status: "weak_password" };
+    }
+    if (updateError?.code === "insufficient_aal") {
+      return { status: "mfa_required" };
     }
     if (updateError) return { status: "update_failed" };
 
