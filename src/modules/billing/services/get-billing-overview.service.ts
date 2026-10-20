@@ -174,7 +174,7 @@ async function getBillingOverview({
     const instant = now().getTime();
     if (!Number.isFinite(instant)) return { status: "read_failed" };
 
-    const [contractsResult, freeReportResult, courtesyResult] =
+    const [contractsResult, freeReportResult, courtesyResult, adminResult] =
       await Promise.all([
         supabase
           .from("billing_contracts")
@@ -190,12 +190,15 @@ async function getBillingOverview({
           .limit(1)
           .maybeSingle(),
         supabase.rpc("current_courtesy_access_expires_at"),
+        supabase.rpc("current_user_is_admin"),
       ]);
 
     if (
       contractsResult.error ||
       freeReportResult.error ||
-      courtesyResult.error
+      courtesyResult.error ||
+      adminResult.error ||
+      typeof adminResult.data !== "boolean"
     ) {
       return { status: "read_failed" };
     }
@@ -238,7 +241,8 @@ async function getBillingOverview({
     const courtesyInstant = validDate(courtesyExpiresAt);
     const hasCourtesyAccess =
       courtesyInstant !== null && courtesyInstant > instant;
-    const hasReportAccess = hasPaidAccess || hasCourtesyAccess;
+    const hasReportAccess =
+      hasPaidAccess || hasCourtesyAccess || adminResult.data;
 
     return {
       status: "success",

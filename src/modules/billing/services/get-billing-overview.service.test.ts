@@ -6,6 +6,31 @@ import { getBillingOverview } from "./get-billing-overview.service";
 
 const now = () => new Date("2026-09-15T12:00:00.000Z");
 
+function mockAccessRpcs(
+  rpc: ReturnType<typeof vi.fn>,
+  {
+    courtesy = null,
+    isAdmin = false,
+    courtesyError = null,
+    adminError = null,
+  }: {
+    courtesy?: string | null;
+    isAdmin?: boolean;
+    courtesyError?: { code: string; message: string } | null;
+    adminError?: { code: string; message: string } | null;
+  } = {},
+) {
+  rpc.mockImplementation(async (name: string) => {
+    if (name === "current_courtesy_access_expires_at") {
+      return { data: courtesy, error: courtesyError };
+    }
+    if (name === "current_user_is_admin") {
+      return { data: isAdmin, error: adminError };
+    }
+    throw new Error(`unexpected rpc ${name}`);
+  });
+}
+
 describe("getBillingOverview", () => {
   const contractSelect = vi.fn();
   const contractByUser = vi.fn();
@@ -48,7 +73,7 @@ describe("getBillingOverview", () => {
     refundSelect.mockReturnValue({ eq: refundByContract });
     refundByContract.mockReturnValue({ maybeSingle: refundMaybeSingle });
     refundMaybeSingle.mockResolvedValue({ data: null, error: null });
-    rpc.mockResolvedValue({ data: null, error: null });
+    mockAccessRpcs(rpc);
   });
 
   function get() {
@@ -86,6 +111,7 @@ describe("getBillingOverview", () => {
     expect(diagnosisMode).toHaveBeenCalledWith("analysis_mode", "quick");
     expect(diagnosisLimit).toHaveBeenCalledWith(1);
     expect(rpc).toHaveBeenCalledWith("current_courtesy_access_expires_at");
+    expect(rpc).toHaveBeenCalledWith("current_user_is_admin");
   });
 
   it("returns free used after the free report is consumed", async () => {
@@ -203,9 +229,24 @@ describe("getBillingOverview", () => {
     diagnosisMaybeSingle.mockRejectedValueOnce(new Error("private report"));
     await expect(get()).resolves.toEqual({ status: "read_failed" });
 
-    rpc.mockResolvedValueOnce({
-      data: null,
-      error: { code: "XX001", message: "private courtesy detail" },
+    mockAccessRpcs(rpc, {
+      courtesyError: { code: "XX001", message: "private courtesy detail" },
+    });
+    await expect(get()).resolves.toEqual({ status: "read_failed" });
+
+    mockAccessRpcs(rpc, {
+      adminError: { code: "XX001", message: "private admin detail" },
+    });
+    await expect(get()).resolves.toEqual({ status: "read_failed" });
+
+    rpc.mockImplementation(async (name: string) => {
+      if (name === "current_courtesy_access_expires_at") {
+        return { data: null, error: null };
+      }
+      if (name === "current_user_is_admin") {
+        return { data: "true", error: null };
+      }
+      throw new Error(`unexpected rpc ${name}`);
     });
     await expect(get()).resolves.toEqual({ status: "read_failed" });
   });
@@ -215,10 +256,7 @@ describe("getBillingOverview", () => {
       data: { is_free_report: true },
       error: null,
     });
-    rpc.mockResolvedValue({
-      data: "2026-09-20T12:00:00.000Z",
-      error: null,
-    });
+    mockAccessRpcs(rpc, { courtesy: "2026-09-20T12:00:00.000Z" });
 
     await expect(get()).resolves.toMatchObject({
       status: "success",
@@ -230,6 +268,55 @@ describe("getBillingOverview", () => {
         courtesyExpiresAt: "2026-09-20T12:00:00.000Z",
         contract: null,
         refund: null,
+      },
+    });
+  });
+
+  it("lets the administrator create reports without becoming a paid subscriber", async () => {
+    diagnosisMaybeSingle.mockResolvedValue({
+      data: { is_free_report: true },
+      error: null,
+    });
+    mockAccessRpcs(rpc, { isAdmin: true });
+
+    await expect(get()).resolves.toEqual({
+      status: "success",
+      overview: {
+        tier: "free",
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: true,
+        freeQuickDiagnosisUsed: true,
+        courtesyExpiresAt: null,
+        contract: null,
+        refund: null,
+      },
+    });
+  });
+
+  it("keeps a paying administrator on the paid tier", async () => {
+    mockAccessRpcs(rpc, { isAdmin: true });
+    contractOrder.mockResolvedValue({
+      data: [
+        {
+          id: "contract-paid",
+          billing_mode: "semiannual",
+          payment_method: "credit_card",
+          status: "active",
+          access_starts_at: "2026-09-01T00:00:00.000Z",
+          access_ends_at: "2027-03-01T00:00:00.000Z",
+          cancel_at_period_end: false,
+          created_at: "2026-09-01T00:00:00.000Z",
+        },
+      ],
+      error: null,
+    });
+
+    await expect(get()).resolves.toMatchObject({
+      status: "success",
+      overview: {
+        tier: "paid",
+        canCreateQuickDiagnosis: true,
+        canCreateDetailedDiagnosis: true,
       },
     });
   });

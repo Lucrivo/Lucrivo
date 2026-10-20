@@ -342,7 +342,7 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
                 <p className={styles.planPrice}>
                   <span>{formatBRL(monthly.amountCents)}</span>
                   {isPromotional ? (
-                    <small>no primeiro pagamento</small>
+                    <small className={styles.firstPaymentLabel}>no primeiro pagamento</small>
                   ) : (
                     "/mês"
                   )}

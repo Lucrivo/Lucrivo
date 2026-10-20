@@ -52,11 +52,9 @@
 .featuredCard {
   z-index: 1;
   border-color: oklch(0.65 0.2 255);
-  background: linear-gradient(
-    150deg,
-    oklch(0.985 0.014 253),
-    oklch(0.94 0.045 255)
-  );
+  background: linear-gradient(150deg,
+      oklch(0.985 0.014 253),
+      oklch(0.94 0.045 255));
   box-shadow: 0 24px 56px -34px oklch(0.48 0.23 260 / 0.5);
 }
 
@@ -138,6 +136,10 @@
   white-space: nowrap;
 }
 
+.firstPaymentLabel {
+  letter-spacing: normal;
+}
+
 .planDescription {
   max-width: 42ch;
   margin: 14px 0 0;
@@ -207,7 +209,7 @@
   margin-top: auto;
 }
 
-.planActions > div {
+.planActions>div {
   display: grid;
 }
 
@@ -354,7 +356,7 @@
   color: var(--plans-ink);
 }
 
-.trustRail > div {
+.trustRail>div {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -363,11 +365,11 @@
   padding: 4px 20px;
 }
 
-.trustRail > div + div {
+.trustRail>div+div {
   border-left: 1px solid var(--plans-line);
 }
 
-.trustRail > div > svg {
+.trustRail>div>svg {
   width: 18px;
   height: 18px;
   flex: 0 0 auto;
@@ -483,12 +485,12 @@
     margin-top: 24px;
   }
 
-  .trustRail > div {
+  .trustRail>div {
     justify-content: flex-start;
     padding: 14px 4px;
   }
 
-  .trustRail > div + div {
+  .trustRail>div+div {
     border-top: 1px solid var(--plans-line);
     border-left: 0;
   }
@@ -516,12 +518,13 @@
     margin-bottom: 24px;
   }
 
-  .trustRail > div {
+  .trustRail>div {
     padding-inline: 2px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .card,
   .primaryAction,
   .darkAction,

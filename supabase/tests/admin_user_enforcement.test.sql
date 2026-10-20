@@ -13,7 +13,7 @@ select has_function(
   'private',
   'has_report_entitlement_for_user',
   array['uuid', 'timestamp with time zone'],
-  'report entitlement combines verified payment and courtesy'
+  'report entitlement combines payment, administrator identity, and courtesy'
 );
 select has_function(
   'public',
@@ -281,6 +281,200 @@ select is(
   'soft-deleted account cannot read its courtesy expiry'
 );
 reset role;
+
+select ok(
+  not has_function_privilege(
+    'anon',
+    'private.has_report_entitlement_for_user(uuid,timestamptz)',
+    'execute'
+  ),
+  'anonymous callers cannot evaluate report entitlement'
+);
+select ok(
+  has_function_privilege(
+    'authenticated',
+    'private.has_report_entitlement_for_user(uuid,timestamptz)',
+    'execute'
+  ),
+  'authenticated callers can evaluate their own report entitlement'
+);
+select ok(
+  pg_catalog.pg_get_functiondef(
+    'private.has_report_entitlement_for_user(uuid,timestamptz)'::regprocedure
+  ) like '%private.is_admin()%',
+  'report entitlement recognizes the administrator identity'
+);
+
+delete from private.app_administrator;
+
+insert into auth.users (id, aud, role, email, created_at)
+values
+  (
+    '96200000-0000-4000-8000-000000000001',
+    'authenticated',
+    'authenticated',
+    'admin-entitlement@example.com',
+    statement_timestamp()
+  ),
+  (
+    '96200000-0000-4000-8000-000000000002',
+    'authenticated',
+    'authenticated',
+    'client-entitlement@example.com',
+    statement_timestamp()
+  ),
+  (
+    '96200000-0000-4000-8000-000000000003',
+    'authenticated',
+    'authenticated',
+    'next-admin-entitlement@example.com',
+    statement_timestamp()
+  );
+
+insert into private.app_administrator (singleton, user_id)
+values (1, '96200000-0000-4000-8000-000000000001');
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '96200000-0000-4000-8000-000000000001',
+  true
+);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"96200000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal1"}',
+  true
+);
+select ok(
+  private.has_report_entitlement_for_user(
+    '96200000-0000-4000-8000-000000000001',
+    statement_timestamp()
+  ),
+  'administrator can create reports without a contract or courtesy'
+);
+select throws_ok(
+  $$
+    select private.has_report_entitlement_for_user(
+      '96200000-0000-4000-8000-000000000002',
+      statement_timestamp()
+    )
+  $$,
+  '42501',
+  'cannot inspect another user entitlement',
+  'administrator cannot inspect another user entitlement'
+);
+reset role;
+
+select ok(
+  not private.has_paid_access_for_user(
+    '96200000-0000-4000-8000-000000000001',
+    statement_timestamp()
+  ),
+  'administrator report access does not masquerade as a paid contract'
+);
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '96200000-0000-4000-8000-000000000002',
+  true
+);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"96200000-0000-4000-8000-000000000002","role":"authenticated","aal":"aal1"}',
+  true
+);
+select ok(
+  not private.has_report_entitlement_for_user(
+    '96200000-0000-4000-8000-000000000002',
+    statement_timestamp()
+  ),
+  'ordinary user without payment or courtesy stays limited'
+);
+reset role;
+
+insert into private.admin_user_state (user_id, blocked_at)
+values (
+  '96200000-0000-4000-8000-000000000001',
+  statement_timestamp()
+);
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '96200000-0000-4000-8000-000000000001',
+  true
+);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"96200000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal2"}',
+  true
+);
+select ok(
+  not private.has_report_entitlement_for_user(
+    '96200000-0000-4000-8000-000000000001',
+    statement_timestamp()
+  ),
+  'blocked administrator does not receive report entitlement'
+);
+reset role;
+
+update private.admin_user_state
+set blocked_at = null
+where user_id = '96200000-0000-4000-8000-000000000001';
+
+update private.app_administrator
+set user_id = '96200000-0000-4000-8000-000000000003'
+where singleton = 1
+  and user_id = '96200000-0000-4000-8000-000000000001';
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '96200000-0000-4000-8000-000000000001',
+  true
+);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"96200000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal1"}',
+  true
+);
+select ok(
+  not private.has_report_entitlement_for_user(
+    '96200000-0000-4000-8000-000000000001',
+    statement_timestamp()
+  ),
+  'replaced administrator loses report entitlement immediately'
+);
+reset role;
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  '96200000-0000-4000-8000-000000000003',
+  true
+);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"96200000-0000-4000-8000-000000000003","role":"authenticated","aal":"aal1"}',
+  true
+);
+select ok(
+  private.has_report_entitlement_for_user(
+    '96200000-0000-4000-8000-000000000003',
+    statement_timestamp()
+  ),
+  'replacement administrator receives report entitlement'
+);
+reset role;
+
+select ok(
+  not private.has_paid_access_for_user(
+    '96200000-0000-4000-8000-000000000003',
+    statement_timestamp()
+  ),
+  'replacement administrator still has no paid contract'
+);
 
 select * from finish();
 rollback;
