@@ -11,7 +11,7 @@ vi.mock("@/infrastructure/database/supabase/clients/server.client", () => ({
   createClient,
 }));
 
-import { AuthRequiredError } from "./require-user";
+import { AuthRequiredError, PasswordSetupRequiredError } from "./require-user";
 import {
   AdminMfaRequiredError,
   AdminRequiredError,
@@ -38,6 +38,27 @@ describe("requireAdmin", () => {
     await expect(requireAdmin()).rejects.toBeInstanceOf(AuthRequiredError);
     expect(rpc).not.toHaveBeenCalled();
   });
+
+  it.each(["recovery", "invite"] as const)(
+    "rejects a %s session before the admin lookup",
+    async (method) => {
+      getClaims.mockResolvedValue({
+        data: {
+          claims: {
+            sub: "admin-123",
+            aal: "aal2",
+            amr: [{ method, timestamp: 1 }],
+          },
+        },
+        error: null,
+      });
+
+      await expect(requireAdmin()).rejects.toBeInstanceOf(
+        PasswordSetupRequiredError,
+      );
+      expect(rpc).not.toHaveBeenCalled();
+    },
+  );
 
   it("rejects a regular authenticated user", async () => {
     getClaims.mockResolvedValue({

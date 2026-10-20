@@ -1,6 +1,11 @@
 import "server-only";
 
 import { createClient } from "@/infrastructure/database/supabase/clients/server.client";
+import {
+  passwordSetupFlow,
+  passwordSetupPath,
+  type PasswordSetupPath,
+} from "@/modules/auth/services/password-setup-session";
 import { LEGAL_COPY_VERSION } from "@/modules/legal/legal-copy";
 
 type AuthenticatedHome =
@@ -9,7 +14,8 @@ type AuthenticatedHome =
   | "/admin"
   | "/onboarding"
   | "/account-unavailable"
-  | "/accept-terms";
+  | "/accept-terms"
+  | PasswordSetupPath;
 
 async function resolveAuthenticatedHome(): Promise<AuthenticatedHome> {
   const supabase = await createClient();
@@ -20,6 +26,9 @@ async function resolveAuthenticatedHome(): Promise<AuthenticatedHome> {
   if (claimsError || typeof subject !== "string" || subject.length === 0) {
     return "/login";
   }
+
+  const setupFlow = passwordSetupFlow(claimsData?.claims);
+  if (setupFlow) return passwordSetupPath(setupFlow);
 
   try {
     const { data: eligible, error: eligibilityError } = await supabase.rpc(

@@ -70,6 +70,17 @@ describe("updatePassword", () => {
     expect(result).toEqual({ status: "update_failed" });
   });
 
+  it("requires the authenticator without signing out", async () => {
+    updateUser.mockResolvedValue({
+      error: { code: "insufficient_aal", message: "AAL2 required" },
+    });
+
+    const result = await updatePassword("nova-senha1");
+
+    expect(signOut).not.toHaveBeenCalled();
+    expect(result).toEqual({ status: "mfa_required" });
+  });
+
   it("identifies a weak password rejected by Supabase", async () => {
     updateUser.mockResolvedValue({
       error: { code: "weak_password", message: "weak password" },
