@@ -52,9 +52,11 @@
 .featuredCard {
   z-index: 1;
   border-color: oklch(0.65 0.2 255);
-  background: linear-gradient(150deg,
-      oklch(0.985 0.014 253),
-      oklch(0.94 0.045 255));
+  background: linear-gradient(
+    150deg,
+    oklch(0.985 0.014 253),
+    oklch(0.94 0.045 255)
+  );
   box-shadow: 0 24px 56px -34px oklch(0.48 0.23 260 / 0.5);
 }
 
@@ -209,7 +211,7 @@
   margin-top: auto;
 }
 
-.planActions>div {
+.planActions > div {
   display: grid;
 }
 
@@ -347,7 +349,7 @@
 
 .trustRail {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: 28px;
   padding: 16px 8px;
   border: 1px solid var(--plans-line);
@@ -356,7 +358,7 @@
   color: var(--plans-ink);
 }
 
-.trustRail>div {
+.trustRail > div {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -365,11 +367,11 @@
   padding: 4px 20px;
 }
 
-.trustRail>div+div {
+.trustRail > div + div {
   border-left: 1px solid var(--plans-line);
 }
 
-.trustRail>div>svg {
+.trustRail > div > svg {
   width: 18px;
   height: 18px;
   flex: 0 0 auto;
@@ -479,20 +481,23 @@
   }
 
   .trustRail {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     width: min(100%, 680px);
     margin-inline: auto;
     margin-top: 24px;
   }
 
-  .trustRail>div {
+  .trustRail > div {
     justify-content: flex-start;
     padding: 14px 4px;
   }
 
-  .trustRail>div+div {
-    border-top: 1px solid var(--plans-line);
+  .trustRail > div:nth-child(odd) {
     border-left: 0;
+  }
+
+  .trustRail > div:nth-child(n + 3) {
+    border-top: 1px solid var(--plans-line);
   }
 }
 
@@ -518,13 +523,21 @@
     margin-bottom: 24px;
   }
 
-  .trustRail>div {
+  .trustRail {
+    grid-template-columns: 1fr;
+  }
+
+  .trustRail > div {
     padding-inline: 2px;
+  }
+
+  .trustRail > div + div {
+    border-top: 1px solid var(--plans-line);
+    border-left: 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   .card,
   .primaryAction,
   .darkAction,

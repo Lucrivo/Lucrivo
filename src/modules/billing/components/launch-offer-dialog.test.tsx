@@ -63,6 +63,8 @@ describe("LaunchOfferDialog", () => {
         name: "Tempo restante para ganhar o bônus",
       }),
     ).toBeVisible();
+    expect(within(dialog).getByText("7 dias de garantia.")).toBeVisible();
+    expect(within(dialog).getByText(/Devolvemos todo o valor/)).toBeVisible();
     expect(
       within(dialog).getByRole("link", { name: "Quero aproveitar a oferta" }),
     ).toHaveAttribute("href", "/billing");

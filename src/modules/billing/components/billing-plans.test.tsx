@@ -94,6 +94,8 @@ describe("BillingPlans", () => {
     expect(
       screen.getAllByText(/condição fica reservada por 1 hora/i),
     ).toHaveLength(2);
+    expect(screen.getByText("Garantia de 7 dias")).toBeVisible();
+    expect(screen.getByText("Devolvemos todo o valor")).toBeVisible();
   });
 
   it("presents launch_price without bonus claims", () => {
@@ -131,6 +133,7 @@ describe("BillingPlans", () => {
       screen.getByRole("article", { name: "Plano Semestral" }),
     ).toHaveTextContent("em até 6x de R$ 39,90 ou R$ 239,40 à vista");
     expect(screen.getByText("6 meses de acesso")).toBeVisible();
+    expect(screen.getByText("Garantia de 7 dias")).toBeVisible();
   });
 
   it("keeps free available when paid catalog data is unavailable", () => {
