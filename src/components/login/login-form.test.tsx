@@ -1,12 +1,17 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const { completeLoginNavigation } = vi.hoisted(() => ({
+  completeLoginNavigation: vi.fn(),
+}));
 
 vi.mock("@/components/shared/auth/turnstile-field", () => ({
   TurnstileField: () => (
     <input type="hidden" name="captchaToken" value="captcha-token" readOnly />
   ),
 }));
+vi.mock("./complete-login-navigation", () => ({ completeLoginNavigation }));
 
 import type { LoginActionState } from "@/modules/auth/actions/login.action";
 
@@ -14,6 +19,7 @@ import { LoginForm } from "./login-form";
 
 describe("LoginForm", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     sessionStorage.clear();
   });
 
@@ -91,5 +97,23 @@ describe("LoginForm", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "Convite aceito. Entre com a senha que você criou.",
     );
+  });
+
+  it("performs a full navigation after a successful login", async () => {
+    const user = userEvent.setup();
+    const action = vi.fn(async (): Promise<LoginActionState> => ({
+      status: "success",
+      destination: "/auth/continue",
+    }));
+
+    render(<LoginForm action={action} signupEnabled />);
+
+    await user.type(screen.getByLabelText("E-mail"), "usuario@lucrivo.com");
+    await user.type(screen.getByLabelText("Senha"), "senha-segura");
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
+
+    await waitFor(() => {
+      expect(completeLoginNavigation).toHaveBeenCalledWith("/auth/continue");
+    });
   });
 });

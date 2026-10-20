@@ -1,12 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { createClient, redirect, signInWithPassword } = vi.hoisted(() => ({
+const { createClient, signInWithPassword } = vi.hoisted(() => ({
   createClient: vi.fn(),
-  redirect: vi.fn(),
   signInWithPassword: vi.fn(),
 }));
 
-vi.mock("next/navigation", () => ({ redirect }));
 vi.mock("@/infrastructure/database/supabase/clients/server.client", () => ({
   createClient,
 }));
@@ -54,11 +52,14 @@ describe("login", () => {
   it("allows a missing token when CAPTCHA is explicitly disabled", async () => {
     vi.stubEnv("AUTH_CAPTCHA_ENABLED", "false");
 
-    await login(null, loginFormData());
+    const result = await login(null, loginFormData());
 
     expect(signInWithPassword).toHaveBeenCalledWith(
       expect.objectContaining({ options: { captchaToken: undefined } }),
     );
-    expect(redirect).toHaveBeenCalledWith("/auth/continue");
+    expect(result).toEqual({
+      status: "success",
+      destination: "/auth/continue",
+    });
   });
 });
