@@ -34,14 +34,6 @@ export default async function AdminUserPage({
   const user = await getAdminUser(userId);
   if (!user) notFound();
   const cursor = scalar(query.cursor);
-  const items =
-    tab === "diagnoses"
-      ? await getAdminUserDiagnoses(userId, cursor)
-      : tab === "subscription"
-        ? await getAdminUserSubscriptions(userId, cursor)
-        : tab === "history"
-          ? await getAdminUserHistory(userId, cursor)
-          : null;
   const from = scalar(query.from);
   let back = "/admin/users";
   if (from && from.length <= 2500) {
@@ -56,5 +48,28 @@ export default async function AdminUserPage({
       /* Ignore malformed list context. */
     }
   }
-  return <AdminUserDetail user={user} tab={tab} items={items} back={back} />;
+  if (tab === "diagnoses") {
+    const items = await getAdminUserDiagnoses(userId, cursor);
+    return (
+      <AdminUserDetail user={user} tab="diagnoses" items={items} back={back} />
+    );
+  }
+  if (tab === "subscription") {
+    const items = await getAdminUserSubscriptions(userId, cursor);
+    return (
+      <AdminUserDetail
+        user={user}
+        tab="subscription"
+        items={items}
+        back={back}
+      />
+    );
+  }
+  if (tab === "history") {
+    const items = await getAdminUserHistory(userId, cursor);
+    return (
+      <AdminUserDetail user={user} tab="history" items={items} back={back} />
+    );
+  }
+  return <AdminUserDetail user={user} tab="profile" items={null} back={back} />;
 }

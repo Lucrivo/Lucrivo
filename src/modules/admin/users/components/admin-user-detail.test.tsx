@@ -10,7 +10,7 @@ vi.mock("../change-admin-user.action", () => ({ changeAdminUser: vi.fn() }));
 const user: User = {
   id: "96300000-0000-4000-8000-000000000002",
   email: "cliente@example.com",
-  fullName: null,
+  fullName: "Ana Pereira",
   onboardingCompletedAt: null,
   segment: null,
   subcategory: null,
@@ -40,6 +40,7 @@ describe("admin user detail", () => {
     expect(
       screen.getByRole("link", { name: /voltar para usuários/i }),
     ).toHaveAttribute("href", "/admin/users?state=blocked");
+    expect(screen.getByRole("heading", { name: "Ana Pereira" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Perfil" })).toHaveAttribute(
       "aria-selected",
       "true",
@@ -76,7 +77,7 @@ describe("admin user detail", () => {
       />,
     );
     expect(screen.getByText("Usuário bloqueado")).toBeVisible();
-    expect(screen.getByText(/Motivo: Solicitação/)).toBeVisible();
+    expect(screen.getByText("Solicitação")).toBeVisible();
     expect(screen.getByRole("tab", { name: "Histórico" })).toHaveAttribute(
       "aria-selected",
       "true",
@@ -130,7 +131,7 @@ describe("admin user detail", () => {
       />,
     );
 
-    expect(screen.getAllByText(/Semestral/)).toHaveLength(1);
+    expect(screen.getAllByText(/Semestral/)).toHaveLength(2);
     expect(screen.queryByText(/Anual/)).not.toBeInTheDocument();
   });
 });

@@ -451,6 +451,11 @@ type AdminUserList = z.infer<typeof adminUserListSchema>;
 type AdminUserDiagnosis = z.infer<typeof adminUserDiagnosisSchema>;
 type AdminUserSubscription = z.infer<typeof adminUserSubscriptionSchema>;
 type AdminUserHistoryEvent = z.infer<typeof adminUserHistoryEventSchema>;
+type AdminUserDiagnosesPage = z.infer<typeof adminUserDiagnosesPageSchema>;
+type AdminUserSubscriptionsPage = z.infer<
+  typeof adminUserSubscriptionsPageSchema
+>;
+type AdminUserHistoryPage = z.infer<typeof adminUserHistoryPageSchema>;
 type AdminUserKind = keyof typeof itemSchemas;
 type AdminUserFilters = z.infer<typeof listFilterSchema>;
 type AdminUserAction = z.infer<typeof actionSchema>;
@@ -489,9 +494,12 @@ export {
   type AdminUserAction,
   type AdminUserDetail,
   type AdminUserDiagnosis,
+  type AdminUserDiagnosesPage,
   type AdminUserFilters,
   type AdminUserHistoryEvent,
+  type AdminUserHistoryPage,
   type AdminUserKind,
   type AdminUserList,
   type AdminUserSubscription,
+  type AdminUserSubscriptionsPage,
 };
