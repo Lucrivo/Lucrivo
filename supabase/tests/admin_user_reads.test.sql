@@ -34,6 +34,18 @@ select has_function(
   ],
   'versioned admin user child list exists'
 );
+select has_function(
+  'public',
+  'list_admin_users_v2',
+  array['text', 'text', 'text', 'integer', 'integer'],
+  'page-number admin user list exists'
+);
+select has_function(
+  'public',
+  'get_admin_user_v2',
+  array['uuid'],
+  'profile-aware admin user detail exists'
+);
 
 select ok(
   not has_function_privilege('anon', 'public.list_admin_users_v1(text,text,text,timestamptz,uuid,integer)', 'execute'),
@@ -42,6 +54,18 @@ select ok(
 select ok(
   not has_function_privilege('service_role', 'public.get_admin_user_v1(uuid)', 'execute'),
   'service role cannot bypass caller-scoped detail authorization'
+);
+select ok(
+  has_function_privilege('authenticated', 'public.list_admin_users_v2(text,text,text,integer,integer)', 'execute'),
+  'authenticated callers can reach the v2 list authorization boundary'
+);
+select ok(
+  not has_function_privilege('anon', 'public.list_admin_users_v2(text,text,text,integer,integer)', 'execute'),
+  'anonymous callers cannot execute the v2 list'
+);
+select ok(
+  not has_function_privilege('service_role', 'public.get_admin_user_v2(uuid)', 'execute'),
+  'service role cannot bypass v2 detail authorization'
 );
 
 insert into auth.users (id, aud, role, email, created_at)
@@ -88,6 +112,33 @@ insert into private.admin_user_state (
   null, statement_timestamp(), null
 );
 
+insert into public.onboarding_profiles (
+  user_id,
+  full_name,
+  whatsapp_e164,
+  segment_id,
+  subcategory_id,
+  whatsapp_marketing_consent,
+  marketing_consent_granted_at,
+  completed_at,
+  updated_at
+)
+select
+  '96200000-0000-4000-8000-000000000003',
+  'Cliente Bloqueado',
+  '+5511999999003',
+  segment.id,
+  subcategory.id,
+  false,
+  null,
+  statement_timestamp() - interval '12 hours',
+  statement_timestamp() - interval '12 hours'
+from public.business_segments as segment
+join public.business_subcategories as subcategory
+  on subcategory.segment_id = segment.id
+where segment.name = 'Alimentação'
+  and subcategory.name = 'Confeitaria';
+
 delete from private.app_administrator;
 insert into private.app_administrator (user_id)
 values ('96200000-0000-4000-8000-000000000001');
@@ -113,6 +164,14 @@ select throws_ok(
   '42501',
   'administrator access required',
   'ordinary account cannot list users'
+);
+select throws_ok(
+  $sql$ select public.list_admin_users_v2(
+    'admin-read-fixture.test', 'current', 'all', 1, 20
+  ) $sql$,
+  '42501',
+  'administrator access required',
+  'ordinary account cannot list users through v2'
 );
 select throws_ok(
   $sql$ select public.list_admin_user_items_v1(
@@ -141,6 +200,36 @@ select throws_ok(
   '42501',
   'administrator access required',
   'administrator at aal1 cannot inspect users'
+);
+select throws_ok(
+  $sql$ select public.get_admin_user_v2(
+    '96200000-0000-4000-8000-000000000002'
+  ) $sql$,
+  '42501',
+  'administrator access required',
+  'administrator at aal1 cannot inspect users through v2'
+);
+reset role;
+
+set local role anon;
+select throws_ok(
+  $sql$ select public.list_admin_users_v2(
+    'admin-read-fixture.test', 'all', 'all', 1, 20
+  ) $sql$,
+  '42501',
+  'permission denied for function list_admin_users_v2',
+  'anonymous caller cannot execute the v2 list'
+);
+reset role;
+
+set local role service_role;
+select throws_ok(
+  $sql$ select public.get_admin_user_v2(
+    '96200000-0000-4000-8000-000000000003'
+  ) $sql$,
+  '42501',
+  'permission denied for function get_admin_user_v2',
+  'service role cannot execute the v2 detail function'
 );
 reset role;
 
@@ -198,6 +287,48 @@ select is(
   ) ->> 'state',
   'deleted',
   'excluded account remains inspectable by direct admin detail'
+);
+select is(
+  public.list_admin_users_v2(
+    'admin-read-fixture.test', 'all', 'all', 1, 1
+  ) ->> 'totalCount',
+  '3',
+  'filtered result exposes an exact total'
+);
+select is(
+  public.list_admin_users_v2(
+    'admin-read-fixture.test', 'all', 'all', 2, 1
+  ) #>> '{items,0,email}',
+  'newer@admin-read-fixture.test',
+  'page two is deterministic'
+);
+select is(
+  public.list_admin_users_v2(
+    'admin-read-fixture.test', 'all', 'all', 4, 1
+  ) -> 'items',
+  '[]'::jsonb,
+  'out-of-range page returns an empty item list'
+);
+select is(
+  public.get_admin_user_v2(
+    '96200000-0000-4000-8000-000000000003'
+  ) ->> 'state',
+  'blocked',
+  'administrator can inspect a blocked target'
+);
+select is(
+  public.get_admin_user_v2(
+    '96200000-0000-4000-8000-000000000003'
+  ) ->> 'fullName',
+  'Cliente Bloqueado',
+  'detail includes the onboarding name'
+);
+select is(
+  public.get_admin_user_v2(
+    '96200000-0000-4000-8000-000000000004'
+  ) ->> 'state',
+  'deleted',
+  'administrator can inspect a soft-deleted target through v2'
 );
 select is(
   public.list_admin_users_v1('admin-read-fixture.test', 'active', 'all', null, null, 20) #>> '{items,0,email}',
