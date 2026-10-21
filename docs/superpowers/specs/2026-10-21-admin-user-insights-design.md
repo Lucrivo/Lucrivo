@@ -1,7 +1,7 @@
 # Admin User Insights Design
 
 **Date:** 2026-10-21
-**Status:** Approved in conversation; awaiting written-spec review
+**Status:** Approved
 
 ## 1. Objective and scope
 
@@ -180,8 +180,10 @@ change.
 
 The menu label becomes **Gerenciar cortesia**. The dialog offers `1 dia`, `7
 dias`, `30 dias` and a custom date/time. Presets calculate from the server-side
-confirmation instant, not from the time the dialog opened, and the confirmation
-copy displays the exact expiry in `America/Sao_Paulo`.
+confirmation instant, not from the time the dialog opened. Before submission,
+the preset copy states the chosen duration from confirmation; after success, the
+feedback displays the exact database-returned expiry in `America/Sao_Paulo`.
+A custom absolute date displays its exact expiry before confirmation.
 
 The existing reason remains mandatory and bounded to 500 characters. Granting
 or replacing a courtesy continues to use optimistic concurrency and the atomic
