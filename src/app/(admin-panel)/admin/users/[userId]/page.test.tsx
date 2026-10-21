@@ -1,9 +1,17 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-const { getAdminUser, getAdminUserItems, notFound } = vi.hoisted(() => ({
+const {
+  getAdminUser,
+  getAdminUserDiagnoses,
+  getAdminUserHistory,
+  getAdminUserSubscriptions,
+  notFound,
+} = vi.hoisted(() => ({
   getAdminUser: vi.fn(),
-  getAdminUserItems: vi.fn(),
+  getAdminUserDiagnoses: vi.fn(),
+  getAdminUserHistory: vi.fn(),
+  getAdminUserSubscriptions: vi.fn(),
   notFound: vi.fn(() => {
     throw new Error("not-found");
   }),
@@ -11,7 +19,9 @@ const { getAdminUser, getAdminUserItems, notFound } = vi.hoisted(() => ({
 vi.mock("next/navigation", () => ({ notFound }));
 vi.mock("@/modules/admin/users/get-admin-users.service", () => ({
   getAdminUser,
-  getAdminUserItems,
+  getAdminUserDiagnoses,
+  getAdminUserHistory,
+  getAdminUserSubscriptions,
 }));
 vi.mock("@/modules/admin/users/components/admin-user-detail", () => ({
   AdminUserDetail: ({ tab, back }: { tab: string; back: string }) => (
@@ -38,7 +48,7 @@ describe("admin user detail page", () => {
 
   it("loads the selected history tab and preserves a safe list context", async () => {
     getAdminUser.mockResolvedValue({ id: userId });
-    getAdminUserItems.mockResolvedValue({ items: [], nextCursor: null });
+    getAdminUserHistory.mockResolvedValue({ items: [], nextCursor: null });
     render(
       await AdminUserPage({
         params: Promise.resolve({ userId }),
@@ -48,11 +58,9 @@ describe("admin user detail page", () => {
         }),
       }),
     );
-    expect(getAdminUserItems).toHaveBeenCalledWith(
-      userId,
-      "history",
-      undefined,
-    );
+    expect(getAdminUserHistory).toHaveBeenCalledWith(userId, undefined);
+    expect(getAdminUserDiagnoses).not.toHaveBeenCalled();
+    expect(getAdminUserSubscriptions).not.toHaveBeenCalled();
     expect(
       screen.getByText("history: /admin/users?state=blocked"),
     ).toBeVisible();

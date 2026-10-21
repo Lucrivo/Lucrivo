@@ -11,11 +11,19 @@ import {
   formatDate,
   formatMoney,
 } from "../admin-users.formatters";
-import type { AdminUserDetail as User } from "../admin-users.schema";
+import type {
+  AdminUserDetail as User,
+  AdminUserDiagnosis,
+  AdminUserHistoryEvent,
+  AdminUserSubscription,
+} from "../admin-users.schema";
 import { encodeCursor } from "../admin-users.urls";
 import { AdminUserActions } from "./admin-user-actions";
 
-type Item = Record<string, unknown>;
+type Item =
+  | AdminUserDiagnosis
+  | AdminUserSubscription
+  | AdminUserHistoryEvent;
 type Items = {
   items: Item[];
   nextCursor: { createdAt: string; id: string } | null;
@@ -27,14 +35,6 @@ const tabs: { value: Tab; label: string }[] = [
   { value: "subscription", label: "Assinatura" },
   { value: "history", label: "Histórico" },
 ];
-const historyLabels: Record<string, string> = {
-  courtesy_granted: "Cortesia concedida",
-  courtesy_ended: "Cortesia encerrada",
-  blocked: "Usuário bloqueado",
-  unblocked: "Usuário desbloqueado",
-  soft_deleted: "Usuário excluído",
-  restored: "Usuário restaurado",
-};
 const paymentMethodLabels: Record<string, string> = {
   credit_card: "Cartão de crédito",
   pix: "Pix",
@@ -56,22 +56,6 @@ const categoryLabels: Record<string, string> = {
   production: "Produção",
 };
 
-function historyChange(item: Item) {
-  const before = item.before as Record<string, string | null>;
-  const after = item.after as Record<string, string | null>;
-  const changes = [
-    ["Bloqueio", before.blockedAt, after.blockedAt],
-    ["Exclusão", before.deletedAt, after.deletedAt],
-    ["Cortesia", before.courtesyExpiresAt, after.courtesyExpiresAt],
-  ].filter(([, oldValue, newValue]) => oldValue !== newValue);
-  return changes.map(([label, oldValue, newValue]) => (
-    <p key={label} className="text-muted-foreground text-xs">
-      {label}: {oldValue ? formatDate(oldValue) : "não"} →{" "}
-      {newValue ? formatDate(newValue) : "não"}
-    </p>
-  ));
-}
-
 function Field({
   label,
   children,
@@ -90,48 +74,53 @@ function Field({
 }
 
 function itemSummary(item: Item, tab: Tab) {
-  if (tab === "diagnoses")
+  if (tab === "diagnoses") {
+    const diagnosis = item as AdminUserDiagnosis;
     return (
       <>
         <p className="font-medium">
-          {categoryLabels[String(item.category)] ?? String(item.category)} ·{" "}
-          {String(item.scenario)}
+          {categoryLabels[diagnosis.category]} · {diagnosis.scenario}
         </p>
         <p className="text-muted-foreground text-sm">
-          {item.isFreeReport ? "Relatório gratuito" : "Relatório com acesso"}
+          {diagnosis.isFreeReport
+            ? "Relatório gratuito"
+            : "Relatório com acesso"}
         </p>
       </>
     );
-  if (tab === "subscription")
+  }
+  if (tab === "subscription") {
+    const subscription = item as AdminUserSubscription;
     return (
       <>
         <p className="font-medium">
-          {presentBillingMode(item.billingMode)} ·{" "}
-          {formatMoney(Number(item.amountCents))}
+          {presentBillingMode(subscription.billingMode)} ·{" "}
+          {formatMoney(subscription.amountCents)}
         </p>
         <p className="text-muted-foreground text-sm">
-          {contractStatusLabels[String(item.status)] ?? String(item.status)} ·{" "}
-          {paymentMethodLabels[String(item.paymentMethod)] ??
-            String(item.paymentMethod)}{" "}
-          · Acesso: {formatDate(item.accessStartsAt as string | null)} até{" "}
-          {formatDate(item.accessEndsAt as string | null)}
+          {contractStatusLabels[subscription.status]} ·{" "}
+          {paymentMethodLabels[subscription.paymentMethod]} · Acesso:{" "}
+          {formatDate(subscription.accessStartsAt)} até{" "}
+          {formatDate(subscription.accessEndsAt)}
         </p>
         <p className="text-muted-foreground text-xs">
-          {item.cancelAtPeriodEnd
+          {subscription.cancelAtPeriodEnd
             ? "Cancelamento ao fim do período"
             : "Sem cancelamento programado"}
         </p>
       </>
     );
+  }
+  const event = item as AdminUserHistoryEvent;
+  const adminPayload = "reason" in event.payload ? event.payload : null;
   return (
     <>
-      <p className="font-medium">
-        {historyLabels[String(item.action)] ?? String(item.action)}
-      </p>
-      <p className="text-muted-foreground text-sm">
-        Por {String(item.actorEmail)} · Motivo: {String(item.reason)}
-      </p>
-      {historyChange(item)}
+      <p className="font-medium">{event.title}</p>
+      {adminPayload && (
+        <p className="text-muted-foreground text-sm">
+          Por {adminPayload.actorEmail} · Motivo: {adminPayload.reason}
+        </p>
+      )}
     </>
   );
 }
@@ -265,14 +254,16 @@ function AdminUserDetail({
               <ul className="divide-y rounded-xl border">
                 {items.items.map((item) => (
                   <li
-                    key={String(item.id)}
+                    key={"eventKey" in item ? item.eventKey : item.id}
                     className="flex flex-wrap items-start justify-between gap-3 p-4"
                   >
                     <div className="min-w-0 space-y-1">
                       {itemSummary(item, tab)}
                     </div>
                     <time className="text-muted-foreground text-sm">
-                      {formatDate(String(item.createdAt))}
+                      {formatDate(
+                        "occurredAt" in item ? item.occurredAt : item.createdAt,
+                      )}
                     </time>
                   </li>
                 ))}

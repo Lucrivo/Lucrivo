@@ -23,7 +23,7 @@ import type {
   AdminUserFilters,
   AdminUserList as ListData,
 } from "../admin-users.schema";
-import { encodeCursor, listUrl } from "../admin-users.urls";
+import { listUrl } from "../admin-users.urls";
 import { AdminUserActions } from "./admin-user-actions";
 import { AdminUserFilterForm } from "./admin-user-filter-form";
 
@@ -63,42 +63,14 @@ function detailUrl(id: string, context: string) {
 
 function pagination(
   filters: AdminUserFilters,
-  nextCursor: ListData["nextCursor"],
+  data: ListData,
 ) {
-  let stack: string[] = [];
-  try {
-    const parsed: unknown = filters.back
-      ? JSON.parse(Buffer.from(filters.back, "base64url").toString("utf8"))
-      : [];
-    if (
-      Array.isArray(parsed) &&
-      parsed.length <= 100 &&
-      parsed.every((item) => typeof item === "string" && item.length <= 500)
-    )
-      stack = parsed;
-  } catch {
-    /* Invalid history starts at the first page. */
-  }
-  const previous = stack.length
-    ? listUrl(
-        filters,
-        stack.at(-1) || undefined,
-        stack.length > 1
-          ? Buffer.from(JSON.stringify(stack.slice(0, -1))).toString(
-              "base64url",
-            )
-          : undefined,
-      )
-    : null;
-  const next = nextCursor
-    ? listUrl(
-        filters,
-        encodeCursor(nextCursor),
-        Buffer.from(JSON.stringify([...stack, filters.cursor ?? ""])).toString(
-          "base64url",
-        ),
-      )
-    : null;
+  const previous =
+    data.page > 1 ? listUrl({ ...filters, page: data.page - 1 }) : null;
+  const next =
+    data.page < data.totalPages
+      ? listUrl({ ...filters, page: data.page + 1 })
+      : null;
   return { previous, next };
 }
 
@@ -109,8 +81,8 @@ function AdminUserList({
   data: ListData;
   filters: AdminUserFilters;
 }) {
-  const context = listUrl(filters, filters.cursor, filters.back);
-  const { previous, next } = pagination(filters, data.nextCursor);
+  const context = listUrl(filters);
+  const { previous, next } = pagination(filters, data);
   return (
     <main className="mx-auto grid w-full max-w-[100rem] gap-6">
       <header className="border-primary/10 rounded-3xl border bg-[linear-gradient(135deg,var(--card)_0%,color-mix(in_oklab,var(--primary)_7%,var(--card))_100%)] px-5 py-6 shadow-sm sm:px-7">

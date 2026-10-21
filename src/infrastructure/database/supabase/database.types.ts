@@ -1462,6 +1462,7 @@ export type Database = {
         Returns: Json;
       };
       get_admin_user_v1: { Args: { p_user_id: string }; Returns: Json };
+      get_admin_user_v2: { Args: { p_user_id: string }; Returns: Json };
       get_client_dashboard_v1: {
         Args: {
           p_categories?: string[];
@@ -1495,11 +1496,38 @@ export type Database = {
         Args: { p_billing_mode: string; p_period: string; p_state: string };
         Returns: Json;
       };
+      list_admin_user_diagnoses_v2: {
+        Args: {
+          p_cursor_created_at?: string;
+          p_cursor_id?: string;
+          p_limit?: number;
+          p_user_id: string;
+        };
+        Returns: Json;
+      };
+      list_admin_user_history_v2: {
+        Args: {
+          p_cursor_event_key?: string;
+          p_cursor_occurred_at?: string;
+          p_limit?: number;
+          p_user_id: string;
+        };
+        Returns: Json;
+      };
       list_admin_user_items_v1: {
         Args: {
           p_cursor_created_at?: string;
           p_cursor_id?: string;
           p_kind: string;
+          p_limit?: number;
+          p_user_id: string;
+        };
+        Returns: Json;
+      };
+      list_admin_user_subscriptions_v2: {
+        Args: {
+          p_cursor_created_at?: string;
+          p_cursor_id?: string;
           p_limit?: number;
           p_user_id: string;
         };
@@ -1511,6 +1539,16 @@ export type Database = {
           p_cursor_created_at?: string;
           p_cursor_id?: string;
           p_limit?: number;
+          p_query?: string;
+          p_state?: string;
+        };
+        Returns: Json;
+      };
+      list_admin_users_v2: {
+        Args: {
+          p_access?: string;
+          p_page?: number;
+          p_page_size?: number;
           p_query?: string;
           p_state?: string;
         };

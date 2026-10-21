@@ -21,7 +21,7 @@ describe("AdminUserFilterForm", () => {
   it("renders restored values and the saved-filter clear action", () => {
     render(
       <AdminUserFilterForm
-        filters={{ q: "cliente@", state: "blocked", access: "paid" }}
+        filters={{ q: "cliente@", state: "blocked", access: "paid", page: 1 }}
       />,
     );
 
@@ -47,7 +47,7 @@ describe("AdminUserFilterForm", () => {
     });
     render(
       <AdminUserFilterForm
-        filters={{ q: "", state: "current", access: "all" }}
+        filters={{ q: "", state: "current", access: "all", page: 1 }}
       />,
     );
 

@@ -1,13 +1,12 @@
 import { notFound } from "next/navigation";
 
 import { AdminUserDetail } from "@/modules/admin/users/components/admin-user-detail";
-import {
-  uuid,
-  type AdminUserKind,
-} from "@/modules/admin/users/admin-users.schema";
+import { uuid } from "@/modules/admin/users/admin-users.schema";
 import {
   getAdminUser,
-  getAdminUserItems,
+  getAdminUserDiagnoses,
+  getAdminUserHistory,
+  getAdminUserSubscriptions,
 } from "@/modules/admin/users/get-admin-users.service";
 
 type Params = { userId: string };
@@ -34,11 +33,15 @@ export default async function AdminUserPage({
       : "profile";
   const user = await getAdminUser(userId);
   if (!user) notFound();
-  const kind: AdminUserKind | null =
-    tab === "profile" ? null : tab === "subscription" ? "subscriptions" : tab;
-  const items = kind
-    ? await getAdminUserItems(userId, kind, scalar(query.cursor))
-    : null;
+  const cursor = scalar(query.cursor);
+  const items =
+    tab === "diagnoses"
+      ? await getAdminUserDiagnoses(userId, cursor)
+      : tab === "subscription"
+        ? await getAdminUserSubscriptions(userId, cursor)
+        : tab === "history"
+          ? await getAdminUserHistory(userId, cursor)
+          : null;
   const from = scalar(query.from);
   let back = "/admin/users";
   if (from && from.length <= 2500) {

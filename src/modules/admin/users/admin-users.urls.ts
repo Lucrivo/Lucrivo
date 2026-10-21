@@ -6,8 +6,18 @@ import {
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
+const MAX_ADMIN_PAGE = 1_000_000;
+
 function scalar(value: string | string[] | undefined) {
   return typeof value === "string" ? value : undefined;
+}
+
+function parsePage(raw: string | undefined) {
+  if (!raw || !/^\d+$/.test(raw)) return 1;
+  const page = Number(raw);
+  return Number.isSafeInteger(page) && page >= 1 && page <= MAX_ADMIN_PAGE
+    ? page
+    : 1;
 }
 
 function decodeCursor(raw: string | undefined) {
@@ -30,21 +40,26 @@ function parseFilters(params: SearchParams): AdminUserFilters {
     q: scalar(params.q),
     state: scalar(params.state),
     access: scalar(params.access),
-    cursor: scalar(params.cursor),
-    back: scalar(params.back),
+    page: parsePage(scalar(params.page)),
   });
   return result.success ? result.data : listFilterSchema.parse({});
 }
 
-function listUrl(filters: AdminUserFilters, cursor?: string, back?: string) {
+function listUrl(filters: AdminUserFilters) {
   const params = new URLSearchParams();
   if (filters.q) params.set("q", filters.q);
   if (filters.state !== "current") params.set("state", filters.state);
   if (filters.access !== "all") params.set("access", filters.access);
-  if (cursor) params.set("cursor", cursor);
-  if (back) params.set("back", back);
+  if (filters.page !== 1) params.set("page", String(filters.page));
   const query = params.toString();
   return `/admin/users${query ? `?${query}` : ""}`;
 }
 
-export { decodeCursor, encodeCursor, listUrl, parseFilters, type SearchParams };
+export {
+  decodeCursor,
+  encodeCursor,
+  listUrl,
+  parseFilters,
+  parsePage,
+  type SearchParams,
+};
