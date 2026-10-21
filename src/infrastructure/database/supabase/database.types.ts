@@ -1503,6 +1503,19 @@ export type Database = {
         };
         Returns: Json;
       };
+      list_admin_onboarding_contacts_v2: {
+        Args: {
+          p_consent?: string;
+          p_from?: string;
+          p_page?: number;
+          p_page_size?: number;
+          p_query?: string;
+          p_segment_id?: number;
+          p_subcategory_id?: number;
+          p_to?: string;
+        };
+        Returns: Json;
+      };
       list_admin_recent_subscriptions_v1: {
         Args: { p_billing_mode: string; p_period: string; p_state: string };
         Returns: Json;

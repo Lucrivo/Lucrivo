@@ -3,6 +3,7 @@ import { ChevronRightIcon, UsersIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminPagination } from "@/components/admin/admin-pagination";
 import { presentBillingMode } from "@/modules/admin/billing-mode";
 import {
   Table,
@@ -61,19 +62,6 @@ function detailUrl(id: string, context: string) {
   return `/admin/users/${id}?from=${encodeURIComponent(context)}`;
 }
 
-function pagination(
-  filters: AdminUserFilters,
-  data: ListData,
-) {
-  const previous =
-    data.page > 1 ? listUrl({ ...filters, page: data.page - 1 }) : null;
-  const next =
-    data.page < data.totalPages
-      ? listUrl({ ...filters, page: data.page + 1 })
-      : null;
-  return { previous, next };
-}
-
 function AdminUserList({
   data,
   filters,
@@ -82,7 +70,6 @@ function AdminUserList({
   filters: AdminUserFilters;
 }) {
   const context = listUrl(filters);
-  const { previous, next } = pagination(filters, data);
   return (
     <main className="mx-auto grid w-full max-w-[100rem] gap-6">
       <header className="border-primary/10 rounded-3xl border bg-[linear-gradient(135deg,var(--card)_0%,color-mix(in_oklab,var(--primary)_7%,var(--card))_100%)] px-5 py-6 shadow-sm sm:px-7">
@@ -237,32 +224,14 @@ function AdminUserList({
               </ul>
             </>
           )}
-          <nav
-            aria-label="Paginação de usuários"
-            className="flex flex-col items-stretch gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <span className="text-muted-foreground text-sm">
-              {data.items.length} usuário(s) nesta página
-            </span>
-            <div className="flex flex-wrap gap-2 sm:justify-end">
-              {previous && (
-                <Link
-                  href={previous}
-                  className="hover:bg-muted rounded-lg border px-3 py-2 text-sm font-medium focus-visible:outline-2"
-                >
-                  Anterior
-                </Link>
-              )}
-              {next && (
-                <Link
-                  href={next}
-                  className="hover:bg-muted rounded-lg border px-3 py-2 text-sm font-medium focus-visible:outline-2"
-                >
-                  Próxima
-                </Link>
-              )}
-            </div>
-          </nav>
+          <AdminPagination
+            page={data.page}
+            pageSize={data.pageSize}
+            totalCount={data.totalCount}
+            totalPages={data.totalPages}
+            itemLabel={{ singular: "usuário", plural: "usuários" }}
+            buildHref={(page) => listUrl({ ...filters, page })}
+          />
         </CardContent>
       </Card>
     </main>

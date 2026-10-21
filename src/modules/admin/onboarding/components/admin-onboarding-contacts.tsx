@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { ContactRoundIcon } from "lucide-react";
 
+import { AdminPagination } from "@/components/admin/admin-pagination";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -14,7 +14,6 @@ import {
 
 import {
   adminOnboardingUrl,
-  encodeAdminOnboardingCursor,
   type AdminOnboardingNavigation,
 } from "../admin-onboarding.filters";
 import type {
@@ -50,15 +49,6 @@ function AdminOnboardingContacts({
   data: Contacts;
   navigation: AdminOnboardingNavigation;
 }) {
-  const nextHref = data.nextCursor
-    ? adminOnboardingUrl(navigation, {
-        cursor: encodeAdminOnboardingCursor(data.nextCursor),
-      })
-    : null;
-  const firstHref = navigation.filters.cursor
-    ? adminOnboardingUrl(navigation, { cursor: null })
-    : null;
-
   return (
     <Card className="border-border/70 min-w-0 rounded-2xl shadow-sm">
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:justify-between">
@@ -157,32 +147,14 @@ function AdminOnboardingContacts({
           </>
         )}
 
-        <nav
-          aria-label="Paginação dos contatos"
-          className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between"
-        >
-          <span className="text-muted-foreground text-sm">
-            {data.items.length} contato(s) nesta página
-          </span>
-          <div className="flex flex-wrap gap-2 sm:justify-end">
-            {firstHref ? (
-              <Link
-                href={firstHref}
-                className="hover:bg-muted rounded-lg border px-3 py-2 text-sm font-medium focus-visible:outline-2"
-              >
-                Voltar ao início
-              </Link>
-            ) : null}
-            {nextHref ? (
-              <Link
-                href={nextHref}
-                className="hover:bg-muted rounded-lg border px-3 py-2 text-sm font-medium focus-visible:outline-2"
-              >
-                Próxima
-              </Link>
-            ) : null}
-          </div>
-        </nav>
+        <AdminPagination
+          page={data.page}
+          pageSize={data.pageSize}
+          totalCount={data.totalCount}
+          totalPages={data.totalPages}
+          itemLabel={{ singular: "contato", plural: "contatos" }}
+          buildHref={(page) => adminOnboardingUrl(navigation, { page })}
+        />
       </CardContent>
     </Card>
   );

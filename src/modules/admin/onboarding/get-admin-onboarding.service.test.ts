@@ -57,31 +57,37 @@ describe("admin onboarding read services", () => {
       consent: "granted",
       from: "2026-10-01",
       to: "2026-11-01",
-      cursor: Buffer.from(
-        JSON.stringify({
-          completedAt: "2026-10-09T12:00:00+00:00",
-          userId: "97000000-0000-4000-8000-000000000002",
-        }),
-      ).toString("base64url"),
+      page: "3",
     });
     rpc.mockResolvedValue({
-      data: { items: [], nextCursor: null },
+      data: {
+        items: [],
+        page: 3,
+        pageSize: 20,
+        totalCount: 40,
+        totalPages: 2,
+      },
       error: null,
     });
 
     await expect(
       getAdminOnboardingContacts(navigation.filters),
-    ).resolves.toEqual({ items: [], nextCursor: null });
-    expect(rpc).toHaveBeenCalledWith("list_admin_onboarding_contacts_v1", {
+    ).resolves.toEqual({
+      items: [],
+      page: 3,
+      pageSize: 20,
+      totalCount: 40,
+      totalPages: 2,
+    });
+    expect(rpc).toHaveBeenCalledWith("list_admin_onboarding_contacts_v2", {
       p_query: "Ana",
       p_segment_id: 2,
       p_subcategory_id: 3,
       p_consent: "granted",
       p_from: "2026-10-01",
       p_to: "2026-11-01",
-      p_cursor_completed_at: "2026-10-09T12:00:00+00:00",
-      p_cursor_user_id: "97000000-0000-4000-8000-000000000002",
-      p_limit: 20,
+      p_page: 3,
+      p_page_size: 20,
     });
   });
 

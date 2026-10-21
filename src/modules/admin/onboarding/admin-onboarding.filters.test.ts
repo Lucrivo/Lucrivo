@@ -2,17 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   adminOnboardingUrl,
-  decodeAdminOnboardingCursor,
-  encodeAdminOnboardingCursor,
   parseAdminOnboardingNavigation,
 } from "./admin-onboarding.filters";
 
 describe("admin onboarding URL filters", () => {
   it("accepts scalar canonical filters", () => {
-    const cursor = encodeAdminOnboardingCursor({
-      completedAt: "2026-10-09T12:00:00+00:00",
-      userId: "97000000-0000-4000-8000-000000000002",
-    });
     expect(
       parseAdminOnboardingNavigation({
         tab: "contacts",
@@ -22,7 +16,7 @@ describe("admin onboarding URL filters", () => {
         consent: "granted",
         from: "2026-10-01",
         to: "2026-11-01",
-        cursor,
+        page: "3",
       }),
     ).toEqual({
       tab: "contacts",
@@ -33,7 +27,7 @@ describe("admin onboarding URL filters", () => {
         consent: "granted",
         from: "2026-10-01",
         to: "2026-11-01",
-        cursor,
+        page: 3,
       },
     });
   });
@@ -48,7 +42,7 @@ describe("admin onboarding URL filters", () => {
         consent: "maybe",
         from: "2026-02-30",
         to: "09/10/2026",
-        cursor: "not-base64-json",
+        page: "0",
       }),
     ).toEqual({
       tab: "overview",
@@ -59,40 +53,19 @@ describe("admin onboarding URL filters", () => {
         consent: "all",
         from: null,
         to: null,
-        cursor: null,
+        page: 1,
       },
     });
   });
 
-  it("round-trips only bounded valid cursor JSON", () => {
-    const value = {
-      completedAt: "2026-10-09T12:00:00+00:00",
-      userId: "97000000-0000-4000-8000-000000000002",
-    };
-    expect(
-      decodeAdminOnboardingCursor(encodeAdminOnboardingCursor(value)),
-    ).toEqual(value);
-    expect(decodeAdminOnboardingCursor("x".repeat(501))).toBeNull();
-    expect(
-      decodeAdminOnboardingCursor(
-        Buffer.from(JSON.stringify({ ...value, extra: true })).toString(
-          "base64url",
-        ),
-      ),
-    ).toBeNull();
-  });
-
-  it("serializes canonical parameters and clears cursor after filter changes", () => {
+  it("serializes canonical parameters and resets the page after filter changes", () => {
     const navigation = parseAdminOnboardingNavigation({
       tab: "contacts",
       q: "Ana",
       consent: "declined",
-      cursor: encodeAdminOnboardingCursor({
-        completedAt: "2026-10-09T12:00:00+00:00",
-        userId: "97000000-0000-4000-8000-000000000002",
-      }),
+      page: "3",
     });
-    expect(adminOnboardingUrl(navigation)).toContain("cursor=");
+    expect(adminOnboardingUrl(navigation)).toContain("page=3");
     expect(adminOnboardingUrl(navigation, { q: "Bruno" })).toBe(
       "/admin/onboarding?tab=contacts&q=Bruno&consent=declined",
     );

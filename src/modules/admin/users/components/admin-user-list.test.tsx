@@ -50,10 +50,12 @@ describe("admin user list", () => {
       name: "Ver usuário cliente@example.com",
     })[1];
     expect(mobileLink.closest("li")).toHaveClass("min-w-0", "overflow-hidden");
-    expect(screen.getByRole("link", { name: "Próxima" })).toHaveAttribute(
-      "href",
-      expect.stringContaining("page=2"),
-    );
+    expect(
+      screen.getByText("1–20 de 21 usuários · Página 1 de 2"),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Próxima página" }),
+    ).toHaveAttribute("href", expect.stringContaining("page=2"));
     expect(screen.queryByText("Editar")).not.toBeInTheDocument();
   });
 
