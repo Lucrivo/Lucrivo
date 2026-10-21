@@ -156,6 +156,7 @@ describe("admin user boundaries", () => {
       userId: "96300000-0000-4000-8000-000000000002",
       action: "blocked",
       reason: "Motivo",
+      courtesyDurationDays: null,
       courtesyExpiresAt: null,
       expectedVersion: 0,
     };
@@ -168,6 +169,20 @@ describe("admin user boundaries", () => {
     );
     expect(
       actionSchema.safeParse({ ...base, expectedVersion: -1 }).success,
+    ).toBe(false);
+    expect(
+      actionSchema.safeParse({
+        ...base,
+        action: "courtesy_granted",
+        courtesyDurationDays: 7,
+      }).success,
+    ).toBe(true);
+    expect(
+      actionSchema.safeParse({
+        ...base,
+        action: "courtesy_granted",
+        courtesyDurationDays: 2,
+      }).success,
     ).toBe(false);
   });
 

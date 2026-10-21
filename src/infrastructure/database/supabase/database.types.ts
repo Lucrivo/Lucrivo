@@ -1157,6 +1157,17 @@ export type Database = {
         };
         Returns: Json;
       };
+      change_admin_user_v2: {
+        Args: {
+          p_action: string;
+          p_courtesy_duration_days: number;
+          p_courtesy_expires_at: string;
+          p_expected_version: number;
+          p_reason: string;
+          p_user_id: string;
+        };
+        Returns: Json;
+      };
       complete_report_ai_turn_v1: {
         Args: {
           p_answer: string;

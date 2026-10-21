@@ -420,30 +420,60 @@ const listFilterSchema = z
   })
   .strict();
 
-const actionSchema = z
-  .object({
-    userId: uuid,
+const actionBaseSchema = z.object({
+  userId: uuid,
+  reason: z.string().trim().min(1).max(500),
+  expectedVersion: safeNonnegativeIntegerSchema,
+});
+const courtesyGrantActionSchema = actionBaseSchema
+  .extend({
+    action: z.literal("courtesy_granted"),
+    courtesyDurationDays: z
+      .union([z.literal(1), z.literal(7), z.literal(30)])
+      .nullable(),
+    courtesyExpiresAt: isoDateTimeSchema.nullable(),
+  })
+  .strict()
+  .refine(
+    (input) =>
+      (input.courtesyDurationDays === null) !==
+      (input.courtesyExpiresAt === null),
+    { message: "Escolha um preset ou uma validade personalizada" },
+  );
+const nonCourtesyGrantActionSchema = actionBaseSchema
+  .extend({
     action: z.enum([
-      "courtesy_granted",
       "courtesy_ended",
       "blocked",
       "unblocked",
       "soft_deleted",
       "restored",
     ]),
-    reason: z.string().trim().min(1).max(500),
-    courtesyExpiresAt: isoDateTimeSchema.nullable(),
-    expectedVersion: safeNonnegativeIntegerSchema,
+    courtesyDurationDays: z.null(),
+    courtesyExpiresAt: z.null(),
   })
-  .strict()
-  .refine(
-    (input) =>
-      input.action === "courtesy_granted"
-        ? input.courtesyExpiresAt !== null &&
-          new Date(input.courtesyExpiresAt) > new Date()
-        : input.courtesyExpiresAt === null,
-    { message: "Validade de cortesia inválida" },
-  );
+  .strict();
+const actionSchema = z.discriminatedUnion("action", [
+  courtesyGrantActionSchema,
+  nonCourtesyGrantActionSchema,
+]);
+
+const courtesyChoiceSchema = z.union([
+  z
+    .object({
+      mode: z.literal("preset"),
+      durationDays: z.union([z.literal(1), z.literal(7), z.literal(30)]),
+      expiresAt: z.null(),
+    })
+    .strict(),
+  z
+    .object({
+      mode: z.literal("custom"),
+      durationDays: z.null(),
+      expiresAt: isoDateTimeSchema,
+    })
+    .strict(),
+]);
 
 type AdminUser = z.infer<typeof adminUserSchema>;
 type AdminUserDetail = z.infer<typeof adminUserDetailSchema>;
@@ -459,6 +489,7 @@ type AdminUserHistoryPage = z.infer<typeof adminUserHistoryPageSchema>;
 type AdminUserKind = keyof typeof itemSchemas;
 type AdminUserFilters = z.infer<typeof listFilterSchema>;
 type AdminUserAction = z.infer<typeof actionSchema>;
+type CourtesyChoice = z.infer<typeof courtesyChoiceSchema>;
 
 export {
   accountStateSchema,
@@ -480,6 +511,7 @@ export {
   categorySchema,
   chargeTypeSchema,
   contractStatusSchema,
+  courtesyChoiceSchema,
   cursorSchema,
   isoDateTimeSchema,
   itemSchemas,
@@ -502,4 +534,5 @@ export {
   type AdminUserList,
   type AdminUserSubscription,
   type AdminUserSubscriptionsPage,
+  type CourtesyChoice,
 };

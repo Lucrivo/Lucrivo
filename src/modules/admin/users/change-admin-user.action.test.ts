@@ -14,6 +14,7 @@ const input = {
   userId: "96300000-0000-4000-8000-000000000002",
   action: "blocked",
   reason: "Solicitação do usuário",
+  courtesyDurationDays: null,
   courtesyExpiresAt: null,
   expectedVersion: 0,
 };
@@ -23,7 +24,11 @@ describe("changeAdminUser", () => {
     vi.clearAllMocks();
     requireAdmin.mockResolvedValue({ supabase: { rpc } });
     rpc.mockResolvedValue({
-      data: { status: "updated", version: 1 },
+      data: {
+        status: "updated",
+        version: 1,
+        state: { courtesyExpiresAt: null },
+      },
       error: null,
     });
   });
@@ -40,13 +45,46 @@ describe("changeAdminUser", () => {
     expect(await changeAdminUser(input)).toEqual({
       status: "updated",
       version: 1,
+      courtesyExpiresAt: null,
     });
     expect(rpc).toHaveBeenCalledWith(
-      "change_admin_user_v1",
-      expect.objectContaining({ p_expected_version: 0 }),
+      "change_admin_user_v2",
+      expect.objectContaining({
+        p_courtesy_duration_days: null,
+        p_courtesy_expires_at: null,
+        p_expected_version: 0,
+      }),
     );
     expect(revalidatePath).toHaveBeenCalledWith("/admin/users");
     expect(revalidatePath).toHaveBeenCalledWith(`/admin/users/${input.userId}`);
+  });
+
+  it("sends a preset duration and returns the database-derived expiry", async () => {
+    const courtesyExpiresAt = "2026-10-28T18:30:00+00:00";
+    rpc.mockResolvedValue({
+      data: {
+        status: "updated",
+        version: 1,
+        state: { courtesyExpiresAt },
+      },
+      error: null,
+    });
+
+    expect(
+      await changeAdminUser({
+        ...input,
+        action: "courtesy_granted",
+        courtesyDurationDays: 7,
+      }),
+    ).toEqual({ status: "updated", version: 1, courtesyExpiresAt });
+    expect(rpc).toHaveBeenCalledWith("change_admin_user_v2", {
+      p_user_id: input.userId,
+      p_action: "courtesy_granted",
+      p_reason: input.reason,
+      p_courtesy_duration_days: 7,
+      p_courtesy_expires_at: null,
+      p_expected_version: 0,
+    });
   });
 
   it("does not revalidate after a paid-access conflict", async () => {
