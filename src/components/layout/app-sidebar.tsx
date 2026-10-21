@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ClipboardCheckIcon,
-  CreditCardIcon,
   FileChartColumnIcon,
   GiftIcon,
   LayoutDashboardIcon,
@@ -91,11 +90,6 @@ const adminNavigationItems: NavigationItem[] = [
     label: "Onboarding",
     href: "/admin/onboarding",
     icon: ListChecksIcon,
-  },
-  {
-    label: "Assinaturas",
-    href: "/admin/subscriptions",
-    icon: CreditCardIcon,
   },
 ];
 
