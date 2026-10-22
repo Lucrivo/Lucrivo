@@ -23,6 +23,21 @@ describe("RegisterForm", () => {
     sessionStorage.clear();
   });
 
+  it("shows the registration invitation as the form heading", () => {
+    const action = vi.fn(async (): Promise<RegisterActionState> => null);
+
+    render(<RegisterForm action={action} />);
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Crie sua conta grátis e descubra.",
+      }),
+    ).toBeVisible();
+    expect(
+      screen.queryByText("Comece agora com o Lucrivo"),
+    ).not.toBeInTheDocument();
+  });
+
   it("starts with legal acceptance unchecked and links to both documents", () => {
     const action = vi.fn(async (): Promise<RegisterActionState> => null);
 
