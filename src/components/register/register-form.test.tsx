@@ -140,6 +140,26 @@ describe("RegisterForm", () => {
     expect(action).toHaveBeenCalledOnce();
   });
 
+  it("guides an existing account to sign in or reset the password", async () => {
+    const user = userEvent.setup();
+    const action = vi.fn(async (): Promise<RegisterActionState> => ({
+      status: "error",
+      error: "account_exists",
+    }));
+
+    render(<RegisterForm action={action} />);
+    await fillRegisterForm(user);
+    await user.click(screen.getByRole("button", { name: "Criar conta" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Se você já tem uma conta com este e-mail, entre ou recupere a senha.",
+    );
+    expect(
+      screen.getByRole("link", { name: "recupere a senha" }),
+    ).toHaveAttribute("href", "/forgot-password");
+    expect(action).toHaveBeenCalledOnce();
+  });
+
   it("shows a neutral email confirmation state after a registration request", async () => {
     const user = userEvent.setup();
     const action = vi.fn(async (): Promise<RegisterActionState> => ({

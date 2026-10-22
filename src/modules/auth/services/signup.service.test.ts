@@ -66,6 +66,17 @@ describe("signup", () => {
     });
   });
 
+  it("returns account_exists when the email is already registered", async () => {
+    signUp.mockResolvedValue({
+      data: { session: null, user: null },
+      error: { code: "user_already_exists" },
+    });
+
+    await expect(
+      signup({ email: "usuario@lucrivo.com", password: "senha-segura1" }),
+    ).resolves.toEqual({ status: "error", error: "account_exists" });
+  });
+
   it("returns no user id when confirmation has no identity", async () => {
     signUp.mockResolvedValue({
       data: { session: null, user: { id: "user-3", identities: [] } },

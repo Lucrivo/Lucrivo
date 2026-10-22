@@ -11,7 +11,11 @@ type SignupServiceResult =
   | {
       status: "error";
       error:
-        "weak_password" | "signup_disabled" | "rate_limit" | "signup_failed";
+        | "weak_password"
+        | "signup_disabled"
+        | "rate_limit"
+        | "account_exists"
+        | "signup_failed";
     };
 
 async function signup(
@@ -30,6 +34,8 @@ async function signup(
         return { status: "error", error: "weak_password" };
       if (error.code === "signup_disabled")
         return { status: "error", error: "signup_disabled" };
+      if (error.code === "user_already_exists")
+        return { status: "error", error: "account_exists" };
       if (
         error.code === "over_email_send_rate_limit" ||
         error.code === "over_request_rate_limit"
