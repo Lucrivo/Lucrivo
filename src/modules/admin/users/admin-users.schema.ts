@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { adminPageSchema, pageNumberSchema } from "@/modules/admin/admin-page";
+import { reportPriorities } from "@/modules/reports/types";
 
 const uuid = z.uuid();
 const isoDateTimeSchema = z.iso.datetime({ offset: true });
@@ -82,7 +83,7 @@ const verdictSchema = z.enum([
   "adequate_margin",
   "above_target",
 ]);
-const prioritySchema = z.enum(["cost", "price", "margin", "volume"]);
+const prioritySchema = z.enum(reportPriorities);
 
 const currentSubscriptionSchema = z
   .object({
