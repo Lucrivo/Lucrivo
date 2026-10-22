@@ -40,8 +40,7 @@ function resolveAdminUserFilters(
 
   return listFilterSchema.parse({
     ...stored,
-    cursor: urlFilters.cursor,
-    back: urlFilters.back,
+    page: urlFilters.page,
   });
 }
 

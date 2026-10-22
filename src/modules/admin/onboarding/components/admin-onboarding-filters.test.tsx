@@ -67,12 +67,7 @@ describe("admin onboarding navigation and filters", () => {
       consent: "granted",
       from: "2026-10-01",
       to: "2026-11-01",
-      cursor: Buffer.from(
-        JSON.stringify({
-          completedAt: "2026-10-09T12:00:00+00:00",
-          userId: "97000000-0000-4000-8000-000000000002",
-        }),
-      ).toString("base64url"),
+      page: "3",
     });
     render(
       <AdminOnboardingFilters navigation={navigation} catalog={catalog} />,
@@ -97,7 +92,7 @@ describe("admin onboarding navigation and filters", () => {
     );
     const href = replace.mock.calls.at(-1)?.[0] as string;
     expect(href).not.toContain("subcategoryId");
-    expect(href).not.toContain("cursor");
+    expect(href).not.toContain("page=");
   });
 
   it("removes an active filter without a document reload", async () => {

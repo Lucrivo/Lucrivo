@@ -39,7 +39,13 @@ describe("AdminOnboardingPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getOverview.mockResolvedValue({ generatedAt: "2026-10-09T12:00:00Z" });
-    getContacts.mockResolvedValue({ items: [], nextCursor: null });
+    getContacts.mockResolvedValue({
+      items: [],
+      page: 1,
+      pageSize: 20,
+      totalCount: 0,
+      totalPages: 0,
+    });
     getCatalog.mockResolvedValue([]);
   });
 

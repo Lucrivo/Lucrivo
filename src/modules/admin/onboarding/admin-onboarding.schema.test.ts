@@ -67,19 +67,28 @@ describe("admin onboarding schemas", () => {
     expect(
       adminOnboardingContactsSchema.safeParse({
         items: [contact],
-        nextCursor: null,
+        page: 1,
+        pageSize: 20,
+        totalCount: 1,
+        totalPages: 1,
       }).success,
     ).toBe(true);
     expect(
       adminOnboardingContactsSchema.safeParse({
         items: Array.from({ length: 51 }, () => contact),
-        nextCursor: null,
+        page: 1,
+        pageSize: 20,
+        totalCount: 51,
+        totalPages: 3,
       }).success,
     ).toBe(false);
     expect(
       adminOnboardingContactsSchema.safeParse({
         items: [{ ...contact, email: "nao-pode@example.com" }],
-        nextCursor: null,
+        page: 1,
+        pageSize: 20,
+        totalCount: 1,
+        totalPages: 1,
       }).success,
     ).toBe(false);
     expect(
@@ -91,13 +100,19 @@ describe("admin onboarding schemas", () => {
             customSubcategory: "Reformas residenciais",
           },
         ],
-        nextCursor: null,
+        page: 1,
+        pageSize: 20,
+        totalCount: 1,
+        totalPages: 1,
       }).success,
     ).toBe(true);
     expect(
       adminOnboardingContactsSchema.safeParse({
         items: [{ ...contact, customSubcategory: "Texto indevido" }],
-        nextCursor: null,
+        page: 1,
+        pageSize: 20,
+        totalCount: 1,
+        totalPages: 1,
       }).success,
     ).toBe(false);
   });

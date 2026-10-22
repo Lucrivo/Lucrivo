@@ -14,11 +14,11 @@ describe("admin user filter cookie", () => {
   });
 
   it("restores saved filters when the URL only contains pagination", () => {
-    expect(resolveAdminUserFilters({ cursor: "next" }, saved)).toEqual({
+    expect(resolveAdminUserFilters({ page: "3" }, saved)).toEqual({
       q: "cliente@example.com",
       state: "blocked",
       access: "courtesy",
-      cursor: "next",
+      page: 3,
     });
   });
 
@@ -27,6 +27,7 @@ describe("admin user filter cookie", () => {
       q: "",
       state: "active",
       access: "all",
+      page: 1,
     });
   });
 
@@ -35,6 +36,7 @@ describe("admin user filter cookie", () => {
       q: "",
       state: "current",
       access: "all",
+      page: 1,
     });
     expect(parseStoredAdminUserFilters("x".repeat(1025))).toBeNull();
     expect(
@@ -48,6 +50,6 @@ describe("admin user filter cookie", () => {
     expect(hasExplicitUserFilters({ q: "" })).toBe(true);
     expect(hasExplicitUserFilters({ state: "current" })).toBe(true);
     expect(hasExplicitUserFilters({ access: "all" })).toBe(true);
-    expect(hasExplicitUserFilters({ cursor: "next" })).toBe(false);
+    expect(hasExplicitUserFilters({ page: "2" })).toBe(false);
   });
 });

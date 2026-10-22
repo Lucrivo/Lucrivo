@@ -62,7 +62,7 @@ async function POST(request: Request) {
   const parsed = storedFilterSchema.safeParse(input);
   if (!parsed.success) return json({ error: "invalid_filters" }, 400);
 
-  const response = json({ href: listUrl(parsed.data) }, 200);
+  const response = json({ href: listUrl({ ...parsed.data, page: 1 }) }, 200);
   response.cookies.set(ADMIN_USER_FILTER_COOKIE, JSON.stringify(parsed.data), {
     ...cookieOptions(),
     maxAge: COOKIE_MAX_AGE_SECONDS,

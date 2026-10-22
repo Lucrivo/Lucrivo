@@ -2,10 +2,8 @@ import { z } from "zod";
 
 import {
   adminOnboardingConsentSchema,
-  adminOnboardingCursorSchema,
   adminOnboardingTabSchema,
   type AdminOnboardingConsent,
-  type AdminOnboardingCursor,
   type AdminOnboardingTab,
 } from "./admin-onboarding.schema";
 
@@ -17,7 +15,7 @@ type AdminOnboardingFilters = {
   consent: AdminOnboardingConsent;
   from: string | null;
   to: string | null;
-  cursor: string | null;
+  page: number;
 };
 type AdminOnboardingNavigation = {
   tab: AdminOnboardingTab;
@@ -44,28 +42,15 @@ function parsePositiveId(value: string | undefined) {
   return Number.isSafeInteger(parsed) ? parsed : null;
 }
 
+function parsePage(value: string | undefined) {
+  if (!value || !/^[1-9][0-9]*$/.test(value)) return 1;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed <= 1_000_000 ? parsed : 1;
+}
+
 function parseDate(value: string | undefined) {
   const parsed = dateSchema.safeParse(value);
   return parsed.success ? parsed.data : null;
-}
-
-function decodeAdminOnboardingCursor(
-  raw: string | null | undefined,
-): AdminOnboardingCursor | null {
-  if (!raw || raw.length > 500) return null;
-  try {
-    return adminOnboardingCursorSchema.parse(
-      JSON.parse(Buffer.from(raw, "base64url").toString("utf8")),
-    );
-  } catch {
-    return null;
-  }
-}
-
-function encodeAdminOnboardingCursor(cursor: AdminOnboardingCursor) {
-  return Buffer.from(
-    JSON.stringify(adminOnboardingCursorSchema.parse(cursor)),
-  ).toString("base64url");
 }
 
 function parseAdminOnboardingNavigation(
@@ -76,8 +61,6 @@ function parseAdminOnboardingNavigation(
   const rawQuery = scalar(params.q)?.trim() ?? "";
   const rawConsent = scalar(params.consent);
   const parsedConsent = adminOnboardingConsentSchema.safeParse(rawConsent);
-  const rawCursor = scalar(params.cursor);
-  const cursor = decodeAdminOnboardingCursor(rawCursor);
 
   return {
     tab: parsedTab.success ? parsedTab.data : "overview",
@@ -88,7 +71,7 @@ function parseAdminOnboardingNavigation(
       consent: parsedConsent.success ? parsedConsent.data : "all",
       from: parseDate(scalar(params.from)),
       to: parseDate(scalar(params.to)),
-      cursor: cursor && rawCursor ? rawCursor : null,
+      page: parsePage(scalar(params.page)),
     },
   };
 }
@@ -97,15 +80,11 @@ function adminOnboardingUrl(
   navigation: AdminOnboardingNavigation,
   patch: Partial<AdminOnboardingFilters> = {},
 ) {
-  const changesFilter = Object.keys(patch).some((key) => key !== "cursor");
+  const changesFilter = Object.keys(patch).some((key) => key !== "page");
   const filters: AdminOnboardingFilters = {
     ...navigation.filters,
     ...patch,
-    cursor: changesFilter
-      ? null
-      : patch.cursor === undefined
-        ? navigation.filters.cursor
-        : patch.cursor,
+    page: changesFilter ? 1 : (patch.page ?? navigation.filters.page),
   };
 
   if (
@@ -127,15 +106,13 @@ function adminOnboardingUrl(
   if (filters.consent !== "all") params.set("consent", filters.consent);
   if (filters.from !== null) params.set("from", filters.from);
   if (filters.to !== null) params.set("to", filters.to);
-  if (filters.cursor !== null) params.set("cursor", filters.cursor);
+  if (filters.page !== 1) params.set("page", String(filters.page));
   const query = params.toString();
   return `/admin/onboarding${query ? `?${query}` : ""}`;
 }
 
 export {
   adminOnboardingUrl,
-  decodeAdminOnboardingCursor,
-  encodeAdminOnboardingCursor,
   parseAdminOnboardingNavigation,
   type AdminOnboardingFilters,
   type AdminOnboardingNavigation,

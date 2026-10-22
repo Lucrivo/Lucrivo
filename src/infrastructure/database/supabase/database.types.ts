@@ -1157,6 +1157,17 @@ export type Database = {
         };
         Returns: Json;
       };
+      change_admin_user_v2: {
+        Args: {
+          p_action: string;
+          p_courtesy_duration_days: number;
+          p_courtesy_expires_at: string;
+          p_expected_version: number;
+          p_reason: string;
+          p_user_id: string;
+        };
+        Returns: Json;
+      };
       complete_report_ai_turn_v1: {
         Args: {
           p_answer: string;
@@ -1462,6 +1473,7 @@ export type Database = {
         Returns: Json;
       };
       get_admin_user_v1: { Args: { p_user_id: string }; Returns: Json };
+      get_admin_user_v2: { Args: { p_user_id: string }; Returns: Json };
       get_client_dashboard_v1: {
         Args: {
           p_categories?: string[];
@@ -1491,8 +1503,39 @@ export type Database = {
         };
         Returns: Json;
       };
+      list_admin_onboarding_contacts_v2: {
+        Args: {
+          p_consent?: string;
+          p_from?: string;
+          p_page?: number;
+          p_page_size?: number;
+          p_query?: string;
+          p_segment_id?: number;
+          p_subcategory_id?: number;
+          p_to?: string;
+        };
+        Returns: Json;
+      };
       list_admin_recent_subscriptions_v1: {
         Args: { p_billing_mode: string; p_period: string; p_state: string };
+        Returns: Json;
+      };
+      list_admin_user_diagnoses_v2: {
+        Args: {
+          p_cursor_created_at?: string;
+          p_cursor_id?: string;
+          p_limit?: number;
+          p_user_id: string;
+        };
+        Returns: Json;
+      };
+      list_admin_user_history_v2: {
+        Args: {
+          p_cursor_event_key?: string;
+          p_cursor_occurred_at?: string;
+          p_limit?: number;
+          p_user_id: string;
+        };
         Returns: Json;
       };
       list_admin_user_items_v1: {
@@ -1505,12 +1548,31 @@ export type Database = {
         };
         Returns: Json;
       };
+      list_admin_user_subscriptions_v2: {
+        Args: {
+          p_cursor_created_at?: string;
+          p_cursor_id?: string;
+          p_limit?: number;
+          p_user_id: string;
+        };
+        Returns: Json;
+      };
       list_admin_users_v1: {
         Args: {
           p_access?: string;
           p_cursor_created_at?: string;
           p_cursor_id?: string;
           p_limit?: number;
+          p_query?: string;
+          p_state?: string;
+        };
+        Returns: Json;
+      };
+      list_admin_users_v2: {
+        Args: {
+          p_access?: string;
+          p_page?: number;
+          p_page_size?: number;
           p_query?: string;
           p_state?: string;
         };

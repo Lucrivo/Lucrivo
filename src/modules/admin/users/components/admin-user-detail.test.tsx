@@ -10,6 +10,10 @@ vi.mock("../change-admin-user.action", () => ({ changeAdminUser: vi.fn() }));
 const user: User = {
   id: "96300000-0000-4000-8000-000000000002",
   email: "cliente@example.com",
+  fullName: "Ana Pereira",
+  onboardingCompletedAt: null,
+  segment: null,
+  subcategory: null,
   createdAt: "2026-09-16T12:00:00+00:00",
   lastSignInAt: null,
   state: "blocked",
@@ -36,6 +40,7 @@ describe("admin user detail", () => {
     expect(
       screen.getByRole("link", { name: /voltar para usuários/i }),
     ).toHaveAttribute("href", "/admin/users?state=blocked");
+    expect(screen.getByRole("heading", { name: "Ana Pereira" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Perfil" })).toHaveAttribute(
       "aria-selected",
       "true",
@@ -56,13 +61,15 @@ describe("admin user detail", () => {
         items={{
           items: [
             {
-              id: "1",
-              createdAt: user.createdAt,
-              actorEmail: "admin@example.com",
-              action: "blocked",
-              reason: "Solicitação",
-              before: {},
-              after: {},
+              eventKey: "admin:1",
+              occurredAt: user.createdAt,
+              kind: "admin_blocked",
+              title: "Usuário bloqueado",
+              payload: {
+                actorEmail: "admin@example.com",
+                reason: "Solicitação",
+                changes: [],
+              },
             },
           ],
           nextCursor: null,
@@ -70,7 +77,7 @@ describe("admin user detail", () => {
       />,
     );
     expect(screen.getByText("Usuário bloqueado")).toBeVisible();
-    expect(screen.getByText(/Motivo: Solicitação/)).toBeVisible();
+    expect(screen.getByText("Solicitação")).toBeVisible();
     expect(screen.getByRole("tab", { name: "Histórico" })).toHaveAttribute(
       "aria-selected",
       "true",
@@ -93,15 +100,30 @@ describe("admin user detail", () => {
         items={{
           items: [
             {
-              id: "1",
+              id: "96300000-0000-4000-8000-000000000003",
               createdAt: user.createdAt,
+              catalogCode: "standard",
               billingMode: "semiannual",
               amountCents: 17940,
               status: "active",
               paymentMethod: "pix",
+              chargeType: "detached",
+              currency: "BRL",
+              installmentLimit: null,
+              accessMonths: 6,
+              bonusMonths: 0,
               accessStartsAt: user.createdAt,
               accessEndsAt: "2027-03-16T12:00:00+00:00",
               cancelAtPeriodEnd: false,
+              cancellationRequestedAt: null,
+              cancellationConfirmedAt: null,
+              canceledAt: null,
+              payment: {
+                confirmedCount: 1,
+                receivedCents: 17940,
+                lastPaymentAt: user.createdAt,
+              },
+              refund: null,
             },
           ],
           nextCursor: null,
@@ -109,7 +131,7 @@ describe("admin user detail", () => {
       />,
     );
 
-    expect(screen.getAllByText(/Semestral/)).toHaveLength(1);
+    expect(screen.getAllByText(/Semestral/)).toHaveLength(2);
     expect(screen.queryByText(/Anual/)).not.toBeInTheDocument();
   });
 });

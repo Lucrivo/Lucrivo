@@ -167,11 +167,30 @@ administrador atribuído ao singleton não aparece na lista nem pode ser alvo de
 ações. Busque um usuário pelo e-mail e confira o UUID antes de confirmar uma
 alteração, especialmente quando houver e-mails semelhantes.
 
+A lista usa paginação por número de página e apresenta os totais exatos de
+usuários e páginas para os filtros atuais. Busca, estado e origem do acesso são
+preservados ao navegar. A tabela de contatos autorizados do onboarding segue o
+mesmo modelo; as coleções internas do detalhe continuam com paginação limitada
+por cursor.
+
+O detalhe permanece acessível ao administrador para contas ativas, bloqueadas e
+excluídas logicamente. As abas mostram perfil, diagnósticos, assinaturas e uma
+linha do tempo consolidada. Ausência de perfil usa textos neutros, sem impedir a
+inspeção da conta. Diagnósticos apresentam os valores operacionais traduzidos,
+totais de tokens e estimativa em USD apenas para modelos com preço catalogado;
+um modelo desconhecido mantém os tokens e informa que a estimativa está
+indisponível. Dados brutos de relatório, prompts, respostas, identificadores de
+provedor, URLs de checkout, payloads de webhook e WhatsApp não fazem parte
+dessas projeções de detalhe.
+
 Toda alteração exige um motivo com até 500 caracteres e registra um evento
-imutável com operador, horário e estado anterior/posterior. O histórico só começa
-com a implantação desta funcionalidade; cadastro e último login são fatos da
-conta, não um histórico retroativo de sessões. Se a tela informar conflito de
-versão, recarregue o cadastro, revise o estado atual e confirme novamente.
+imutável com operador, horário e estado anterior/posterior. A linha do tempo
+também inclui cadastro, conclusão ou atualização de perfil, consentimento,
+diagnósticos, contratos, pagamentos, cancelamentos e reembolsos existentes nas
+fontes operacionais. Eventos de administração só existem a partir da implantação
+do respectivo registro; último login continua sendo um fato da conta, não um
+histórico retroativo de sessões. Se a tela informar conflito de versão,
+recarregue o cadastro, revise o estado atual e confirme novamente.
 
 ### Semântica e recuperação
 
@@ -188,6 +207,12 @@ versão, recarregue o cadastro, revise o estado atual e confirme novamente.
   processo jurídico de eliminação. O banco recusa excluir quem ainda tem acesso
   pago vigente.
 
+Ao conceder cortesia, prefira os prazos de 1, 7 ou 30 dias. O banco calcula a
+validade a partir do instante da confirmação e a resposta da operação devolve a
+data persistida, exibida pela interface. A opção personalizada recebe data e
+horário futuros em `America/Sao_Paulo`. Não calcule os prazos predefinidos no
+navegador nem reutilize uma data exibida antes da confirmação.
+
 Se houver conflito pago, encaminhe o caso ao fluxo financeiro competente antes
 de repetir a ação. Esta interface não cancela cobrança, não emite reembolso e
 não chama o Asaas. Se uma confirmação de pagamento tentar ativar um contrato de
@@ -200,3 +225,18 @@ normal de migrações não possui essa tabela, portanto não instala índice tri
 diretamente nela. Monitore latência da busca à medida que a base crescer e
 planeje uma projeção administrada separada antes de volumes altos; não altere
 propriedade ou permissões do esquema Auth apenas para otimizar a tela.
+
+## Compatibilidade dos RPCs administrativos de leitura
+
+A aplicação atual usa as versões `v2` das leituras de usuários, detalhes,
+histórico e contatos de onboarding. Os grants de execução das leituras `v1`
+permanecem durante esta implantação para compatibilidade com uma versão anterior
+que ainda possa estar em trânsito. Revogue-os somente em uma migration posterior
+e depois de confirmar, por código implantado e telemetria disponível, que não há
+mais chamadores `v1`. Não revogue funções de mutação ou outros RPCs por
+semelhança de nome.
+
+A rota dedicada `/admin/subscriptions` foi removida e deve responder com o 404
+normal da aplicação. Consulte contratos e pagamentos na aba **Assinatura** do
+usuário; os indicadores agregados de assinaturas continuam no dashboard
+administrativo.

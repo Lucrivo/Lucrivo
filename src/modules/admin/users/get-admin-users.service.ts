@@ -4,12 +4,12 @@ import { requireAdmin } from "@/modules/auth/services/require-admin";
 
 import {
   adminUserDetailSchema,
+  adminUserDiagnosesPageSchema,
+  adminUserHistoryPageSchema,
   adminUserListSchema,
-  cursorSchema,
-  itemSchemas,
+  adminUserSubscriptionsPageSchema,
   uuid,
   type AdminUserFilters,
-  type AdminUserKind,
 } from "./admin-users.schema";
 import { decodeCursor } from "./admin-users.urls";
 
@@ -20,74 +20,111 @@ class AdminUsersUnavailableError extends Error {
   }
 }
 
+type RpcError = { code?: string } | null;
+
+function failRead(rpc: string, error: RpcError = null): never {
+  console.error({
+    event: "admin_user_read_failed",
+    rpc,
+    code: error?.code ?? "invalid_response",
+  });
+  throw new AdminUsersUnavailableError();
+}
+
 async function getAdminUsers(filters: AdminUserFilters) {
+  const rpcName = "list_admin_users_v2" as const;
   const { supabase } = await requireAdmin();
-  const decoded = decodeCursor(filters.cursor);
-  const cursor = decoded && uuid.safeParse(decoded.id).success ? decoded : null;
-  const { data, error } = await supabase.rpc("list_admin_users_v1", {
+  const { data, error } = await supabase.rpc(rpcName, {
     p_query: filters.q || undefined,
     p_state: filters.state,
     p_access: filters.access,
-    p_cursor_created_at: cursor?.createdAt,
-    p_cursor_id: cursor?.id,
-    p_limit: 20,
+    p_page: filters.page,
+    p_page_size: 20,
   });
+  if (error) failRead(rpcName, error);
   const parsed = adminUserListSchema.safeParse(data);
-  if (error || !parsed.success) throw new AdminUsersUnavailableError();
+  if (!parsed.success) failRead(rpcName);
   return parsed.data;
 }
 
 async function getAdminUser(userId: string) {
+  const rpcName = "get_admin_user_v2" as const;
   const { supabase } = await requireAdmin();
-  const { data, error } = await supabase.rpc("get_admin_user_v1", {
-    p_user_id: userId,
-  });
-  if (error) throw new AdminUsersUnavailableError();
+  const { data, error } = await supabase.rpc(rpcName, { p_user_id: userId });
+  if (error) failRead(rpcName, error);
   if (data === null) return null;
   const parsed = adminUserDetailSchema.safeParse(data);
-  if (!parsed.success) throw new AdminUsersUnavailableError();
+  if (!parsed.success) failRead(rpcName);
   return parsed.data;
 }
 
-async function getAdminUserItems(
-  userId: string,
-  kind: AdminUserKind,
-  rawCursor?: string,
-) {
+function diagnosisCursor(rawCursor?: string) {
+  const cursor = decodeCursor(rawCursor);
+  return cursor && /^\d+$/.test(cursor.id) ? cursor : null;
+}
+
+function subscriptionCursor(rawCursor?: string) {
+  const cursor = decodeCursor(rawCursor);
+  return cursor && uuid.safeParse(cursor.id).success ? cursor : null;
+}
+
+function historyCursor(rawCursor?: string) {
+  return decodeCursor(rawCursor);
+}
+
+async function getAdminUserDiagnoses(userId: string, rawCursor?: string) {
+  const rpcName = "list_admin_user_diagnoses_v2" as const;
+  const cursor = diagnosisCursor(rawCursor);
   const { supabase } = await requireAdmin();
-  const decoded = decodeCursor(rawCursor);
-  const cursor =
-    decoded &&
-    (kind === "subscriptions"
-      ? uuid.safeParse(decoded.id).success
-      : /^\d+$/.test(decoded.id))
-      ? decoded
-      : null;
-  const { data, error } = await supabase.rpc("list_admin_user_items_v1", {
+  const { data, error } = await supabase.rpc(rpcName, {
     p_user_id: userId,
-    p_kind: kind,
     p_cursor_created_at: cursor?.createdAt,
     p_cursor_id: cursor?.id,
     p_limit: 20,
   });
-  const parsed = itemSchemas[kind].array();
-  const items =
-    data && typeof data === "object" && "items" in data
-      ? parsed.safeParse(data.items)
-      : null;
-  const nextCursor =
-    data && typeof data === "object" && "nextCursor" in data
-      ? cursorSchema.nullable().safeParse(data.nextCursor)
-      : null;
-  if (error || !items?.success || !nextCursor?.success) {
-    throw new AdminUsersUnavailableError();
-  }
-  return { items: items.data, nextCursor: nextCursor.data };
+  if (error) failRead(rpcName, error);
+  const parsed = adminUserDiagnosesPageSchema.safeParse(data);
+  if (!parsed.success) failRead(rpcName);
+  return parsed.data;
+}
+
+async function getAdminUserSubscriptions(userId: string, rawCursor?: string) {
+  const rpcName = "list_admin_user_subscriptions_v2" as const;
+  const cursor = subscriptionCursor(rawCursor);
+  const { supabase } = await requireAdmin();
+  const { data, error } = await supabase.rpc(rpcName, {
+    p_user_id: userId,
+    p_cursor_created_at: cursor?.createdAt,
+    p_cursor_id: cursor?.id,
+    p_limit: 20,
+  });
+  if (error) failRead(rpcName, error);
+  const parsed = adminUserSubscriptionsPageSchema.safeParse(data);
+  if (!parsed.success) failRead(rpcName);
+  return parsed.data;
+}
+
+async function getAdminUserHistory(userId: string, rawCursor?: string) {
+  const rpcName = "list_admin_user_history_v2" as const;
+  const cursor = historyCursor(rawCursor);
+  const { supabase } = await requireAdmin();
+  const { data, error } = await supabase.rpc(rpcName, {
+    p_user_id: userId,
+    p_cursor_occurred_at: cursor?.createdAt,
+    p_cursor_event_key: cursor?.id,
+    p_limit: 20,
+  });
+  if (error) failRead(rpcName, error);
+  const parsed = adminUserHistoryPageSchema.safeParse(data);
+  if (!parsed.success) failRead(rpcName);
+  return parsed.data;
 }
 
 export {
   AdminUsersUnavailableError,
   getAdminUser,
-  getAdminUserItems,
+  getAdminUserDiagnoses,
+  getAdminUserHistory,
   getAdminUsers,
+  getAdminUserSubscriptions,
 };

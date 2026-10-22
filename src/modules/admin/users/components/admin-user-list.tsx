@@ -3,6 +3,7 @@ import { ChevronRightIcon, UsersIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminPagination } from "@/components/admin/admin-pagination";
 import { presentBillingMode } from "@/modules/admin/billing-mode";
 import {
   Table,
@@ -23,7 +24,7 @@ import type {
   AdminUserFilters,
   AdminUserList as ListData,
 } from "../admin-users.schema";
-import { encodeCursor, listUrl } from "../admin-users.urls";
+import { listUrl } from "../admin-users.urls";
 import { AdminUserActions } from "./admin-user-actions";
 import { AdminUserFilterForm } from "./admin-user-filter-form";
 
@@ -61,47 +62,6 @@ function detailUrl(id: string, context: string) {
   return `/admin/users/${id}?from=${encodeURIComponent(context)}`;
 }
 
-function pagination(
-  filters: AdminUserFilters,
-  nextCursor: ListData["nextCursor"],
-) {
-  let stack: string[] = [];
-  try {
-    const parsed: unknown = filters.back
-      ? JSON.parse(Buffer.from(filters.back, "base64url").toString("utf8"))
-      : [];
-    if (
-      Array.isArray(parsed) &&
-      parsed.length <= 100 &&
-      parsed.every((item) => typeof item === "string" && item.length <= 500)
-    )
-      stack = parsed;
-  } catch {
-    /* Invalid history starts at the first page. */
-  }
-  const previous = stack.length
-    ? listUrl(
-        filters,
-        stack.at(-1) || undefined,
-        stack.length > 1
-          ? Buffer.from(JSON.stringify(stack.slice(0, -1))).toString(
-              "base64url",
-            )
-          : undefined,
-      )
-    : null;
-  const next = nextCursor
-    ? listUrl(
-        filters,
-        encodeCursor(nextCursor),
-        Buffer.from(JSON.stringify([...stack, filters.cursor ?? ""])).toString(
-          "base64url",
-        ),
-      )
-    : null;
-  return { previous, next };
-}
-
 function AdminUserList({
   data,
   filters,
@@ -109,8 +69,7 @@ function AdminUserList({
   data: ListData;
   filters: AdminUserFilters;
 }) {
-  const context = listUrl(filters, filters.cursor, filters.back);
-  const { previous, next } = pagination(filters, data.nextCursor);
+  const context = listUrl(filters);
   return (
     <main className="mx-auto grid w-full max-w-[100rem] gap-6">
       <header className="border-primary/10 rounded-3xl border bg-[linear-gradient(135deg,var(--card)_0%,color-mix(in_oklab,var(--primary)_7%,var(--card))_100%)] px-5 py-6 shadow-sm sm:px-7">
@@ -265,32 +224,14 @@ function AdminUserList({
               </ul>
             </>
           )}
-          <nav
-            aria-label="Paginação de usuários"
-            className="flex flex-col items-stretch gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <span className="text-muted-foreground text-sm">
-              {data.items.length} usuário(s) nesta página
-            </span>
-            <div className="flex flex-wrap gap-2 sm:justify-end">
-              {previous && (
-                <Link
-                  href={previous}
-                  className="hover:bg-muted rounded-lg border px-3 py-2 text-sm font-medium focus-visible:outline-2"
-                >
-                  Anterior
-                </Link>
-              )}
-              {next && (
-                <Link
-                  href={next}
-                  className="hover:bg-muted rounded-lg border px-3 py-2 text-sm font-medium focus-visible:outline-2"
-                >
-                  Próxima
-                </Link>
-              )}
-            </div>
-          </nav>
+          <AdminPagination
+            page={data.page}
+            pageSize={data.pageSize}
+            totalCount={data.totalCount}
+            totalPages={data.totalPages}
+            itemLabel={{ singular: "usuário", plural: "usuários" }}
+            buildHref={(page) => listUrl({ ...filters, page })}
+          />
         </CardContent>
       </Card>
     </main>
