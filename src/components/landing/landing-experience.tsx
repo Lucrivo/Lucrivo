@@ -12,8 +12,8 @@ import { FinalCtaSection } from "@/components/landing/final-cta-section";
 import { GuaranteeSection } from "@/components/landing/guarantee-section";
 import { HeroSection } from "@/components/landing/hero-section";
 import { LandingFooter } from "@/components/landing/landing-footer";
+import { LandingOfferDialog } from "@/components/landing/landing-offer-dialog";
 import { LaunchOfferBar } from "@/components/landing/launch-offer-bar";
-import { LaunchOfferDialog } from "@/modules/billing/components/launch-offer-dialog";
 import { LandingNav } from "@/components/landing/landing-nav";
 import {
   resolveLandingOfferPresentation,
@@ -31,10 +31,12 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
 export function LandingExperience({
   prices,
   launchOffer,
+  offerDialogEnabled = false,
   videoUrl,
 }: {
   prices: ActiveBillingPrice[];
   launchOffer?: LaunchOfferView | null;
+  offerDialogEnabled?: boolean;
   videoUrl?: string | null;
 }) {
   const root = useRef<HTMLElement>(null);
@@ -206,20 +208,8 @@ export function LandingExperience({
       )}
     >
       {activeLaunchOffer ? <LaunchOfferBar {...activeLaunchOffer} /> : null}
-      {activeLaunchOffer && offer ? (
-        <LaunchOfferDialog
-          context="landing"
-          offer={{
-            ...activeLaunchOffer,
-            monthlyPriceLabel: offer.monthlyPriceLabel,
-            monthlyRenewalPriceLabel: offer.monthlyRenewalPriceLabel!,
-            semiannualInstallmentLabel: offer.semiannualInstallmentLabel,
-            monthlyAccessMonths: offer.monthlyAccessMonths,
-            monthlyBonusMonths: offer.monthlyBonusMonths,
-            semiannualAccessMonths: offer.semiannualAccessMonths,
-            semiannualBonusMonths: offer.semiannualBonusMonths,
-          }}
-        />
+      {offer && (activeLaunchOffer || offerDialogEnabled) ? (
+        <LandingOfferDialog offer={offer} />
       ) : null}
       <LandingNav />
       <HeroSection offer={offer} videoUrl={videoUrl} />

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { LandingExperience } from "@/components/landing/landing-experience";
+import { readLandingOfferDialogEnabled } from "@/config/landing-offer-dialog-environment";
 import { readLaunchOfferEnvironment } from "@/config/launch-offer-environment";
 import { createClient } from "@/infrastructure/database/supabase/clients/server.client";
 import { isLaunchOfferActive } from "@/modules/billing/domain/launch-offer";
@@ -24,6 +25,7 @@ export default async function Home() {
       <LandingExperience
         prices={[]}
         launchOffer={null}
+        offerDialogEnabled={readLandingOfferDialogEnabled()}
         videoUrl={process.env.NEXT_PUBLIC_LANDING_VIDEO_URL}
       />
     );
@@ -43,6 +45,7 @@ export default async function Home() {
           ? { phase: launchOffer.phase, endsAt: launchOffer.endsAt }
           : null
       }
+      offerDialogEnabled={readLandingOfferDialogEnabled()}
       videoUrl={process.env.NEXT_PUBLIC_LANDING_VIDEO_URL}
     />
   );
