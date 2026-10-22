@@ -29,9 +29,8 @@ function estimateAiUsage(models: AiModelUsage[]): AiCostEstimate | null {
   let priceVersion: string | null = null;
 
   for (const usage of models) {
-    const price = AI_PRICE_CATALOG[
-      usage.model as keyof typeof AI_PRICE_CATALOG
-    ];
+    const price =
+      AI_PRICE_CATALOG[usage.model as keyof typeof AI_PRICE_CATALOG];
     if (
       !price ||
       !isSafeTokenCount(usage.inputTokens) ||
