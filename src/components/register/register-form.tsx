@@ -112,7 +112,18 @@ function RegisterForm({ action }: RegisterFormProps) {
           </span>
         </label>
 
-        {hasError && <AuthFeedback>{errorMessages[state.error]}</AuthFeedback>}
+        {hasError &&
+          (state.error === "account_exists" ? (
+            <AuthFeedback>
+              Se você já tem uma conta com este e-mail, entre ou{" "}
+              <a href="/forgot-password" className="underline underline-offset-4">
+                recupere a senha
+              </a>
+              .
+            </AuthFeedback>
+          ) : (
+            <AuthFeedback>{errorMessages[state.error]}</AuthFeedback>
+          ))}
         {state?.status === "success" && (
           <AuthFeedback variant="success">
             Se o cadastro puder ser concluído, enviaremos uma confirmação para o
