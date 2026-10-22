@@ -7,10 +7,7 @@ import {
   adminOnboardingContactsSchema,
   adminOnboardingOverviewSchema,
 } from "./admin-onboarding.schema";
-import {
-  decodeAdminOnboardingCursor,
-  type AdminOnboardingFilters,
-} from "./admin-onboarding.filters";
+import type { AdminOnboardingFilters } from "./admin-onboarding.filters";
 
 class AdminOnboardingUnavailableError extends Error {
   constructor() {
@@ -69,10 +66,9 @@ async function getAdminOnboardingOverview(range: OverviewRange) {
 }
 
 async function getAdminOnboardingContacts(filters: AdminOnboardingFilters) {
-  const cursor = decodeAdminOnboardingCursor(filters.cursor);
   const { supabase } = await requireAdmin();
   const { data, error } = await supabase.rpc(
-    "list_admin_onboarding_contacts_v1",
+    "list_admin_onboarding_contacts_v2",
     {
       p_query: filters.q || undefined,
       p_segment_id: filters.segmentId ?? undefined,
@@ -80,9 +76,8 @@ async function getAdminOnboardingContacts(filters: AdminOnboardingFilters) {
       p_consent: filters.consent,
       p_from: filters.from ?? undefined,
       p_to: filters.to ?? undefined,
-      p_cursor_completed_at: cursor?.completedAt,
-      p_cursor_user_id: cursor?.userId,
-      p_limit: 20,
+      p_page: filters.page,
+      p_page_size: 20,
     },
   );
   const parsed = adminOnboardingContactsSchema.safeParse(data);

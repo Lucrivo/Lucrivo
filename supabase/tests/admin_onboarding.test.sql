@@ -20,6 +20,14 @@ select has_function(
 );
 select has_function(
   'public',
+  'list_admin_onboarding_contacts_v2',
+  array[
+    'text', 'bigint', 'bigint', 'text', 'date', 'date', 'integer', 'integer'
+  ],
+  'page-count onboarding contact-list RPC exists'
+);
+select has_function(
+  'public',
   'get_admin_business_catalog_v1',
   array[]::text[],
   'versioned admin business-catalog RPC exists'
@@ -73,6 +81,24 @@ select ok(
     'execute'
   ),
   'unintended roles cannot execute the contact-list RPC'
+);
+select ok(
+  not pg_catalog.has_function_privilege(
+    'anon',
+    'public.list_admin_onboarding_contacts_v2(text,bigint,bigint,text,date,date,integer,integer)',
+    'execute'
+  )
+  and not pg_catalog.has_function_privilege(
+    'service_role',
+    'public.list_admin_onboarding_contacts_v2(text,bigint,bigint,text,date,date,integer,integer)',
+    'execute'
+  )
+  and pg_catalog.has_function_privilege(
+    'authenticated',
+    'public.list_admin_onboarding_contacts_v2(text,bigint,bigint,text,date,date,integer,integer)',
+    'execute'
+  ),
+  'only authenticated callers reach the v2 contact-list authorization check'
 );
 select ok(
   pg_catalog.has_function_privilege(
@@ -270,6 +296,11 @@ select throws_ok(
   '42501', 'administrator access required',
   'ordinary authenticated users cannot list onboarding contacts'
 );
+select throws_ok(
+  $$ select public.list_admin_onboarding_contacts_v2(null,null,null,'all',null,null,1,20) $$,
+  '42501', 'administrator access required',
+  'ordinary authenticated users cannot list paged onboarding contacts'
+);
 reset role;
 
 set local role authenticated;
@@ -292,6 +323,11 @@ select throws_ok(
   $$ select public.list_admin_onboarding_contacts_v1(null,null,null,'all',null,null,null,null,20) $$,
   '42501', 'administrator access required',
   'administrator at aal1 cannot list onboarding contacts'
+);
+select throws_ok(
+  $$ select public.list_admin_onboarding_contacts_v2(null,null,null,'all',null,null,1,20) $$,
+  '42501', 'administrator access required',
+  'administrator at aal1 cannot list paged onboarding contacts'
 );
 reset role;
 
@@ -523,6 +559,56 @@ select is(
   ),
   4,
   'oversized page requests are capped and deleted contacts remain excluded'
+);
+
+select is(
+  (
+    select pg_catalog.jsonb_agg(key order by key)
+    from pg_catalog.jsonb_object_keys(
+      public.list_admin_onboarding_contacts_v2(
+        null, null, null, 'all', null, null, 1, 2
+      )
+    ) as keys(key)
+  ),
+  '["items","page","pageSize","totalCount","totalPages"]'::jsonb,
+  'v2 response exposes only the shared page keys'
+);
+select is(
+  public.list_admin_onboarding_contacts_v2(
+    null, null, null, 'all', null, null, 1, 2
+  ) - 'items',
+  '{"page":1,"pageSize":2,"totalCount":4,"totalPages":2}'::jsonb,
+  'v2 returns exact unfiltered totals'
+);
+select is(
+  public.list_admin_onboarding_contacts_v2(
+    null, null, null, 'all', null, null, 2, 2
+  ) #>> '{items,0,fullName}',
+  'Ana Fórmula',
+  'v2 page two preserves deterministic descending order'
+);
+select is(
+  public.list_admin_onboarding_contacts_v2(
+    null,
+    (select id from public.business_segments where name = 'Alimentação'),
+    null, 'all', null, null, 1, 20
+  ) - 'items',
+  '{"page":1,"pageSize":20,"totalCount":2,"totalPages":1}'::jsonb,
+  'v2 totals honor active filters'
+);
+select is(
+  public.list_admin_onboarding_contacts_v2(
+    'sem resultado', null, null, 'all', null, null, 1, 20
+  ),
+  '{"items":[],"page":1,"pageSize":20,"totalCount":0,"totalPages":0}'::jsonb,
+  'v2 represents an empty filtered result exactly'
+);
+select is(
+  public.list_admin_onboarding_contacts_v2(
+    null, null, null, 'all', null, null, 3, 2
+  ),
+  '{"items":[],"page":3,"pageSize":2,"totalCount":4,"totalPages":2}'::jsonb,
+  'v2 preserves totals for an out-of-range page'
 );
 
 select throws_ok(

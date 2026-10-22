@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { adminPageSchema } from "@/modules/admin/admin-page";
+
 const uuidSchema = z.uuid();
 const isoDateTimeSchema = z.iso.datetime({ offset: true });
 const positiveIdSchema = z.number().int().positive();
@@ -8,13 +10,6 @@ const rateSchema = z.number().int().min(0).max(10_000).nullable();
 
 const adminOnboardingTabSchema = z.enum(["overview", "contacts", "catalog"]);
 const adminOnboardingConsentSchema = z.enum(["all", "granted", "declined"]);
-const adminOnboardingCursorSchema = z
-  .object({
-    completedAt: isoDateTimeSchema,
-    userId: uuidSchema,
-  })
-  .strict();
-
 const distributionItemSchema = z
   .object({
     id: positiveIdSchema.nullable(),
@@ -83,12 +78,11 @@ const adminOnboardingContactSchema = z
     }
   });
 
-const adminOnboardingContactsSchema = z
-  .object({
-    items: z.array(adminOnboardingContactSchema).max(50),
-    nextCursor: adminOnboardingCursorSchema.nullable(),
-  })
-  .strict();
+const adminOnboardingContactsSchema = adminPageSchema(
+  adminOnboardingContactSchema,
+).refine((value) => value.items.length <= value.pageSize, {
+  message: "Onboarding page contains too many contacts",
+});
 
 const adminBusinessSubcategorySchema = z
   .object({
@@ -160,7 +154,6 @@ const businessCatalogMutationSchema = z
 
 type AdminOnboardingTab = z.infer<typeof adminOnboardingTabSchema>;
 type AdminOnboardingConsent = z.infer<typeof adminOnboardingConsentSchema>;
-type AdminOnboardingCursor = z.infer<typeof adminOnboardingCursorSchema>;
 type AdminOnboardingOverview = z.infer<typeof adminOnboardingOverviewSchema>;
 type AdminOnboardingContacts = z.infer<typeof adminOnboardingContactsSchema>;
 type AdminOnboardingContact = z.infer<typeof adminOnboardingContactSchema>;
@@ -177,7 +170,6 @@ export {
   adminBusinessSubcategorySchema,
   adminOnboardingConsentSchema,
   adminOnboardingContactsSchema,
-  adminOnboardingCursorSchema,
   adminOnboardingOverviewSchema,
   adminOnboardingTabSchema,
   businessCatalogMutationSchema,
@@ -188,7 +180,6 @@ export {
   type AdminOnboardingConsent,
   type AdminOnboardingContact,
   type AdminOnboardingContacts,
-  type AdminOnboardingCursor,
   type AdminOnboardingOverview,
   type AdminOnboardingTab,
   type BusinessCatalogMutation,

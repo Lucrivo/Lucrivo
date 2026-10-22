@@ -20,10 +20,10 @@ const data: Contacts = {
       completedAt: "2026-10-09T12:00:00+00:00",
     },
   ],
-  nextCursor: {
-    completedAt: "2026-10-09T12:00:00+00:00",
-    userId: "97000000-0000-4000-8000-000000000002",
-  },
+  page: 1,
+  pageSize: 20,
+  totalCount: 21,
+  totalPages: 2,
 };
 
 describe("AdminOnboardingContacts", () => {
@@ -60,16 +60,24 @@ describe("AdminOnboardingContacts", () => {
     expect(
       screen.queryByText(/receita|faturamento|cobrança/i),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Próxima" })).toHaveAttribute(
-      "href",
-      expect.stringContaining("cursor="),
-    );
+    expect(
+      screen.getByText("1–20 de 21 contatos · Página 1 de 2"),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Próxima página" }),
+    ).toHaveAttribute("href", expect.stringContaining("page=2"));
   });
 
   it("renders the required empty state", () => {
     render(
       <AdminOnboardingContacts
-        data={{ items: [], nextCursor: null }}
+        data={{
+          items: [],
+          page: 1,
+          pageSize: 20,
+          totalCount: 0,
+          totalPages: 0,
+        }}
         navigation={parseAdminOnboardingNavigation({ tab: "contacts" })}
       />,
     );
@@ -104,7 +112,7 @@ describe("AdminOnboardingContacts", () => {
           consent: "declined",
           from: "2026-10-01",
           to: "2026-11-01",
-          cursor: "invalid",
+          page: "3",
         })}
       />,
     );

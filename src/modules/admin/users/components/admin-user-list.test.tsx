@@ -28,7 +28,10 @@ describe("admin user list", () => {
       <AdminUserList
         data={{
           items: [user],
-          nextCursor: { createdAt: user.createdAt, id: user.id },
+          page: 1,
+          pageSize: 20,
+          totalCount: 21,
+          totalPages: 2,
         }}
         filters={parseFilters({})}
       />,
@@ -47,17 +50,25 @@ describe("admin user list", () => {
       name: "Ver usuário cliente@example.com",
     })[1];
     expect(mobileLink.closest("li")).toHaveClass("min-w-0", "overflow-hidden");
-    expect(screen.getByRole("link", { name: "Próxima" })).toHaveAttribute(
-      "href",
-      expect.stringContaining("cursor="),
-    );
+    expect(
+      screen.getByText("1–20 de 21 usuários · Página 1 de 2"),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Próxima página" }),
+    ).toHaveAttribute("href", expect.stringContaining("page=2"));
     expect(screen.queryByText("Editar")).not.toBeInTheDocument();
   });
 
   it("shows an explicit empty state", () => {
     render(
       <AdminUserList
-        data={{ items: [], nextCursor: null }}
+        data={{
+          items: [],
+          page: 1,
+          pageSize: 20,
+          totalCount: 0,
+          totalPages: 0,
+        }}
         filters={parseFilters({ q: "nada" })}
       />,
     );
@@ -82,7 +93,10 @@ describe("admin user list", () => {
               },
             },
           ],
-          nextCursor: null,
+          page: 1,
+          pageSize: 20,
+          totalCount: 1,
+          totalPages: 1,
         }}
         filters={parseFilters({})}
       />,

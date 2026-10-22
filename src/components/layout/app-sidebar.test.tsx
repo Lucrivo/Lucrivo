@@ -212,7 +212,6 @@ describe("AppSidebar", () => {
       ["Dashboard", "/admin"],
       ["Usuários", "/admin/users"],
       ["Onboarding", "/admin/onboarding"],
-      ["Assinaturas", "/admin/subscriptions"],
       ["Área financeira", "/dashboard"],
     ]) {
       expect(screen.getByRole("link", { name: label })).toHaveAttribute(
@@ -220,6 +219,9 @@ describe("AppSidebar", () => {
         href,
       );
     }
+    expect(
+      screen.queryByRole("link", { name: "Assinaturas" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("Administração")).toBeVisible();
   });
 
@@ -252,8 +254,8 @@ describe("AppSidebar", () => {
       "true",
     );
     expect(
-      screen.getByRole("link", { name: "Assinaturas" }),
-    ).not.toHaveAttribute("data-active", "true");
+      screen.queryByRole("link", { name: "Assinaturas" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows the administrative shortcut to admin users in the financial area", () => {

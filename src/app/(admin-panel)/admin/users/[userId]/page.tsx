@@ -1,13 +1,12 @@
 import { notFound } from "next/navigation";
 
 import { AdminUserDetail } from "@/modules/admin/users/components/admin-user-detail";
-import {
-  uuid,
-  type AdminUserKind,
-} from "@/modules/admin/users/admin-users.schema";
+import { uuid } from "@/modules/admin/users/admin-users.schema";
 import {
   getAdminUser,
-  getAdminUserItems,
+  getAdminUserDiagnoses,
+  getAdminUserHistory,
+  getAdminUserSubscriptions,
 } from "@/modules/admin/users/get-admin-users.service";
 
 type Params = { userId: string };
@@ -34,11 +33,7 @@ export default async function AdminUserPage({
       : "profile";
   const user = await getAdminUser(userId);
   if (!user) notFound();
-  const kind: AdminUserKind | null =
-    tab === "profile" ? null : tab === "subscription" ? "subscriptions" : tab;
-  const items = kind
-    ? await getAdminUserItems(userId, kind, scalar(query.cursor))
-    : null;
+  const cursor = scalar(query.cursor);
   const from = scalar(query.from);
   let back = "/admin/users";
   if (from && from.length <= 2500) {
@@ -53,5 +48,28 @@ export default async function AdminUserPage({
       /* Ignore malformed list context. */
     }
   }
-  return <AdminUserDetail user={user} tab={tab} items={items} back={back} />;
+  if (tab === "diagnoses") {
+    const items = await getAdminUserDiagnoses(userId, cursor);
+    return (
+      <AdminUserDetail user={user} tab="diagnoses" items={items} back={back} />
+    );
+  }
+  if (tab === "subscription") {
+    const items = await getAdminUserSubscriptions(userId, cursor);
+    return (
+      <AdminUserDetail
+        user={user}
+        tab="subscription"
+        items={items}
+        back={back}
+      />
+    );
+  }
+  if (tab === "history") {
+    const items = await getAdminUserHistory(userId, cursor);
+    return (
+      <AdminUserDetail user={user} tab="history" items={items} back={back} />
+    );
+  }
+  return <AdminUserDetail user={user} tab="profile" items={null} back={back} />;
 }

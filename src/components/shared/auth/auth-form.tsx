@@ -7,7 +7,6 @@ import {
   CheckCircle2Icon,
   EyeIcon,
   EyeOffIcon,
-  GlobeIcon,
   LockKeyholeIcon,
   MailIcon,
   TriangleAlertIcon,
@@ -20,45 +19,22 @@ import { Spinner } from "@/components/ui/spinner";
 import { passwordPolicy } from "@/schemas/auth/password-policy";
 
 type AuthFormShellProps = {
-  title: string;
-  subtitle: string;
-  providerLabel?: string;
+  title: React.ReactNode;
+  subtitle?: string;
   children: React.ReactNode;
 };
 
-function AuthFormShell({
-  title,
-  subtitle,
-  providerLabel,
-  children,
-}: AuthFormShellProps) {
+function AuthFormShell({ title, subtitle, children }: AuthFormShellProps) {
   return (
     <div className="animate-fade-up mx-auto w-full max-w-md [animation-delay:120ms]">
       <div className="mb-9">
         <h1 className="text-3xl sm:text-4xl">{title}</h1>
-        <p className="text-muted-foreground mt-2 text-base sm:text-lg">
-          {subtitle}
-        </p>
+        {subtitle && (
+          <p className="text-muted-foreground mt-2 text-base sm:text-lg">
+            {subtitle}
+          </p>
+        )}
       </div>
-      {providerLabel && (
-        <>
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            className="w-full"
-            title={providerLabel}
-          >
-            <GlobeIcon className="text-primary" />
-            {providerLabel}
-          </Button>
-          <div className="my-8 flex items-center gap-4" aria-hidden="true">
-            <div className="bg-border h-px flex-1" />
-            <span className="text-muted-foreground text-sm">ou</span>
-            <div className="bg-border h-px flex-1" />
-          </div>
-        </>
-      )}
       {children}
     </div>
   );
