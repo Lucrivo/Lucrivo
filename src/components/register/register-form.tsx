@@ -61,7 +61,14 @@ function RegisterForm({ action }: RegisterFormProps) {
   }, [state]);
 
   return (
-    <AuthFormShell title="Crie sua conta" subtitle="Comece agora com o Lucrivo">
+    <AuthFormShell
+      title={
+        <>
+          <span className="block text-center">Crie sua conta grátis</span>{" "}
+          <span className="block text-center text-[#a9c7ff]">e descubra.</span>
+        </>
+      }
+    >
       <form action={formAction} className="space-y-5" noValidate>
         <AuthEmailField
           value={email}

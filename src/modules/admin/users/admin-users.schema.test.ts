@@ -103,8 +103,8 @@ describe("admin user boundaries", () => {
       monthlyResultCents: 120_000,
       itemCount: 3,
       isPartial: false,
-      verdict: "positive_result",
-      priority: "margin",
+      verdict: "incomplete_volume",
+      priority: "data",
       aiUsage: {
         completedTurns: 2,
         failedTurns: 1,
@@ -123,6 +123,24 @@ describe("admin user boundaries", () => {
       },
     };
     expect(adminUserDiagnosisSchema.safeParse(diagnosis).success).toBe(true);
+    expect(
+      adminUserHistoryEventSchema.safeParse({
+        eventKey: "diagnosis:42",
+        occurredAt: diagnosis.createdAt,
+        kind: "diagnosis_created",
+        title: "Diagnóstico criado",
+        payload: {
+          diagnosisId: diagnosis.id,
+          category: diagnosis.category,
+          scenario: diagnosis.scenario,
+          analysisMode: diagnosis.analysisMode,
+          isFreeReport: diagnosis.isFreeReport,
+          verdict: diagnosis.verdict,
+          priority: diagnosis.priority,
+          aiUsage: diagnosis.aiUsage,
+        },
+      }).success,
+    ).toBe(true);
     expect(
       adminUserDiagnosisSchema.safeParse({
         ...diagnosis,
