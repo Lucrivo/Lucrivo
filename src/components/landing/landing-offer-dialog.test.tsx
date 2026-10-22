@@ -108,4 +108,22 @@ describe("LandingOfferDialog", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Fechar" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  it("closes from the call to action when the visitor is already registering", () => {
+    render(<LandingOfferDialog offer={launchOffer} dismissCta />);
+
+    const dialog = screen.getByRole("dialog", { name: headline });
+    expect(
+      within(dialog).queryByRole("link", {
+        name: "Quero fazer meu diagnóstico agora",
+      }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      within(dialog).getByRole("button", {
+        name: "Quero fazer meu diagnóstico agora",
+      }),
+    );
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
 });

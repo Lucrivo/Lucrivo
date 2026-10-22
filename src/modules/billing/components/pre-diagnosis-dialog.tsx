@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import {
   ArrowRightIcon,
   ChartBarIcon,
@@ -73,18 +73,32 @@ function dismissPreDiagnosisDialog() {
   for (const listener of listeners) listener();
 }
 
-function PreDiagnosisDialog() {
-  const open = useSyncExternalStore(
+function PreDiagnosisDialog({
+  oncePerSession = true,
+}: {
+  oncePerSession?: boolean;
+}) {
+  const pendingThisSession = useSyncExternalStore(
     subscribe,
     isPreDiagnosisDialogPending,
     () => false,
   );
+  const [manuallyOpen, setManuallyOpen] = useState(true);
+  const open = oncePerSession ? pendingThisSession : manuallyOpen;
+
+  function dismiss() {
+    if (oncePerSession) {
+      dismissPreDiagnosisDialog();
+      return;
+    }
+    setManuallyOpen(false);
+  }
 
   return (
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
-        if (!nextOpen) dismissPreDiagnosisDialog();
+        if (!nextOpen) dismiss();
       }}
       disablePointerDismissal
     >
@@ -175,7 +189,7 @@ function PreDiagnosisDialog() {
         <Link
           className="pre-diagnosis-dialog-cta"
           href="/quick-diagnosis"
-          onClick={dismissPreDiagnosisDialog}
+          onClick={dismiss}
         >
           Quero fazer meu diagnóstico grátis
           <ArrowRightIcon aria-hidden="true" size={18} weight="bold" />

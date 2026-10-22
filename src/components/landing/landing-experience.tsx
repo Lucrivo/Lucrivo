@@ -16,6 +16,7 @@ import { LandingOfferDialog } from "@/components/landing/landing-offer-dialog";
 import { LaunchOfferBar } from "@/components/landing/launch-offer-bar";
 import { LandingNav } from "@/components/landing/landing-nav";
 import {
+  resolveActiveLaunchOffer,
   resolveLandingOfferPresentation,
   type LaunchOfferView,
 } from "@/components/landing/landing-offer";
@@ -41,15 +42,7 @@ export function LandingExperience({
 }) {
   const root = useRef<HTMLElement>(null);
   const offer = resolveLandingOfferPresentation(prices);
-  const activeLaunchOffer =
-    launchOffer &&
-    offer?.monthlyRenewalPriceLabel !== null &&
-    ((launchOffer.phase === "bonus_active" &&
-      offer?.catalogCode === "launch") ||
-      (launchOffer.phase === "price_active" &&
-        offer?.catalogCode === "launch_price"))
-      ? launchOffer
-      : null;
+  const activeLaunchOffer = resolveActiveLaunchOffer(launchOffer, offer);
 
   useGSAP(
     () => {

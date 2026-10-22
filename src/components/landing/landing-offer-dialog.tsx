@@ -48,9 +48,24 @@ function monthWord(count: number) {
   return count === 1 ? "mês" : "meses";
 }
 
-function LandingOfferDialog({ offer }: { offer: LandingOfferPresentation }) {
+function LandingOfferDialog({
+  offer,
+  dismissCta = false,
+  reserveLaunchBar,
+}: {
+  offer: LandingOfferPresentation;
+  dismissCta?: boolean;
+  reserveLaunchBar?: boolean;
+}) {
   const [open, setOpen] = useState(true);
   const promotional = offer.monthlyRenewalPriceLabel !== null;
+  const offsetForLaunchBar = reserveLaunchBar ?? promotional;
+  const ctaContent = (
+    <>
+      Quero fazer meu diagnóstico agora
+      <ArrowRightIcon aria-hidden="true" size={18} weight="bold" />
+    </>
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen} disablePointerDismissal>
@@ -58,7 +73,7 @@ function LandingOfferDialog({ offer }: { offer: LandingOfferPresentation }) {
         showCloseButton={false}
         className={cn(
           "landing-offer-dialog",
-          promotional && "landing-offer-dialog-offset",
+          offsetForLaunchBar && "landing-offer-dialog-offset",
         )}
       >
         <DialogClose type="button" className="landing-offer-dialog-close">
@@ -172,10 +187,19 @@ function LandingOfferDialog({ offer }: { offer: LandingOfferPresentation }) {
           ) : null}
         </section>
 
-        <a className="landing-offer-dialog-cta" href="/register">
-          Quero fazer meu diagnóstico agora
-          <ArrowRightIcon aria-hidden="true" size={18} weight="bold" />
-        </a>
+        {dismissCta ? (
+          <button
+            type="button"
+            className="landing-offer-dialog-cta"
+            onClick={() => setOpen(false)}
+          >
+            {ctaContent}
+          </button>
+        ) : (
+          <a className="landing-offer-dialog-cta" href="/register">
+            {ctaContent}
+          </a>
+        )}
         <p className="landing-offer-dialog-reassure">
           <LockSimpleIcon aria-hidden="true" size={15} weight="fill" />
           Acesso imediato e cancelamento quando quiser.

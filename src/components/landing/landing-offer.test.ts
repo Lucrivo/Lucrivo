@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import type { ActiveBillingPrice } from "@/modules/billing/types";
 
-import { resolveLandingOfferPresentation } from "./landing-offer";
+import {
+  resolveLandingOfferPresentation,
+  shouldShowLandingOfferDialog,
+} from "./landing-offer";
 
 function prices(
   catalogCode: "launch" | "launch_price" | "standard",
@@ -87,5 +90,30 @@ describe("resolveLandingOfferPresentation", () => {
         { ...launch[1], amountCents: 17941 },
       ]),
     ).toBeNull();
+  });
+});
+
+describe("shouldShowLandingOfferDialog", () => {
+  const launchView = {
+    phase: "bonus_active" as const,
+    endsAt: "2026-11-04T12:00:00.000Z",
+  };
+
+  it("follows the active launch period without the extra flag", () => {
+    expect(
+      shouldShowLandingOfferDialog(prices("launch"), launchView, false),
+    ).toMatchObject({ monthlyPriceLabel: "R$ 39,90" });
+    expect(
+      shouldShowLandingOfferDialog(prices("standard"), null, false),
+    ).toBeNull();
+  });
+
+  it("opens the standard catalog only when the flag is enabled", () => {
+    expect(
+      shouldShowLandingOfferDialog(prices("standard"), null, true),
+    ).toMatchObject({
+      monthlyPriceLabel: "R$ 49,90",
+      monthlyPriceQualifier: null,
+    });
   });
 });

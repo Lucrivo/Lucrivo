@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 
 import { LandingExperience } from "@/components/landing/landing-experience";
-import { readLandingOfferDialogEnabled } from "@/config/landing-offer-dialog-environment";
-import { readLaunchOfferEnvironment } from "@/config/launch-offer-environment";
-import { createClient } from "@/infrastructure/database/supabase/clients/server.client";
-import { isLaunchOfferActive } from "@/modules/billing/domain/launch-offer";
-import { listActivePrices } from "@/modules/billing/services/list-active-prices.service";
+import { loadLandingOfferContext } from "@/components/landing/load-landing-offer";
 
 export const dynamic = "force-dynamic";
 
@@ -16,36 +12,13 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const launchOffer = readLaunchOfferEnvironment();
-  if (launchOffer.phase === "invalid") {
-    console.error(
-      JSON.stringify({ event: "launch_offer_configuration_invalid" }),
-    );
-    return (
-      <LandingExperience
-        prices={[]}
-        launchOffer={null}
-        offerDialogEnabled={readLandingOfferDialogEnabled()}
-        videoUrl={process.env.NEXT_PUBLIC_LANDING_VIDEO_URL}
-      />
-    );
-  }
-
-  const supabase = await createClient();
-  const result = await listActivePrices({
-    supabase,
-    catalogCode: launchOffer.catalogCode,
-  });
+  const offerContext = await loadLandingOfferContext();
 
   return (
     <LandingExperience
-      prices={result.status === "success" ? result.prices : []}
-      launchOffer={
-        isLaunchOfferActive(launchOffer)
-          ? { phase: launchOffer.phase, endsAt: launchOffer.endsAt }
-          : null
-      }
-      offerDialogEnabled={readLandingOfferDialogEnabled()}
+      prices={offerContext.prices}
+      launchOffer={offerContext.launchOffer}
+      offerDialogEnabled={offerContext.offerDialogEnabled}
       videoUrl={process.env.NEXT_PUBLIC_LANDING_VIDEO_URL}
     />
   );

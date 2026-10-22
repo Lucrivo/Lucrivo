@@ -9,17 +9,25 @@ import {
 
 const guestOnlyPaths = new Set(["/login", "/register", "/forgot-password"]);
 const passwordSetupPaths = new Set(["/update-password", "/auth/confirm"]);
+const authResponseHeaderNames = ["cache-control", "expires", "pragma"];
 
 function redirectKeepingCookies(location: URL, response: NextResponse) {
   const redirectResponse = NextResponse.redirect(location);
   response.cookies.getAll().forEach((cookie) => {
     redirectResponse.cookies.set(cookie);
   });
+  authResponseHeaderNames.forEach((name) => {
+    const value = response.headers.get(name);
+    if (value) redirectResponse.headers.set(name, value);
+  });
   return redirectResponse;
 }
 
 export async function updateSession(request: NextRequest) {
-  if (request.nextUrl.pathname === "/api/health") {
+  if (
+    request.nextUrl.pathname === "/api/health" ||
+    request.nextUrl.pathname === "/sw.js"
+  ) {
     return NextResponse.next({ request });
   }
 
@@ -36,7 +44,7 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll();
         },
 
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet, headersToSet) {
           cookiesToSet.forEach(({ name, value }) => {
             request.cookies.set(name, value);
           });
@@ -47,6 +55,10 @@ export async function updateSession(request: NextRequest) {
 
           cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options);
+          });
+
+          Object.entries(headersToSet).forEach(([name, value]) => {
+            response.headers.set(name, value);
           });
         },
       },
