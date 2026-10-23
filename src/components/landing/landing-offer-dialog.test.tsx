@@ -27,7 +27,9 @@ function renderDialog(offer: LandingOfferPresentation) {
 describe("LandingOfferDialog", () => {
   it("presents the launch bonus on the monthly card", () => {
     const dialog = renderDialog(launchOffer);
+    const priceCard = dialog.querySelector(".landing-offer-dialog-price");
 
+    expect(priceCard).toHaveClass("landing-offer-dialog-price-launch");
     expect(within(dialog).getByText("Oferta de lançamento")).toBeVisible();
     expect(within(dialog).getByText("R$ 39,90")).toBeVisible();
     expect(within(dialog).getByText("no primeiro pagamento")).toBeVisible();
@@ -49,6 +51,12 @@ describe("LandingOfferDialog", () => {
     expect(dialog).toHaveTextContent(
       "Acesso imediato e cancelamento quando quiser.",
     );
+    expect(
+      priceCard?.querySelector(".landing-offer-dialog-condition-copy"),
+    ).not.toBeNull();
+    expect(
+      priceCard?.querySelector(".landing-offer-dialog-renewal"),
+    ).not.toBeNull();
   });
 
   it("keeps the promotional price without the bonus line", () => {
@@ -60,13 +68,21 @@ describe("LandingOfferDialog", () => {
       semiannualAccessMonths: 6,
       semiannualBonusMonths: 0,
     });
+    const priceCard = dialog.querySelector(".landing-offer-dialog-price");
 
+    expect(priceCard).toHaveClass("landing-offer-dialog-price-launch_price");
     expect(within(dialog).getByText("Oferta de lançamento")).toBeVisible();
     expect(within(dialog).getByText("R$ 39,90")).toBeVisible();
     expect(within(dialog).getByText("no primeiro pagamento")).toBeVisible();
     expect(within(dialog).getByText("Depois, R$ 49,90/mês")).toBeVisible();
     expect(dialog).not.toHaveTextContent(/bônus/i);
     expect(dialog).not.toHaveTextContent("Inclui 1 mês de acesso");
+    expect(
+      priceCard?.querySelector(".landing-offer-dialog-condition-copy"),
+    ).toBeNull();
+    expect(
+      priceCard?.querySelector(".landing-offer-dialog-renewal"),
+    ).not.toBeNull();
   });
 
   it("shows only the monthly price outside the launch", () => {
@@ -83,7 +99,9 @@ describe("LandingOfferDialog", () => {
       semiannualAccessMonths: 6,
       semiannualBonusMonths: 0,
     });
+    const priceCard = dialog.querySelector(".landing-offer-dialog-price");
 
+    expect(priceCard).toHaveClass("landing-offer-dialog-price-standard");
     expect(within(dialog).getByText("R$ 49,90")).toBeVisible();
     expect(within(dialog).getByText("/mês")).toBeVisible();
     expect(
@@ -94,6 +112,9 @@ describe("LandingOfferDialog", () => {
     ).not.toBeInTheDocument();
     expect(dialog).not.toHaveTextContent("Depois, R$ 49,90/mês");
     expect(dialog).not.toHaveTextContent(/bônus/i);
+    expect(
+      priceCard?.querySelector(".landing-offer-dialog-condition"),
+    ).toBeNull();
   });
 
   it("closes from the button and ignores the backdrop", () => {

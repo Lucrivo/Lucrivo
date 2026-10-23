@@ -136,16 +136,18 @@ function LandingOfferDialog({
               width={974}
               height={1319}
               sizes="(max-width: 720px) 240px, 380px"
-              priority
             />
           </figure>
         </div>
 
         <section
-          className="landing-offer-dialog-price"
+          className={cn(
+            "landing-offer-dialog-price",
+            `landing-offer-dialog-price-${offer.catalogCode}`,
+          )}
           aria-label="Plano mensal"
         >
-          <div>
+          <div className="landing-offer-dialog-pricing">
             <p className="landing-offer-dialog-plan">Plano mensal</p>
             <p className="landing-offer-dialog-amount">
               <span className="landing-offer-dialog-value">
@@ -171,13 +173,18 @@ function LandingOfferDialog({
                   >
                     <CrownIcon size={15} weight="fill" />
                   </span>
-                  <strong>
-                    Inclui {offer.monthlyAccessMonths}{" "}
-                    {monthWord(offer.monthlyAccessMonths)} de acesso
-                  </strong>{" "}
-                  + {offer.monthlyBonusMonths}{" "}
-                  {monthWord(offer.monthlyBonusMonths)} de bônus com materiais
-                  práticos.
+                  <span className="landing-offer-dialog-condition-body">
+                    <strong>
+                      Inclui {offer.monthlyAccessMonths}{" "}
+                      {monthWord(offer.monthlyAccessMonths)} de acesso
+                    </strong>
+                    <span>
+                      {" "}
+                      + {offer.monthlyBonusMonths}{" "}
+                      {monthWord(offer.monthlyBonusMonths)} de bônus com
+                      materiais práticos.
+                    </span>
+                  </span>
                 </p>
               ) : null}
               <p className="landing-offer-dialog-renewal">
