@@ -24,6 +24,7 @@ vi.mock("@/modules/billing/services/list-active-prices.service", () => ({
 vi.mock("@/config/launch-offer-environment", () => ({
   readLaunchOfferEnvironment,
 }));
+vi.mock("server-only", () => ({}));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh }),
 }));
@@ -128,7 +129,7 @@ describe("Home", () => {
   async function renderHome(keepOfferOpen = false) {
     render(await Home());
     const closeButton = screen.queryByRole("button", {
-      name: "Talvez mais tarde",
+      name: "Fechar",
     });
     if (closeButton && !keepOfferOpen) {
       fireEvent.click(closeButton);
@@ -142,20 +143,18 @@ describe("Home", () => {
     await renderHome(true);
 
     const offerDialog = screen.getByRole("dialog", {
-      name: "Mais tempo para transformar diagnóstico em decisão.",
+      name: /Seu preço pode estar\s+dando prejuízo\s+e você nem sabe\./,
     });
-    expect(
-      within(offerDialog).getByText(
-        "Mais tempo para transformar diagnóstico em decisão.",
-      ),
-    ).toBeVisible();
+    expect(within(offerDialog).getByText("Oferta de lançamento")).toBeVisible();
+    expect(within(offerDialog).getByText("R$ 39,90")).toBeVisible();
+    expect(offerDialog).toHaveTextContent("Inclui 2 meses de acesso");
     expect(
       within(offerDialog).getByRole("link", {
-        name: "Quero aproveitar a oferta",
+        name: "Quero fazer meu diagnóstico agora",
       }),
-    ).toHaveAttribute("href", "/billing");
+    ).toHaveAttribute("href", "/register");
     fireEvent.click(
-      within(offerDialog).getByRole("button", { name: "Talvez mais tarde" }),
+      within(offerDialog).getByRole("button", { name: "Fechar" }),
     );
     await waitFor(() =>
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
@@ -252,6 +251,45 @@ describe("Home", () => {
     expect(screen.queryByText("R$ 39,90/mês")).not.toBeInTheDocument();
   });
 
+  it("opens the standard offer dialog when the landing flag is enabled", async () => {
+    vi.stubEnv("LANDING_OFFER_DIALOG_ENABLED", "true");
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "expired",
+      catalogCode: "standard",
+      startsAt: "2026-09-01T12:00:00.000Z",
+      bonusEndsAt: "2026-09-16T12:00:00.000Z",
+      promotionEndsAt: "2026-10-01T12:00:00.000Z",
+    });
+    listActivePrices.mockResolvedValue({
+      status: "success",
+      prices: standardPrices,
+    });
+
+    try {
+      await renderHome(true);
+
+      const dialog = screen.getByRole("dialog", {
+        name: /Seu preço pode estar\s+dando prejuízo\s+e você nem sabe\./,
+      });
+      expect(within(dialog).getByText("R$ 49,90")).toBeVisible();
+      expect(within(dialog).getByText("/mês")).toBeVisible();
+      expect(
+        within(dialog).queryByText("Oferta de lançamento"),
+      ).not.toBeInTheDocument();
+      expect(
+        within(dialog).queryByText("no primeiro pagamento"),
+      ).not.toBeInTheDocument();
+      expect(dialog).not.toHaveTextContent(/bônus/i);
+      expect(
+        within(dialog).getByRole("link", {
+          name: "Quero fazer meu diagnóstico agora",
+        }),
+      ).toHaveAttribute("href", "/register");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("uses launch_price during the second campaign window without bonus copy", async () => {
     readLaunchOfferEnvironment.mockReturnValue({
       phase: "price_active",
@@ -273,10 +311,15 @@ describe("Home", () => {
       catalogCode: "launch_price",
     });
     expect(
-      screen.getAllByRole("region", {
+      screen.getByRole("region", {
         name: "Tempo restante para aproveitar o preço de lançamento",
       }),
-    ).toHaveLength(2);
+    ).toBeInTheDocument();
+    const offerDialog = screen.getByRole("dialog", {
+      name: /Seu preço pode estar\s+dando prejuízo\s+e você nem sabe\./,
+    });
+    expect(within(offerDialog).getByText("Depois, R$ 49,90/mês")).toBeVisible();
+    expect(offerDialog).not.toHaveTextContent(/bônus/i);
     expect(document.body).not.toHaveTextContent(/m[eê]s(?:es)? b[oô]nus/i);
     expect(screen.getAllByText("Depois, R$ 49,90/mês")).toHaveLength(2);
   });
@@ -303,6 +346,30 @@ describe("Home", () => {
       screen.getAllByRole("link", { name: "Conhecer os planos" }).length,
     ).toBeGreaterThanOrEqual(1);
     expect(document.body).not.toHaveTextContent("R$ 39,90");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("keeps the offer dialog closed when launch configuration is invalid", async () => {
+    vi.stubEnv("LANDING_OFFER_DIALOG_ENABLED", "true");
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "invalid",
+      catalogCode: null,
+      startsAt: null,
+      bonusEndsAt: null,
+      promotionEndsAt: null,
+    });
+
+    try {
+      await renderHome();
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(errorLog.mock.calls[0][0]).not.toContain(
+        "LANDING_OFFER_DIALOG_ENABLED",
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("introduces every factor that shapes a viable price", async () => {

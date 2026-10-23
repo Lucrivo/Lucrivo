@@ -24,6 +24,7 @@ vi.mock("@/components/layout/app-shell", () => ({
     children,
     isAdminUser,
     billingBanner,
+    preDiagnosisDialog,
   }: {
     children: React.ReactNode;
     isAdminUser: boolean;
@@ -35,11 +36,13 @@ vi.mock("@/components/layout/app-shell", () => ({
           endsAt: string;
         }
       | null;
+    preDiagnosisDialog?: boolean;
   }) => (
     <div
       data-testid="private-shell"
       data-admin-user={isAdminUser}
       data-billing-banner={billingBanner?.kind}
+      data-pre-diagnosis={preDiagnosisDialog ? "true" : "false"}
       data-offer-phase={
         billingBanner?.kind === "launch_offer" ? billingBanner.phase : undefined
       }
@@ -157,6 +160,10 @@ describe("PrivateLayout", () => {
       "data-billing-banner",
       "free_diagnosis",
     );
+    expect(screen.getByTestId("private-shell")).toHaveAttribute(
+      "data-pre-diagnosis",
+      "true",
+    );
     expect(readLaunchOfferEnvironment).not.toHaveBeenCalled();
   });
 
@@ -193,6 +200,10 @@ describe("PrivateLayout", () => {
         "data-offer-ends-at",
         endsAt,
       );
+      expect(screen.getByTestId("private-shell")).toHaveAttribute(
+        "data-pre-diagnosis",
+        "false",
+      );
     },
   );
 
@@ -207,7 +218,28 @@ describe("PrivateLayout", () => {
     expect(screen.getByTestId("private-shell")).not.toHaveAttribute(
       "data-billing-banner",
     );
+    expect(screen.getByTestId("private-shell")).toHaveAttribute(
+      "data-pre-diagnosis",
+      "false",
+    );
   });
+
+  it.each(["paid", "courtesy"])(
+    "keeps the pre-diagnosis dialog away from a %s user who has not diagnosed",
+    async (tier) => {
+      getBillingOverview.mockResolvedValue({
+        status: "success",
+        overview: { tier, freeQuickDiagnosisUsed: false },
+      });
+
+      render(await PrivateLayout({ children: <p>Área privada</p> }));
+
+      expect(screen.getByTestId("private-shell")).toHaveAttribute(
+        "data-pre-diagnosis",
+        "false",
+      );
+    },
+  );
 
   it.each(["paid", "courtesy"])(
     "suppresses the strip for a %s user",

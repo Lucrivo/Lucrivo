@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { cache } from "react";
 
 import type { Database } from "@/infrastructure/database/supabase/database.types";
 import { createClient } from "@/infrastructure/database/supabase/clients/server.client";
@@ -41,7 +42,7 @@ class LegalAcceptanceRequiredError extends Error {
   }
 }
 
-async function requireUser(): Promise<{
+const requireUser = cache(async function requireUser(): Promise<{
   userId: string;
   supabase: SupabaseClient<Database>;
 }> {
@@ -69,7 +70,7 @@ async function requireUser(): Promise<{
   }
 
   return { userId: subject, supabase };
-}
+});
 
 async function requireClientAccess(): Promise<{
   userId: string;

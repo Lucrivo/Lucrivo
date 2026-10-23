@@ -1,0 +1,397 @@
+.pre-diagnosis-dialog.pre-diagnosis-dialog {
+  --offer-yellow: oklch(0.88 0.17 96);
+  --offer-yellow-ink: oklch(0.28 0.06 78);
+  --offer-blue: oklch(0.46 0.17 259);
+
+  position: fixed;
+  top: 50%;
+  z-index: 80;
+  display: block;
+  width: min(980px, calc(100% - 1.25rem));
+  max-width: min(980px, calc(100% - 1.25rem));
+  max-height: calc(100dvh - 1.25rem);
+  padding: 22px 22px 16px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 0;
+  border-radius: 28px;
+  background:
+    radial-gradient(
+      70% 55% at 88% 18%,
+      oklch(0.42 0.14 255 / 0.45),
+      transparent 58%
+    ),
+    linear-gradient(180deg, oklch(0.3 0.11 258) 0%, oklch(0.22 0.09 264) 100%);
+  color: oklch(0.98 0.005 255);
+  color-scheme: dark;
+  font-family: "Geist", Inter, "Helvetica Neue", Arial, sans-serif;
+  font-size: 1rem;
+  line-height: 1.4;
+  box-shadow: 0 32px 70px -24px oklch(0.08 0.04 262 / 0.78);
+  scrollbar-color: oklch(0.78 0.1 255 / 0.55) transparent;
+  scrollbar-width: thin;
+}
+
+.pre-diagnosis-dialog ::selection {
+  background: var(--offer-yellow);
+  color: var(--offer-yellow-ink);
+}
+
+.pre-diagnosis-dialog::-webkit-scrollbar {
+  width: 10px;
+}
+
+.pre-diagnosis-dialog::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: oklch(0.78 0.1 255 / 0.55);
+  background-clip: padding-box;
+}
+
+[data-slot="dialog-overlay"]:has(~ .pre-diagnosis-dialog) {
+  z-index: 70;
+  background: oklch(0.14 0.04 262 / 0.72);
+}
+
+.pre-diagnosis-dialog-close {
+  position: absolute;
+  z-index: 2;
+  top: 14px;
+  right: 14px;
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid oklch(0.96 0.01 255 / 0.18);
+  border-radius: 12px;
+  background: oklch(0.96 0.01 255 / 0.08);
+  color: oklch(0.97 0.005 255);
+  cursor: pointer;
+}
+
+.pre-diagnosis-dialog-close:hover {
+  background: oklch(0.96 0.01 255 / 0.16);
+}
+
+.pre-diagnosis-dialog-close:focus-visible {
+  outline: 3px solid oklch(0.78 0.14 255 / 0.7);
+  outline-offset: 3px;
+}
+
+.pre-diagnosis-dialog-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding-right: 48px;
+}
+
+.pre-diagnosis-dialog-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.pre-diagnosis-dialog-mark {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 12px;
+  background: oklch(0.98 0.01 255 / 0.1);
+}
+
+.pre-diagnosis-dialog-mark img {
+  width: 28px;
+  height: 28px;
+}
+
+.pre-diagnosis-dialog-badge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--offer-yellow);
+  color: var(--offer-yellow-ink);
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 10px 18px -14px oklch(0.7 0.16 95 / 0.9);
+}
+
+.pre-diagnosis-dialog-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(280px, 1.08fr);
+  gap: 8px 12px;
+  align-items: center;
+  margin-top: 18px;
+}
+
+.pre-diagnosis-dialog-copy {
+  align-items: flex-start;
+  gap: 0;
+  text-align: left;
+}
+
+.pre-diagnosis-dialog .pre-diagnosis-dialog-title {
+  margin: 0;
+  color: oklch(0.99 0.003 255);
+  font-size: clamp(1.9rem, 3.2vw, 2.85rem);
+  font-weight: 850;
+  letter-spacing: -0.035em;
+  line-height: 0.96;
+  text-wrap: balance;
+}
+
+.pre-diagnosis-dialog-emphasis {
+  position: relative;
+  display: inline-block;
+  color: var(--offer-yellow);
+}
+
+.pre-diagnosis-dialog-scribble {
+  position: absolute;
+  right: 0;
+  bottom: -0.16em;
+  left: -1%;
+  width: 104%;
+  height: 0.28em;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.pre-diagnosis-dialog-scribble path {
+  fill: none;
+  stroke: var(--offer-yellow);
+  stroke-dasharray: 240;
+  stroke-dashoffset: 240;
+  stroke-linecap: round;
+  stroke-width: 5;
+  animation: pre-diagnosis-scribble 680ms cubic-bezier(0.22, 1, 0.36, 1) 160ms
+    forwards;
+}
+
+.pre-diagnosis-dialog .pre-diagnosis-dialog-description {
+  max-width: 36ch;
+  margin: 16px 0 0;
+  color: oklch(0.93 0.02 255);
+  font-size: 1.02rem;
+  font-weight: 500;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.pre-diagnosis-dialog-description strong {
+  color: oklch(0.99 0.003 255);
+  font-weight: 800;
+}
+
+.pre-diagnosis-dialog-questions {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pre-diagnosis-dialog-questions li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: oklch(0.98 0.005 255);
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.pre-diagnosis-dialog-question-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  place-items: center;
+  border-radius: 999px;
+  background: oklch(0.55 0.2 259);
+  color: oklch(0.99 0.005 255);
+  box-shadow: 0 10px 16px -12px oklch(0.45 0.18 259 / 0.9);
+}
+
+.pre-diagnosis-dialog-notebook {
+  display: flex;
+  justify-content: center;
+  margin: 0;
+}
+
+.pre-diagnosis-dialog-notebook img {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: min(42vh, 360px);
+  filter: drop-shadow(0 22px 24px oklch(0.08 0.04 262 / 0.45));
+}
+
+.pre-diagnosis-dialog-offer {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 14px 16px;
+  align-items: center;
+  margin-top: 16px;
+  padding: 14px 18px;
+  border: 1px solid oklch(0.88 0.17 96 / 0.85);
+  border-radius: 18px;
+  background: oklch(0.2 0.07 262 / 0.35);
+}
+
+.pre-diagnosis-dialog-offer-icon {
+  color: var(--offer-yellow);
+}
+
+.pre-diagnosis-dialog-offer-price {
+  margin: 0;
+}
+
+.pre-diagnosis-dialog-offer-price span {
+  display: block;
+  color: oklch(0.96 0.02 255);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.pre-diagnosis-dialog-offer-price strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--offer-yellow);
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 850;
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+
+.pre-diagnosis-dialog-offer-note {
+  margin: 0;
+  padding-left: 16px;
+  border-left: 1px solid oklch(0.88 0.17 96 / 0.7);
+  color: oklch(0.94 0.015 255);
+  font-size: 0.98rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.pre-diagnosis-dialog-cta {
+  display: flex;
+  width: 100%;
+  min-height: 56px;
+  margin-top: 14px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 999px;
+  background: var(--offer-yellow);
+  color: var(--offer-yellow-ink);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+  box-shadow: 0 14px 24px -16px oklch(0.72 0.16 95 / 0.95);
+  transition:
+    transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pre-diagnosis-dialog-cta:hover {
+  background: oklch(0.91 0.16 98);
+  transform: translateY(-2px);
+}
+
+.pre-diagnosis-dialog-cta:active {
+  transform: translateY(0);
+}
+
+.pre-diagnosis-dialog-cta:focus-visible {
+  outline: 3px solid oklch(0.99 0.003 255);
+  outline-offset: 3px;
+}
+
+.pre-diagnosis-dialog-reassure {
+  display: flex;
+  margin: 12px 0 2px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: oklch(0.92 0.015 255);
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .pre-diagnosis-dialog.pre-diagnosis-dialog {
+    width: min(560px, calc(100% - 1rem));
+    max-width: min(560px, calc(100% - 1rem));
+    padding: 18px 16px 14px;
+    border-radius: 22px;
+  }
+
+  .pre-diagnosis-dialog-stage,
+  .pre-diagnosis-dialog-offer {
+    grid-template-columns: 1fr;
+  }
+
+  .pre-diagnosis-dialog-notebook img {
+    max-height: 190px;
+  }
+
+  .pre-diagnosis-dialog-offer-note {
+    padding-top: 12px;
+    padding-left: 0;
+    border-top: 1px solid oklch(0.88 0.17 96 / 0.7);
+    border-left: 0;
+  }
+
+  .pre-diagnosis-dialog-badge {
+    padding: 7px 10px;
+    font-size: 0.75rem;
+  }
+
+  .pre-diagnosis-dialog-cta {
+    padding-inline: 14px;
+    font-size: 0.92rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pre-diagnosis-dialog-scribble path {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+
+  .pre-diagnosis-dialog-cta {
+    transition: background-color 200ms ease;
+  }
+
+  .pre-diagnosis-dialog-cta:hover {
+    transform: none;
+  }
+}
+
+@keyframes pre-diagnosis-scribble {
+  to {
+    stroke-dashoffset: 0;
+  }
+}

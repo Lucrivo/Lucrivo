@@ -78,9 +78,16 @@ describe("getOnboardingData", () => {
           : { data: profile, error: null },
     );
 
-    await expect(getOnboardingData()).rejects.toBeInstanceOf(
-      OnboardingUnavailableError,
-    );
+    const rejection = expect(getOnboardingData()).rejects;
+
+    await rejection.toBeInstanceOf(OnboardingUnavailableError);
+    await rejection.toMatchObject({
+      stage:
+        rpcName === "list_business_catalog_v1" ? "catalog_rpc" : "profile_rpc",
+      cause: expect.objectContaining({
+        message: expect.not.stringContaining("private database detail"),
+      }),
+    });
   });
 
   it.each([
@@ -93,8 +100,11 @@ describe("getOnboardingData", () => {
         : { data: profileData, error: null },
     );
 
-    await expect(getOnboardingData()).rejects.toBeInstanceOf(
-      OnboardingUnavailableError,
-    );
+    const rejection = expect(getOnboardingData()).rejects;
+
+    await rejection.toBeInstanceOf(OnboardingUnavailableError);
+    await rejection.toMatchObject({
+      stage: _ === "catalog" ? "catalog_payload" : "profile_payload",
+    });
   });
 });

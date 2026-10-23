@@ -13,6 +13,7 @@ import {
   BillingBanner,
   type BillingBannerView,
 } from "@/modules/billing/components/billing-banner";
+import { PreDiagnosisDialog } from "@/modules/billing/components/pre-diagnosis-dialog";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -22,6 +23,7 @@ type AppShellProps = {
   contextTitle: string;
   contextDescription: string;
   billingBanner?: BillingBannerView | null;
+  preDiagnosisDialog?: boolean;
 };
 
 function AppShell({
@@ -32,6 +34,7 @@ function AppShell({
   contextTitle,
   contextDescription,
   billingBanner = null,
+  preDiagnosisDialog = false,
 }: AppShellProps) {
   return (
     <SidebarProvider
@@ -42,6 +45,7 @@ function AppShell({
         } as React.CSSProperties
       }
     >
+      {preDiagnosisDialog ? <PreDiagnosisDialog /> : null}
       <AppSidebar variant={sidebarVariant} isAdminUser={isAdminUser} />
       <SidebarInset className="@container min-w-0">
         <header className="bg-background/80 sticky top-0 z-20 flex h-16 shrink-0 items-center gap-3 border-b px-4 backdrop-blur-xl md:px-6">

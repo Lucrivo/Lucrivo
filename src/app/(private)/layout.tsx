@@ -54,6 +54,7 @@ export default async function PrivateLayout({
   }
 
   let billingBanner: BillingBannerView | null = null;
+  let preDiagnosisDialog = false;
 
   if (!isAdmin) {
     try {
@@ -61,6 +62,7 @@ export default async function PrivateLayout({
       if (billing.status === "success" && billing.overview.tier === "free") {
         if (!billing.overview.freeQuickDiagnosisUsed) {
           billingBanner = { kind: "free_diagnosis" };
+          preDiagnosisDialog = true;
         } else {
           const launchOffer = readLaunchOfferEnvironment();
           if (isLaunchOfferActive(launchOffer)) {
@@ -85,6 +87,7 @@ export default async function PrivateLayout({
       contextTitle="Área financeira"
       contextDescription="Acompanhe e organize suas decisões em um só lugar."
       billingBanner={billingBanner}
+      preDiagnosisDialog={preDiagnosisDialog}
     >
       {children}
     </AppShell>
