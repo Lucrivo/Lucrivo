@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 
 import type { RegisterActionState } from "@/modules/auth/actions/register.action";
 import { getTurnstileSiteKey } from "@/config/auth-environment";
+import { completeLoginNavigation } from "@/components/login/complete-login-navigation";
 import {
   AuthEmailField,
   AuthFeedback,
@@ -52,6 +53,11 @@ function RegisterForm({ action }: RegisterFormProps) {
 
   useEffect(() => {
     if (state?.status !== "success") return;
+
+    if (state.outcome === "authenticated") {
+      completeLoginNavigation(state.destination);
+      return;
+    }
 
     const frame = window.requestAnimationFrame(() => {
       setPassword("");
@@ -116,7 +122,10 @@ function RegisterForm({ action }: RegisterFormProps) {
           (state.error === "account_exists" ? (
             <AuthFeedback>
               Se você já tem uma conta com este e-mail, entre ou{" "}
-              <a href="/forgot-password" className="underline underline-offset-4">
+              <a
+                href="/forgot-password"
+                className="underline underline-offset-4"
+              >
                 recupere a senha
               </a>
               .
@@ -124,12 +133,13 @@ function RegisterForm({ action }: RegisterFormProps) {
           ) : (
             <AuthFeedback>{errorMessages[state.error]}</AuthFeedback>
           ))}
-        {state?.status === "success" && (
-          <AuthFeedback variant="success">
-            Se o cadastro puder ser concluído, enviaremos uma confirmação para o
-            e-mail informado.
-          </AuthFeedback>
-        )}
+        {state?.status === "success" &&
+          state.outcome === "confirmation_required" && (
+            <AuthFeedback variant="success">
+              Se o cadastro puder ser concluído, enviaremos uma confirmação para
+              o e-mail informado.
+            </AuthFeedback>
+          )}
 
         <AuthSubmitButton
           idleLabel="Criar conta"
