@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import Image, { getImageProps } from "next/image";
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 import {
@@ -21,12 +21,33 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import ebook from "@/public/auth/ebook-auth-image.png";
 import logo from "@/public/brand/lucrivo-logo-dark.svg";
 import notebook from "@/public/Notebook Ultrafino com Dashboard Lucrivo.png";
+import tablet from "@/public/tablet-diagnostico-lucrivo-transparente.png";
 
 import "./pre-diagnosis-dialog.css";
 
 const storageKey = "lucrivo:pre-diagnosis-dialog";
+const diagnosisPreviewAlt = "Exemplo do diagnóstico financeiro no Lucrivo.";
+
+const { props: desktopPreviewProps } = getImageProps({
+  src: notebook,
+  alt: diagnosisPreviewAlt,
+  width: 1536,
+  height: 1024,
+  sizes: "(max-width: 760px) 0px, 420px",
+  priority: true,
+});
+
+const { props: mobilePreviewProps } = getImageProps({
+  src: tablet,
+  alt: diagnosisPreviewAlt,
+  width: 1089,
+  height: 1444,
+  sizes: "(max-width: 760px) 132px, 0px",
+  priority: true,
+});
 
 const questions = [
   {
@@ -157,13 +178,21 @@ function PreDiagnosisDialog({
 
           <figure className="pre-diagnosis-dialog-notebook">
             <Image
-              src={notebook}
-              alt="Exemplo de notebook com o resultado de um diagnóstico no Lucrivo."
-              width={1536}
-              height={1024}
-              sizes="(max-width: 760px) 88vw, 480px"
-              priority
+              className="pre-diagnosis-dialog-ebook"
+              src={ebook}
+              alt="Capa do e-book Guia Prático de Precificação."
+              width={1086}
+              height={1448}
+              sizes="(max-width: 760px) 90px, 112px"
             />
+            <picture className="pre-diagnosis-dialog-device">
+              <source
+                media="(max-width: 760px)"
+                srcSet={mobilePreviewProps.srcSet}
+                sizes={mobilePreviewProps.sizes}
+              />
+              <img {...desktopPreviewProps} alt={diagnosisPreviewAlt} />
+            </picture>
           </figure>
         </div>
 
@@ -171,18 +200,20 @@ function PreDiagnosisDialog({
           className="pre-diagnosis-dialog-offer"
           aria-label="Primeiro diagnóstico gratuito"
         >
-          <GiftIcon
-            className="pre-diagnosis-dialog-offer-icon"
-            aria-hidden="true"
-            size={34}
-            weight="duotone"
-          />
+          <span className="pre-diagnosis-dialog-offer-gift">
+            <GiftIcon
+              className="pre-diagnosis-dialog-offer-icon"
+              aria-hidden="true"
+              size={36}
+              weight="duotone"
+            />
+          </span>
           <p className="pre-diagnosis-dialog-offer-price">
             <span>Seu primeiro diagnóstico é</span>
             <strong>Grátis</strong>
           </p>
           <p className="pre-diagnosis-dialog-offer-note">
-            Descubra informações importantes sobre seu preço em poucos minutos.
+            Faça seu diagnóstico grátis e receba um e-book de brinde.
           </p>
         </section>
 
