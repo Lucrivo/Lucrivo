@@ -18,6 +18,7 @@ type ServerClientOptions = {
         value: string;
         options?: Record<string, unknown>;
       }>,
+      headers: Record<string, string>,
     ) => void;
   };
 };
@@ -35,6 +36,16 @@ describe("updateSession", () => {
   it("bypasses Supabase for the application health check", async () => {
     const response = await updateSession(
       new NextRequest("http://localhost:3000/api/health"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(createServerClient).not.toHaveBeenCalled();
+    expect(getClaims).not.toHaveBeenCalled();
+  });
+
+  it("bypasses Supabase for the legacy service worker retirement script", async () => {
+    const response = await updateSession(
+      new NextRequest("http://localhost:3000/sw.js"),
     );
 
     expect(response.status).toBe(200);
@@ -155,13 +166,21 @@ describe("updateSession", () => {
       (_url: string, _key: string, options: ServerClientOptions) => ({
         auth: {
           getClaims: async () => {
-            options.cookies.setAll([
+            options.cookies.setAll(
+              [
+                {
+                  name: "sb-session",
+                  value: "refreshed",
+                  options: { httpOnly: true, path: "/" },
+                },
+              ],
               {
-                name: "sb-session",
-                value: "refreshed",
-                options: { httpOnly: true, path: "/" },
+                "Cache-Control":
+                  "private, no-cache, no-store, must-revalidate, max-age=0",
+                Expires: "0",
+                Pragma: "no-cache",
               },
-            ]);
+            );
 
             return {
               data: { claims: { sub: "user-id" } },
@@ -177,5 +196,10 @@ describe("updateSession", () => {
     );
 
     expect(response.cookies.get("sb-session")?.value).toBe("refreshed");
+    expect(response.headers.get("cache-control")).toBe(
+      "private, no-cache, no-store, must-revalidate, max-age=0",
+    );
+    expect(response.headers.get("expires")).toBe("0");
+    expect(response.headers.get("pragma")).toBe("no-cache");
   });
 });
