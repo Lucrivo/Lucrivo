@@ -1,7 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
-
 import {
   isAuthFeatureEnabled,
   normalizeCaptchaToken,
@@ -21,6 +19,11 @@ type SignupActionError = Extract<
 
 type RegisterActionState =
   | { status: "success"; outcome: "confirmation_required" }
+  | {
+      status: "success";
+      outcome: "authenticated";
+      destination: "/auth/continue";
+    }
   | {
       status: "error";
       error:
@@ -86,7 +89,11 @@ async function register(
     return { status: "success", outcome: "confirmation_required" };
   }
 
-  redirect("/auth/continue");
+  return {
+    status: "success",
+    outcome: "authenticated",
+    destination: "/auth/continue",
+  };
 }
 
 export { register, type RegisterActionState };

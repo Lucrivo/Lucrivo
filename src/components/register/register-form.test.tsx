@@ -2,10 +2,18 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const { completeLoginNavigation } = vi.hoisted(() => ({
+  completeLoginNavigation: vi.fn(),
+}));
+
 vi.mock("@/components/shared/auth/turnstile-field", () => ({
   TurnstileField: () => (
     <input type="hidden" name="captchaToken" value="captcha-token" readOnly />
   ),
+}));
+
+vi.mock("@/components/login/complete-login-navigation", () => ({
+  completeLoginNavigation,
 }));
 
 import type { RegisterActionState } from "@/modules/auth/actions/register.action";
@@ -21,6 +29,7 @@ async function fillRegisterForm(user: ReturnType<typeof userEvent.setup>) {
 describe("RegisterForm", () => {
   beforeEach(() => {
     sessionStorage.clear();
+    completeLoginNavigation.mockClear();
   });
 
   it("shows the registration invitation as the form heading", () => {
@@ -180,5 +189,24 @@ describe("RegisterForm", () => {
       expect(screen.getByLabelText("Confirme sua senha")).toHaveValue("");
     });
     expect(action).toHaveBeenCalledOnce();
+    expect(completeLoginNavigation).not.toHaveBeenCalled();
+  });
+
+  it("replaces the document after an immediately authenticated signup", async () => {
+    const user = userEvent.setup();
+    const action = vi.fn(async (): Promise<RegisterActionState> => ({
+      status: "success",
+      outcome: "authenticated",
+      destination: "/auth/continue",
+    }));
+
+    render(<RegisterForm action={action} />);
+    await fillRegisterForm(user);
+    await user.click(screen.getByRole("button", { name: "Criar conta" }));
+
+    await waitFor(() => {
+      expect(completeLoginNavigation).toHaveBeenCalledWith("/auth/continue");
+    });
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 });

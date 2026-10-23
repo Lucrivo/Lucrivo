@@ -169,13 +169,19 @@ describe("register", () => {
     expect(result).toEqual({ status: "error", error: "weak_password" });
   });
 
-  it("routes an immediately authenticated signup through the resolver", async () => {
+  it("returns a document navigation when signup authenticates immediately", async () => {
     vi.stubEnv("AUTH_SIGNUP_ENABLED", "true");
     vi.stubEnv("AUTH_CAPTCHA_ENABLED", "false");
     signup.mockResolvedValue({ status: "authenticated", userId: "user-1" });
 
-    await register(null, registerFormData());
+    const result = await register(null, registerFormData());
 
-    expect(redirect).toHaveBeenCalledWith("/auth/continue");
+    expect(recordSignupLegalAcceptance).toHaveBeenCalledWith("user-1");
+    expect(redirect).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      status: "success",
+      outcome: "authenticated",
+      destination: "/auth/continue",
+    });
   });
 });
