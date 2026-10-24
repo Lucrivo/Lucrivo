@@ -47,6 +47,7 @@
   color-scheme: dark;
   caret-color: #0072fc;
   scrollbar-color: rgb(126 168 230 / 0.45) transparent;
+  overflow-x: clip;
 }
 
 .scene::selection {
@@ -313,15 +314,15 @@
   accent-color: #0072fc;
 }
 
-@media (max-width: 63.99rem) {
+@media (max-width: 74.99rem) {
   .layout {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: minmax(0, 26.5rem);
+    align-content: center;
     justify-content: center;
-    justify-content: safe center;
-    width: min(100% - clamp(1.25rem, 6vw, 2.5rem), 30rem);
-    padding-top: max(1rem, env(safe-area-inset-top));
-    padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+    width: 100%;
+    padding: max(1rem, env(safe-area-inset-top)) clamp(1rem, 5vw, 2rem)
+      max(1.25rem, env(safe-area-inset-bottom));
   }
 
   .story {
@@ -330,6 +331,7 @@
     max-height: none;
     justify-content: flex-start;
     gap: 0;
+    width: 100%;
     padding-block: 0.5rem 0;
   }
 
@@ -368,9 +370,14 @@
   }
 
   .panel {
+    width: 100%;
     min-height: 0;
     padding-block: clamp(1.75rem, 5svh, 2.5rem) 0.25rem;
     justify-content: flex-start;
+  }
+
+  .panel > :global(*) {
+    width: 100%;
   }
 }
 
@@ -391,7 +398,7 @@
 
 @media (max-width: 30rem) {
   .layout {
-    width: min(100% - 2rem, 27rem);
+    padding-inline: 1rem;
   }
 
   .panel {
@@ -399,7 +406,13 @@
   }
 }
 
-@media (max-height: 760px) and (min-width: 64rem) {
+@media (max-width: 20rem) {
+  .layout {
+    padding-inline: 0.625rem;
+  }
+}
+
+@media (max-height: 760px) and (min-width: 75rem) {
   .headline {
     margin-top: 0.85rem;
     font-size: clamp(1.85rem, 2.1vw, 2.45rem);
@@ -423,7 +436,7 @@
   }
 }
 
-@media (max-height: 560px) and (min-width: 64rem) {
+@media (max-height: 560px) and (min-width: 75rem) {
   .stage {
     display: none;
   }

@@ -14,7 +14,7 @@ import {
   XIcon,
 } from "lucide-react";
 
-import logo from "@/assets/brand/lucrivo-logo-dark.svg";
+import logo from "@/assets/brand/lucrivo-logo.svg";
 import notebook from "@/assets/diagnosis/notebook-dashboard.png";
 import {
   Dialog,

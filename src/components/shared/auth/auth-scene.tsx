@@ -28,7 +28,7 @@ function AuthScene() {
             src={notebook}
             alt=""
             priority
-            sizes="(max-width: 63.99rem) 1px, 32rem"
+            sizes="(max-width: 74.99rem) 1px, 32rem"
             className={styles.photo}
           />
         </div>
@@ -37,7 +37,7 @@ function AuthScene() {
             src={ebook}
             alt=""
             priority
-            sizes="(max-width: 63.99rem) 1px, 13rem"
+            sizes="(max-width: 74.99rem) 1px, 13rem"
             className={styles.photo}
           />
         </div>
