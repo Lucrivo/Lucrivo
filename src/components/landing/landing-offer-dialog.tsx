@@ -22,8 +22,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import logo from "@/public/brand/lucrivo-logo-dark.svg";
-import tablet from "@/public/lp/tablet-diagnostico-financeiro.png";
+import logo from "@/assets/brand/lucrivo-logo-dark.svg";
+import tablet from "@/assets/landing/tablet-diagnosis.png";
 
 import type { LandingOfferPresentation } from "./landing-offer";
 
@@ -44,10 +44,6 @@ const questions = [
   },
 ] as const;
 
-function monthWord(count: number) {
-  return count === 1 ? "mês" : "meses";
-}
-
 function LandingOfferDialog({
   offer,
   dismissCta = false,
@@ -58,7 +54,7 @@ function LandingOfferDialog({
   reserveLaunchBar?: boolean;
 }) {
   const [open, setOpen] = useState(true);
-  const promotional = offer.monthlyRenewalPriceLabel !== null;
+  const promotional = offer.promotional;
   const offsetForLaunchBar = reserveLaunchBar ?? promotional;
   const ctaContent = (
     <>
@@ -175,14 +171,11 @@ function LandingOfferDialog({
                   </span>
                   <span className="landing-offer-dialog-condition-body">
                     <strong>
-                      Inclui {offer.monthlyAccessMonths}{" "}
-                      {monthWord(offer.monthlyAccessMonths)} de acesso
+                      Inclui {offer.monthlyBonusMonths} mês de bônus
                     </strong>
                     <span>
-                      {" "}
-                      + {offer.monthlyBonusMonths}{" "}
-                      {monthWord(offer.monthlyBonusMonths)} de bônus com
-                      materiais práticos.
+                      Você fica {offer.monthlyAccessMonths} meses com tudo
+                      liberado.
                     </span>
                   </span>
                 </p>

@@ -58,7 +58,7 @@ type ActiveDiagnosisBranch =
 type QuickDiagnosisWizardProps = {
   userId: string;
   canCreateDetailedDiagnosis: boolean;
-  launchOfferOnCompletion: boolean;
+  offerOnCompletion: boolean;
   initialDetailedCategory?: DetailedDiagnosisCategory;
   createServiceDiagnosis: CreateServiceDiagnosisAction;
   createProductDiagnosis: CreateProductDiagnosisAction;
@@ -70,7 +70,7 @@ type QuickDiagnosisWizardProps = {
 function QuickDiagnosisWizard({
   userId,
   canCreateDetailedDiagnosis,
-  launchOfferOnCompletion,
+  offerOnCompletion,
   initialDetailedCategory,
   createServiceDiagnosis,
   createProductDiagnosis,
@@ -263,7 +263,7 @@ function QuickDiagnosisWizard({
           createDiagnosis={createServiceDiagnosis}
           createSubmissionId={createSubmissionId}
           onBackToType={() => setShowCategory(true)}
-          launchOfferOnCompletion={launchOfferOnCompletion}
+          offerOnCompletion={offerOnCompletion}
         />
         {upgradeDialog}
       </>
@@ -280,7 +280,7 @@ function QuickDiagnosisWizard({
           createSubmissionId={createSubmissionId}
           onBackToType={() => setShowCategory(true)}
           onStartDetailed={() => requestDetailed("product")}
-          launchOfferOnCompletion={launchOfferOnCompletion}
+          offerOnCompletion={offerOnCompletion}
         />
         {upgradeDialog}
       </>
@@ -315,7 +315,7 @@ function QuickDiagnosisWizard({
           createSubmissionId={createSubmissionId}
           onBackToType={() => setShowCategory(true)}
           onStartDetailed={() => requestDetailed("production")}
-          launchOfferOnCompletion={launchOfferOnCompletion}
+          offerOnCompletion={offerOnCompletion}
         />
         {upgradeDialog}
       </>

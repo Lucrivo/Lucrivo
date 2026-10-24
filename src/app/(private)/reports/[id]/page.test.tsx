@@ -221,7 +221,7 @@ describe("ReportPage", () => {
 
   async function renderPage(
     id = "42",
-    searchParams: { launchOffer?: string | string[] } = {},
+    searchParams: { offer?: string | string[] } = {},
   ) {
     render(
       await ReportPage({
@@ -265,18 +265,17 @@ describe("ReportPage", () => {
       },
     });
 
-    await renderPage("42", { launchOffer: "1" });
+    await renderPage("42", { offer: "1" });
 
     expect(screen.getByTestId("launch-offer-dialog")).toHaveTextContent(
       "oferta:/reports/42",
     );
     expect(LaunchOfferDialog).toHaveBeenCalledWith(
       expect.objectContaining({
-        context: "diagnosis",
         dismissHref: "/reports/42",
         offer: expect.objectContaining({
-          phase: "bonus_active",
-          endsAt: "2026-11-04T12:00:00.000Z",
+          moment: "launch_bonus",
+          catalogCode: "launch",
           monthlyPriceLabel: "R$ 39,90",
           monthlyRenewalPriceLabel: "Depois, R$ 49,90/mês",
           monthlyBonusMonths: 1,
@@ -337,7 +336,7 @@ describe("ReportPage", () => {
       ],
     });
 
-    await renderPage("42", { launchOffer: "1" });
+    await renderPage("42", { offer: "1" });
 
     expect(listActivePrices).toHaveBeenCalledWith({
       supabase,
@@ -346,8 +345,8 @@ describe("ReportPage", () => {
     expect(LaunchOfferDialog).toHaveBeenCalledWith(
       expect.objectContaining({
         offer: expect.objectContaining({
-          phase: "price_active",
-          endsAt: "2026-11-19T12:00:00.000Z",
+          moment: "launch_price",
+          catalogCode: "launch_price",
           monthlyAccessMonths: 1,
           monthlyBonusMonths: 0,
           semiannualAccessMonths: 6,
@@ -358,7 +357,7 @@ describe("ReportPage", () => {
     );
   });
 
-  it("does not open a completion offer without an active verified campaign", async () => {
+  it("opens the standard offer after the first free diagnosis", async () => {
     getBillingOverview.mockResolvedValue({
       status: "success",
       overview: {
@@ -375,11 +374,116 @@ describe("ReportPage", () => {
       bonusEndsAt: "2026-09-16T12:00:00.000Z",
       promotionEndsAt: "2026-10-01T12:00:00.000Z",
     });
+    listActivePrices.mockResolvedValue({
+      status: "success",
+      prices: [
+        {
+          id: "77777777-7777-4777-8777-777777777777",
+          productCode: "quick_diagnosis_pro",
+          catalogCode: "standard",
+          billingMode: "monthly",
+          amountCents: 4990,
+          currency: "BRL",
+          installmentLimit: null,
+          accessMonths: 1,
+          bonusMonths: 0,
+        },
+        {
+          id: "88888888-8888-4888-8888-888888888888",
+          productCode: "quick_diagnosis_pro",
+          catalogCode: "standard",
+          billingMode: "semiannual",
+          amountCents: 23940,
+          currency: "BRL",
+          installmentLimit: 6,
+          accessMonths: 6,
+          bonusMonths: 0,
+        },
+      ],
+    });
 
-    await renderPage("42", { launchOffer: "1" });
+    await renderPage("42", { offer: "1" });
+
+    expect(listActivePrices).toHaveBeenCalledWith({
+      supabase,
+      catalogCode: "standard",
+    });
+    expect(LaunchOfferDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dismissHref: "/reports/42",
+        offer: expect.objectContaining({
+          moment: "standard",
+          catalogCode: "standard",
+          monthlyPriceLabel: "R$ 49,90",
+          monthlyBonusMonths: 0,
+        }),
+      }),
+      undefined,
+    );
+  });
+
+  it("does not open a completion offer with invalid configuration", async () => {
+    getBillingOverview.mockResolvedValue({
+      status: "success",
+      overview: {
+        tier: "free",
+        canCreateQuickDiagnosis: false,
+        canCreateDetailedDiagnosis: false,
+        freeQuickDiagnosisUsed: true,
+      },
+    });
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "invalid",
+      catalogCode: null,
+      startsAt: null,
+      bonusEndsAt: null,
+      promotionEndsAt: null,
+    });
+
+    await renderPage("42", { offer: "1" });
 
     expect(screen.queryByTestId("launch-offer-dialog")).not.toBeInTheDocument();
     expect(listActivePrices).not.toHaveBeenCalled();
+  });
+
+  it("does not open the completion offer for a paid user", async () => {
+    await renderPage("42", { offer: "1" });
+
+    expect(screen.queryByTestId("launch-offer-dialog")).not.toBeInTheDocument();
+  });
+
+  it("does not open the completion offer on an ordinary report visit", async () => {
+    getBillingOverview.mockResolvedValue({
+      status: "success",
+      overview: {
+        tier: "free",
+        canCreateQuickDiagnosis: false,
+        canCreateDetailedDiagnosis: false,
+        freeQuickDiagnosisUsed: true,
+      },
+    });
+
+    await renderPage();
+
+    expect(screen.queryByTestId("launch-offer-dialog")).not.toBeInTheDocument();
+    expect(listActivePrices).not.toHaveBeenCalled();
+  });
+
+  it("does not open the completion offer for an unverified price pair", async () => {
+    getBillingOverview.mockResolvedValue({
+      status: "success",
+      overview: {
+        tier: "free",
+        canCreateQuickDiagnosis: false,
+        canCreateDetailedDiagnosis: false,
+        freeQuickDiagnosisUsed: true,
+      },
+    });
+    listActivePrices.mockResolvedValue({ status: "success", prices: [] });
+
+    await renderPage("42", { offer: "1" });
+
+    expect(screen.queryByTestId("launch-offer-dialog")).not.toBeInTheDocument();
   });
 
   it("renders an owned current Product snapshot with plain labels", async () => {

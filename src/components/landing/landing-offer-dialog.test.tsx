@@ -5,7 +5,9 @@ import type { LandingOfferPresentation } from "./landing-offer";
 import { LandingOfferDialog } from "./landing-offer-dialog";
 
 const launchOffer: LandingOfferPresentation = {
+  moment: "launch_bonus",
   catalogCode: "launch",
+  promotional: true,
   monthlyPriceLabel: "R$ 39,90",
   monthlyPriceQualifier: "no primeiro pagamento",
   monthlyRenewalPriceLabel: "Depois, R$ 49,90/mês",
@@ -33,10 +35,8 @@ describe("LandingOfferDialog", () => {
     expect(within(dialog).getByText("Oferta de lançamento")).toBeVisible();
     expect(within(dialog).getByText("R$ 39,90")).toBeVisible();
     expect(within(dialog).getByText("no primeiro pagamento")).toBeVisible();
-    expect(dialog).toHaveTextContent("Inclui 2 meses de acesso");
-    expect(dialog).toHaveTextContent(
-      "+ 1 mês de bônus com materiais práticos.",
-    );
+    expect(dialog).toHaveTextContent("Inclui 1 mês de bônus");
+    expect(dialog).toHaveTextContent("Você fica 2 meses com tudo liberado.");
     expect(within(dialog).getByText("Depois, R$ 49,90/mês")).toBeVisible();
     expect(
       within(dialog).getByRole("img", {
@@ -62,6 +62,7 @@ describe("LandingOfferDialog", () => {
   it("keeps the promotional price without the bonus line", () => {
     const dialog = renderDialog({
       ...launchOffer,
+      moment: "launch_price",
       catalogCode: "launch_price",
       monthlyAccessMonths: 1,
       monthlyBonusMonths: 0,
@@ -88,7 +89,9 @@ describe("LandingOfferDialog", () => {
   it("shows only the monthly price outside the launch", () => {
     const dialog = renderDialog({
       ...launchOffer,
+      moment: "standard",
       catalogCode: "standard",
+      promotional: false,
       monthlyPriceLabel: "R$ 49,90",
       monthlyPriceQualifier: null,
       monthlyRenewalPriceLabel: null,

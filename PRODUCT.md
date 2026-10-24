@@ -173,7 +173,7 @@ de modo que outra compra válida do mesmo usuário preserva o acesso.
 - Explicações devem evitar “contabilês”, promessas absolutas e a impressão de
   que o produto conhece o preço praticado pelo mercado.
 - A marca possui versões de logo para contextos claros e escuros em
-  `src/public/brand/logo.png` e `src/public/brand/logo-dark.png`.
+  `src/assets/brand/logo.png` e `src/assets/brand/logo-dark.png`.
 
 ## Evidence on Hand
 

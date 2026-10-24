@@ -95,7 +95,7 @@ describe("QuickDiagnosisPage", () => {
     await renderPage();
 
     expect(QuickDiagnosisWizard).toHaveBeenCalledWith(
-      expect.objectContaining({ launchOfferOnCompletion: true }),
+      expect.objectContaining({ offerOnCompletion: true }),
       undefined,
     );
   });
@@ -125,7 +125,7 @@ describe("QuickDiagnosisPage", () => {
       {
         userId: "trusted-user",
         canCreateDetailedDiagnosis: false,
-        launchOfferOnCompletion: true,
+        offerOnCompletion: true,
         createProductDiagnosis,
         createProductionDiagnosis,
         createServiceDiagnosis,
@@ -140,7 +140,7 @@ describe("QuickDiagnosisPage", () => {
     });
   });
 
-  it("does not mark completion for a launch modal outside the active campaign", async () => {
+  it("enables the completion offer during the standard period", async () => {
     readLaunchOfferEnvironment.mockReturnValue({
       phase: "expired",
       catalogCode: "standard",
@@ -152,7 +152,24 @@ describe("QuickDiagnosisPage", () => {
     await renderPage();
 
     expect(QuickDiagnosisWizard).toHaveBeenCalledWith(
-      expect.objectContaining({ launchOfferOnCompletion: false }),
+      expect.objectContaining({ offerOnCompletion: true }),
+      undefined,
+    );
+  });
+
+  it("does not mark completion when the offer configuration is invalid", async () => {
+    readLaunchOfferEnvironment.mockReturnValue({
+      phase: "invalid",
+      catalogCode: null,
+      startsAt: null,
+      bonusEndsAt: null,
+      promotionEndsAt: null,
+    });
+
+    await renderPage();
+
+    expect(QuickDiagnosisWizard).toHaveBeenCalledWith(
+      expect.objectContaining({ offerOnCompletion: false }),
       undefined,
     );
   });
@@ -204,7 +221,7 @@ describe("QuickDiagnosisPage", () => {
         userId: "trusted-user",
         canCreateDetailedDiagnosis: true,
         initialDetailedCategory: "product",
-        launchOfferOnCompletion: false,
+        offerOnCompletion: false,
       }),
       undefined,
     );

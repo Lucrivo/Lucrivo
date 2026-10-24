@@ -4,11 +4,10 @@ import { FileWarningIcon, PlusIcon } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { resolveLandingOfferPresentation } from "@/components/landing/landing-offer";
 import { readLaunchOfferEnvironment } from "@/config/launch-offer-environment";
 import { requireUser } from "@/modules/auth/services/require-user";
 import { LaunchOfferDialog } from "@/modules/billing/components/launch-offer-dialog";
-import { isLaunchOfferActive } from "@/modules/billing/domain/launch-offer";
+import { resolveOfferPresentation } from "@/modules/billing/presenters/offer-presentation";
 import { getBillingOverview } from "@/modules/billing/services/get-billing-overview.service";
 import { listActivePrices } from "@/modules/billing/services/list-active-prices.service";
 import { ReportAiAssistant } from "@/modules/report-ai/components/report-ai-assistant";
@@ -67,7 +66,7 @@ export default async function ReportPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ launchOffer?: string | string[] }>;
+  searchParams: Promise<{ offer?: string | string[] }>;
 }) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
   if (parseDiagnosisId(id) === null) notFound();
@@ -83,19 +82,17 @@ export default async function ReportPage({
   if (result.status === "read_failed") throw new Error("report_read_failed");
   if (result.status === "unavailable") return <UnavailableReport />;
 
-  const requestedLaunchOffer =
-    (Array.isArray(query.launchOffer)
-      ? query.launchOffer[0]
-      : query.launchOffer) === "1";
-  const launchOffer = requestedLaunchOffer
-    ? readLaunchOfferEnvironment()
-    : null;
-  const launchPricesPromise =
-    launchOffer && isLaunchOfferActive(launchOffer)
-      ? listActivePrices({ supabase, catalogCode: launchOffer.catalogCode })
-      : Promise.resolve(null);
+  const requestedOffer =
+    (Array.isArray(query.offer) ? query.offer[0] : query.offer) === "1";
+  const offerResolution = requestedOffer ? readLaunchOfferEnvironment() : null;
+  const offerPricesPromise = offerResolution?.catalogCode
+    ? listActivePrices({
+        supabase,
+        catalogCode: offerResolution.catalogCode,
+      })
+    : Promise.resolve(null);
 
-  const [billing, historyResult, launchPricesResult] = await Promise.all([
+  const [billing, historyResult, offerPricesResult] = await Promise.all([
     getBillingOverview({ supabase, userId }),
     getReportAiHistory({
       supabase,
@@ -103,43 +100,26 @@ export default async function ReportPage({
       diagnosisId: result.report.id,
       currentVersion: result.report.version,
     }),
-    launchPricesPromise,
+    offerPricesPromise,
   ]);
   const canAsk =
     billing.status === "success" && billing.overview.tier === "paid";
   const canEdit = canAsk;
   const history =
     historyResult.status === "success" ? historyResult.history : null;
-  const launchPresentation =
-    launchPricesResult?.status === "success"
-      ? resolveLandingOfferPresentation(launchPricesResult.prices)
+  const offerPresentation =
+    offerPricesResult?.status === "success"
+      ? resolveOfferPresentation(offerPricesResult.prices)
       : null;
-  const launchDialog =
-    launchOffer &&
-    isLaunchOfferActive(launchOffer) &&
-    ((launchOffer.phase === "bonus_active" &&
-      launchPresentation?.catalogCode === "launch") ||
-      (launchOffer.phase === "price_active" &&
-        launchPresentation?.catalogCode === "launch_price")) &&
+  const offerDialog =
+    offerResolution &&
+    offerPresentation?.catalogCode === offerResolution.catalogCode &&
     billing.status === "success" &&
     billing.overview.tier === "free" &&
     billing.overview.freeQuickDiagnosisUsed ? (
       <LaunchOfferDialog
-        context="diagnosis"
         dismissHref={`/reports/${id}`}
-        offer={{
-          phase: launchOffer.phase,
-          endsAt: launchOffer.endsAt,
-          monthlyPriceLabel: launchPresentation.monthlyPriceLabel,
-          monthlyRenewalPriceLabel:
-            launchPresentation.monthlyRenewalPriceLabel!,
-          semiannualInstallmentLabel:
-            launchPresentation.semiannualInstallmentLabel,
-          monthlyAccessMonths: launchPresentation.monthlyAccessMonths,
-          monthlyBonusMonths: launchPresentation.monthlyBonusMonths,
-          semiannualAccessMonths: launchPresentation.semiannualAccessMonths,
-          semiannualBonusMonths: launchPresentation.semiannualBonusMonths,
-        }}
+        offer={offerPresentation}
       />
     ) : null;
   const assistant =
@@ -172,7 +152,7 @@ export default async function ReportPage({
           management={management}
         />
         {assistant}
-        {launchDialog}
+        {offerDialog}
       </>
     );
 
@@ -181,7 +161,7 @@ export default async function ReportPage({
     <>
       <ReportDetail viewModel={viewModel} management={management} />
       {assistant}
-      {launchDialog}
+      {offerDialog}
     </>
   );
 }

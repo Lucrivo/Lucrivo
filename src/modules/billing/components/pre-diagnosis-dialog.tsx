@@ -21,10 +21,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import ebook from "@/public/auth/ebook-auth-image.png";
-import logo from "@/public/brand/lucrivo-logo-dark.svg";
-import notebook from "@/public/Notebook Ultrafino com Dashboard Lucrivo.png";
-import tablet from "@/public/tablet-diagnostico-lucrivo-transparente.png";
+import logo from "@/assets/brand/lucrivo-logo-dark.svg";
+import notebook from "@/assets/diagnosis/notebook-dashboard.png";
+import tablet from "@/assets/diagnosis/tablet-diagnosis.png";
+import ebook from "@/assets/marketing/ebook-pricing-guide.png";
 
 import "./pre-diagnosis-dialog.css";
 

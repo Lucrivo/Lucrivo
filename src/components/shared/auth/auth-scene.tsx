@@ -1,8 +1,8 @@
 import Image from "next/image";
 
-import mark from "@/public/brand/lucrivo-logo.svg";
-import ebook from "@/public/auth/ebook-auth-image.png";
-import notebook from "@/public/auth/notebook-auth-image.png";
+import notebook from "@/assets/auth/notebook-auth.png";
+import mark from "@/assets/brand/lucrivo-logo.svg";
+import ebook from "@/assets/marketing/ebook-pricing-guide.png";
 
 import styles from "./auth-scene.module.css";
 

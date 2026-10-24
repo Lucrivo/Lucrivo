@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import type { ActiveBillingPrice, BillingOverview } from "../types";
+import { formatBRL } from "../presenters/offer-presentation";
 import { CheckoutButton } from "./checkout-button";
 import styles from "./billing-plans.module.css";
 
@@ -19,23 +20,12 @@ type BillingPlansProps = {
   context: "public" | "account";
 };
 
-const currencyFormatter = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
 const paidBenefits = [
   "Diagnósticos rápidos e detalhados ilimitados",
   "Relatórios completos ilimitados",
   "IA para explicar e interpretar seus relatórios",
   "Vários produtos no mesmo diagnóstico detalhado",
 ] as const;
-
-function formatBRL(cents: number): string {
-  return currencyFormatter.format(cents / 100).replace(/\u00a0/g, " ");
-}
 
 function Benefit({ children }: { children: React.ReactNode }) {
   return (
@@ -430,5 +420,5 @@ function BillingPlans({ prices, overview, context }: BillingPlansProps) {
   );
 }
 
-export { BillingPlans, formatBRL };
+export { BillingPlans };
 export type { BillingPlansProps };
