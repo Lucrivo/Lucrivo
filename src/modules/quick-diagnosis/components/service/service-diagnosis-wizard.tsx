@@ -32,7 +32,7 @@ type ServiceDiagnosisWizardProps = {
   createDiagnosis: CreateServiceDiagnosisAction;
   createSubmissionId: () => string;
   onBackToType: () => void;
-  launchOfferOnCompletion?: boolean;
+  offerOnCompletion?: boolean;
 };
 
 const stepTitles: Record<ServiceWizardStep, string> = {
@@ -119,7 +119,7 @@ function ServiceDiagnosisWizard({
   createDiagnosis,
   createSubmissionId,
   onBackToType,
-  launchOfferOnCompletion = false,
+  offerOnCompletion = false,
 }: ServiceDiagnosisWizardProps) {
   const router = useRouter();
   const submittingRef = useRef(false);
@@ -254,7 +254,7 @@ function ServiceDiagnosisWizard({
 
       if (result.status === "success") {
         router.replace(
-          `/reports/${result.diagnosisId}${launchOfferOnCompletion ? "?launchOffer=1" : ""}`,
+          `/reports/${result.diagnosisId}${offerOnCompletion ? "?offer=1" : ""}`,
         );
         keepSubmissionLocked = true;
         return;

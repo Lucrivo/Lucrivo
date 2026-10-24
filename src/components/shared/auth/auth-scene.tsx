@@ -1,8 +1,8 @@
 import Image from "next/image";
 
-import mark from "@/public/brand/lucrivo-logo.svg";
-import ebook from "@/public/auth/ebook-auth-image.png";
-import notebook from "@/public/auth/notebook-auth-image.png";
+import notebook from "@/assets/auth/notebook-auth.png";
+import mark from "@/assets/brand/lucrivo-logo.svg";
+import ebook from "@/assets/marketing/ebook-pricing-guide.png";
 
 import styles from "./auth-scene.module.css";
 
@@ -28,7 +28,7 @@ function AuthScene() {
             src={notebook}
             alt=""
             priority
-            sizes="(max-width: 63.99rem) 1px, 32rem"
+            sizes="(max-width: 74.99rem) 1px, 32rem"
             className={styles.photo}
           />
         </div>
@@ -37,7 +37,7 @@ function AuthScene() {
             src={ebook}
             alt=""
             priority
-            sizes="(max-width: 63.99rem) 1px, 13rem"
+            sizes="(max-width: 74.99rem) 1px, 13rem"
             className={styles.photo}
           />
         </div>

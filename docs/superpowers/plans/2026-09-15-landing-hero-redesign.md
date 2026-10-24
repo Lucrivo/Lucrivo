@@ -15,7 +15,7 @@
 - Preserve the current header/navbar markup, styling, links, and responsive behavior exactly as implemented.
 - Do not change the markup, copy, styling, or behavior of any section below the hero.
 - Keep all user-facing copy in Brazilian Portuguese and avoid claims not supported by `PRODUCT.md`.
-- Use `src/public/lp/hero-image.png` through `next/image` as the single above-the-fold priority image.
+- Use `src/assets/landing/hero-image.png` through `next/image` as the single above-the-fold priority image.
 - Keep a single page-level `h1`, visible keyboard focus, WCAG AA text contrast, 44-pixel minimum CTA targets, and reduced-motion support.
 - Do not add a dependency or rebuild the supplied dashboard illustration as live UI.
 - Historical documentation may retain references to prior implementation states.
@@ -131,7 +131,7 @@ git commit -m "test: define redesigned landing hero contract"
 
 **Interfaces:**
 
-- Consumes: `src/public/lp/hero-image.png`, `next/image`, and Phosphor icon components.
+- Consumes: `src/assets/landing/hero-image.png`, `next/image`, and Phosphor icon components.
 - Produces: `export function HeroSection(): ReactElement`, rendered by `LandingExperience` directly after the unchanged navigation.
 
 - [ ] **Step 1: Create the presentational hero component**
@@ -708,7 +708,7 @@ image, or accessibility lint errors.
 - [ ] **Step 10: Commit the integrated hero**
 
 ```bash
-git add src/components/landing/hero-section.tsx src/components/landing/landing-experience.tsx src/components/landing/landing-experience.css src/app/page.test.tsx src/public/lp/hero-image.png
+git add src/components/landing/hero-section.tsx src/components/landing/landing-experience.tsx src/components/landing/landing-experience.css src/app/page.test.tsx src/assets/landing/hero-image.png
 git commit -m "feat: redesign landing hero"
 ```
 

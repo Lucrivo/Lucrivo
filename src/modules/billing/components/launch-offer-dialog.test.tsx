@@ -1,134 +1,135 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { refresh, replace } = vi.hoisted(() => ({
-  refresh: vi.fn(),
-  replace: vi.fn(),
-}));
+import type { OfferPresentation } from "@/modules/billing/presenters/offer-presentation";
+
+const { replace } = vi.hoisted(() => ({ replace: vi.fn() }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh, replace }),
+  useRouter: () => ({ replace }),
 }));
 
 import { LaunchOfferDialog } from "./launch-offer-dialog";
 
-const offer = {
-  phase: "bonus_active" as const,
-  endsAt: "2026-11-04T12:00:00.000Z",
+const launchBonusOffer: OfferPresentation = {
+  moment: "launch_bonus",
+  catalogCode: "launch",
+  promotional: true,
   monthlyPriceLabel: "R$ 39,90",
+  monthlyPriceQualifier: "no primeiro pagamento",
+  monthlyRenewalPriceLabel: "Depois, R$ 49,90/mês",
+  semiannualTotalLabel: "R$ 179,40",
   semiannualInstallmentLabel: "R$ 29,90",
   monthlyAccessMonths: 2,
-  semiannualAccessMonths: 12,
-  monthlyRenewalPriceLabel: "Depois, R$ 49,90/mês",
   monthlyBonusMonths: 1,
+  semiannualAccessMonths: 12,
   semiannualBonusMonths: 6,
 };
 
+const title =
+  "Você já descobriu como está seu preço. Agora saiba como lucrar mais.";
+
+function renderDialog(offer: OfferPresentation = launchBonusOffer) {
+  render(<LaunchOfferDialog offer={offer} dismissHref="/reports/42" />);
+
+  return screen.getByRole("dialog", { name: title });
+}
+
+function expectReferenceContent(dialog: HTMLElement) {
+  expect(within(dialog).getByRole("heading", { name: title })).toBeVisible();
+  expect(
+    within(dialog).getByRole("img", {
+      name: "Notebook mostrando o painel financeiro do Lucrivo.",
+    }),
+  ).toBeVisible();
+  expect(
+    within(dialog).getByText("Entenda quanto realmente sobra das suas vendas."),
+  ).toBeVisible();
+  expect(
+    within(dialog).getByText("Saiba quando vale a pena ajustar seu preço."),
+  ).toBeVisible();
+  expect(
+    within(dialog).getByRole("link", {
+      name: "Quero liberar meu acesso completo",
+    }),
+  ).toHaveAttribute("href", "/billing");
+  expect(dialog).toHaveTextContent(
+    "Acesso imediato e cancelamento quando quiser.",
+  );
+  expect(within(dialog).getByRole("button", { name: "Fechar" })).toBeVisible();
+  expect(dialog).not.toHaveTextContent(
+    /plano semestral|e-book|contagem|7 dias de garantia|talvez mais tarde/i,
+  );
+}
+
 describe("LaunchOfferDialog", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    vi.setSystemTime(new Date("2026-10-20T12:00:00.000Z"));
-    vi.clearAllMocks();
+  beforeEach(() => vi.clearAllMocks());
+
+  it("shows the launch price and bonus after the diagnosis", () => {
+    const dialog = renderDialog();
+
+    expectReferenceContent(dialog);
+    expect(dialog).toHaveTextContent("Oferta de lançamento");
+    expect(dialog).toHaveTextContent("R$ 39,90");
+    expect(dialog).toHaveTextContent("Inclui 1 mês de bônus");
+    expect(dialog).toHaveTextContent("Você fica 2 meses com tudo liberado.");
+    expect(dialog).toHaveTextContent("Depois, R$ 49,90/mês");
   });
 
-  afterEach(() => vi.useRealTimers());
-
-  it("presents the verified launch terms when the landing page opens", () => {
-    render(<LaunchOfferDialog context="landing" offer={offer} />);
-
-    const dialog = screen.getByRole("dialog", {
-      name: "Mais tempo para transformar diagnóstico em decisão.",
+  it("shows the launch price without a bonus claim", () => {
+    const dialog = renderDialog({
+      ...launchBonusOffer,
+      moment: "launch_price",
+      catalogCode: "launch_price",
+      monthlyAccessMonths: 1,
+      monthlyBonusMonths: 0,
+      semiannualAccessMonths: 6,
+      semiannualBonusMonths: 0,
     });
-    expect(
-      within(dialog).getByText(
-        "Mais tempo para transformar diagnóstico em decisão.",
-      ),
-    ).toBeVisible();
-    expect(within(dialog).getByText("R$ 39,90")).toBeVisible();
-    expect(within(dialog).getByText("no primeiro pagamento")).toBeVisible();
-    expect(within(dialog).getByText("Depois, R$ 49,90/mês")).toBeVisible();
-    expect(within(dialog).getByText("R$ 29,90")).toBeVisible();
-    expect(
-      within(dialog).getByText(
-        "O primeiro pagamento libera 2 meses de acesso.",
-      ),
-    ).toBeVisible();
-    expect(within(dialog).getByText("12 meses de acesso")).toBeVisible();
-    expect(
-      within(dialog).getByText(/E-book, método de vendas e planilha/),
-    ).toBeVisible();
-    expect(
-      within(dialog).getByRole("region", {
-        name: "Tempo restante para ganhar o bônus",
-      }),
-    ).toBeVisible();
-    expect(within(dialog).getByText("7 dias de garantia.")).toBeVisible();
-    expect(within(dialog).getByText(/Devolvemos todo o valor/)).toBeVisible();
-    expect(
-      within(dialog).getByRole("link", { name: "Quero aproveitar a oferta" }),
-    ).toHaveAttribute("href", "/billing");
-    expect(
-      within(dialog).getByRole("button", { name: "Talvez mais tarde" }),
-    ).toBeVisible();
+
+    expectReferenceContent(dialog);
+    expect(dialog).toHaveTextContent("Oferta de lançamento");
+    expect(dialog).toHaveTextContent("R$ 39,90");
+    expect(dialog).toHaveTextContent("no primeiro pagamento");
+    expect(dialog).toHaveTextContent("Depois, R$ 49,90/mês");
+    expect(dialog).not.toHaveTextContent(/bônus/i);
   });
 
-  it("presents price_active without bonus access copy", () => {
-    const { container } = render(
-      <LaunchOfferDialog
-        context="landing"
-        offer={{
-          ...offer,
-          phase: "price_active",
-          endsAt: "2026-11-19T12:00:00.000Z",
-          monthlyAccessMonths: 1,
-          semiannualAccessMonths: 6,
-          monthlyBonusMonths: 0,
-          semiannualBonusMonths: 0,
-        }}
-      />,
-    );
+  it("shows only the recurring monthly price during the standard period", () => {
+    const dialog = renderDialog({
+      ...launchBonusOffer,
+      moment: "standard",
+      catalogCode: "standard",
+      promotional: false,
+      monthlyPriceLabel: "R$ 49,90",
+      monthlyPriceQualifier: null,
+      monthlyRenewalPriceLabel: null,
+      semiannualTotalLabel: "R$ 239,40",
+      semiannualInstallmentLabel: "R$ 39,90",
+      monthlyAccessMonths: 1,
+      monthlyBonusMonths: 0,
+      semiannualAccessMonths: 6,
+      semiannualBonusMonths: 0,
+    });
 
-    expect(
-      screen.getByRole("region", {
-        name: "Tempo restante para aproveitar o preço de lançamento",
-      }),
-    ).toBeVisible();
-    expect(container).not.toHaveTextContent(/m[eê]s(?:es)? de bônus/i);
-    expect(
-      screen.getByText("O primeiro pagamento libera 1 mês de acesso."),
-    ).toBeVisible();
+    expectReferenceContent(dialog);
+    expect(dialog).toHaveTextContent("R$ 49,90");
+    expect(dialog).toHaveTextContent("/mês");
+    expect(dialog).not.toHaveTextContent(/oferta de lançamento|bônus|depois/i);
   });
 
-  it("does not dismiss the offer when the backdrop is clicked", () => {
-    render(<LaunchOfferDialog context="landing" offer={offer} />);
-
+  it("ignores the backdrop and clears the URL marker from the close control", async () => {
+    const user = userEvent.setup();
+    const dialog = renderDialog();
     const backdrop = document.querySelector('[data-slot="dialog-overlay"]');
-    expect(backdrop).not.toBeNull();
 
+    expect(backdrop).not.toBeNull();
     fireEvent.pointerDown(backdrop!);
     fireEvent.click(backdrop!);
+    expect(dialog).toBeVisible();
 
-    expect(screen.getByRole("dialog")).toBeVisible();
-  });
-
-  it("uses the completed-diagnosis message and clears its URL marker on close", async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    render(
-      <LaunchOfferDialog
-        context="diagnosis"
-        offer={offer}
-        dismissHref="/reports/42"
-      />,
-    );
-
-    expect(
-      screen.getByRole("heading", {
-        name: "Seu diagnóstico está pronto. Agora é hora de agir.",
-      }),
-    ).toBeVisible();
-
-    await user.click(screen.getByRole("button", { name: "Talvez mais tarde" }));
+    await user.click(within(dialog).getByRole("button", { name: "Fechar" }));
 
     expect(replace).toHaveBeenCalledWith("/reports/42", { scroll: false });
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();

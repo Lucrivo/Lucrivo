@@ -10,7 +10,7 @@ import {
 import { GuaranteeNote } from "@/components/landing/guarantee-note";
 import { HeroVideoDialog } from "@/components/landing/hero-video-dialog";
 import { type LandingOfferPresentation } from "@/components/landing/landing-offer";
-import heroImage from "@/public/lp/hero-image-v2.png";
+import heroImage from "@/assets/landing/hero-image-v2.png";
 
 const trustItems = [
   {

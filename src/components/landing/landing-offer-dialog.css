@@ -31,7 +31,6 @@
     );
   color: oklch(0.98 0.005 255);
   color-scheme: dark;
-  font-family: "Geist", Inter, "Helvetica Neue", Arial, sans-serif;
   font-size: 1rem;
   line-height: 1.4;
   box-shadow: 0 32px 70px -24px oklch(0.08 0.04 262 / 0.78);
