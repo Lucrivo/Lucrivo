@@ -1,7 +1,7 @@
 import Image from "next/image";
 
-import darkLogo from "@/public/brand/lucrivo-logo-dark.svg";
-import lightLogo from "@/public/brand/lucrivo-logo.svg";
+import darkLogo from "@/assets/brand/lucrivo-logo-dark.svg";
+import lightLogo from "@/assets/brand/lucrivo-logo.svg";
 
 export function Logo() {
   return (

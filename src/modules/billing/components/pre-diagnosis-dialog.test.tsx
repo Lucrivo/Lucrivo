@@ -26,11 +26,16 @@ describe("PreDiagnosisDialog", () => {
     expect(dialog).toHaveTextContent("Quanto sobra de cada venda?");
     expect(within(dialog).getByText("Grátis")).toBeVisible();
     expect(dialog).toHaveTextContent(
-      "Descubra informações importantes sobre seu preço em poucos minutos.",
+      "Faça seu diagnóstico grátis e receba um e-book de brinde.",
     );
     expect(
       within(dialog).getByRole("img", {
-        name: "Exemplo de notebook com o resultado de um diagnóstico no Lucrivo.",
+        name: "Exemplo do diagnóstico financeiro no Lucrivo.",
+      }),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByRole("img", {
+        name: "Capa do e-book Guia Prático de Precificação.",
       }),
     ).toBeVisible();
     expect(

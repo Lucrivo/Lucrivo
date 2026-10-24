@@ -6,14 +6,16 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   ArrowRightIcon,
-  BookOpenIcon,
-  CheckIcon,
+  CrownIcon,
   GiftIcon,
-  ShieldCheckIcon,
-  Table2Icon,
+  LockKeyholeIcon,
+  TargetIcon,
+  TrendingUpIcon,
+  XIcon,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import logo from "@/assets/brand/lucrivo-logo.svg";
+import notebook from "@/assets/diagnosis/notebook-dashboard.png";
 import {
   Dialog,
   DialogClose,
@@ -22,54 +24,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
-import logo from "@/public/brand/lucrivo-logo-dark.svg";
+import type { OfferPresentation } from "@/modules/billing/presenters/offer-presentation";
 
-import { OfferCountdown } from "./offer-countdown";
-
-type LaunchOfferDialogView = {
-  phase: "bonus_active" | "price_active";
-  endsAt: string;
-  monthlyPriceLabel: string;
-  monthlyRenewalPriceLabel: string;
-  semiannualInstallmentLabel: string;
-  monthlyAccessMonths: number;
-  monthlyBonusMonths: number;
-  semiannualAccessMonths: number;
-  semiannualBonusMonths: number;
-};
+import "./post-diagnosis-dialog.css";
 
 type LaunchOfferDialogProps = {
-  context: "landing" | "diagnosis";
-  offer: LaunchOfferDialogView;
+  offer: OfferPresentation;
   dismissHref?: string;
 };
 
-const contextCopy = {
-  landing: {
-    title: "Oferta de lançamento Lucrivo",
-    headline: "Mais tempo para transformar diagnóstico em decisão.",
-    description:
-      "Descubra onde seu preço precisa de atenção e aproveite as condições especiais para continuar acompanhando seu negócio.",
-  },
-  diagnosis: {
-    title: "Oferta de lançamento Lucrivo",
-    headline: "Seu diagnóstico está pronto. Agora é hora de agir.",
-    description:
-      "Continue usando o Lucrivo para testar ajustes, acompanhar seus números e tomar decisões com mais clareza.",
-  },
-} as const;
-
-function LaunchOfferDialog({
-  context,
-  offer,
-  dismissHref,
-}: LaunchOfferDialogProps) {
+function LaunchOfferDialog({ offer, dismissHref }: LaunchOfferDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(true);
-  const copy = contextCopy[context];
-  const countdownPurpose =
-    offer.phase === "bonus_active" ? "bonus" : "launch_price";
 
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen);
@@ -80,178 +46,112 @@ function LaunchOfferDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange} disablePointerDismissal>
-      <DialogContent
-        aria-label={copy.title}
-        showCloseButton={false}
-        className={cn(
-          "launch-offer-scrollbar top-[calc((100dvh+var(--launch-dialog-offset))/2)] max-h-[calc(100dvh-var(--launch-dialog-offset)-1.5rem)] gap-0 overflow-y-auto border-0 bg-[oklch(0.24_0.11_259)] p-0 text-white shadow-[0_28px_80px_-24px_oklch(0.12_0.08_259/0.8)] [--launch-dialog-offset:0px] sm:max-w-2xl",
-          context === "landing" &&
-            "[--launch-dialog-offset:calc(3.25rem+env(safe-area-inset-top,0px))] max-[900px]:[--launch-dialog-offset:calc(6.25rem+env(safe-area-inset-top,0px))]",
-        )}
-      >
-        <div className="relative overflow-hidden px-5 pt-5 pb-6 sm:px-8 sm:pt-7 sm:pb-8">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-24 -right-20 size-64 rounded-full bg-[oklch(0.62_0.24_253/0.38)] blur-3xl"
-          />
+      <DialogContent showCloseButton={false} className="post-diagnosis-dialog">
+        <DialogClose type="button" className="post-diagnosis-close">
+          <XIcon aria-hidden="true" size={18} />
+          <span className="sr-only">Fechar</span>
+        </DialogClose>
 
-          <div className="relative flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2.5" aria-label="Lucrivo">
-              <span className="grid size-9 place-items-center rounded-lg bg-white/10 p-1.5">
-                <Image
-                  src={logo}
-                  alt=""
-                  width={36}
-                  height={36}
-                  className="size-full"
-                />
-              </span>
-              <span className="text-lg font-bold tracking-[-0.03em]">
-                Lucrivo
-              </span>
-            </div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-[oklch(0.76_0.18_77)] px-3 py-1.5 text-xs font-bold text-[oklch(0.22_0.06_65)] shadow-sm">
-              <GiftIcon aria-hidden="true" className="size-4" />
+        <div className="post-diagnosis-top">
+          <div className="post-diagnosis-brand" aria-label="Lucrivo">
+            <span className="post-diagnosis-mark">
+              <Image src={logo} alt="" width={30} height={30} priority />
+            </span>
+            <span>Lucrivo</span>
+          </div>
+
+          {offer.promotional ? (
+            <span className="post-diagnosis-badge">
+              <GiftIcon aria-hidden="true" size={16} />
               Oferta de lançamento
             </span>
-          </div>
+          ) : null}
+        </div>
 
-          <DialogHeader className="relative mt-6 max-w-xl gap-3 text-left sm:mt-8">
-            <DialogTitle className="text-2xl leading-tight font-bold tracking-[-0.03em] text-balance text-white sm:text-4xl">
-              {copy.headline}
+        <div className="post-diagnosis-stage">
+          <DialogHeader className="post-diagnosis-copy">
+            <DialogTitle className="post-diagnosis-title">
+              Você já descobriu como está seu preço.{" "}
+              <span>Agora saiba como lucrar mais.</span>
             </DialogTitle>
-            <DialogDescription className="max-w-[62ch] text-sm leading-6 text-pretty text-blue-100 sm:text-base">
-              {copy.description}
+            <DialogDescription className="post-diagnosis-description">
+              Continue acompanhando seu negócio e tome decisões com mais
+              segurança.
             </DialogDescription>
-          </DialogHeader>
 
-          <section
-            aria-label="Plano mensal promocional"
-            className="relative mt-6 overflow-hidden rounded-2xl bg-white p-5 text-[oklch(0.2_0.06_259)] shadow-[0_18px_42px_-22px_oklch(0.05_0.08_259/0.9)] sm:p-6"
-          >
-            <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-              <div>
-                <p className="text-sm font-bold tracking-wide text-[oklch(0.43_0.18_259)] uppercase">
-                  Plano mensal
-                </p>
-                <p className="mt-2 flex flex-wrap items-end gap-x-2">
-                  <strong className="text-5xl leading-none font-black tracking-[-0.04em] tabular-nums sm:text-6xl">
-                    {offer.monthlyPriceLabel}
-                  </strong>
-                  <span className="pb-1 text-base font-bold">
-                    no primeiro pagamento
-                  </span>
-                </p>
-              </div>
-              <div className="max-w-64 text-sm leading-5 font-semibold text-pretty text-[oklch(0.34_0.07_259)]">
-                <p>
-                  O primeiro pagamento libera {offer.monthlyAccessMonths}{" "}
-                  {offer.monthlyAccessMonths === 1 ? "mês" : "meses"} de acesso.
-                </p>
-                {offer.monthlyBonusMonths > 0 ? (
-                  <p className="mt-1">
-                    Inclui {offer.monthlyBonusMonths} mês de bônus.
-                  </p>
-                ) : null}
-                <p className="mt-1">{offer.monthlyRenewalPriceLabel}</p>
-              </div>
-            </div>
-          </section>
-
-          <div className="relative mt-4 grid gap-4 rounded-2xl bg-[oklch(0.48_0.22_259)] p-4 sm:grid-cols-[1fr_auto] sm:items-center sm:px-5">
-            <div>
-              <p className="font-bold">
-                {offer.phase === "bonus_active"
-                  ? "Garanta o bônus durante a campanha"
-                  : "Garanta o preço de lançamento"}
-              </p>
-              <p className="mt-1 text-sm leading-5 text-blue-100">
-                Condição promocional disponível até o fim da contagem.
-              </p>
-            </div>
-            <div className="min-w-0 rounded-xl bg-black/15 px-4 py-3 [&_[data-countdown-digits]]:gap-4 [&_dd]:text-xl [&_dt]:text-white/80">
-              <OfferCountdown
-                purpose={countdownPurpose}
-                endsAt={offer.endsAt}
-                compact
-              />
-            </div>
-          </div>
-
-          <div className="relative mt-5 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-center">
-            <ul className="grid gap-2 text-sm text-blue-50">
-              <li className="flex items-center gap-2">
-                <BookOpenIcon
-                  aria-hidden="true"
-                  className="size-4 text-blue-300"
-                />
-                E-book, método de vendas e planilha de fluxo de caixa
+            <ul className="post-diagnosis-benefits">
+              <li>
+                <span>
+                  <TrendingUpIcon aria-hidden="true" size={20} />
+                </span>
+                Entenda quanto realmente sobra das suas vendas.
               </li>
-              <li className="flex items-center gap-2">
-                <Table2Icon
-                  aria-hidden="true"
-                  className="size-4 text-blue-300"
-                />
-                Materiais liberados com a compra confirmada
+              <li>
+                <span>
+                  <TargetIcon aria-hidden="true" size={20} />
+                </span>
+                Saiba quando vale a pena ajustar seu preço.
               </li>
             </ul>
-            <div className="rounded-xl bg-[oklch(0.76_0.18_77)] px-4 py-3 text-[oklch(0.22_0.06_65)]">
-              <p className="text-xs font-bold uppercase">Plano semestral</p>
-              <p className="mt-1 font-bold">
-                6x de{" "}
-                <span className="text-xl tabular-nums">
-                  {offer.semiannualInstallmentLabel}
-                </span>
-              </p>
-              <p className="mt-0.5 text-xs font-semibold">
-                {offer.semiannualAccessMonths} meses de acesso
-              </p>
-              {offer.semiannualBonusMonths > 0 ? (
-                <p className="mt-0.5 text-xs font-semibold">
-                  Inclui {offer.semiannualBonusMonths} meses de bônus
-                </p>
-              ) : null}
-            </div>
-          </div>
+          </DialogHeader>
+
+          <figure className="post-diagnosis-notebook">
+            <Image
+              src={notebook}
+              alt="Notebook mostrando o painel financeiro do Lucrivo."
+              width={1536}
+              height={1024}
+              sizes="(max-width: 720px) 280px, 350px"
+              priority
+            />
+          </figure>
         </div>
 
-        <div className="sticky bottom-0 z-10 grid gap-2 bg-[oklch(0.24_0.11_259)] px-5 pt-3 pb-5 sm:px-8 sm:pb-7">
-          <p className="flex items-center justify-center gap-2 text-center text-sm leading-5 text-blue-100">
-            <ShieldCheckIcon
-              aria-hidden="true"
-              className="size-4 shrink-0 text-[oklch(0.84_0.12_151)]"
-            />
-            <span>
-              <strong className="font-bold text-white">
-                7 dias de garantia.
-              </strong>{" "}
-              Não gostou? Devolvemos todo o valor.
-            </span>
-          </p>
-          <Link
-            href="/billing"
-            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-base font-bold text-[oklch(0.3_0.16_259)] shadow-sm transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[oklch(0.24_0.11_259)] focus-visible:outline-none active:translate-y-0 motion-reduce:transition-none"
-          >
-            <CheckIcon aria-hidden="true" className="size-5" />
-            Quero aproveitar a oferta
-            <ArrowRightIcon aria-hidden="true" className="size-5" />
+        <section className="post-diagnosis-offer" aria-label="Plano mensal">
+          <div className="post-diagnosis-offer-main">
+            <div className="post-diagnosis-price">
+              <p>
+                {offer.promotional ? "Oferta de lançamento" : "Plano mensal"}
+              </p>
+              <div className="post-diagnosis-amount">
+                <strong>{offer.monthlyPriceLabel}</strong>
+                <span>{offer.monthlyPriceQualifier ?? "/mês"}</span>
+              </div>
+              {offer.monthlyRenewalPriceLabel ? (
+                <small>{offer.monthlyRenewalPriceLabel}</small>
+              ) : null}
+            </div>
+
+            {offer.monthlyBonusMonths > 0 ? (
+              <div className="post-diagnosis-bonus">
+                <CrownIcon aria-hidden="true" size={23} />
+                <div>
+                  <strong>
+                    Inclui {offer.monthlyBonusMonths} mês de bônus
+                  </strong>
+                  <span>
+                    Você fica {offer.monthlyAccessMonths} meses com tudo
+                    liberado.
+                  </span>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <Link className="post-diagnosis-cta" href="/billing">
+            Quero liberar meu acesso completo
+            <ArrowRightIcon aria-hidden="true" size={20} />
           </Link>
-          <DialogClose
-            render={
-              <Button
-                type="button"
-                variant="ghost"
-                className="min-h-11 text-blue-100 hover:bg-white/10 hover:text-white"
-              />
-            }
-          >
-            Talvez mais tarde
-          </DialogClose>
-        </div>
+        </section>
+
+        <p className="post-diagnosis-reassure">
+          <LockKeyholeIcon aria-hidden="true" size={16} />
+          <span>Acesso imediato e cancelamento quando quiser.</span>
+        </p>
       </DialogContent>
     </Dialog>
   );
 }
 
 export { LaunchOfferDialog };
-export type { LaunchOfferDialogProps, LaunchOfferDialogView };
+export type { LaunchOfferDialogProps };

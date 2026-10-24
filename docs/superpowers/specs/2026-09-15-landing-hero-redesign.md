@@ -53,7 +53,7 @@ The first viewport should feel composed and credible rather than decorative:
 - Avoid additional floating cards, excessive glass panels, generic gradients,
   or decorative elements that compete with the product image.
 
-The provided asset at `src/public/lp/hero-image.png` is the visual authority for
+The provided asset at `src/assets/landing/hero-image.png` is the visual authority for
 the right-hand composition. It must be rendered through `next/image`, retain its
 intrinsic aspect ratio, and be treated as the hero's LCP image.
 

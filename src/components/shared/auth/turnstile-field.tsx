@@ -8,6 +8,7 @@ type TurnstileWidgetOptions = {
   callback: (token: string) => void;
   "error-callback": () => void;
   "expired-callback": () => void;
+  size: "flexible";
   theme: "dark";
 };
 
@@ -42,6 +43,7 @@ function TurnstileField({ siteKey, resetSignal }: TurnstileFieldProps) {
 
     widgetIdRef.current = window.turnstile.render(containerRef.current, {
       sitekey: siteKey,
+      size: "flexible",
       theme: "dark",
       callback: (nextToken) => {
         setUnavailable(false);

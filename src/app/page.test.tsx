@@ -147,7 +147,10 @@ describe("Home", () => {
     });
     expect(within(offerDialog).getByText("Oferta de lançamento")).toBeVisible();
     expect(within(offerDialog).getByText("R$ 39,90")).toBeVisible();
-    expect(offerDialog).toHaveTextContent("Inclui 2 meses de acesso");
+    expect(offerDialog).toHaveTextContent("Inclui 1 mês de bônus");
+    expect(offerDialog).toHaveTextContent(
+      "Você fica 2 meses com tudo liberado.",
+    );
     expect(
       within(offerDialog).getByRole("link", {
         name: "Quero fazer meu diagnóstico agora",

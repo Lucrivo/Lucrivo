@@ -31,7 +31,7 @@ describe("TurnstileField", () => {
 
     expect(renderWidget).toHaveBeenCalledWith(
       expect.any(HTMLDivElement),
-      expect.objectContaining({ sitekey: "site-key" }),
+      expect.objectContaining({ sitekey: "site-key", size: "flexible" }),
     );
     expect(screen.getByDisplayValue("captcha-token")).toHaveAttribute(
       "name",
